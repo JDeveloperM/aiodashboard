@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { RoleImage } from "@/components/ui/role-image"
 import { useSubscription } from "@/contexts/subscription-context"
+import { usePoints } from "@/contexts/points-context"
 import {
   Copy,
   Users,
@@ -32,7 +33,12 @@ import {
   Gamepad2,
   Lock,
   CheckCircle2,
-  XCircle
+  XCircle,
+  User,
+  Bot,
+  Repeat,
+  ArrowUp,
+  Link
 } from "lucide-react"
 
 // Custom X (formerly Twitter) icon component
@@ -85,6 +91,7 @@ interface InvitedUser {
 
 export function ProfileSystem() {
   const { tier } = useSubscription()
+  const { addPoints } = usePoints()
   const [affiliateLink] = useState("https://metadudesx.io/ref/MDX789ABC")
   const [copied, setCopied] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -94,6 +101,63 @@ export function ProfileSystem() {
   const [claimingAchievement, setClaimingAchievement] = useState<any>(null)
   const [isClaimingPoints, setIsClaimingPoints] = useState(false)
   const [mobileTooltipOpen, setMobileTooltipOpen] = useState<number | null>(null)
+  const [showProgressionModal, setShowProgressionModal] = useState(false)
+  const [showLevelClaimDialog, setShowLevelClaimDialog] = useState(false)
+  const [claimingLevel, setClaimingLevel] = useState<any>(null)
+  const [isClaimingLevelPoints, setIsClaimingLevelPoints] = useState(false)
+
+  // Level rewards data
+  const [levelRewards, setLevelRewards] = useState([
+    { level: 1, points: 0, available: true, claimed: false },
+    { level: 2, points: 20, available: true, claimed: false },
+    { level: 3, points: 50, available: true, claimed: false },
+    { level: 4, points: 100, available: true, claimed: false },
+    { level: 5, points: 180, available: true, claimed: false },
+    { level: 6, points: 280, available: false, claimed: false },
+    { level: 7, points: 400, available: false, claimed: false },
+    { level: 8, points: 550, available: false, claimed: false },
+    { level: 9, points: 750, available: false, claimed: false },
+    { level: 10, points: 1000, available: false, claimed: false },
+  ])
+
+  const handleLevelClaim = (level: any) => {
+    setClaimingLevel(level)
+    setShowLevelClaimDialog(true)
+  }
+
+  const confirmClaimLevel = () => {
+    setIsClaimingLevelPoints(true)
+    setTimeout(() => {
+      // Update the level as claimed
+      const updatedLevelRewards = levelRewards.map(reward =>
+        reward.level === claimingLevel.level
+          ? { ...reward, claimed: true }
+          : reward
+      )
+      setLevelRewards(updatedLevelRewards)
+
+      // Save level claim status to localStorage
+      localStorage.setItem('user-level-claims', JSON.stringify(updatedLevelRewards))
+
+      // Add points to the PointsContext (this will update the header)
+      addPoints(claimingLevel.points, `Level ${claimingLevel.level} reward`)
+
+      // Update profile points
+      setProfileData(prev => {
+        const newPoints = prev.points + claimingLevel.points
+        // Save to localStorage to sync with header
+        localStorage.setItem('user-points', newPoints.toString())
+        return {
+          ...prev,
+          points: newPoints
+        }
+      })
+
+      setIsClaimingLevelPoints(false)
+      setShowLevelClaimDialog(false)
+      setClaimingLevel(null)
+    }, 2000)
+  }
 
   const [metrics] = useState({
     totalInvites: 47,
@@ -145,27 +209,40 @@ export function ProfileSystem() {
       totalXP: 12450
     },
     achievements: [
-      { name: "Top Ambassador", icon: Crown, color: "#FFD700", unlocked: true, claimed: false, xp: 500, tooltip: "Awarded for outstanding community leadership and engagement" },
-      { name: "Community Star", icon: Star, color: "#4DA2FF", unlocked: true, claimed: false, xp: 300, tooltip: "Recognized for active participation and positive contributions" },
-      { name: "Elite Recruiter", icon: Trophy, color: "#FF6B35", unlocked: false, claimed: false, xp: 750, tooltip: "Complete 25 successful referrals to unlock this achievement" },
-      { name: "Social Connector", icon: Award, color: "#10B981", unlocked: true, claimed: false, xp: 200, tooltip: "Connect all your social media accounts to earn this badge" },
-      { name: "Platform Guardian", icon: Shield, color: "#8B5CF6", unlocked: true, claimed: false, xp: 400, tooltip: "Help maintain platform security and community standards" },
-      { name: "Growth Master", icon: Zap, color: "#F59E0B", unlocked: true, claimed: false, xp: 350, tooltip: "Demonstrate exceptional growth and improvement" },
-      { name: "Top Trader", icon: TrendingUp, color: "#00D4AA", unlocked: true, claimed: false, xp: 600, tooltip: "Achieve top trading performance and consistency" },
-      { name: "Top Member", icon: Users, color: "#FF1493", unlocked: true, claimed: false, xp: 450, tooltip: "Recognized as one of our most valuable community members" },
-      { name: "Top Gamer", icon: Gamepad2, color: "#9333EA", unlocked: true, claimed: false, xp: 300, tooltip: "Excel in gaming activities and competitions" },
-      // Copier achievements
-      { name: "10 Copiers", icon: Users, color: "#6B7280", unlocked: true, claimed: false, xp: 250, tooltip: "Successfully refer 10 users who become Copiers" },
-      { name: "50 Copiers", icon: Users, color: "#6B7280", unlocked: false, claimed: false, xp: 500, tooltip: "Refer 50 users who become Copiers" },
-      { name: "100 Copiers", icon: Users, color: "#6B7280", unlocked: false, claimed: false, xp: 1000, tooltip: "Refer 100 users who become Copiers" },
-      // PRO achievements
-      { name: "10 PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, xp: 750, tooltip: "Refer 10 users who become PRO members" },
-      { name: "50 PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, xp: 1500, tooltip: "Refer 50 users who become PRO members" },
-      { name: "100 PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, xp: 3000, tooltip: "Refer 100 users who become PRO members" },
-      // ROYAL achievements
-      { name: "10 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, xp: 1000, tooltip: "Refer 10 users who become ROYAL members" },
-      { name: "50 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, xp: 2000, tooltip: "Refer 50 users who become ROYAL members" },
-      { name: "100 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, xp: 5000, tooltip: "Refer 100 users who become ROYAL members" }
+      // Profile & Account Achievements
+      { name: "Profile Picture", icon: User, color: "#4DA2FF", unlocked: true, claimed: false, xp: 15, tooltip: "Upload a profile picture to personalize your account" },
+      { name: "KYC Verification", icon: CheckCircle2, color: "#10B981", unlocked: true, claimed: false, xp: 25, tooltip: "Complete KYC verification to unlock full platform features" },
+      { name: "Reach Level 5", icon: Star, color: "#FFD700", unlocked: true, claimed: false, xp: 50, tooltip: "Reach profile level 5 to unlock advanced features" },
+
+      // Social Media Achievements
+      { name: "Connect Discord", icon: DiscordIcon, color: "#5865F2", unlocked: true, claimed: false, xp: 15, tooltip: "Connect your Discord account to join our community" },
+      { name: "Connect Telegram", icon: TelegramIcon, color: "#0088CC", unlocked: true, claimed: false, xp: 15, tooltip: "Connect your Telegram account for updates and support" },
+      { name: "Connect X", icon: XIcon, color: "#000000", unlocked: false, claimed: false, xp: 15, tooltip: "Connect your X (Twitter) account to stay updated" },
+
+      // Trading & Bots Achievements
+      { name: "Connect Bybit", icon: Link, color: "#F7931A", unlocked: false, claimed: false, xp: 25, tooltip: "Connect your Bybit account to start automated trading" },
+      { name: "Follow Apollon Bot", icon: Bot, color: "#9333EA", unlocked: false, claimed: false, xp: 25, tooltip: "Follow the Apollon Bot for advanced crypto trading signals" },
+      { name: "Follow Hermes Bot", icon: Bot, color: "#06B6D4", unlocked: false, claimed: false, xp: 25, tooltip: "Follow the Hermes Bot for high-frequency trading strategies" },
+      { name: "Make 3 Cycles", icon: Repeat, color: "#10B981", unlocked: false, claimed: false, xp: 50, tooltip: "Complete at least 3 trading cycles with crypto bots" },
+
+      // Upgrade Achievements
+      { name: "Upgrade to PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, xp: 50, tooltip: "Upgrade to PRO membership for enhanced features" },
+      { name: "Upgrade to ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, xp: 75, tooltip: "Upgrade to ROYAL membership for premium benefits" },
+
+      // Copier Referral Achievements
+      { name: "Refer 10 Copiers", icon: Users, color: "#6B7280", unlocked: false, claimed: false, xp: 75, tooltip: "Successfully refer 10 users who become Copiers (KYC required)" },
+      { name: "Refer 50 Copiers", icon: Users, color: "#6B7280", unlocked: false, claimed: false, xp: 90, tooltip: "Successfully refer 50 users who become Copiers (KYC required)" },
+      { name: "Refer 100 Copiers", icon: Users, color: "#6B7280", unlocked: false, claimed: false, xp: 100, tooltip: "Successfully refer 100 users who become Copiers (KYC required)" },
+
+      // PRO Referral Achievements
+      { name: "Refer 1 PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, xp: 60, tooltip: "Successfully refer 1 user who becomes a PRO member" },
+      { name: "Refer 5 PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, xp: 70, tooltip: "Successfully refer 5 users who become PRO members" },
+      { name: "Refer 10 PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, xp: 80, tooltip: "Successfully refer 10 users who become PRO members" },
+
+      // ROYAL Referral Achievements
+      { name: "Refer 1 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, xp: 60, tooltip: "Successfully refer 1 user who becomes a ROYAL member" },
+      { name: "Refer 3 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, xp: 70, tooltip: "Successfully refer 3 users who become ROYAL members" },
+      { name: "Refer 5 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, xp: 80, tooltip: "Successfully refer 5 users who become ROYAL members" }
     ]
   })
 
@@ -254,6 +331,17 @@ export function ProfileSystem() {
           totalXP: savedTotalXP ? parseInt(savedTotalXP) : prev.levelInfo.totalXP
         }
       }))
+    }
+
+    // Load level claim status from localStorage
+    const savedLevelClaims = localStorage.getItem('user-level-claims')
+    if (savedLevelClaims) {
+      try {
+        const parsedLevelClaims = JSON.parse(savedLevelClaims)
+        setLevelRewards(parsedLevelClaims)
+      } catch (error) {
+        console.error('Error parsing saved level claims:', error)
+      }
     }
 
     // Close mobile tooltip when clicking outside
@@ -608,7 +696,10 @@ export function ProfileSystem() {
                                     style={{ color: '#6B7280' }}
                                   />
                                 ) : typeof Icon === 'function' ? (
-                                  <Icon />
+                                  <Icon
+                                    className="w-5 h-5"
+                                    style={{ color: achievement.color }}
+                                  />
                                 ) : (
                                   <Icon
                                     className="w-5 h-5"
@@ -637,7 +728,7 @@ export function ProfileSystem() {
                               }}
                               className="bg-green-600 hover:bg-green-700 text-white text-xs h-4 px-1 w-full mt-1"
                             >
-                              Claim {achievement.xp} XP
+                              Claim
                             </Button>
                           )}
                         </div>
@@ -668,23 +759,23 @@ export function ProfileSystem() {
             <div>
               <h3 className="text-white font-semibold mb-4 text-center">Level Progress</h3>
 
-              {/* User Points */}
-              <div className="mb-6">
-                <div className="text-center p-3 rounded-lg bg-[#1a2f51] border border-[#C0E6FF]/20">
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <Star className="w-4 h-4 text-yellow-400" />
-                    <span className="text-white font-bold text-lg">{profileData.points.toLocaleString()}</span>
-                  </div>
-                  <p className="text-[#C0E6FF] text-sm">Total Points</p>
-                </div>
-              </div>
-
-              {/* Current Level */}
+              {/* Current Level with XP Needed */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[#C0E6FF] text-sm">Current Level</span>
                   <span className="text-white font-bold">Level {profileData.levelInfo.currentLevel}</span>
                 </div>
+
+                {/* XP Needed Display */}
+                <div className="text-center mb-3 p-2 rounded-lg bg-[#1a2f51] border border-[#C0E6FF]/20">
+                  <div className="flex items-center justify-center gap-2">
+                    <Star className="w-4 h-4 text-yellow-400" />
+                    <span className="text-white font-bold text-sm">
+                      {(profileData.levelInfo.nextLevelXP - profileData.levelInfo.currentXP).toLocaleString()} XP needed for Level {profileData.levelInfo.nextLevel}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="w-full bg-[#1a2f51] rounded-full h-3 mb-2">
                   <div
                     className="bg-gradient-to-r from-[#4DA2FF] to-[#00D4AA] h-3 rounded-full transition-all duration-500"
@@ -697,67 +788,46 @@ export function ProfileSystem() {
                 </div>
               </div>
 
-              {/* Next Level */}
+              {/* XP Level Progression & Rewards Button */}
               <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[#C0E6FF] text-sm">Next Level</span>
-                  <span className="text-white font-bold">Level {profileData.levelInfo.nextLevel}</span>
-                </div>
-                <div className="bg-gradient-to-r from-[#4DA2FF]/10 to-[#00D4AA]/10 rounded-lg p-4 border border-[#4DA2FF]/20">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* XP Needed Section - Left Column */}
-                    <div className="flex flex-col items-center justify-center text-center">
-                      <p className="text-[#C0E6FF] text-sm mb-1">XP Needed</p>
-                      <p className="text-white font-bold text-lg">
-                        {(profileData.levelInfo.nextLevelXP - profileData.levelInfo.currentXP).toLocaleString()}
-                      </p>
-                    </div>
-
-                    {/* Benefits Section - Right Column */}
-                    <div className="md:border-l md:border-[#C0E6FF]/20 md:pl-4 border-t md:border-t-0 border-[#C0E6FF]/20 pt-3 md:pt-0">
-                      <h4 className="text-white font-semibold mb-2 text-center md:text-left flex items-center justify-center md:justify-start gap-2">
-                        <Star className="w-4 h-4 text-yellow-400" />
-                        Benefits
-                      </h4>
-                      <div className="space-y-1.5 text-sm">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-[#4DA2FF] rounded-full flex-shrink-0"></div>
-                          <span className="text-[#C0E6FF]">+10% XP boost</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-[#00D4AA] rounded-full flex-shrink-0"></div>
-                          <span className="text-[#C0E6FF]">+1 bonus point</span>
-                        </div>
-                      </div>
-                    </div>
+                <Button
+                  onClick={() => setShowProgressionModal(true)}
+                  className="w-full bg-gradient-to-r from-[#4DA2FF] to-[#00D4AA] hover:from-[#4DA2FF]/80 hover:to-[#00D4AA]/80 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300"
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Trophy className="w-4 h-4" />
+                    <span>XP Level Progression & Rewards</span>
                   </div>
-                </div>
+                </Button>
               </div>
 
-              {/* How to Advance */}
-              <div className="bg-[#1a2f51] rounded-lg p-4 border border-[#C0E6FF]/20">
-                <h4 className="text-white font-semibold mb-3 text-center">How to Advance</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-[#4DA2FF] rounded-full"></div>
-                    <span className="text-[#C0E6FF]">Complete daily tasks (+50 XP)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-[#00D4AA] rounded-full"></div>
-                    <span className="text-[#C0E6FF]">Refer new users (+100 XP)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-[#FFD700] rounded-full"></div>
-                    <span className="text-[#C0E6FF]">Trade actively (+25 XP/trade)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-[#FF6B35] rounded-full"></div>
-                    <span className="text-[#C0E6FF]">Connect social media (+75 XP)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-[#10B981] rounded-full"></div>
-                    <span className="text-[#C0E6FF]">Level up rewards (+10 points/level)</span>
-                  </div>
+              {/* Level Grid Component */}
+              <div className="mb-6">
+                <h4 className="text-white font-semibold mb-3 text-center">Level Rewards</h4>
+                <div className="grid grid-cols-5 gap-2">
+                  {levelRewards.map((reward) => (
+                    <div key={reward.level} className="bg-[#1a2f51] rounded-lg p-3 border border-[#C0E6FF]/20 text-center">
+                      <div className="text-white font-bold text-sm mb-2">Level {reward.level}</div>
+                      {reward.claimed ? (
+                        <div className="flex items-center justify-center py-1">
+                          <CheckCircle className="w-5 h-5 text-green-400" />
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => reward.available && !reward.claimed && handleLevelClaim(reward)}
+                          className={`w-full text-white text-xs py-1 px-2 ${
+                            reward.available && !reward.claimed
+                              ? 'bg-green-600 hover:bg-green-700'
+                              : 'bg-gray-600 hover:bg-gray-700'
+                          }`}
+                          disabled={!reward.available || reward.claimed}
+                        >
+                          Claim
+                        </Button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -949,6 +1019,190 @@ export function ProfileSystem() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Level Claim Dialog */}
+      {showLevelClaimDialog && claimingLevel && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#0a1628] border border-[#C0E6FF]/20 rounded-xl p-6 max-w-md w-full mx-4 relative overflow-hidden">
+            {/* Animated background particles */}
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute top-4 left-4 w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+              <div className="absolute top-8 right-8 w-1 h-1 bg-blue-400 rounded-full animate-ping"></div>
+              <div className="absolute bottom-6 left-8 w-1.5 h-1.5 bg-green-400 rounded-full animate-bounce"></div>
+              <div className="absolute bottom-4 right-4 w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+            </div>
+
+            <div className="relative z-10 text-center">
+              {!isClaimingLevelPoints ? (
+                <>
+                  <div className="mb-4">
+                    <div className="w-16 h-16 mx-auto mb-4 p-3 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center">
+                      <Trophy className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-2">🎉 Level Reward Ready!</h3>
+                    <p className="text-[#C0E6FF] mb-4">
+                      Congratulations! You've reached <span className="text-yellow-400 font-semibold">Level {claimingLevel.level}</span> and unlocked your reward!
+                    </p>
+                    <div className="bg-[#1a2f51] rounded-lg p-4 mb-6">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Star className="w-5 h-5 text-yellow-400" />
+                        <span className="text-white font-bold text-xl">+{claimingLevel.points} Points</span>
+                      </div>
+                      <p className="text-[#C0E6FF] text-sm">Will be added to your account</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={() => setShowLevelClaimDialog(false)}
+                      variant="outline"
+                      className="flex-1 border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
+                    >
+                      Later
+                    </Button>
+                    <Button
+                      onClick={confirmClaimLevel}
+                      className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
+                    >
+                      🎁 Claim Now!
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 p-3 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center animate-pulse">
+                    <CheckCircle className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">✨ Claiming Points...</h3>
+                  <p className="text-[#C0E6FF] mb-4">Adding {claimingLevel.points} points to your account!</p>
+                  <div className="w-full bg-[#1a2f51] rounded-full h-2 mb-4">
+                    <div className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full animate-pulse w-full"></div>
+                  </div>
+                  <div className="text-center">
+                    <div className="inline-flex items-center gap-2 text-green-400">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* XP Level Progression & Rewards Modal */}
+      {showProgressionModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#0a1628] border border-[#C0E6FF]/20 rounded-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                <Trophy className="w-6 h-6 text-yellow-400" />
+                XP Level Progression & Rewards
+              </h3>
+              <Button
+                onClick={() => setShowProgressionModal(false)}
+                variant="outline"
+                size="sm"
+                className="border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
+              >
+                ✕
+              </Button>
+            </div>
+
+            <div className="bg-[#1a2f51] rounded-lg p-4 border border-[#C0E6FF]/20 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#C0E6FF]/20">
+                    <th className="text-center py-3 px-2 text-[#C0E6FF] font-medium">🏆 Level</th>
+                    <th className="text-center py-3 px-2 text-[#C0E6FF] font-medium">🧪 XP Required</th>
+                    <th className="text-center py-3 px-2 text-[#C0E6FF] font-medium">📈 XP from Previous</th>
+                    <th className="text-center py-3 px-2 text-[#C0E6FF] font-medium">💰 Points Unlocked</th>
+                    <th className="text-center py-3 px-2 text-[#C0E6FF] font-medium">💼 Total Points</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-[#C0E6FF]/10">
+                    <td className="py-3 px-2 text-white font-semibold text-center">1</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">0</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">0</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">0</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">0</td>
+                  </tr>
+                  <tr className="border-b border-[#C0E6FF]/10">
+                    <td className="py-3 px-2 text-white font-semibold text-center">2</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">50</td>
+                    <td className="py-3 px-2 text-green-400 text-center">+50</td>
+                    <td className="py-3 px-2 text-yellow-400 text-center">20</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">20</td>
+                  </tr>
+                  <tr className="border-b border-[#C0E6FF]/10">
+                    <td className="py-3 px-2 text-white font-semibold text-center">3</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">120</td>
+                    <td className="py-3 px-2 text-green-400 text-center">+70</td>
+                    <td className="py-3 px-2 text-yellow-400 text-center">30</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">50</td>
+                  </tr>
+                  <tr className="border-b border-[#C0E6FF]/10">
+                    <td className="py-3 px-2 text-white font-semibold text-center">4</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">210</td>
+                    <td className="py-3 px-2 text-green-400 text-center">+90</td>
+                    <td className="py-3 px-2 text-yellow-400 text-center">50</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">100</td>
+                  </tr>
+                  <tr className="border-b border-[#C0E6FF]/10">
+                    <td className="py-3 px-2 text-white font-semibold text-center">5</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">330</td>
+                    <td className="py-3 px-2 text-green-400 text-center">+120</td>
+                    <td className="py-3 px-2 text-yellow-400 text-center">80</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">180</td>
+                  </tr>
+                  <tr className="border-b border-[#C0E6FF]/10">
+                    <td className="py-3 px-2 text-white font-semibold text-center">6</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">480</td>
+                    <td className="py-3 px-2 text-green-400 text-center">+150</td>
+                    <td className="py-3 px-2 text-yellow-400 text-center">100</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">280</td>
+                  </tr>
+                  <tr className="border-b border-[#C0E6FF]/10">
+                    <td className="py-3 px-2 text-white font-semibold text-center">7</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">660</td>
+                    <td className="py-3 px-2 text-green-400 text-center">+180</td>
+                    <td className="py-3 px-2 text-yellow-400 text-center">120</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">400</td>
+                  </tr>
+                  <tr className="border-b border-[#C0E6FF]/10">
+                    <td className="py-3 px-2 text-white font-semibold text-center">8</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">830</td>
+                    <td className="py-3 px-2 text-green-400 text-center">+170</td>
+                    <td className="py-3 px-2 text-yellow-400 text-center">150</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">550</td>
+                  </tr>
+                  <tr className="border-b border-[#C0E6FF]/10">
+                    <td className="py-3 px-2 text-white font-semibold text-center">9</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">940</td>
+                    <td className="py-3 px-2 text-green-400 text-center">+110</td>
+                    <td className="py-3 px-2 text-yellow-400 text-center">200</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">750</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-2 text-white font-semibold text-center">10</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">1000</td>
+                    <td className="py-3 px-2 text-green-400 text-center">+60</td>
+                    <td className="py-3 px-2 text-yellow-400 text-center">250</td>
+                    <td className="py-3 px-2 text-[#C0E6FF] text-center">1000</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div className="mt-4 text-center">
+                <p className="text-[#C0E6FF] text-sm">
+                  🔓 Earn XP by completing achievements. Each new level unlocks bigger rewards!
+                </p>
+              </div>
             </div>
           </div>
         </div>
