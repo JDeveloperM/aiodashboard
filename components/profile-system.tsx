@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { RoleImage } from "@/components/ui/role-image"
 import { useSubscription } from "@/contexts/subscription-context"
 import { usePoints } from "@/contexts/points-context"
+import Image from "next/image"
 import {
   Copy,
   Users,
@@ -41,44 +42,41 @@ import {
   Link
 } from "lucide-react"
 
-// Custom X (formerly Twitter) icon component
-const XIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
-  <svg
-    className={className}
-    style={style}
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-  </svg>
-)
+// Social media image paths
+const socialImages = {
+  Discord: "/images/social/discord.png",
+  Telegram: "/images/social/telegram.png",
+  X: "/images/social/x.png"
+}
 
-// Official Discord icon component
-const DiscordIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
-  <svg
-    className={className}
-    style={style}
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419-.0002 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9554 2.4189-2.1568 2.4189Z"/>
-  </svg>
-)
+// Achievement image mapping function
+const getAchievementImage = (achievementName: string): string | null => {
+  const imageMap: { [key: string]: string } = {
+    "Profile Picture": "/images/achievements/profile.png",
+    "KYC Verification": "/images/achievements/kyc.png",
+    "Reach Level 5": "/images/achievements/level 5.png",
+    "Connect Discord": "/images/achievements/dicord.png",
+    "Connect Telegram": "/images/achievements/telegram.png",
+    "Connect X": "/images/achievements/x.png",
+    "Connect Bybit": "/images/achievements/bybit.png",
+    "Follow Apollon Bot": "/images/achievements/apollon ai.png",
+    "Follow Hermes Bot": "/images/achievements/hermes.png",
+    "Make 3 Cycles": "/images/achievements/3 cyrcle.png",
+    "Upgrade to PRO": "/images/achievements/upgrade to pro.png",
+    "Upgrade to ROYAL": "/images/achievements/upgrade to royal.png",
+    "Refer 10 Copiers": "/images/achievements/refer copier.png",
+    "Refer 50 Copiers": "/images/achievements/refer copier.png",
+    "Refer 100 Copiers": "/images/achievements/refer copier.png",
+    "Refer 1 PRO": "/images/achievements/refer pro.png",
+    "Refer 5 PRO": "/images/achievements/refer pro.png",
+    "Refer 10 PRO": "/images/achievements/refer pro.png",
+    "Refer 1 ROYAL": "/images/achievements/refer royal.png",
+    "Refer 3 ROYAL": "/images/achievements/refer royal.png",
+    "Refer 5 ROYAL": "/images/achievements/refer royal.png"
+  }
 
-// Official Telegram icon component
-const TelegramIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
-  <svg
-    className={className}
-    style={style}
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-  </svg>
-)
+  return imageMap[achievementName] || null
+}
 
 interface InvitedUser {
   id: string
@@ -166,7 +164,7 @@ export function ProfileSystem() {
     socialMedia: [
       {
         platform: "Discord",
-        icon: DiscordIcon,
+        image: socialImages.Discord,
         url: "https://discord.gg/metadudesx",
         connected: true,
         username: "MetaDude#1234",
@@ -174,7 +172,7 @@ export function ProfileSystem() {
       },
       {
         platform: "Telegram",
-        icon: TelegramIcon,
+        image: socialImages.Telegram,
         url: "https://t.me/metadudesx",
         connected: true,
         username: "@metadude_tg",
@@ -182,7 +180,7 @@ export function ProfileSystem() {
       },
       {
         platform: "X",
-        icon: XIcon,
+        image: socialImages.X,
         url: "https://x.com/metadudesx",
         connected: false,
         username: "",
@@ -203,12 +201,12 @@ export function ProfileSystem() {
       { name: "Reach Level 5", icon: Star, color: "#FFD700", unlocked: true, claimed: false, xp: 50, tooltip: "Reach profile level 5 to unlock advanced features" },
 
       // Social Media Achievements
-      { name: "Connect Discord", icon: DiscordIcon, color: "#5865F2", unlocked: true, claimed: false, xp: 15, tooltip: "Connect your Discord account to join our community" },
-      { name: "Connect Telegram", icon: TelegramIcon, color: "#0088CC", unlocked: true, claimed: false, xp: 15, tooltip: "Connect your Telegram account for updates and support" },
-      { name: "Connect X", icon: XIcon, color: "#000000", unlocked: false, claimed: false, xp: 15, tooltip: "Connect your X (Twitter) account to stay updated" },
+      { name: "Connect Discord", image: socialImages.Discord, color: "#5865F2", unlocked: true, claimed: false, xp: 15, tooltip: "Connect your Discord account to join our community" },
+      { name: "Connect Telegram", image: socialImages.Telegram, color: "#0088CC", unlocked: true, claimed: false, xp: 15, tooltip: "Connect your Telegram account for updates and support" },
+      { name: "Connect X", image: socialImages.X, color: "#000000", unlocked: false, claimed: false, xp: 15, tooltip: "Connect your X (Twitter) account to stay updated" },
 
       // Trading & Bots Achievements
-      { name: "Connect Bybit", icon: Link, color: "#F7931A", unlocked: false, claimed: false, xp: 25, tooltip: "Connect your Bybit account to start automated trading" },
+      { name: "Connect Bybit", icon: Link, color: "#F7931A", unlocked: true, claimed: false, xp: 25, tooltip: "Connect your Bybit account to start automated trading" },
       { name: "Follow Apollon Bot", icon: Bot, color: "#9333EA", unlocked: false, claimed: false, xp: 25, tooltip: "Follow the Apollon Bot for advanced crypto trading signals" },
       { name: "Follow Hermes Bot", icon: Bot, color: "#06B6D4", unlocked: false, claimed: false, xp: 25, tooltip: "Follow the Hermes Bot for high-frequency trading strategies" },
       { name: "Make 3 Cycles", icon: Repeat, color: "#10B981", unlocked: false, claimed: false, xp: 50, tooltip: "Complete at least 3 trading cycles with crypto bots" },
@@ -230,7 +228,7 @@ export function ProfileSystem() {
       // ROYAL Referral Achievements
       { name: "Refer 1 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, xp: 60, tooltip: "Successfully refer 1 user who becomes a ROYAL member" },
       { name: "Refer 3 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, xp: 70, tooltip: "Successfully refer 3 users who become ROYAL members" },
-      { name: "Refer 5 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, xp: 80, tooltip: "Successfully refer 5 users who become ROYAL members" }
+      { name: "Refer 5 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: true, claimed: false, xp: 80, tooltip: "Successfully refer 5 users who become ROYAL members" }
     ]
   })
 
@@ -589,22 +587,19 @@ export function ProfileSystem() {
                 <h3 className="text-white font-semibold mb-3 text-center">Social Media</h3>
                 <div className="space-y-2">
                   {profileData.socialMedia.map((social, index) => {
-                    const Icon = social.icon
                     return (
                       <div
                         key={index}
                         className="flex items-center justify-between p-2 rounded-lg bg-[#1a2f51] border border-[#C0E6FF]/20 hover:border-[#4DA2FF]/40 transition-all duration-200"
                       >
                         <div className="flex items-center gap-3">
-                          <div
-                            className="p-2 rounded-full flex items-center justify-center"
-                            style={{ backgroundColor: `${social.color}15` }}
-                          >
-                            <Icon
-                              className="w-4 h-4"
-                              style={{ color: social.color }}
-                            />
-                          </div>
+                          <Image
+                            src={social.image}
+                            alt={social.platform}
+                            width={32}
+                            height={32}
+                            className="w-8 h-8 object-contain"
+                          />
                           <span className="text-white text-sm font-medium">{social.platform}</span>
                         </div>
                         <Button
@@ -669,27 +664,72 @@ export function ProfileSystem() {
                             {/* Icon and text in horizontal layout - text hidden on mobile */}
                             <div className="flex items-center gap-2">
                               <div
-                                className={`p-2 rounded-full flex items-center justify-center transition-transform duration-200 ${
+                                className={`flex items-center justify-center transition-transform duration-200 ${
                                   !isLocked ? 'group-hover:scale-110' : ''
                                 }`}
-                                style={{ backgroundColor: `${achievement.color}20` }}
                               >
                                 {isLocked ? (
-                                  <Lock
-                                    className="w-5 h-5"
-                                    style={{ color: '#6B7280' }}
-                                  />
-                                ) : typeof Icon === 'function' ? (
-                                  <Icon
-                                    className="w-5 h-5"
-                                    style={{ color: achievement.color }}
-                                  />
-                                ) : (
-                                  <Icon
-                                    className="w-5 h-5"
-                                    style={{ color: achievement.color }}
-                                  />
-                                )}
+                                  <div
+                                    className="p-2 rounded-full flex items-center justify-center"
+                                    style={{ backgroundColor: `${achievement.color}20` }}
+                                  >
+                                    <Lock
+                                      className="w-5 h-5"
+                                      style={{ color: '#6B7280' }}
+                                    />
+                                  </div>
+                                ) : (() => {
+                                  // Check if achievement has a custom image path (for social media achievements)
+                                  if (achievement.image) {
+                                    return (
+                                      <Image
+                                        src={achievement.image}
+                                        alt={achievement.name}
+                                        width={40}
+                                        height={40}
+                                        className="w-10 h-10 object-contain"
+                                      />
+                                    )
+                                  }
+
+                                  // Check for custom achievement images
+                                  const customImage = getAchievementImage(achievement.name)
+                                  if (customImage) {
+                                    return (
+                                      <Image
+                                        src={customImage}
+                                        alt={achievement.name}
+                                        width={40}
+                                        height={40}
+                                        className="w-10 h-10 object-contain"
+                                      />
+                                    )
+                                  } else if (typeof Icon === 'function') {
+                                    return (
+                                      <div
+                                        className="p-2 rounded-full flex items-center justify-center"
+                                        style={{ backgroundColor: `${achievement.color}20` }}
+                                      >
+                                        <Icon
+                                          className="w-5 h-5"
+                                          style={{ color: achievement.color }}
+                                        />
+                                      </div>
+                                    )
+                                  } else {
+                                    return (
+                                      <div
+                                        className="p-2 rounded-full flex items-center justify-center"
+                                        style={{ backgroundColor: `${achievement.color}20` }}
+                                      >
+                                        <Icon
+                                          className="w-5 h-5"
+                                          style={{ color: achievement.color }}
+                                        />
+                                      </div>
+                                    )
+                                  }
+                                })()}
                               </div>
                               {/* Text hidden on mobile (md:block = show on medium screens and up) */}
                               <span className={`hidden md:block text-xs text-center leading-tight ${
