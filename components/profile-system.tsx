@@ -93,6 +93,7 @@ export function ProfileSystem() {
   const [showClaimDialog, setShowClaimDialog] = useState(false)
   const [claimingAchievement, setClaimingAchievement] = useState<any>(null)
   const [isClaimingPoints, setIsClaimingPoints] = useState(false)
+  const [mobileTooltipOpen, setMobileTooltipOpen] = useState<number | null>(null)
 
   const [metrics] = useState({
     totalInvites: 47,
@@ -144,27 +145,27 @@ export function ProfileSystem() {
       totalXP: 12450
     },
     achievements: [
-      { name: "Top Ambassador", icon: Crown, color: "#FFD700", unlocked: true, claimed: false, points: 500 },
-      { name: "Community Star", icon: Star, color: "#4DA2FF", unlocked: true, claimed: false, points: 300 },
-      { name: "Elite Recruiter", icon: Trophy, color: "#FF6B35", unlocked: false, claimed: false, points: 750, tooltip: "Complete 25 successful referrals to unlock this achievement" },
-      { name: "Social Connector", icon: Award, color: "#10B981", unlocked: true, claimed: false, points: 200 },
-      { name: "Platform Guardian", icon: Shield, color: "#8B5CF6", unlocked: true, claimed: false, points: 400 },
-      { name: "Growth Master", icon: Zap, color: "#F59E0B", unlocked: true, claimed: false, points: 350 },
-      { name: "Top Trader", icon: TrendingUp, color: "#00D4AA", unlocked: true, claimed: false, points: 600 },
-      { name: "Top Member", icon: Users, color: "#FF1493", unlocked: true, claimed: false, points: 450 },
-      { name: "Top Gamer", icon: Gamepad2, color: "#9333EA", unlocked: true, claimed: false, points: 300 },
+      { name: "Top Ambassador", icon: Crown, color: "#FFD700", unlocked: true, claimed: false, xp: 500, tooltip: "Awarded for outstanding community leadership and engagement" },
+      { name: "Community Star", icon: Star, color: "#4DA2FF", unlocked: true, claimed: false, xp: 300, tooltip: "Recognized for active participation and positive contributions" },
+      { name: "Elite Recruiter", icon: Trophy, color: "#FF6B35", unlocked: false, claimed: false, xp: 750, tooltip: "Complete 25 successful referrals to unlock this achievement" },
+      { name: "Social Connector", icon: Award, color: "#10B981", unlocked: true, claimed: false, xp: 200, tooltip: "Connect all your social media accounts to earn this badge" },
+      { name: "Platform Guardian", icon: Shield, color: "#8B5CF6", unlocked: true, claimed: false, xp: 400, tooltip: "Help maintain platform security and community standards" },
+      { name: "Growth Master", icon: Zap, color: "#F59E0B", unlocked: true, claimed: false, xp: 350, tooltip: "Demonstrate exceptional growth and improvement" },
+      { name: "Top Trader", icon: TrendingUp, color: "#00D4AA", unlocked: true, claimed: false, xp: 600, tooltip: "Achieve top trading performance and consistency" },
+      { name: "Top Member", icon: Users, color: "#FF1493", unlocked: true, claimed: false, xp: 450, tooltip: "Recognized as one of our most valuable community members" },
+      { name: "Top Gamer", icon: Gamepad2, color: "#9333EA", unlocked: true, claimed: false, xp: 300, tooltip: "Excel in gaming activities and competitions" },
       // Copier achievements
-      { name: "10 Copiers", icon: Users, color: "#6B7280", unlocked: true, claimed: false, points: 250 },
-      { name: "50 Copiers", icon: Users, color: "#6B7280", unlocked: false, claimed: false, points: 500, tooltip: "Refer 50 users who become Copiers" },
-      { name: "100 Copiers", icon: Users, color: "#6B7280", unlocked: false, claimed: false, points: 1000, tooltip: "Refer 100 users who become Copiers" },
+      { name: "10 Copiers", icon: Users, color: "#6B7280", unlocked: true, claimed: false, xp: 250, tooltip: "Successfully refer 10 users who become Copiers" },
+      { name: "50 Copiers", icon: Users, color: "#6B7280", unlocked: false, claimed: false, xp: 500, tooltip: "Refer 50 users who become Copiers" },
+      { name: "100 Copiers", icon: Users, color: "#6B7280", unlocked: false, claimed: false, xp: 1000, tooltip: "Refer 100 users who become Copiers" },
       // PRO achievements
-      { name: "10 PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, points: 750, tooltip: "Refer 10 users who become PRO members" },
-      { name: "50 PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, points: 1500, tooltip: "Refer 50 users who become PRO members" },
-      { name: "100 PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, points: 3000, tooltip: "Refer 100 users who become PRO members" },
+      { name: "10 PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, xp: 750, tooltip: "Refer 10 users who become PRO members" },
+      { name: "50 PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, xp: 1500, tooltip: "Refer 50 users who become PRO members" },
+      { name: "100 PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, xp: 3000, tooltip: "Refer 100 users who become PRO members" },
       // ROYAL achievements
-      { name: "10 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, points: 1000, tooltip: "Refer 10 users who become ROYAL members" },
-      { name: "50 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, points: 2000, tooltip: "Refer 50 users who become ROYAL members" },
-      { name: "100 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, points: 5000, tooltip: "Refer 100 users who become ROYAL members" }
+      { name: "10 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, xp: 1000, tooltip: "Refer 10 users who become ROYAL members" },
+      { name: "50 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, xp: 2000, tooltip: "Refer 50 users who become ROYAL members" },
+      { name: "100 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, xp: 5000, tooltip: "Refer 100 users who become ROYAL members" }
     ]
   })
 
@@ -239,6 +240,30 @@ export function ProfileSystem() {
     const savedPoints = localStorage.getItem('user-points')
     if (savedPoints) {
       setProfileData(prev => ({ ...prev, points: parseInt(savedPoints) }))
+    }
+
+    // Load XP data from localStorage
+    const savedCurrentXP = localStorage.getItem('user-current-xp')
+    const savedTotalXP = localStorage.getItem('user-total-xp')
+    if (savedCurrentXP || savedTotalXP) {
+      setProfileData(prev => ({
+        ...prev,
+        levelInfo: {
+          ...prev.levelInfo,
+          currentXP: savedCurrentXP ? parseInt(savedCurrentXP) : prev.levelInfo.currentXP,
+          totalXP: savedTotalXP ? parseInt(savedTotalXP) : prev.levelInfo.totalXP
+        }
+      }))
+    }
+
+    // Close mobile tooltip when clicking outside
+    const handleClickOutside = () => {
+      setMobileTooltipOpen(null)
+    }
+
+    document.addEventListener('click', handleClickOutside)
+    return () => {
+      document.removeEventListener('click', handleClickOutside)
     }
   }, [])
 
@@ -323,6 +348,18 @@ export function ProfileSystem() {
     return 'bg-[#4DA2FF] text-white'
   }
 
+  // Check if device is mobile
+  const isMobile = () => {
+    return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  }
+
+  const handleMobileTooltipClick = (index: number, e: React.MouseEvent) => {
+    if (isMobile()) {
+      e.stopPropagation()
+      setMobileTooltipOpen(mobileTooltipOpen === index ? null : index)
+    }
+  }
+
   const handleClaimAchievement = (achievement: any) => {
     setClaimingAchievement(achievement)
     setShowClaimDialog(true)
@@ -336,7 +373,7 @@ export function ProfileSystem() {
     // Simulate claim process delay for better UX
     await new Promise(resolve => setTimeout(resolve, 2000))
 
-    // Update achievement as claimed and add points
+    // Update achievement as claimed and add XP
     setProfileData(prev => {
       const updatedAchievements = prev.achievements.map(achievement =>
         achievement.name === claimingAchievement.name
@@ -344,16 +381,22 @@ export function ProfileSystem() {
           : achievement
       )
 
-      const newPoints = prev.points + claimingAchievement.points
+      const newCurrentXP = prev.levelInfo.currentXP + claimingAchievement.xp
+      const newTotalXP = prev.levelInfo.totalXP + claimingAchievement.xp
 
       // Save to localStorage
       localStorage.setItem('user-achievements', JSON.stringify(updatedAchievements))
-      localStorage.setItem('user-points', newPoints.toString())
+      localStorage.setItem('user-current-xp', newCurrentXP.toString())
+      localStorage.setItem('user-total-xp', newTotalXP.toString())
 
       return {
         ...prev,
         achievements: updatedAchievements,
-        points: newPoints
+        levelInfo: {
+          ...prev.levelInfo,
+          currentXP: newCurrentXP,
+          totalXP: newTotalXP
+        }
       }
     })
 
@@ -531,6 +574,7 @@ export function ProfileSystem() {
                             ? 'bg-[#1a2f51] border-green-500/30 opacity-80'
                             : 'bg-[#1a2f51] border-[#C0E6FF]/20 hover:border-[#C0E6FF]/40'
                         }`}
+                        onClick={(e) => handleMobileTooltipClick(index, e)}
                       >
                         {/* Claimed badge */}
                         {achievement.claimed && (
@@ -539,36 +583,48 @@ export function ProfileSystem() {
                           </div>
                         )}
 
+                        {/* Mobile tooltip for achievement name */}
+                        {mobileTooltipOpen === index && (
+                          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded z-50 whitespace-nowrap md:hidden">
+                            {achievement.name}
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-black"></div>
+                          </div>
+                        )}
+
                         {/* Main content - centered for locked, flex for unlocked with buttons */}
                         <div className={`flex flex-col items-center ${canClaim ? 'justify-between h-full' : 'justify-center'} gap-1`}>
-                          <div className="flex flex-col items-center gap-1">
-                            <div
-                              className={`p-1.5 rounded-full flex items-center justify-center transition-transform duration-200 ${
-                                !isLocked ? 'group-hover:scale-110' : ''
-                              }`}
-                              style={{ backgroundColor: `${achievement.color}20` }}
-                            >
-                              {isLocked ? (
-                                <Lock
-                                  className="w-3 h-3"
-                                  style={{ color: '#6B7280' }}
-                                />
-                              ) : typeof Icon === 'function' ? (
-                                <Icon />
-                              ) : (
-                                <Icon
-                                  className="w-3 h-3"
-                                  style={{ color: achievement.color }}
-                                />
-                              )}
+                          <div className="flex flex-col items-center gap-2">
+                            {/* Icon and text in horizontal layout - text hidden on mobile */}
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`p-2 rounded-full flex items-center justify-center transition-transform duration-200 ${
+                                  !isLocked ? 'group-hover:scale-110' : ''
+                                }`}
+                                style={{ backgroundColor: `${achievement.color}20` }}
+                              >
+                                {isLocked ? (
+                                  <Lock
+                                    className="w-5 h-5"
+                                    style={{ color: '#6B7280' }}
+                                  />
+                                ) : typeof Icon === 'function' ? (
+                                  <Icon />
+                                ) : (
+                                  <Icon
+                                    className="w-5 h-5"
+                                    style={{ color: achievement.color }}
+                                  />
+                                )}
+                              </div>
+                              {/* Text hidden on mobile (md:block = show on medium screens and up) */}
+                              <span className={`hidden md:block text-xs text-center leading-tight ${
+                                isLocked ? 'text-[#6B7280]' : achievement.claimed ? 'text-green-400' : 'text-[#C0E6FF]'
+                              }`}>
+                                {achievement.name.split(' ').map((word, i) => (
+                                  <span key={i} className="block">{word}</span>
+                                ))}
+                              </span>
                             </div>
-                            <span className={`text-xs text-center leading-tight ${
-                              isLocked ? 'text-[#6B7280]' : achievement.claimed ? 'text-green-400' : 'text-[#C0E6FF]'
-                            }`}>
-                              {achievement.name.split(' ').map((word, i) => (
-                                <span key={i} className="block">{word}</span>
-                              ))}
-                            </span>
                           </div>
 
                           {/* Claim button for unlocked, unclaimed achievements */}
@@ -581,14 +637,15 @@ export function ProfileSystem() {
                               }}
                               className="bg-green-600 hover:bg-green-700 text-white text-xs h-4 px-1 w-full mt-1"
                             >
-                              Claim {achievement.points}pts
+                              Claim {achievement.xp} XP
                             </Button>
                           )}
                         </div>
                       </div>
                     )
 
-                    if (isLocked && achievement.tooltip) {
+                    // Always show tooltip if available
+                    if (achievement.tooltip) {
                       return (
                         <Tooltip key={index}>
                           <TooltipTrigger asChild>
@@ -646,11 +703,34 @@ export function ProfileSystem() {
                   <span className="text-[#C0E6FF] text-sm">Next Level</span>
                   <span className="text-white font-bold">Level {profileData.levelInfo.nextLevel}</span>
                 </div>
-                <div className="text-center p-3 rounded-lg bg-[#1a2f51] border border-[#C0E6FF]/20">
-                  <p className="text-[#C0E6FF] text-sm mb-1">XP Needed</p>
-                  <p className="text-white font-bold text-lg">
-                    {(profileData.levelInfo.nextLevelXP - profileData.levelInfo.currentXP).toLocaleString()}
-                  </p>
+                <div className="bg-gradient-to-r from-[#4DA2FF]/10 to-[#00D4AA]/10 rounded-lg p-4 border border-[#4DA2FF]/20">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* XP Needed Section - Left Column */}
+                    <div className="flex flex-col items-center justify-center text-center">
+                      <p className="text-[#C0E6FF] text-sm mb-1">XP Needed</p>
+                      <p className="text-white font-bold text-lg">
+                        {(profileData.levelInfo.nextLevelXP - profileData.levelInfo.currentXP).toLocaleString()}
+                      </p>
+                    </div>
+
+                    {/* Benefits Section - Right Column */}
+                    <div className="md:border-l md:border-[#C0E6FF]/20 md:pl-4 border-t md:border-t-0 border-[#C0E6FF]/20 pt-3 md:pt-0">
+                      <h4 className="text-white font-semibold mb-2 text-center md:text-left flex items-center justify-center md:justify-start gap-2">
+                        <Star className="w-4 h-4 text-yellow-400" />
+                        Benefits
+                      </h4>
+                      <div className="space-y-1.5 text-sm">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-[#4DA2FF] rounded-full flex-shrink-0"></div>
+                          <span className="text-[#C0E6FF]">+10% XP boost</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-[#00D4AA] rounded-full flex-shrink-0"></div>
+                          <span className="text-[#C0E6FF]">+1 bonus point</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -829,7 +909,7 @@ export function ProfileSystem() {
                     <div className="bg-[#1a2f51] rounded-lg p-4 mb-6">
                       <div className="flex items-center justify-center gap-2 mb-2">
                         <Star className="w-5 h-5 text-yellow-400" />
-                        <span className="text-white font-bold text-xl">+{claimingAchievement.points} Points</span>
+                        <span className="text-white font-bold text-xl">+{claimingAchievement.xp} XP</span>
                       </div>
                       <p className="text-[#C0E6FF] text-sm">Will be added to your account</p>
                     </div>
@@ -855,8 +935,8 @@ export function ProfileSystem() {
                   <div className="w-16 h-16 mx-auto mb-4 p-3 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center animate-pulse">
                     <CheckCircle className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">✨ Claiming Points...</h3>
-                  <p className="text-[#C0E6FF] mb-4">Adding {claimingAchievement.points} points to your account!</p>
+                  <h3 className="text-2xl font-bold text-white mb-2">✨ Claiming XP...</h3>
+                  <p className="text-[#C0E6FF] mb-4">Adding {claimingAchievement.xp} XP to your account!</p>
                   <div className="w-full bg-[#1a2f51] rounded-full h-2 mb-4">
                     <div className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full animate-pulse w-full"></div>
                   </div>
