@@ -39,7 +39,7 @@ const nftTiers: NFTTier[] = [
       'Monthly Reports',
       'Basic Support'
     ],
-    icon: <RoleImage role="Copier" size="lg" />,
+    icon: <RoleImage role="Copier" size="2xl" />,
     color: '#6B7280',
     gradient: 'from-gray-500 to-gray-700',
     maxSupply: 0,
@@ -63,7 +63,7 @@ const nftTiers: NFTTier[] = [
       'MetaGo Academy Premium',
       'Priority Support'
     ],
-    icon: <RoleImage role="PRO" size="lg" />,
+    icon: <RoleImage role="PRO" size="2xl" />,
     color: '#4DA2FF',
     gradient: 'from-[#4DA2FF] to-[#011829]',
     maxSupply: 1100,
@@ -89,7 +89,7 @@ const nftTiers: NFTTier[] = [
       'Royalty Distribution (25%)',
       'DEWhale Early Access'
     ],
-    icon: <RoleImage role="ROYAL" size="lg" />,
+    icon: <RoleImage role="ROYAL" size="2xl" />,
     color: '#FFD700',
     gradient: 'from-yellow-400 to-yellow-600',
     maxSupply: 500,
@@ -157,9 +157,7 @@ export function DashboardSubscriptions() {
               <div className="enhanced-card-content">
                 <div className="mb-6">
                 <div className="flex items-center justify-between">
-                  <div className={`p-3 rounded-full ${tierData.id === 'PRO' ? 'bg-[#4da2ff]' : `bg-gradient-to-r ${tierData.gradient}`}`}>
-                    {tierData.icon}
-                  </div>
+                  {tierData.icon}
                   {isCurrentTier && (
                     <Badge className="bg-green-500 text-white">
                       <CheckCircle className="w-3 h-3 mr-1" />
