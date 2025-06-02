@@ -5,7 +5,7 @@ import { toast } from "sonner"
 
 interface PointsContextType {
   balance: number
-  addPoints: (amount: number) => void
+  addPoints: (amount: number, description?: string) => void
   redeemPoints: (amount: number, itemName: string) => Promise<boolean>
   transactions: PointsTransaction[]
 }
@@ -53,13 +53,13 @@ export function PointsProvider({ children }: { children: React.ReactNode }) {
     }
   ])
 
-  const addPoints = (amount: number) => {
+  const addPoints = (amount: number, description?: string) => {
     setBalance(prev => prev + amount)
     const newTransaction: PointsTransaction = {
       id: Date.now().toString(),
       type: "earned",
       amount,
-      description: "Points earned",
+      description: description || "Points earned",
       timestamp: new Date()
     }
     setTransactions(prev => [newTransaction, ...prev])
@@ -91,12 +91,21 @@ export function PointsProvider({ children }: { children: React.ReactNode }) {
   // Load from localStorage on client side
   useEffect(() => {
     const savedBalance = localStorage.getItem("pointsBalance")
+    const savedUserPoints = localStorage.getItem("user-points")
     const savedTransactions = localStorage.getItem("pointsTransactions")
-    
-    if (savedBalance) {
-      setBalance(parseInt(savedBalance))
+
+    // Use the higher value between pointsBalance and user-points to avoid losing points
+    let finalBalance = 2500 // default
+    if (savedBalance && savedUserPoints) {
+      finalBalance = Math.max(parseInt(savedBalance), parseInt(savedUserPoints))
+    } else if (savedBalance) {
+      finalBalance = parseInt(savedBalance)
+    } else if (savedUserPoints) {
+      finalBalance = parseInt(savedUserPoints)
     }
-    
+
+    setBalance(finalBalance)
+
     if (savedTransactions) {
       try {
         const parsed = JSON.parse(savedTransactions)
@@ -113,6 +122,7 @@ export function PointsProvider({ children }: { children: React.ReactNode }) {
   // Save to localStorage when balance or transactions change
   useEffect(() => {
     localStorage.setItem("pointsBalance", balance.toString())
+    localStorage.setItem("user-points", balance.toString()) // Keep both keys in sync
   }, [balance])
 
   useEffect(() => {

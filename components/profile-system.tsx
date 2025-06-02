@@ -91,7 +91,7 @@ interface InvitedUser {
 
 export function ProfileSystem() {
   const { tier } = useSubscription()
-  const { addPoints } = usePoints()
+  const { addPoints, balance } = usePoints()
   const [affiliateLink] = useState("https://metadudesx.io/ref/MDX789ABC")
   const [copied, setCopied] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -139,19 +139,8 @@ export function ProfileSystem() {
       // Save level claim status to localStorage
       localStorage.setItem('user-level-claims', JSON.stringify(updatedLevelRewards))
 
-      // Add points to the PointsContext (this will update the header)
+      // Add points to the PointsContext (this will update the header and profile)
       addPoints(claimingLevel.points, `Level ${claimingLevel.level} reward`)
-
-      // Update profile points
-      setProfileData(prev => {
-        const newPoints = prev.points + claimingLevel.points
-        // Save to localStorage to sync with header
-        localStorage.setItem('user-points', newPoints.toString())
-        return {
-          ...prev,
-          points: newPoints
-        }
-      })
 
       setIsClaimingLevelPoints(false)
       setShowLevelClaimDialog(false)
@@ -173,7 +162,6 @@ export function ProfileSystem() {
     name: "MetaDude User",
     username: "@metadude_user",
     profileImage: "", // Will be loaded from localStorage
-    points: 12450, // User points
     kycStatus: "verified", // "verified" or "not-verified"
     socialMedia: [
       {
@@ -313,11 +301,7 @@ export function ProfileSystem() {
       }
     }
 
-    // Load points from localStorage
-    const savedPoints = localStorage.getItem('user-points')
-    if (savedPoints) {
-      setProfileData(prev => ({ ...prev, points: parseInt(savedPoints) }))
-    }
+
 
     // Load XP data from localStorage
     const savedCurrentXP = localStorage.getItem('user-current-xp')
