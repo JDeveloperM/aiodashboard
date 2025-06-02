@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Bell, Globe, Zap, AlertTriangle } from "lucide-react"
+import { Bell, Globe, Zap, AlertTriangle, User } from "lucide-react"
 import { useNotifications } from "@/hooks/use-notifications"
+import { DashboardProfiles } from "@/components/dashboard-profiles"
 import {
   Dialog,
   DialogContent,
@@ -53,11 +54,16 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 bg-[#011829] border border-[#C0E6FF]/20">
+      <Tabs defaultValue="account" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3 bg-[#011829] border border-[#C0E6FF]/20">
+          <TabsTrigger value="account" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">Account</TabsTrigger>
           <TabsTrigger value="general" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">General</TabsTrigger>
           <TabsTrigger value="notifications" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">Notifications</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="account">
+          <DashboardProfiles />
+        </TabsContent>
 
         <TabsContent value="general">
           <div className="enhanced-card">

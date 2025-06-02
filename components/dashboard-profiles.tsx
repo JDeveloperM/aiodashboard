@@ -238,8 +238,8 @@ export function DashboardProfiles() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-white">MetadudesX Profile</h2>
-          <p className="text-[#C0E6FF] mt-1">🇬🇷 Manage your Greek community profile and Sui wallet integration</p>
+          <h3 className="text-lg font-semibold text-white mb-2">Account Information</h3>
+          <p className="text-[#C0E6FF] text-sm">🇬🇷 Manage your Greek community profile and Sui wallet integration</p>
         </div>
         <div className="flex gap-2">
           {isEditing ? (

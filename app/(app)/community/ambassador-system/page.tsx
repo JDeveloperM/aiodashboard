@@ -1,18 +1,18 @@
 "use client"
 
-import { AmbassadorSystem } from "@/components/ambassador-system"
+import { ProfileSystem } from "@/components/profile-system"
 
-export default function AmbassadorSystemPage() {
+export default function ProfilePage() {
   return (
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Ambassador System</h1>
-          <p className="text-gray-400 mt-1">Earn commissions by inviting new users to MetadudesX</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Profile</h1>
+          <p className="text-gray-400 mt-1">Manage your profile and earn commissions by inviting new users to MetadudesX</p>
         </div>
       </div>
 
-      <AmbassadorSystem />
+      <ProfileSystem />
     </div>
   )
 }

@@ -55,7 +55,7 @@ export function Sidebar() {
       hasDropdown: true,
       subItems: [
         { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-        { name: "Profiles", href: "/dashboard/profiles", icon: User },
+        { name: "Profile", href: "/community/ambassador-system", icon: User },
         { name: "Subscriptions", href: "/dashboard/subscriptions", icon: CreditCard },
         { name: "Reports", href: "/dashboard/reports", icon: FileText },
       ]
@@ -75,7 +75,6 @@ export function Sidebar() {
     },
     { name: "Community", href: "/community", icon: Globe, restricted: false },
     { name: "Portfolio Ideas", href: "/community/portfolio-ideas", icon: TrendingUp, restricted: false },
-    { name: "Ambassador", href: "/community/ambassador-system", icon: Share2, restricted: false },
     {
       name: "DApps",
       href: "/dapps",
