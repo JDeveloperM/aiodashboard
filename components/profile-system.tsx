@@ -152,7 +152,7 @@ export function ProfileSystem() {
     copiers: 18,
     proUsers: 10,
     royalUsers: 4,
-    totalCommission: 2450.75
+    totalCommission: 2451
   })
 
   // Profile data with image upload functionality
@@ -239,7 +239,7 @@ export function ProfileSystem() {
       email: "trader01@email.com",
       joinDate: "2024-01-15",
       status: "ROYAL",
-      commission: 150.00
+      commission: 150
     },
     {
       id: "2",
@@ -247,7 +247,7 @@ export function ProfileSystem() {
       email: "blockchain@email.com",
       joinDate: "2024-01-12",
       status: "PRO",
-      commission: 75.00
+      commission: 75
     },
     {
       id: "3",
@@ -255,7 +255,7 @@ export function ProfileSystem() {
       email: "defi@email.com",
       joinDate: "2024-01-10",
       status: "Copier",
-      commission: 0.00
+      commission: 0
     },
     {
       id: "4",
@@ -263,7 +263,7 @@ export function ProfileSystem() {
       email: "nft@email.com",
       joinDate: "2024-01-08",
       status: "PRO",
-      commission: 75.00
+      commission: 75
     },
     {
       id: "5",
@@ -271,7 +271,7 @@ export function ProfileSystem() {
       email: "meta@email.com",
       joinDate: "2024-01-05",
       status: "ROYAL",
-      commission: 150.00
+      commission: 150
     }
   ])
 
@@ -401,21 +401,13 @@ export function ProfileSystem() {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ROYAL':
-        return 'bg-purple-500 text-white'
-      case 'PRO':
-        return 'bg-[#4DA2FF] text-white'
-      case 'Copier':
-        return 'bg-gray-500 text-white'
-      default:
-        return 'bg-gray-500 text-white'
-    }
+    // No background color for status badges
+    return 'bg-transparent text-white border-0'
   }
 
   const getRoleStatusColor = (role: string) => {
-    // Use the same blue background for all statuses
-    return 'bg-[#4DA2FF] text-white'
+    // No background color for role status badges
+    return 'bg-transparent text-white border-0'
   }
 
   // Check if device is mobile
@@ -522,7 +514,7 @@ export function ProfileSystem() {
                 <p className="text-[#C0E6FF] text-sm">{profileData.username}</p>
                 <Badge className={`${getRoleStatusColor(tier)} text-xs`}>
                   <div className="flex items-center gap-1">
-                    <RoleImage role={tier as "Copier" | "PRO" | "ROYAL"} size="sm" />
+                    <RoleImage role={tier as "Copier" | "PRO" | "ROYAL"} size="md" />
                     {tier}
                   </div>
                 </Badge>
@@ -576,9 +568,12 @@ export function ProfileSystem() {
                       <ExternalLink className="w-3 h-3" />
                     </Button>
                   </div>
-                  <p className="text-[#C0E6FF] text-xs text-center">
-                    Earn 25% commission on PRO and ROYAL NFT purchases from your referrals.
-                  </p>
+                  <div className="text-[#C0E6FF] text-xs text-center space-y-1">
+                    <p className="font-semibold">Earn additional bonuses from your referrals:</p>
+                    <p>10 Points for every Copy Trade within the 10% Cycle.</p>
+                    <p>100 Points for each PRO purchase made by your referrals.</p>
+                    <p>375 Points for every ROYAL purchase made by your referrals.</p>
+                  </div>
                 </div>
               </div>
 
@@ -935,12 +930,12 @@ export function ProfileSystem() {
           <div className="enhanced-card-content">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-sm font-medium text-[#C0E6FF]">Total Commission</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">${metrics.totalCommission}</p>
+                <p className="text-sm font-medium text-[#C0E6FF]">Total Points</p>
+                <p className="text-2xl font-bold text-[#FFFFFF]">{metrics.totalCommission.toLocaleString()}</p>
                 <p className="text-xs text-[#C0E6FF] mt-1">Lifetime earnings</p>
               </div>
               <div className="bg-[#4DA2FF]/20 p-3 rounded-full">
-                <DollarSign className="w-6 h-6 text-white" />
+                <Star className="w-6 h-6 text-white" />
               </div>
             </div>
           </div>
@@ -979,7 +974,7 @@ export function ProfileSystem() {
                   <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium w-1/3">Email</th>
                   <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium w-1/5">Join Date</th>
                   <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium w-1/6">Status</th>
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium w-1/6">Commission</th>
+                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium w-1/6">Points</th>
                 </tr>
               </thead>
               <tbody>
@@ -1001,13 +996,13 @@ export function ProfileSystem() {
                     <td className="py-3 px-2 text-left">
                       <Badge className={getStatusColor(user.status)}>
                         <div className="flex items-center gap-1">
-                          <RoleImage role={user.status as "Copier" | "PRO" | "ROYAL"} size="sm" />
+                          <RoleImage role={user.status as "Copier" | "PRO" | "ROYAL"} size="md" />
                           {user.status}
                         </div>
                       </Badge>
                     </td>
                     <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm font-semibold">
-                      ${user.commission.toFixed(2)}
+                      {user.commission.toLocaleString()}
                     </td>
                   </tr>
                 ))}

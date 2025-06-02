@@ -27,10 +27,10 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // Redirect to dashboard if signed in
+  // Redirect to profile if signed in
   useEffect(() => {
     if (isLoaded && isSignedIn) {
-      redirect("/dashboard")
+      redirect("/profile")
     }
   }, [isLoaded, isSignedIn])
 

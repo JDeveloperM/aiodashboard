@@ -8,7 +8,7 @@ export default function ProfilePage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Profile</h1>
-          <p className="text-gray-400 mt-1">Manage your profile and earn commissions by inviting new users to MetadudesX</p>
+          <p className="text-gray-400 mt-1">Manage your profile and earn points by inviting new users to MetadudesX</p>
         </div>
       </div>
 
