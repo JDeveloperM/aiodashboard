@@ -54,8 +54,8 @@ export function Sidebar() {
       restricted: false,
       hasDropdown: true,
       subItems: [
+        { name: "Profile", href: "/profile", icon: User },
         { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-        { name: "Profile", href: "/community/ambassador-system", icon: User },
         { name: "Subscriptions", href: "/dashboard/subscriptions", icon: CreditCard },
         { name: "Reports", href: "/dashboard/reports", icon: FileText },
       ]

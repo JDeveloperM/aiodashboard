@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { RoleImage } from "@/components/ui/role-image"
+import { useSubscription } from "@/contexts/subscription-context"
 import {
   Copy,
   Users,
@@ -27,7 +29,10 @@ import {
   Camera,
   Upload,
   TrendingUp,
-  Gamepad2
+  Gamepad2,
+  Lock,
+  CheckCircle2,
+  XCircle
 } from "lucide-react"
 
 // Custom X (formerly Twitter) icon component
@@ -79,9 +84,15 @@ interface InvitedUser {
 }
 
 export function ProfileSystem() {
+  const { tier } = useSubscription()
   const [affiliateLink] = useState("https://metadudesx.io/ref/MDX789ABC")
   const [copied, setCopied] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Claim dialog state
+  const [showClaimDialog, setShowClaimDialog] = useState(false)
+  const [claimingAchievement, setClaimingAchievement] = useState<any>(null)
+  const [isClaimingPoints, setIsClaimingPoints] = useState(false)
 
   const [metrics] = useState({
     totalInvites: 47,
@@ -97,12 +108,15 @@ export function ProfileSystem() {
     name: "MetaDude User",
     username: "@metadude_user",
     profileImage: "", // Will be loaded from localStorage
+    points: 12450, // User points
+    kycStatus: "verified", // "verified" or "not-verified"
     socialMedia: [
       {
         platform: "Discord",
         icon: DiscordIcon,
         url: "https://discord.gg/metadudesx",
         connected: true,
+        username: "MetaDude#1234",
         color: "#5865F2"
       },
       {
@@ -110,33 +124,47 @@ export function ProfileSystem() {
         icon: TelegramIcon,
         url: "https://t.me/metadudesx",
         connected: true,
+        username: "@metadude_tg",
         color: "#0088CC"
-      },
-      {
-        platform: "YouTube",
-        icon: Youtube,
-        url: "https://youtube.com/@metadudesx",
-        connected: false,
-        color: "#FF0000"
       },
       {
         platform: "X",
         icon: XIcon,
         url: "https://x.com/metadudesx",
         connected: false,
+        username: "",
         color: "#000000"
       }
     ],
+    levelInfo: {
+      currentLevel: 5,
+      nextLevel: 6,
+      currentXP: 2450,
+      nextLevelXP: 5000,
+      totalXP: 12450
+    },
     achievements: [
-      { name: "Top Ambassador", icon: Crown, color: "#FFD700" },
-      { name: "Community Star", icon: Star, color: "#4DA2FF" },
-      { name: "Elite Recruiter", icon: Trophy, color: "#FF6B35" },
-      { name: "Social Connector", icon: Award, color: "#10B981" },
-      { name: "Platform Guardian", icon: Shield, color: "#8B5CF6" },
-      { name: "Growth Master", icon: Zap, color: "#F59E0B" },
-      { name: "Top Trader", icon: TrendingUp, color: "#00D4AA" },
-      { name: "Top Member", icon: Users, color: "#FF1493" },
-      { name: "Top Gamer", icon: Gamepad2, color: "#9333EA" }
+      { name: "Top Ambassador", icon: Crown, color: "#FFD700", unlocked: true, claimed: false, points: 500 },
+      { name: "Community Star", icon: Star, color: "#4DA2FF", unlocked: true, claimed: false, points: 300 },
+      { name: "Elite Recruiter", icon: Trophy, color: "#FF6B35", unlocked: false, claimed: false, points: 750, tooltip: "Complete 25 successful referrals to unlock this achievement" },
+      { name: "Social Connector", icon: Award, color: "#10B981", unlocked: true, claimed: false, points: 200 },
+      { name: "Platform Guardian", icon: Shield, color: "#8B5CF6", unlocked: true, claimed: false, points: 400 },
+      { name: "Growth Master", icon: Zap, color: "#F59E0B", unlocked: true, claimed: false, points: 350 },
+      { name: "Top Trader", icon: TrendingUp, color: "#00D4AA", unlocked: true, claimed: false, points: 600 },
+      { name: "Top Member", icon: Users, color: "#FF1493", unlocked: true, claimed: false, points: 450 },
+      { name: "Top Gamer", icon: Gamepad2, color: "#9333EA", unlocked: true, claimed: false, points: 300 },
+      // Copier achievements
+      { name: "10 Copiers", icon: Users, color: "#6B7280", unlocked: true, claimed: false, points: 250 },
+      { name: "50 Copiers", icon: Users, color: "#6B7280", unlocked: false, claimed: false, points: 500, tooltip: "Refer 50 users who become Copiers" },
+      { name: "100 Copiers", icon: Users, color: "#6B7280", unlocked: false, claimed: false, points: 1000, tooltip: "Refer 100 users who become Copiers" },
+      // PRO achievements
+      { name: "10 PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, points: 750, tooltip: "Refer 10 users who become PRO members" },
+      { name: "50 PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, points: 1500, tooltip: "Refer 50 users who become PRO members" },
+      { name: "100 PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, points: 3000, tooltip: "Refer 100 users who become PRO members" },
+      // ROYAL achievements
+      { name: "10 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, points: 1000, tooltip: "Refer 10 users who become ROYAL members" },
+      { name: "50 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, points: 2000, tooltip: "Refer 50 users who become ROYAL members" },
+      { name: "100 ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, points: 5000, tooltip: "Refer 100 users who become ROYAL members" }
     ]
   })
 
@@ -183,11 +211,34 @@ export function ProfileSystem() {
     }
   ])
 
-  // Load profile image from localStorage on component mount
+  // Load profile image and achievement data from localStorage on component mount
   useEffect(() => {
     const savedImage = localStorage.getItem('user-profile-image')
     if (savedImage) {
       setProfileData(prev => ({ ...prev, profileImage: savedImage }))
+    }
+
+    // Load achievement claim status from localStorage
+    const savedAchievements = localStorage.getItem('user-achievements')
+    if (savedAchievements) {
+      try {
+        const parsedAchievements = JSON.parse(savedAchievements)
+        setProfileData(prev => ({
+          ...prev,
+          achievements: prev.achievements.map(achievement => {
+            const saved = parsedAchievements.find((a: any) => a.name === achievement.name)
+            return saved ? { ...achievement, claimed: saved.claimed } : achievement
+          })
+        }))
+      } catch (error) {
+        console.error('Error loading achievement data:', error)
+      }
+    }
+
+    // Load points from localStorage
+    const savedPoints = localStorage.getItem('user-points')
+    if (savedPoints) {
+      setProfileData(prev => ({ ...prev, points: parseInt(savedPoints) }))
     }
   }, [])
 
@@ -267,6 +318,50 @@ export function ProfileSystem() {
     }
   }
 
+  const getRoleStatusColor = (role: string) => {
+    // Use the same blue background for all statuses
+    return 'bg-[#4DA2FF] text-white'
+  }
+
+  const handleClaimAchievement = (achievement: any) => {
+    setClaimingAchievement(achievement)
+    setShowClaimDialog(true)
+  }
+
+  const confirmClaimAchievement = async () => {
+    if (!claimingAchievement) return
+
+    setIsClaimingPoints(true)
+
+    // Simulate claim process delay for better UX
+    await new Promise(resolve => setTimeout(resolve, 2000))
+
+    // Update achievement as claimed and add points
+    setProfileData(prev => {
+      const updatedAchievements = prev.achievements.map(achievement =>
+        achievement.name === claimingAchievement.name
+          ? { ...achievement, claimed: true }
+          : achievement
+      )
+
+      const newPoints = prev.points + claimingAchievement.points
+
+      // Save to localStorage
+      localStorage.setItem('user-achievements', JSON.stringify(updatedAchievements))
+      localStorage.setItem('user-points', newPoints.toString())
+
+      return {
+        ...prev,
+        achievements: updatedAchievements,
+        points: newPoints
+      }
+    })
+
+    setIsClaimingPoints(false)
+    setShowClaimDialog(false)
+    setClaimingAchievement(null)
+  }
+
   return (
     <div className="space-y-6">
       {/* User Profile Section */}
@@ -310,10 +405,74 @@ export function ProfileSystem() {
                 className="hidden"
               />
               <h2 className="text-2xl font-bold text-white">{profileData.name}</h2>
-              <p className="text-[#C0E6FF] text-sm mb-2">{profileData.username}</p>
-              <Badge className="bg-[#4DA2FF] text-white mb-6">
-                Profile Level 5
-              </Badge>
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <p className="text-[#C0E6FF] text-sm">{profileData.username}</p>
+                <Badge className={`${getRoleStatusColor(tier)} text-xs`}>
+                  <div className="flex items-center gap-1">
+                    <RoleImage role={tier as "Copier" | "PRO" | "ROYAL"} size="sm" />
+                    {tier}
+                  </div>
+                </Badge>
+              </div>
+
+              {/* Profile Level and KYC Status */}
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <Badge className="bg-[#4DA2FF] text-white">
+                  Profile Level 5
+                </Badge>
+                {profileData.kycStatus === "verified" ? (
+                  <div className="flex items-center gap-1">
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    <span className="text-green-500 font-semibold text-sm">KYC Verified</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <XCircle className="w-4 h-4 text-red-500" />
+                    <span className="text-red-500 font-semibold text-sm">KYC Not Verified</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Social Media Links */}
+              <div className="mb-6 w-full">
+                <h3 className="text-white font-semibold mb-3 text-center">Social Media</h3>
+                <div className="space-y-2">
+                  {profileData.socialMedia.map((social, index) => {
+                    const Icon = social.icon
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-2 rounded-lg bg-[#1a2f51] border border-[#C0E6FF]/20 hover:border-[#4DA2FF]/40 transition-all duration-200"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="p-2 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: `${social.color}15` }}
+                          >
+                            <Icon
+                              className="w-4 h-4"
+                              style={{ color: social.color }}
+                            />
+                          </div>
+                          <span className="text-white text-sm font-medium">{social.platform}</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant={social.connected ? "default" : "outline"}
+                          className={social.connected
+                            ? "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white text-xs h-6 px-2"
+                            : "border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 text-xs h-6 px-2"
+                          }
+                          onClick={() => handleSocialConnect(social.platform, social.url)}
+                          title={social.connected ? social.username : `Connect ${social.platform}`}
+                        >
+                          {social.connected ? social.username : 'Connect'}
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
 
               {/* Referral Link */}
               <div className="w-full">
@@ -352,89 +511,173 @@ export function ProfileSystem() {
               </div>
             </div>
 
-            {/* Column 2: Achievement Badges - 3x3 Grid */}
+            {/* Column 2: Achievement Badges - 6x3 Grid */}
             <div>
               <h3 className="text-white font-semibold mb-4 text-center">Achievements</h3>
-              <div className="grid grid-cols-3 gap-2">
-                {profileData.achievements.map((achievement, index) => {
-                  const Icon = achievement.icon
-                  return (
-                    <div
-                      key={index}
-                      className="flex flex-col items-center gap-1 p-2 rounded-lg bg-[#1a2f51] border border-[#C0E6FF]/20 hover:border-[#C0E6FF]/40 transition-all duration-200 cursor-pointer group"
-                      title={achievement.name}
-                    >
+              <TooltipProvider>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {profileData.achievements.map((achievement, index) => {
+                    const Icon = achievement.icon
+                    const isLocked = !achievement.unlocked
+                    const canClaim = achievement.unlocked && !achievement.claimed
+
+                    const achievementCard = (
                       <div
-                        className="p-2 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-200"
-                        style={{ backgroundColor: `${achievement.color}20` }}
+                        key={index}
+                        className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg border transition-all duration-200 cursor-pointer group relative min-h-[80px] ${
+                          isLocked
+                            ? 'bg-[#030f1c] border-[#C0E6FF]/10 opacity-60'
+                            : achievement.claimed
+                            ? 'bg-[#1a2f51] border-green-500/30 opacity-80'
+                            : 'bg-[#1a2f51] border-[#C0E6FF]/20 hover:border-[#C0E6FF]/40'
+                        }`}
                       >
-                        <Icon
-                          className="w-4 h-4"
-                          style={{ color: achievement.color }}
-                        />
+                        {/* Claimed badge */}
+                        {achievement.claimed && (
+                          <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                            ✓
+                          </div>
+                        )}
+
+                        {/* Main content - centered for locked, flex for unlocked with buttons */}
+                        <div className={`flex flex-col items-center ${canClaim ? 'justify-between h-full' : 'justify-center'} gap-1`}>
+                          <div className="flex flex-col items-center gap-1">
+                            <div
+                              className={`p-1.5 rounded-full flex items-center justify-center transition-transform duration-200 ${
+                                !isLocked ? 'group-hover:scale-110' : ''
+                              }`}
+                              style={{ backgroundColor: `${achievement.color}20` }}
+                            >
+                              {isLocked ? (
+                                <Lock
+                                  className="w-3 h-3"
+                                  style={{ color: '#6B7280' }}
+                                />
+                              ) : typeof Icon === 'function' ? (
+                                <Icon />
+                              ) : (
+                                <Icon
+                                  className="w-3 h-3"
+                                  style={{ color: achievement.color }}
+                                />
+                              )}
+                            </div>
+                            <span className={`text-xs text-center leading-tight ${
+                              isLocked ? 'text-[#6B7280]' : achievement.claimed ? 'text-green-400' : 'text-[#C0E6FF]'
+                            }`}>
+                              {achievement.name.split(' ').map((word, i) => (
+                                <span key={i} className="block">{word}</span>
+                              ))}
+                            </span>
+                          </div>
+
+                          {/* Claim button for unlocked, unclaimed achievements */}
+                          {canClaim && (
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleClaimAchievement(achievement)
+                              }}
+                              className="bg-green-600 hover:bg-green-700 text-white text-xs h-4 px-1 w-full mt-1"
+                            >
+                              Claim {achievement.points}pts
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                      <span className="text-[#C0E6FF] text-xs text-center leading-tight">
-                        {achievement.name.split(' ').map((word, i) => (
-                          <span key={i} className="block">{word}</span>
-                        ))}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+
+                    if (isLocked && achievement.tooltip) {
+                      return (
+                        <Tooltip key={index}>
+                          <TooltipTrigger asChild>
+                            {achievementCard}
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{achievement.tooltip}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )
+                    }
+
+                    return achievementCard
+                  })}
+                </div>
+              </TooltipProvider>
             </div>
 
-            {/* Column 3: Social Media Links - 3x3 Grid */}
+            {/* Column 3: Level Progress */}
             <div>
-              <h3 className="text-white font-semibold mb-4 text-center">Social Media</h3>
-              <div className="grid grid-cols-3 gap-2">
-                {profileData.socialMedia.map((social, index) => {
-                  const Icon = social.icon
-                  return (
-                    <div
-                      key={index}
-                      className="flex flex-col items-center gap-1 p-2 rounded-lg bg-[#1a2f51] border border-[#C0E6FF]/20 hover:border-[#4DA2FF]/40 transition-all duration-200 cursor-pointer group"
-                      title={social.platform}
-                    >
-                      <div
-                        className="p-2 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-200"
-                        style={{ backgroundColor: `${social.color}15` }}
-                      >
-                        <Icon
-                          className="w-4 h-4"
-                          style={{ color: social.color }}
-                        />
-                      </div>
-                      <Button
-                        size="sm"
-                        variant={social.connected ? "default" : "outline"}
-                        className={social.connected
-                          ? "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white text-xs h-5 px-1"
-                          : "border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 text-xs h-5 px-1"
-                        }
-                        onClick={() => handleSocialConnect(social.platform, social.url)}
-                      >
-                        {social.connected ? 'Connected' : 'Connect'}
-                      </Button>
-                    </div>
-                  )
-                })}
-                {/* Add Social Media Button */}
-                <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-[#1a2f51] border border-[#C0E6FF]/20 hover:border-[#4DA2FF]/40 transition-all duration-200 cursor-pointer group">
-                  <div
-                    className="p-2 rounded-full bg-gray-500/15 flex items-center justify-center group-hover:scale-110 transition-transform duration-200"
-                    onClick={handleAddSocialMedia}
-                  >
-                    <Plus className="w-4 h-4 text-gray-400" />
+              <h3 className="text-white font-semibold mb-4 text-center">Level Progress</h3>
+
+              {/* User Points */}
+              <div className="mb-6">
+                <div className="text-center p-3 rounded-lg bg-[#1a2f51] border border-[#C0E6FF]/20">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <Star className="w-4 h-4 text-yellow-400" />
+                    <span className="text-white font-bold text-lg">{profileData.points.toLocaleString()}</span>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-gray-400/50 text-gray-400 hover:bg-gray-400/10 text-xs h-5 px-1"
-                    onClick={handleAddSocialMedia}
-                  >
-                    Add More
-                  </Button>
+                  <p className="text-[#C0E6FF] text-sm">Total Points</p>
+                </div>
+              </div>
+
+              {/* Current Level */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[#C0E6FF] text-sm">Current Level</span>
+                  <span className="text-white font-bold">Level {profileData.levelInfo.currentLevel}</span>
+                </div>
+                <div className="w-full bg-[#1a2f51] rounded-full h-3 mb-2">
+                  <div
+                    className="bg-gradient-to-r from-[#4DA2FF] to-[#00D4AA] h-3 rounded-full transition-all duration-500"
+                    style={{ width: `${(profileData.levelInfo.currentXP / profileData.levelInfo.nextLevelXP) * 100}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between text-xs text-[#C0E6FF]">
+                  <span>{profileData.levelInfo.currentXP.toLocaleString()} XP</span>
+                  <span>{profileData.levelInfo.nextLevelXP.toLocaleString()} XP</span>
+                </div>
+              </div>
+
+              {/* Next Level */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[#C0E6FF] text-sm">Next Level</span>
+                  <span className="text-white font-bold">Level {profileData.levelInfo.nextLevel}</span>
+                </div>
+                <div className="text-center p-3 rounded-lg bg-[#1a2f51] border border-[#C0E6FF]/20">
+                  <p className="text-[#C0E6FF] text-sm mb-1">XP Needed</p>
+                  <p className="text-white font-bold text-lg">
+                    {(profileData.levelInfo.nextLevelXP - profileData.levelInfo.currentXP).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* How to Advance */}
+              <div className="bg-[#1a2f51] rounded-lg p-4 border border-[#C0E6FF]/20">
+                <h4 className="text-white font-semibold mb-3 text-center">How to Advance</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-[#4DA2FF] rounded-full"></div>
+                    <span className="text-[#C0E6FF]">Complete daily tasks (+50 XP)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-[#00D4AA] rounded-full"></div>
+                    <span className="text-[#C0E6FF]">Refer new users (+100 XP)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-[#FFD700] rounded-full"></div>
+                    <span className="text-[#C0E6FF]">Trade actively (+25 XP/trade)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-[#FF6B35] rounded-full"></div>
+                    <span className="text-[#C0E6FF]">Connect social media (+75 XP)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-[#10B981] rounded-full"></div>
+                    <span className="text-[#C0E6FF]">Level up rewards (+10 points/level)</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -559,6 +802,77 @@ export function ProfileSystem() {
           </div>
         </div>
       </div>
+
+      {/* Festive Claim Dialog */}
+      {showClaimDialog && claimingAchievement && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#0a1628] border border-[#C0E6FF]/20 rounded-xl p-6 max-w-md w-full mx-4 relative overflow-hidden">
+            {/* Animated background particles */}
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute top-4 left-4 w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+              <div className="absolute top-8 right-8 w-1 h-1 bg-blue-400 rounded-full animate-ping"></div>
+              <div className="absolute bottom-6 left-8 w-1.5 h-1.5 bg-green-400 rounded-full animate-bounce"></div>
+              <div className="absolute bottom-4 right-4 w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+            </div>
+
+            <div className="relative z-10 text-center">
+              {!isClaimingPoints ? (
+                <>
+                  <div className="mb-4">
+                    <div className="w-16 h-16 mx-auto mb-4 p-3 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center">
+                      <Trophy className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-2">🎉 Achievement Ready!</h3>
+                    <p className="text-[#C0E6FF] mb-4">
+                      Congratulations! You've unlocked the <span className="text-yellow-400 font-semibold">"{claimingAchievement.name}"</span> achievement!
+                    </p>
+                    <div className="bg-[#1a2f51] rounded-lg p-4 mb-6">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Star className="w-5 h-5 text-yellow-400" />
+                        <span className="text-white font-bold text-xl">+{claimingAchievement.points} Points</span>
+                      </div>
+                      <p className="text-[#C0E6FF] text-sm">Will be added to your account</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={() => setShowClaimDialog(false)}
+                      variant="outline"
+                      className="flex-1 border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
+                    >
+                      Later
+                    </Button>
+                    <Button
+                      onClick={confirmClaimAchievement}
+                      className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
+                    >
+                      🎁 Claim Now!
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 p-3 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center animate-pulse">
+                    <CheckCircle className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">✨ Claiming Points...</h3>
+                  <p className="text-[#C0E6FF] mb-4">Adding {claimingAchievement.points} points to your account!</p>
+                  <div className="w-full bg-[#1a2f51] rounded-full h-2 mb-4">
+                    <div className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full animate-pulse w-full"></div>
+                  </div>
+                  <div className="text-center">
+                    <div className="inline-flex items-center gap-2 text-green-400">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
