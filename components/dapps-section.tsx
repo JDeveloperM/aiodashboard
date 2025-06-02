@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -31,7 +32,7 @@ const dapps: DAppInfo[] = [
   {
     name: "NodeMe Pool",
     description: "Comprehensive node management dashboard for Aethir and Hytopia nodes with real-time rewards tracking, staking management, and NFT portfolio overview.",
-    icon: <Coins className="w-8 h-8 text-[#4DA2FF]" />,
+    icon: <Image src="/images/nodeme.png" alt="NodeMe Pool" width={32} height={32} className="w-8 h-8" />,
     features: [
       "Node rewards tracking",
       "Aethir & Hytopia nodes",
@@ -46,7 +47,7 @@ const dapps: DAppInfo[] = [
   {
     name: "RaffleCraft",
     description: "Live decentralized raffle platform with POL token integration. Participate in current rounds, track ticket purchases, and view winners history.",
-    icon: <Dice6 className="w-8 h-8 text-purple-400" />,
+    icon: <Image src="/images/rafflecraft.png" alt="RaffleCraft" width={32} height={32} className="w-8 h-8" />,
     features: [
       "Live raffle rounds",
       "POL token minting",
@@ -61,7 +62,7 @@ const dapps: DAppInfo[] = [
   {
     name: "DEWhale Launchpad",
     description: "Premier launchpad for innovative projects on Sui Network with tier-based access and rigorous due diligence.",
-    icon: <Rocket className="w-8 h-8 text-gradient-to-r from-[#4DA2FF] to-purple-500" />,
+    icon: <Image src="/images/dewhale.png" alt="DEWhale Launchpad" width={32} height={32} className="w-8 h-8" />,
     features: [
       "Project launches",
       "Tier-based access",
@@ -114,7 +115,7 @@ export function DAppsSection() {
             <div className="enhanced-card-content">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-[#030F1C] rounded-xl group-hover:scale-110 transition-transform duration-300">
+                  <div className="p-3 bg-[#1a2f51] rounded-xl group-hover:scale-110 transition-transform duration-300">
                     {dapp.icon}
                   </div>
                   <div>

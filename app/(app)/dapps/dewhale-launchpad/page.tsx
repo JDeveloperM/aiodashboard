@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -348,6 +349,16 @@ export default function DEWhaleLaunchpadPage() {
 
         {/* Coming Soon Content */}
         <div className="bg-gradient-to-r from-[#4DA2FF]/10 to-purple-500/10 border border-[#4DA2FF]/20 rounded-lg p-6 relative z-10 text-center">
+          {/* DEWhale Logo */}
+          <div className="flex justify-center mb-6">
+            <Image
+              src="/images/dewhale.png"
+              alt="DEWhale Launchpad"
+              width={96}
+              height={96}
+              className="w-24 h-24"
+            />
+          </div>
           <h1 className="text-4xl font-bold text-white mb-4">DEWhale Launchpad</h1>
           <p className="text-xl text-[#C0E6FF] mb-6 max-w-3xl mx-auto">
             The premier launchpad for innovative projects on Sui Network. Discover, invest, and be part of the next generation of blockchain innovation.
