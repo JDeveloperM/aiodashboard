@@ -204,9 +204,9 @@ export function ProfileSystem() {
     levelInfo: {
       currentLevel: 5,
       nextLevel: 6,
-      currentXP: 2450,
-      nextLevelXP: 5000,
-      totalXP: 12450
+      currentXP: 330,
+      nextLevelXP: 480,
+      totalXP: 330
     },
     achievements: [
       // Profile & Account Achievements
@@ -501,8 +501,8 @@ export function ProfileSystem() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Column 1: Profile Info + Referral Link - Centered */}
             <div className="flex flex-col items-center text-center">
-              <div className="relative group mb-4">
-                <Avatar className="h-24 w-24 bg-blue-100">
+              <div className="relative group mb-4 mt-2">
+                <Avatar className="h-36 w-36 bg-blue-100">
                   <AvatarImage src={profileData.profileImage} alt={profileData.name} />
                   <AvatarFallback className="bg-[#4DA2FF] text-white text-3xl font-semibold">
                     {profileData.name.charAt(0)}
@@ -564,8 +564,44 @@ export function ProfileSystem() {
                 )}
               </div>
 
-              {/* Social Media Links */}
+              {/* Referral Link */}
               <div className="mb-6 w-full">
+                <h3 className="text-white font-semibold mb-3">Referral Link</h3>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      value={affiliateLink}
+                      readOnly
+                      className="bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF] text-xs"
+                    />
+                    <Button
+                      onClick={handleCopyLink}
+                      size="sm"
+                      className="bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-[#FFFFFF] px-2"
+                    >
+                      {copied ? (
+                        <CheckCircle className="w-3 h-3" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                    </Button>
+                    <Button
+                      onClick={handleShare}
+                      variant="outline"
+                      size="sm"
+                      className="border-[#C0E6FF] text-[#C0E6FF] hover:bg-[#C0E6FF]/10 px-2"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                  </div>
+                  <p className="text-[#C0E6FF] text-xs text-center">
+                    Earn 25% commission on PRO and ROYAL NFT purchases from your referrals.
+                  </p>
+                </div>
+              </div>
+
+              {/* Social Media Links */}
+              <div className="w-full">
                 <h3 className="text-white font-semibold mb-3 text-center">Social Media</h3>
                 <div className="space-y-2">
                   {profileData.socialMedia.map((social, index) => {
@@ -602,42 +638,6 @@ export function ProfileSystem() {
                       </div>
                     )
                   })}
-                </div>
-              </div>
-
-              {/* Referral Link */}
-              <div className="w-full">
-                <h3 className="text-white font-semibold mb-3">Referral Link</h3>
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <Input
-                      value={affiliateLink}
-                      readOnly
-                      className="bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF] text-xs"
-                    />
-                    <Button
-                      onClick={handleCopyLink}
-                      size="sm"
-                      className="bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-[#FFFFFF] px-2"
-                    >
-                      {copied ? (
-                        <CheckCircle className="w-3 h-3" />
-                      ) : (
-                        <Copy className="w-3 h-3" />
-                      )}
-                    </Button>
-                    <Button
-                      onClick={handleShare}
-                      variant="outline"
-                      size="sm"
-                      className="border-[#C0E6FF] text-[#C0E6FF] hover:bg-[#C0E6FF]/10 px-2"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                    </Button>
-                  </div>
-                  <p className="text-[#C0E6FF] text-xs text-center">
-                    Earn 25% commission on PRO and ROYAL NFT purchases from your referrals.
-                  </p>
                 </div>
               </div>
             </div>
@@ -779,12 +779,52 @@ export function ProfileSystem() {
                 <div className="w-full bg-[#1a2f51] rounded-full h-3 mb-2">
                   <div
                     className="bg-gradient-to-r from-[#4DA2FF] to-[#00D4AA] h-3 rounded-full transition-all duration-500"
-                    style={{ width: `${(profileData.levelInfo.currentXP / profileData.levelInfo.nextLevelXP) * 100}%` }}
+                    style={{
+                      width: `${(() => {
+                        // Calculate progress within current level range
+                        const currentLevelXP = profileData.levelInfo.currentLevel === 1 ? 0 :
+                          profileData.levelInfo.currentLevel === 2 ? 0 :
+                          profileData.levelInfo.currentLevel === 3 ? 50 :
+                          profileData.levelInfo.currentLevel === 4 ? 120 :
+                          profileData.levelInfo.currentLevel === 5 ? 210 :
+                          profileData.levelInfo.currentLevel === 6 ? 330 :
+                          profileData.levelInfo.currentLevel === 7 ? 480 :
+                          profileData.levelInfo.currentLevel === 8 ? 660 :
+                          profileData.levelInfo.currentLevel === 9 ? 830 : 940;
+
+                        const xpInCurrentLevel = profileData.levelInfo.currentXP - currentLevelXP;
+                        const xpNeededForNextLevel = profileData.levelInfo.nextLevelXP - currentLevelXP;
+
+                        return Math.min(100, Math.max(0, (xpInCurrentLevel / xpNeededForNextLevel) * 100));
+                      })()}%`
+                    }}
                   ></div>
                 </div>
                 <div className="flex justify-between text-xs text-[#C0E6FF]">
-                  <span>{profileData.levelInfo.currentXP.toLocaleString()} XP</span>
-                  <span>{profileData.levelInfo.nextLevelXP.toLocaleString()} XP</span>
+                  <span>{(() => {
+                    const currentLevelXP = profileData.levelInfo.currentLevel === 1 ? 0 :
+                      profileData.levelInfo.currentLevel === 2 ? 0 :
+                      profileData.levelInfo.currentLevel === 3 ? 50 :
+                      profileData.levelInfo.currentLevel === 4 ? 120 :
+                      profileData.levelInfo.currentLevel === 5 ? 210 :
+                      profileData.levelInfo.currentLevel === 6 ? 330 :
+                      profileData.levelInfo.currentLevel === 7 ? 480 :
+                      profileData.levelInfo.currentLevel === 8 ? 660 :
+                      profileData.levelInfo.currentLevel === 9 ? 830 : 940;
+                    return (profileData.levelInfo.currentXP - currentLevelXP).toLocaleString();
+                  })()} XP</span>
+                  <span>{(() => {
+                    const currentLevelXP = profileData.levelInfo.currentLevel === 1 ? 0 :
+                      profileData.levelInfo.currentLevel === 2 ? 0 :
+                      profileData.levelInfo.currentLevel === 3 ? 50 :
+                      profileData.levelInfo.currentLevel === 4 ? 120 :
+                      profileData.levelInfo.currentLevel === 5 ? 210 :
+                      profileData.levelInfo.currentLevel === 6 ? 330 :
+                      profileData.levelInfo.currentLevel === 7 ? 480 :
+                      profileData.levelInfo.currentLevel === 8 ? 660 :
+                      profileData.levelInfo.currentLevel === 9 ? 830 : 940;
+                    return (profileData.levelInfo.nextLevelXP - currentLevelXP).toLocaleString();
+                  })()} XP</span>
                 </div>
               </div>
 
