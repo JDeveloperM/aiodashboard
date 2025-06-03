@@ -15,6 +15,7 @@ const isAppRoute = createRouteMatcher([
   '/profile(.*)?',
   '/subscriptions(.*)?',
   '/settings(.*)?',
+  '/notifications(.*)?',
   '/crypto-bots(.*)?',
   '/stock-bots(.*)?',
   '/forex-bots(.*)?',

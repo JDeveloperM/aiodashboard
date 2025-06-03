@@ -7,7 +7,7 @@ import { useSubscription } from "@/contexts/subscription-context"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
-import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, LineChart, Settings, CreditCard, ArrowUpRight, Crown, ArrowRight, Bot, Users, Grid3X3, BookOpen, ChevronDown, ChevronRight, User, FileText, Coins, Dice6, Rocket, Share2, ShoppingBag, HelpCircle, Globe } from "lucide-react"
+import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, LineChart, Settings, CreditCard, ArrowUpRight, Crown, ArrowRight, Bot, Users, Grid3X3, BookOpen, ChevronDown, ChevronRight, User, FileText, Coins, Dice6, Rocket, Share2, HelpCircle, Globe } from "lucide-react"
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -89,7 +89,6 @@ export function Sidebar() {
       ]
     },
     { name: "MetaGo Academy", href: "/metago-academy", icon: BookOpen, restricted: false },
-    { name: "Marketplace", href: "/marketplace", icon: ShoppingBag, restricted: false },
   ]
 
   const bottomNavigation = [

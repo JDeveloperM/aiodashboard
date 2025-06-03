@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useSubscription } from "@/contexts/subscription-context"
 
 import { RoleImage } from "@/components/ui/role-image"
-import { TrendingUp, Users, Copy, Zap, BookOpen, ArrowRight, CheckCircle, ShoppingBag } from "lucide-react"
+import { TrendingUp, Users, Copy, Zap, BookOpen, ArrowRight, CheckCircle } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 
@@ -57,14 +57,6 @@ const navigationCards = [
     href: "/metago-academy",
     features: ["CEX & DEX Basics", "DeFi Courses", "NFT Education"],
     color: "#4DA2FF"
-  },
-  {
-    title: "Marketplace",
-    description: "Redeem points for exclusive items and rewards",
-    icon: ShoppingBag,
-    href: "/marketplace",
-    features: ["Token Bundles", "Merchandise", "NFT Rewards"],
-    color: "#C0E6FF"
   }
 ]
 
