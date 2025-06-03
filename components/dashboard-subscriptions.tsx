@@ -132,7 +132,7 @@ export function DashboardSubscriptions() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-white">MetadudesX NFT Tiers</h2>
-          <p className="text-[#C0E6FF] mt-1">🇬🇷 Mint your NFT on Sui Network to unlock exclusive features</p>
+          <p className="text-[#C0E6FF] mt-1">Mint your NFT on Sui Network to unlock exclusive features</p>
         </div>
         <Badge className={`bg-gradient-to-r ${currentTierData.gradient} text-white px-4 py-2`}>
           Current: {currentTierData.name}
@@ -143,7 +143,7 @@ export function DashboardSubscriptions() {
       <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
         {nftTiers.map((tierData) => {
           const isCurrentTier = tierData.id === tier
-          const canUpgrade = tierData.id !== 'Copier' && tierData.id !== tier
+          const canUpgrade = tierData.id !== 'NOMAD' && tierData.id !== tier
 
           return (
             <div
@@ -237,7 +237,7 @@ export function DashboardSubscriptions() {
                       variant="outline"
                       className="w-full border-[#C0E6FF]/30 text-[#C0E6FF]"
                     >
-                      {tierData.id === 'Copier' ? 'Default Tier' : 'Lower Tier'}
+                      {tierData.id === 'NOMAD' ? 'Default Tier' : 'Lower Tier'}
                     </Button>
                   )}
                 </div>
@@ -260,7 +260,7 @@ export function DashboardSubscriptions() {
               <thead>
                 <tr className="border-b border-[#C0E6FF]/20">
                   <th className="text-left py-3 text-[#C0E6FF] font-medium">Benefit</th>
-                  <th className="text-center py-3 text-[#C0E6FF] font-medium">Copier</th>
+                  <th className="text-center py-3 text-[#C0E6FF] font-medium">NOMAD</th>
                   <th className="text-center py-3 text-[#C0E6FF] font-medium">PRO</th>
                   <th className="text-center py-3 text-[#C0E6FF] font-medium">ROYAL</th>
                 </tr>

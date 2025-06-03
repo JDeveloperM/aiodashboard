@@ -49,7 +49,7 @@ export function CopyTradingInterface() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-[#FFFFFF]">MetadudesX Copy Trading</h2>
-          <p className="text-[#C0E6FF] mt-1">🇬🇷 Automated Bybit trading bots for MetadudesX NFT holders</p>
+          <p className="text-[#C0E6FF] mt-1">Automated Bybit trading bots for MetadudesX NFT holders</p>
         </div>
       </div>
 
