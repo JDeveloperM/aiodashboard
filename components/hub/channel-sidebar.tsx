@@ -33,27 +33,21 @@ interface DirectMessage {
 
 const channels: Channel[] = [
   // MAIN
-  { id: "public-news", name: "Public News", type: "text", category: "MAIN" },
-  { id: "changelog", name: "Changelog", type: "text", category: "MAIN" },
-  { id: "nationality", name: "Nationality", type: "text", category: "MAIN" },
+  { id: "announcements", name: "Announcements", type: "text", category: "MAIN" },
   { id: "community-rules", name: "Community Rules", type: "text", category: "MAIN" },
+  { id: "community-updates", name: "Community Updates", type: "text", category: "MAIN" },
 
-  // Community Chats
-  { id: "chat-for-all", name: "Chat for all", type: "text", category: "Community Chats" },
-  { id: "general-chat", name: "General Chat", type: "text", category: "Community Chats" },
-  { id: "farming-chat", name: "Farming Chat", type: "text", category: "Community Chats" },
-  { id: "charting-chat", name: "Charting Chat", type: "text", category: "Community Chats" },
-  { id: "gaming-chat", name: "Gaming Chat", type: "text", category: "Community Chats" },
-  { id: "ai-chat", name: "AI Chat", type: "text", category: "Community Chats" },
+  // COMMUNITY CHANNELS
+  { id: "market-daily", name: "Market Daily", type: "text", category: "COMMUNITY CHANNELS" },
+  { id: "market-updates", name: "Market Updates", type: "text", category: "COMMUNITY CHANNELS" },
+  { id: "market-thoughts", name: "Market Thoughts", type: "text", category: "COMMUNITY CHANNELS" },
 
-  // Community Channels
-  { id: "announcements", name: "Announcements", type: "text", category: "Community Channels" },
-  { id: "market-daily", name: "Market Daily", type: "text", category: "Community Channels" },
-  { id: "market-updates", name: "Market Updates", type: "text", category: "Community Channels" },
-  { id: "market-thoughts", name: "Market Thoughts", type: "text", category: "Community Channels" },
-
-  // Community Support
-  { id: "open-ticket", name: "Open Ticket", type: "text", category: "Community Support" },
+  // COMMUNITY CHATS
+  { id: "general-chat", name: "General Chat", type: "text", category: "COMMUNITY CHATS" },
+  { id: "farming-chat", name: "Farming Chat", type: "text", category: "COMMUNITY CHATS" },
+  { id: "charting-chat", name: "Charting Chat", type: "text", category: "COMMUNITY CHATS" },
+  { id: "gaming-chat", name: "Gaming Chat", type: "text", category: "COMMUNITY CHATS" },
+  { id: "ai-chat", name: "AI Chat", type: "text", category: "COMMUNITY CHATS" },
 ]
 
 // Mock direct messages data
@@ -105,27 +99,12 @@ const directMessages: DirectMessage[] = [
 
 const categories = [
   "MAIN",
-  "Community Chats",
-  "Community Channels",
-  "Community Support"
+  "COMMUNITY CHANNELS",
+  "COMMUNITY CHATS"
 ]
 
 export function ChannelSidebar({ selectedChannel, onChannelSelect, isMobile, onClose }: ChannelSidebarProps) {
-  const [expandedCategories, setExpandedCategories] = useState<string[]>([
-    "MAIN",
-    "Community Chats",
-    "Community Channels",
-    "Community Support"
-  ])
   const [expandedDirectMessages, setExpandedDirectMessages] = useState(true)
-
-  const toggleCategory = (category: string) => {
-    setExpandedCategories(prev =>
-      prev.includes(category)
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
-    )
-  }
 
   const toggleDirectMessages = () => {
     setExpandedDirectMessages(prev => !prev)
@@ -181,52 +160,39 @@ export function ChannelSidebar({ selectedChannel, onChannelSelect, isMobile, onC
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {categories.map(category => {
           const categoryChannels = getChannelsByCategory(category)
-          const isExpanded = expandedCategories.includes(category)
 
           return (
             <div key={category}>
               {/* Category Header */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => toggleCategory(category)}
-                className="w-full justify-start text-[#C0E6FF]/70 hover:text-white text-xs font-semibold uppercase tracking-wide mb-1 h-6 px-2"
-              >
-                {isExpanded ? (
-                  <ChevronDown className="w-3 h-3 mr-1" />
-                ) : (
-                  <ChevronRight className="w-3 h-3 mr-1" />
-                )}
+              <div className="w-full justify-start text-[#C0E6FF]/70 text-xs font-semibold uppercase tracking-wide mb-1 h-6 px-2 flex items-center">
                 {category}
-              </Button>
+              </div>
 
               {/* Category Channels */}
-              {isExpanded && (
-                <div className="space-y-0.5 ml-2">
-                  {categoryChannels.map(channel => (
-                    <Button
-                      key={channel.id}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onChannelSelect(channel.id)}
-                      className={cn(
-                        "w-full justify-start text-[#C0E6FF]/70 hover:text-white hover:bg-[#1A3C6D]/30 h-8 px-2 rounded-md",
-                        selectedChannel === channel.id && "bg-[#1A3C6D]/50 text-white"
-                      )}
-                    >
-                      {channel.type === "text" ? (
-                        <Hash className="w-4 h-4 mr-2" />
-                      ) : (
-                        <Volume2 className="w-4 h-4 mr-2" />
-                      )}
-                      <span className="text-sm">{channel.name}</span>
-                      {channel.locked && (
-                        <Lock className="w-3 h-3 ml-auto" />
-                      )}
-                    </Button>
-                  ))}
-                </div>
-              )}
+              <div className="space-y-0.5 ml-2">
+                {categoryChannels.map(channel => (
+                  <Button
+                    key={channel.id}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onChannelSelect(channel.id)}
+                    className={cn(
+                      "w-full justify-start text-[#C0E6FF]/70 hover:text-white hover:bg-[#1A3C6D]/30 h-8 px-2 rounded-md",
+                      selectedChannel === channel.id && "bg-[#1A3C6D]/50 text-white"
+                    )}
+                  >
+                    {channel.type === "text" ? (
+                      <Hash className="w-4 h-4 mr-2" />
+                    ) : (
+                      <Volume2 className="w-4 h-4 mr-2" />
+                    )}
+                    <span className="text-sm">{channel.name}</span>
+                    {channel.locked && (
+                      <Lock className="w-3 h-3 ml-auto" />
+                    )}
+                  </Button>
+                ))}
+              </div>
             </div>
           )
         })}

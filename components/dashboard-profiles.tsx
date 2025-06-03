@@ -18,13 +18,10 @@ import {
   CheckCircle,
   AlertCircle,
   Upload,
-  CreditCard,
-  Trash2,
-  Plus,
+
   Crown,
   Star,
-  Users,
-  RefreshCw
+  Users
 } from "lucide-react"
 
 interface ProfileData {
@@ -36,15 +33,6 @@ interface ProfileData {
   walletAddress: string
   kycStatus: 'pending' | 'verified' | 'rejected' | 'not-started'
   notifications: boolean
-}
-
-interface CreditCard {
-  id: string
-  type: 'visa' | 'mastercard' | 'amex'
-  lastFour: string
-  expiryMonth: string
-  expiryYear: string
-  isDefault: boolean
 }
 
 interface NFTData {
@@ -72,28 +60,6 @@ export function DashboardProfiles() {
 
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-
-  // Credit Cards State
-  const [creditCards, setCreditCards] = useState<CreditCard[]>([
-    {
-      id: '1',
-      type: 'visa',
-      lastFour: '4242',
-      expiryMonth: '12',
-      expiryYear: '25',
-      isDefault: true
-    },
-    {
-      id: '2',
-      type: 'mastercard',
-      lastFour: '8888',
-      expiryMonth: '08',
-      expiryYear: '26',
-      isDefault: false
-    }
-  ])
-  const [autoRenewal, setAutoRenewal] = useState(true)
-  const [showAddCard, setShowAddCard] = useState(false)
 
   // NFT Data based on current tier
   const nftData: NFTData[] = [
@@ -169,42 +135,6 @@ export function DashboardProfiles() {
       default:
         return <Shield className="w-4 h-4" />
     }
-  }
-
-  // Credit Card Helper Functions
-  const getCardIcon = (type: string) => {
-    switch (type) {
-      case 'visa':
-        return '💳'
-      case 'mastercard':
-        return '💳'
-      case 'amex':
-        return '💳'
-      default:
-        return '💳'
-    }
-  }
-
-  const getCardName = (type: string) => {
-    switch (type) {
-      case 'visa':
-        return 'Visa'
-      case 'mastercard':
-        return 'Mastercard'
-      case 'amex':
-        return 'American Express'
-      default:
-        return 'Credit Card'
-    }
-  }
-
-  const handleDeleteCard = (cardId: string) => {
-    setCreditCards(prev => prev.filter(card => card.id !== cardId))
-  }
-
-  const handleAddCard = () => {
-    // In a real implementation, this would open a modal to add a new card
-    setShowAddCard(true)
   }
 
   // NFT Helper Functions
@@ -449,89 +379,6 @@ export function DashboardProfiles() {
               {profileData.notifications ? 'Enabled' : 'Disabled'}
             </Button>
           </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Credit Cards & Payment Methods */}
-      <div className="enhanced-card">
-        <div className="enhanced-card-content">
-          <div className="flex items-center gap-2 text-white mb-4">
-            <CreditCard className="w-5 h-5 text-[#4DA2FF]" />
-            <h3 className="font-semibold">Payment Methods</h3>
-          </div>
-          <div className="space-y-4">
-            {/* Auto-renewal Toggle */}
-            <div className="flex items-center justify-between p-3 bg-[#030F1C] rounded-lg border border-[#C0E6FF]/20">
-              <div className="flex items-center gap-2">
-                <RefreshCw className="w-4 h-4 text-[#4DA2FF]" />
-                <div>
-                  <span className="text-white font-medium">Auto-renewal</span>
-                  <p className="text-[#C0E6FF] text-sm">Automatically renew your subscription</p>
-                </div>
-              </div>
-              <Switch
-                checked={autoRenewal}
-                onCheckedChange={setAutoRenewal}
-                className="data-[state=checked]:bg-[#4DA2FF]"
-              />
-            </div>
-
-            {/* Saved Credit Cards */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-[#C0E6FF]">Saved Cards</Label>
-                <Button
-                  onClick={handleAddCard}
-                  size="sm"
-                  variant="outline"
-                  className="border-[#C0E6FF] text-[#C0E6FF] hover:bg-[#4DA2FF] hover:text-white"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Card
-                </Button>
-              </div>
-
-              {creditCards.map((card) => (
-                <div
-                  key={card.id}
-                  className="flex items-center justify-between p-3 bg-[#030F1C] rounded-lg border border-[#C0E6FF]/20"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{getCardIcon(card.type)}</span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-white font-medium">
-                          {getCardName(card.type)} •••• {card.lastFour}
-                        </span>
-                        {card.isDefault && (
-                          <Badge className="bg-[#4DA2FF] text-white text-xs">Default</Badge>
-                        )}
-                      </div>
-                      <span className="text-[#C0E6FF] text-sm">
-                        Expires {card.expiryMonth}/{card.expiryYear}
-                      </span>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => handleDeleteCard(card.id)}
-                    size="sm"
-                    variant="outline"
-                    className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-
-              {creditCards.length === 0 && (
-                <div className="text-center py-6 text-[#C0E6FF]">
-                  <CreditCard className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No payment methods saved</p>
-                  <p className="text-sm">Add a card to enable auto-renewal</p>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </div>

@@ -212,9 +212,9 @@ export default function StockBotsPage() {
         {bots.map((bot) => (
           <div key={bot.id} className="enhanced-card overflow-hidden">
             <div className="enhanced-card-content">
-              <div className="bg-gradient-to-r from-purple-400 to-purple-600 p-3 text-white font-medium flex justify-between items-center mb-4 rounded-lg">
+              <div className="bg-gradient-to-r from-green-600 to-green-900 p-3 text-white font-medium flex justify-between items-center mb-4 rounded-lg shadow-lg shadow-green-500/20">
                 <span>{bot.name}</span>
-                <Badge className="bg-purple-500/20 text-purple-800 border border-purple-600/30">{bot.badge}</Badge>
+                <Badge className="bg-yellow-400/20 text-yellow-300 border border-yellow-400/30">{bot.badge}</Badge>
               </div>
               <div className="space-y-4">
               <div className="p-4 border-b border-[#C0E6FF]/20">
@@ -241,7 +241,7 @@ export default function StockBotsPage() {
 
               <div className="p-4 border-b border-[#C0E6FF]/20">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded text-xs font-medium">{bot.strategy}</span>
+                  <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs font-medium">{bot.strategy}</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-2">
@@ -261,7 +261,7 @@ export default function StockBotsPage() {
                   <p>{bot.description}</p>
                 </div>
 
-                <Button className="w-full bg-gradient-to-r from-purple-400 to-purple-600 text-white font-semibold hover:opacity-90">
+                <Button className="w-full bg-gradient-to-r from-green-600 to-green-900 text-white font-semibold hover:opacity-90 shadow-lg shadow-green-500/20 hover:shadow-green-500/30 transition-all duration-300">
                   Start Following Now <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               </div>

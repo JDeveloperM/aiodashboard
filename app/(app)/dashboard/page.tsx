@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge"
 const metadudesXAnalytics = {
   // Community Stats
   totalHolders: "283",
-  copierUsers: "156", // Users with Copier tier (basic users)
+  nomadUsers: "156", // Users with NOMAD tier (basic users)
   proHolders: "163",
   royalHolders: "120",
   targetHolders: "1100", // Goal for community growth
@@ -81,12 +81,6 @@ export default function Dashboard() {
         <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">MetadudesX Dashboard</h1>
-          <p className="text-[#C0E6FF] mt-1">🇬🇷 Greek NFT-Gated Community</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <Badge className="bg-[#4DA2FF] text-white px-3 py-1">
-            {metadudesXAnalytics.totalHolders} / {metadudesXAnalytics.targetHolders} Holders
-          </Badge>
         </div>
       </div>
 
@@ -111,19 +105,19 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Copier Users */}
+        {/* NOMAD Users */}
         <div className="enhanced-card">
           <div className="enhanced-card-content">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white">Copier Users</p>
-                <p className="text-2xl font-bold text-white">{metadudesXAnalytics.copierUsers}</p>
+                <p className="text-sm font-medium text-white">NOMAD Users</p>
+                <p className="text-2xl font-bold text-white">{metadudesXAnalytics.nomadUsers}</p>
                 <div className="flex items-center mt-1">
-                  <RoleImage role="Copier" size="sm" className="mr-1" />
+                  <RoleImage role="NOMAD" size="sm" className="mr-1" />
                   <span className="text-[#C0E6FF] text-sm">Basic Tier</span>
                 </div>
               </div>
-              <RoleImage role="Copier" size="2xl" />
+              <RoleImage role="NOMAD" size="2xl" />
             </div>
           </div>
         </div>

@@ -4,7 +4,7 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 
 interface RoleImageProps {
-  role: "Copier" | "PRO" | "ROYAL"
+  role: "NOMAD" | "PRO" | "ROYAL"
   size?: "sm" | "md" | "lg" | "xl" | "2xl"
   className?: string
 }
@@ -18,8 +18,8 @@ const sizeClasses = {
 }
 
 const roleImages = {
-  Copier: "/images/copier.png",
-  PRO: "/images/pro.png", 
+  NOMAD: "/images/nomad.png",
+  PRO: "/images/pro.png",
   ROYAL: "/images/royal.png"
 }
 

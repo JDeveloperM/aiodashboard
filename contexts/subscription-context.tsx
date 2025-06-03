@@ -4,7 +4,7 @@ import type React from "react"
 
 import { createContext, useContext, useState, useEffect } from "react"
 
-export type SubscriptionTier = "Copier" | "PRO" | "ROYAL"
+export type SubscriptionTier = "NOMAD" | "PRO" | "ROYAL"
 
 interface SubscriptionContextType {
   tier: SubscriptionTier
@@ -18,7 +18,7 @@ interface SubscriptionContextType {
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined)
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
-  const [tier, setTier] = useState<SubscriptionTier>("Copier")
+  const [tier, setTier] = useState<SubscriptionTier>("NOMAD")
 
   // Determine access based on MetadudesX tier system
   // According to guidelines: PRO and ROYAL have no cycle payments, ROYAL has VIP features

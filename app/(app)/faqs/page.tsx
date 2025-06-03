@@ -31,7 +31,7 @@ const faqCategories = [
       },
       {
         question: "What is the 10% cycle system?",
-        answer: "Our trading bots work in cycles. When a bot achieves 10% profit, the cycle completes and Copier users pay $25 to continue to the next cycle. PRO and ROYAL users are exempt from these fees and can continue automatically."
+        answer: "Our trading bots work in cycles. When a bot achieves 10% profit, the cycle completes and NOMAD users pay $25 to continue to the next cycle. PRO and ROYAL users are exempt from these fees and can continue automatically."
       },
       {
         question: "Which exchanges are supported?",

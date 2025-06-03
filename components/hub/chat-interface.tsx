@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { useIsMobile } from "@/components/ui/use-mobile"
 
 export function ChatInterface() {
-  const [selectedChannel, setSelectedChannel] = useState("public-news")
+  const [selectedChannel, setSelectedChannel] = useState("announcements")
   const [showUserList, setShowUserList] = useState(true)
   const [showChannelSidebar, setShowChannelSidebar] = useState(false)
   const [showMobileUserList, setShowMobileUserList] = useState(false)
@@ -98,21 +98,17 @@ export function ChatInterface() {
                 <span className="text-[#C0E6FF]/50 text-sm">|</span>
                 <span className="text-[#C0E6FF]/70 text-sm">
                   {isDirectMessage && "Direct message conversation"}
-                  {selectedChannel === "public-news" && "Latest news and updates from MetadudesX"}
-                  {selectedChannel === "changelog" && "Platform updates and changes"}
-                  {selectedChannel === "nationality" && "Connect with community members from your region"}
+                  {selectedChannel === "announcements" && "Official announcements and important updates"}
                   {selectedChannel === "community-rules" && "Community rules and guidelines"}
-                  {selectedChannel === "chat-for-all" && "Open chat for all community members"}
+                  {selectedChannel === "community-updates" && "Latest community updates and changes"}
+                  {selectedChannel === "market-daily" && "Daily market analysis and insights"}
+                  {selectedChannel === "market-updates" && "Real-time market updates and news"}
+                  {selectedChannel === "market-thoughts" && "Share your market thoughts and predictions"}
                   {selectedChannel === "general-chat" && "General community discussions"}
                   {selectedChannel === "farming-chat" && "Discuss farming strategies and opportunities"}
                   {selectedChannel === "charting-chat" && "Technical analysis and chart discussions"}
                   {selectedChannel === "gaming-chat" && "Gaming discussions and updates"}
                   {selectedChannel === "ai-chat" && "AI and technology discussions"}
-                  {selectedChannel === "announcements" && "Official announcements and important updates"}
-                  {selectedChannel === "market-daily" && "Daily market analysis and insights"}
-                  {selectedChannel === "market-updates" && "Real-time market updates and news"}
-                  {selectedChannel === "market-thoughts" && "Share your market thoughts and predictions"}
-                  {selectedChannel === "open-ticket" && "Get support from our team"}
                 </span>
               </>
             )}

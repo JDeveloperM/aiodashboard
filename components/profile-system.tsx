@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RoleImage } from "@/components/ui/role-image"
 import { useSubscription } from "@/contexts/subscription-context"
 import { usePoints } from "@/contexts/points-context"
@@ -39,7 +40,9 @@ import {
   Bot,
   Repeat,
   ArrowUp,
-  Link
+  Link,
+  Search,
+  Filter
 } from "lucide-react"
 
 // Social media image paths
@@ -64,9 +67,9 @@ const getAchievementImage = (achievementName: string): string | null => {
     "Make 3 Cycles": "/images/achievements/3 cyrcle.png",
     "Upgrade to PRO": "/images/achievements/upgrade to pro.png",
     "Upgrade to ROYAL": "/images/achievements/upgrade to royal.png",
-    "Refer 10 Copiers": "/images/achievements/refer copier.png",
-    "Refer 50 Copiers": "/images/achievements/refer copier.png",
-    "Refer 100 Copiers": "/images/achievements/refer copier.png",
+    "Refer 10 NOMADs": "/images/achievements/refer nomad.png",
+    "Refer 50 NOMADs": "/images/achievements/refer nomad.png",
+    "Refer 100 NOMADs": "/images/achievements/refer nomad.png",
     "Refer 1 PRO": "/images/achievements/refer pro.png",
     "Refer 5 PRO": "/images/achievements/refer pro.png",
     "Refer 10 PRO": "/images/achievements/refer pro.png",
@@ -83,8 +86,9 @@ interface InvitedUser {
   username: string
   email: string
   joinDate: string
-  status: 'Copier' | 'PRO' | 'ROYAL'
+  status: 'NOMAD' | 'PRO' | 'ROYAL'
   commission: number
+  kycStatus: 'verified' | 'pending' | 'not_verified'
 }
 
 export function ProfileSystem() {
@@ -149,7 +153,7 @@ export function ProfileSystem() {
   const [metrics] = useState({
     totalInvites: 47,
     newUsers: 32,
-    copiers: 18,
+    nomads: 18,
     proUsers: 10,
     royalUsers: 4,
     totalCommission: 2451
@@ -215,10 +219,10 @@ export function ProfileSystem() {
       { name: "Upgrade to PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, xp: 50, tooltip: "Upgrade to PRO membership for enhanced features" },
       { name: "Upgrade to ROYAL", icon: () => <RoleImage role="ROYAL" size="sm" />, color: "#FFD700", unlocked: false, claimed: false, xp: 75, tooltip: "Upgrade to ROYAL membership for premium benefits" },
 
-      // Copier Referral Achievements
-      { name: "Refer 10 Copiers", icon: Users, color: "#6B7280", unlocked: false, claimed: false, xp: 75, tooltip: "Successfully refer 10 users who become Copiers (KYC required)" },
-      { name: "Refer 50 Copiers", icon: Users, color: "#6B7280", unlocked: false, claimed: false, xp: 90, tooltip: "Successfully refer 50 users who become Copiers (KYC required)" },
-      { name: "Refer 100 Copiers", icon: Users, color: "#6B7280", unlocked: false, claimed: false, xp: 100, tooltip: "Successfully refer 100 users who become Copiers (KYC required)" },
+      // NOMAD Referral Achievements
+      { name: "Refer 10 NOMADs", icon: Users, color: "#6B7280", unlocked: false, claimed: false, xp: 75, tooltip: "Successfully refer 10 users who become NOMADs (KYC required)" },
+      { name: "Refer 50 NOMADs", icon: Users, color: "#6B7280", unlocked: false, claimed: false, xp: 90, tooltip: "Successfully refer 50 users who become NOMADs (KYC required)" },
+      { name: "Refer 100 NOMADs", icon: Users, color: "#6B7280", unlocked: false, claimed: false, xp: 100, tooltip: "Successfully refer 100 users who become NOMADs (KYC required)" },
 
       // PRO Referral Achievements
       { name: "Refer 1 PRO", icon: () => <RoleImage role="PRO" size="sm" />, color: "#4DA2FF", unlocked: false, claimed: false, xp: 60, tooltip: "Successfully refer 1 user who becomes a PRO member" },
@@ -232,6 +236,10 @@ export function ProfileSystem() {
     ]
   })
 
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState<'ALL' | 'NOMAD' | 'PRO' | 'ROYAL'>('ALL')
+
   const [invitedUsers] = useState<InvitedUser[]>([
     {
       id: "1",
@@ -239,7 +247,8 @@ export function ProfileSystem() {
       email: "trader01@email.com",
       joinDate: "2024-01-15",
       status: "ROYAL",
-      commission: 150
+      commission: 150,
+      kycStatus: "verified"
     },
     {
       id: "2",
@@ -247,15 +256,17 @@ export function ProfileSystem() {
       email: "blockchain@email.com",
       joinDate: "2024-01-12",
       status: "PRO",
-      commission: 75
+      commission: 75,
+      kycStatus: "verified"
     },
     {
       id: "3",
       username: "DeFiExplorer",
       email: "defi@email.com",
       joinDate: "2024-01-10",
-      status: "Copier",
-      commission: 0
+      status: "NOMAD",
+      commission: 0,
+      kycStatus: "not_verified"
     },
     {
       id: "4",
@@ -263,7 +274,8 @@ export function ProfileSystem() {
       email: "nft@email.com",
       joinDate: "2024-01-08",
       status: "PRO",
-      commission: 75
+      commission: 75,
+      kycStatus: "pending"
     },
     {
       id: "5",
@@ -271,7 +283,8 @@ export function ProfileSystem() {
       email: "meta@email.com",
       joinDate: "2024-01-05",
       status: "ROYAL",
-      commission: 150
+      commission: 150,
+      kycStatus: "verified"
     }
   ])
 
@@ -410,6 +423,45 @@ export function ProfileSystem() {
     return 'bg-transparent text-white border-0'
   }
 
+  const getKycStatusColor = (status: 'verified' | 'pending' | 'not_verified') => {
+    switch (status) {
+      case 'verified':
+        return 'text-green-500'
+      case 'pending':
+        return 'text-yellow-500'
+      case 'not_verified':
+        return 'text-red-500'
+      default:
+        return 'text-gray-500'
+    }
+  }
+
+  const getKycStatusText = (status: 'verified' | 'pending' | 'not_verified') => {
+    switch (status) {
+      case 'verified':
+        return 'KYC'
+      case 'pending':
+        return 'KYC'
+      case 'not_verified':
+        return 'KYC'
+      default:
+        return 'KYC'
+    }
+  }
+
+  // Filter and search logic
+  const filteredUsers = invitedUsers.filter(user => {
+    // Role filter
+    const roleMatch = selectedRoleFilter === 'ALL' || user.status === selectedRoleFilter
+
+    // Search filter (search in username and email)
+    const searchMatch = searchTerm === '' ||
+      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+
+    return roleMatch && searchMatch
+  })
+
   // Check if device is mobile
   const isMobile = () => {
     return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
@@ -514,7 +566,7 @@ export function ProfileSystem() {
                 <p className="text-[#C0E6FF] text-sm">{profileData.username}</p>
                 <Badge className={`${getRoleStatusColor(tier)} text-xs`}>
                   <div className="flex items-center gap-1">
-                    <RoleImage role={tier as "Copier" | "PRO" | "ROYAL"} size="md" />
+                    <RoleImage role={tier as "NOMAD" | "PRO" | "ROYAL"} size="md" />
                     {tier}
                   </div>
                 </Badge>
@@ -962,10 +1014,62 @@ export function ProfileSystem() {
       {/* Invited Users Table */}
       <div className="enhanced-card">
         <div className="enhanced-card-content">
-          <div className="flex items-center gap-2 text-[#FFFFFF] mb-6">
-            <Users className="w-5 h-5 text-[#4DA2FF]" />
-            <h3 className="text-xl font-semibold">Recent Referrals</h3>
+          {/* Header with Search and Filter Controls */}
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-6">
+            {/* Title */}
+            <div className="flex items-center gap-2 text-[#FFFFFF]">
+              <Users className="w-5 h-5 text-[#4DA2FF]" />
+              <h3 className="text-xl font-semibold">Referrals</h3>
+            </div>
+
+            {/* Search and Filter Controls */}
+            <div className="flex flex-col sm:flex-row gap-3 lg:ml-auto">
+              {/* Search Input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#C0E6FF]" />
+                <Input
+                  placeholder="Search by username or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-full sm:w-64 bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF] placeholder:text-[#C0E6FF]/60"
+                />
+              </div>
+
+              {/* Role Filter */}
+              <div className="w-full sm:w-48">
+                <Select value={selectedRoleFilter} onValueChange={(value: 'ALL' | 'NOMAD' | 'PRO' | 'ROYAL') => setSelectedRoleFilter(value)}>
+                  <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF]">
+                    <div className="flex items-center gap-2">
+                      <Filter className="w-4 h-4 text-[#C0E6FF]" />
+                      <SelectValue placeholder="Filter by role" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#1a2f51] border-[#C0E6FF]/30">
+                    <SelectItem value="ALL" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">All Roles</SelectItem>
+                    <SelectItem value="NOMAD" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                      <div className="flex items-center gap-2">
+                        <RoleImage role="NOMAD" size="sm" />
+                        NOMAD
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="PRO" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                      <div className="flex items-center gap-2">
+                        <RoleImage role="PRO" size="sm" />
+                        PRO
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="ROYAL" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                      <div className="flex items-center gap-2">
+                        <RoleImage role="ROYAL" size="sm" />
+                        ROYAL
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
+
           <div className="overflow-x-auto">
             <table className="w-full table-fixed">
               <thead>
@@ -978,36 +1082,64 @@ export function ProfileSystem() {
                 </tr>
               </thead>
               <tbody>
-                {invitedUsers.map((user) => (
-                  <tr key={user.id} className="border-b border-[#C0E6FF]/10 hover:bg-[#4DA2FF]/5 transition-colors">
-                    <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm truncate">{user.username}</td>
-                    <td className="py-3 px-2 text-left text-[#C0E6FF] text-sm">
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-3 h-3 flex-shrink-0" />
-                        <span className="truncate">{user.email}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-2 text-left text-[#C0E6FF] text-sm">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-3 h-3 flex-shrink-0" />
-                        <span>{new Date(user.joinDate).toLocaleDateString()}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-2 text-left">
-                      <Badge className={getStatusColor(user.status)}>
-                        <div className="flex items-center gap-1">
-                          <RoleImage role={user.status as "Copier" | "PRO" | "ROYAL"} size="md" />
-                          {user.status}
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <tr key={user.id} className="border-b border-[#C0E6FF]/10 hover:bg-[#4DA2FF]/5 transition-colors">
+                      <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate">{user.username}</span>
+                          <Badge className={`${getKycStatusColor(user.kycStatus)} bg-transparent border-0 text-xs font-semibold px-1 py-0`}>
+                            {getKycStatusText(user.kycStatus)}
+                          </Badge>
                         </div>
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm font-semibold">
-                      {user.commission.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-2 text-left text-[#C0E6FF] text-sm">
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{user.email}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-2 text-left text-[#C0E6FF] text-sm">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-3 h-3 flex-shrink-0" />
+                          <span>{new Date(user.joinDate).toLocaleDateString()}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-2 text-left">
+                        <Badge className={getStatusColor(user.status)}>
+                          <div className="flex items-center gap-1">
+                            <RoleImage role={user.status as "NOMAD" | "PRO" | "ROYAL"} size="md" />
+                            {user.status}
+                          </div>
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm font-semibold">
+                        {user.commission.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-[#C0E6FF]">
+                      <div className="flex flex-col items-center gap-2">
+                        <Search className="w-8 h-8 text-[#C0E6FF]/50" />
+                        <p className="text-sm">No referrals found matching your criteria</p>
+                        <p className="text-xs text-[#C0E6FF]/70">Try adjusting your search or filter settings</p>
+                      </div>
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
+          </div>
+
+          {/* Results Count - Bottom Center */}
+          <div className="mt-4 text-center">
+            <p className="text-[#C0E6FF] text-sm">
+              Showing {filteredUsers.length} of {invitedUsers.length} referrals
+              {searchTerm && ` matching "${searchTerm}"`}
+              {selectedRoleFilter !== 'ALL' && ` with ${selectedRoleFilter} role`}
+            </p>
           </div>
         </div>
       </div>

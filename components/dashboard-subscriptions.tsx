@@ -13,7 +13,7 @@ import { useSubscription } from "@/contexts/subscription-context"
 import { RoleImage } from "@/components/ui/role-image"
 
 interface NFTTier {
-  id: 'Copier' | 'PRO' | 'ROYAL'
+  id: 'NOMAD' | 'PRO' | 'ROYAL'
   name: string
   price: number
   currency: string
@@ -28,8 +28,8 @@ interface NFTTier {
 
 const nftTiers: NFTTier[] = [
   {
-    id: 'Copier',
-    name: 'Copier',
+    id: 'NOMAD',
+    name: 'NOMAD',
     price: 0,
     currency: 'FREE',
     features: [
@@ -39,7 +39,7 @@ const nftTiers: NFTTier[] = [
       'Monthly Reports',
       'Basic Support'
     ],
-    icon: <RoleImage role="Copier" size="2xl" />,
+    icon: <RoleImage role="NOMAD" size="2xl" />,
     color: '#6B7280',
     gradient: 'from-gray-500 to-gray-700',
     maxSupply: 0,

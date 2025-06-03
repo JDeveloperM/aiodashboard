@@ -2,7 +2,6 @@
 
 import { Sidebar } from "@/components/sidebar"
 import { TopNav } from "@/components/top-nav"
-import { FloatingLanguageSwitcher } from "@/components/language-switcher"
 import { useUser } from "@clerk/nextjs"
 import { useEffect } from "react"
 import { redirect } from "next/navigation"
@@ -66,9 +65,6 @@ export default function AppLayout({
           <main className="w-full">{children}</main>
         </div>
       </div>
-
-      {/* Floating Language Switcher */}
-      <FloatingLanguageSwitcher />
     </div>
   )
 }

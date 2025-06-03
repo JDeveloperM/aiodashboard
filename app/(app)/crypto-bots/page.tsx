@@ -211,9 +211,9 @@ export default function CryptoBotsPage() {
         {bots.map((bot) => (
           <div key={bot.id} className="enhanced-card overflow-hidden">
             <div className="enhanced-card-content">
-              <div className="bg-gradient-to-r from-[#4DA2FF] to-[#011829] p-3 text-white font-medium flex justify-between items-center mb-4 rounded-lg">
+              <div className="bg-gradient-to-r from-purple-600 to-indigo-900 p-3 text-white font-medium flex justify-between items-center mb-4 rounded-lg shadow-lg shadow-purple-500/20">
                 <span>{bot.name}</span>
-                <Badge className="bg-[#4DA2FF]/20 text-[#C0E6FF] border border-[#C0E6FF]/30">{bot.badge}</Badge>
+                <Badge className="bg-cyan-400/20 text-cyan-300 border border-cyan-400/30">{bot.badge}</Badge>
               </div>
               <div className="space-y-4">
               <div className="p-4 border-b border-[#C0E6FF]/20">
@@ -240,7 +240,7 @@ export default function CryptoBotsPage() {
 
               <div className="p-4 border-b border-[#C0E6FF]/20">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="bg-[#4DA2FF]/20 text-[#4DA2FF] px-2 py-1 rounded text-xs font-medium">{bot.strategy}</span>
+                  <span className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-xs font-medium">{bot.strategy}</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-2">
@@ -271,7 +271,7 @@ export default function CryptoBotsPage() {
                   <p>{bot.description}</p>
                 </div>
 
-                <Button className="w-full bg-gradient-to-r from-[#4DA2FF] to-[#011829] text-white hover:opacity-90">
+                <Button className="w-full bg-gradient-to-r from-purple-600 to-indigo-900 text-white hover:opacity-90 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 transition-all duration-300">
                   Start Following Now <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               </div>
