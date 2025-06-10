@@ -135,7 +135,7 @@ export function DashboardReports() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-white">MetadudesX Monthly Reports</h2>
-          <p className="text-[#C0E6FF] mt-1">Comprehensive video reports on trading performance and community growth</p>
+          <p className="text-[#C0E6FF] mt-1">Comprehensive video reports on trading performance and AIO Connect growth</p>
         </div>
         <Badge className="bg-[#4da2ff] hover:bg-[#3d8ae6] text-white px-4 py-2 transition-colors duration-200 cursor-default">
           {monthlyReports.length} Reports Available

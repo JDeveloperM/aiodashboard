@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import React from "react"
 import { SignedIn, SignedOut, useSuiAuth } from "@/contexts/sui-auth-context"
-import { Coins, User, LogOut } from "lucide-react"
+import { Coins, User, LogOut, CreditCard } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,16 +67,6 @@ export function TopNav() {
           </span>
         </div>
         <div className="flex items-center gap-2 md:gap-4">
-          <RoleImage role={tier} size="md" />
-          <SignedIn>
-            <Badge className="bg-[#4da2ff] text-white text-xs md:text-sm">
-              <div className="flex items-center gap-1">
-                <Coins className="h-3 w-3" />
-                <span className="font-medium">{balance.toLocaleString()}</span>
-              </div>
-            </Badge>
-          </SignedIn>
-
           <Notifications />
 
           {/* Sui Wallet Connect with Social Login */}
@@ -97,11 +87,24 @@ export function TopNav() {
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56 bg-[#030F1C] border-[#1e3a8a]" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal text-white">
-                  <div className="flex flex-col space-y-1">
+                  <div className="flex flex-col space-y-2">
                     <p className="text-sm font-medium leading-none">{user?.username}</p>
                     <p className="text-xs leading-none text-[#C0E6FF]">
                       {user?.address && formatAddress(user.address)}
                     </p>
+                    {/* Status Icon and Points */}
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="flex items-center gap-2">
+                        <RoleImage role={tier} size="sm" />
+                        <span className="text-xs text-[#C0E6FF]">{tier}</span>
+                      </div>
+                      <Badge className="bg-[#4da2ff] text-white text-xs">
+                        <div className="flex items-center gap-1">
+                          <Coins className="h-3 w-3" />
+                          <span className="font-medium">{balance.toLocaleString()}</span>
+                        </div>
+                      </Badge>
+                    </div>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-[#1e3a8a]" />
@@ -109,6 +112,12 @@ export function TopNav() {
                   <Link href="/profile">
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="text-[#C0E6FF] hover:bg-[#1e3a8a] hover:text-white">
+                  <Link href="/dashboard/subscriptions">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    <span>Subscriptions</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="text-[#C0E6FF] hover:bg-[#1e3a8a] hover:text-white">

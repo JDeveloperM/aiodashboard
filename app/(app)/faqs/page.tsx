@@ -61,7 +61,7 @@ const faqCategories = [
     ]
   },
   {
-    category: "Community & Features",
+    category: "AIO Connect & Features",
     faqs: [
       {
         question: "How does gated access work?",
@@ -69,11 +69,11 @@ const faqCategories = [
       },
       {
         question: "What is the Ambassador System?",
-        answer: "Our affiliate program allows you to earn commissions by inviting new users. You'll receive 25% of fees from PRO and ROYAL users you refer. Track your referrals and earnings in the Community section."
+        answer: "Our affiliate program allows you to earn commissions by inviting new users. You'll receive 25% of fees from PRO and ROYAL users you refer. Track your referrals and earnings in the AIO Connect section."
       },
       {
         question: "What DApps are available?",
-        answer: "We're launching several DApps including NodeMe Pool, RaffleCraft, and DEWhale Launchpad. These provide additional investment and engagement opportunities for our community members."
+        answer: "We're launching several DApps including RaffleCraft and DEWhale Launchpad. These provide additional investment and engagement opportunities for our community members."
       }
     ]
   },
@@ -176,7 +176,7 @@ export default function FAQsPage() {
           Still have questions?
         </h3>
         <p className="text-gray-300 mb-4">
-          Can't find what you're looking for? Join our community or contact our support team.
+          Can't find what you're looking for? Join our AIO Connect community or contact our support team.
         </p>
         <div className="flex flex-wrap gap-3">
           <a

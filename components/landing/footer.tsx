@@ -117,7 +117,7 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/community" className="text-white/60 hover:text-white transition-colors">
-                  Community
+                  AIO Connect
                 </Link>
               </li>
             </ul>

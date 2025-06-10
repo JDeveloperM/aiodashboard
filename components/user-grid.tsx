@@ -22,7 +22,7 @@ export function UserGrid({ users, viewMode }: UserGridProps) {
               No users found
             </h3>
             <p className="text-[#C0E6FF] max-w-md mx-auto">
-              Try adjusting your search criteria or filters to find more users in the community.
+              Try adjusting your search criteria or filters to find more users in AIO Connect.
             </p>
           </div>
         </div>

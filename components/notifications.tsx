@@ -235,7 +235,7 @@ export function Notifications() {
           <TabsList className="w-full grid grid-cols-3 bg-slate-800 rounded-none border-b border-slate-700">
             <TabsTrigger value="platform" className="text-xs">Platform ({platformNotifications.length})</TabsTrigger>
             <TabsTrigger value="monthly" className="text-xs">Monthly ({monthlyNotifications.length})</TabsTrigger>
-            <TabsTrigger value="community" className="text-xs">Community ({communityNotifications.length})</TabsTrigger>
+            <TabsTrigger value="community" className="text-xs">AIO Connect ({communityNotifications.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="platform" className="max-h-[300px] overflow-y-auto">

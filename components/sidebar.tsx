@@ -7,15 +7,13 @@ import { useSubscription } from "@/contexts/subscription-context"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
-import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, LineChart, Settings, CreditCard, ArrowUpRight, Crown, ArrowRight, Bot, Users, Grid3X3, BookOpen, ChevronDown, ChevronRight, User, FileText, Coins, Dice6, Rocket, Share2, HelpCircle, Globe } from "lucide-react"
+import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, LineChart, ArrowUpRight, Crown, ArrowRight, Bot, Users, BookOpen, ChevronDown, ChevronRight, Dice6, Rocket, Share2, HelpCircle, Globe } from "lucide-react"
 
 export function Sidebar() {
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const [dashboardExpanded, setDashboardExpanded] = useState(false)
   const [copyTradingExpanded, setCopyTradingExpanded] = useState(false)
-  const [dappsExpanded, setDappsExpanded] = useState(false)
   const { canAccessCryptoBots, canAccessForexBots, tier } = useSubscription()
 
   // Close mobile sidebar when route changes
@@ -47,19 +45,7 @@ export function Sidebar() {
   }, [isMobileOpen])
 
   const navigation = [
-    {
-      name: "Dashboard",
-      href: "/dashboard",
-      icon: LayoutDashboard,
-      restricted: false,
-      hasDropdown: true,
-      subItems: [
-        { name: "Profile", href: "/profile", icon: User },
-        { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-        { name: "Subscriptions", href: "/dashboard/subscriptions", icon: CreditCard },
-        { name: "Reports", href: "/dashboard/reports", icon: FileText },
-      ]
-    },
+    { name: "Overview", href: "/dashboard", icon: LayoutDashboard, restricted: false },
     {
       name: "Copy Trading",
       href: "/copy-trading",
@@ -73,28 +59,15 @@ export function Sidebar() {
         { name: "Forex Bots", href: "/forex-bots", icon: BarChart, restricted: !canAccessForexBots },
       ]
     },
-    { name: "Community", href: "/community", icon: Globe, restricted: false },
+    { name: "AIO Connect", href: "/community", icon: Globe, restricted: false },
     { name: "AIO Creators", href: "/aio-creators", icon: Users, restricted: false },
-    { name: "Portfolio Ideas", href: "/community/portfolio-ideas", icon: TrendingUp, restricted: false },
-    {
-      name: "DApps",
-      href: "/dapps",
-      icon: Grid3X3,
-      restricted: false,
-      hasDropdown: true,
-      subItems: [
-        { name: "Overview", href: "/dapps", icon: Grid3X3 },
-        { name: "NodeMe Pool", href: "/dapps/nodeme-pool", icon: Coins },
-        { name: "RaffleCraft", href: "/dapps/rafflecraft", icon: Dice6 },
-        { name: "DEWhale Launchpad", href: "/dapps/dewhale-launchpad", icon: Rocket },
-      ]
-    },
+    { name: "RaffleCraft", href: "/dapps/rafflecraft", icon: Dice6, restricted: false },
+    { name: "DEWhale Launchpad", href: "/dapps/dewhale-launchpad", icon: Rocket, restricted: false },
     { name: "MetaGo Academy", href: "/metago-academy", icon: BookOpen, restricted: false },
   ]
 
   const bottomNavigation = [
     { name: "FAQs", href: "/faqs", icon: HelpCircle, restricted: false },
-    { name: "Settings", href: "/settings", icon: Settings, restricted: false },
   ]
 
   interface NavItemType {
@@ -116,9 +89,7 @@ export function Sidebar() {
       ? item.subItems?.some(subItem => pathname === subItem.href) || pathname === item.href
       : pathname === item.href
 
-    const isExpanded = (item.name === "Dashboard" && dashboardExpanded) ||
-                      (item.name === "Copy Trading" && copyTradingExpanded) ||
-                      (item.name === "DApps" && dappsExpanded)
+    const isExpanded = (item.name === "Copy Trading" && copyTradingExpanded)
 
     if (item.hasDropdown && (!isCollapsed || isMobileOpen)) {
       return (
@@ -127,12 +98,8 @@ export function Sidebar() {
             <TooltipTrigger asChild>
               <button
                 onClick={() => {
-                  if (item.name === "Dashboard") {
-                    setDashboardExpanded(!dashboardExpanded)
-                  } else if (item.name === "Copy Trading") {
+                  if (item.name === "Copy Trading") {
                     setCopyTradingExpanded(!copyTradingExpanded)
-                  } else if (item.name === "DApps") {
-                    setDappsExpanded(!dappsExpanded)
                   }
                 }}
                 className={cn(

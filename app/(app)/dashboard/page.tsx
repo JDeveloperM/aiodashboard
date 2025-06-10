@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useSubscription } from "@/contexts/subscription-context"
 
 import { RoleImage } from "@/components/ui/role-image"
-import { TrendingUp, Users, Copy, Zap, BookOpen, ArrowRight, CheckCircle } from "lucide-react"
+import { TrendingUp, Users, Copy, Zap, BookOpen, ArrowRight, CheckCircle, Dice6, Rocket } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 
@@ -35,20 +35,28 @@ const navigationCards = [
     color: "#4DA2FF"
   },
   {
-    title: "Community",
+    title: "AIO Connect",
     description: "Connect with traders, access exclusive content and portfolio ideas",
     icon: Users,
     href: "/community",
-    features: ["Discord Access", "Portfolio Ideas", "Ambassador Program"],
+    features: ["Discord Access", "User Search", "Ambassador Program"],
     color: "#C0E6FF"
   },
   {
-    title: "DApps",
-    description: "Decentralized applications for advanced features",
-    icon: Zap,
-    href: "/dapps",
-    features: ["NodeMe Pool", "RaffleCraft", "DEWhale Launchpad"],
-    color: "#011829"
+    title: "AIO Creators",
+    description: "Content creators with monetization features and private channels",
+    icon: Users,
+    href: "/aio-creators",
+    features: ["Creator Profiles", "Private Channels", "SUI Payments"],
+    color: "#9333EA"
+  },
+  {
+    title: "RaffleCraft",
+    description: "Decentralized raffles and giveaways on Sui Network",
+    icon: Dice6,
+    href: "/dapps/rafflecraft",
+    features: ["Ticket Minting", "Prize Pools", "Winner Drawing"],
+    color: "#8B5CF6"
   },
   {
     title: "MetaGo Academy",

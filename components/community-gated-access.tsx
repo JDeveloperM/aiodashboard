@@ -52,7 +52,7 @@ export function CommunityGatedAccess() {
       name: 'MetadudesX PRO',
       type: 'PRO' as const,
       owned: tier === 'PRO' || tier === 'ROYAL',
-      benefits: ['Crypto Trading Bots', 'Community Access', 'Portfolio Ideas'],
+      benefits: ['Crypto Trading Bots', 'Community Access', 'AIO Creators'],
       mintDate: tier === 'PRO' || tier === 'ROYAL' ? '2024-01-15' : undefined,
       contractAddress: '0x5164c0f7a1f2f68b266feeccca0ced8e6ed68166'
     },
@@ -66,11 +66,11 @@ export function CommunityGatedAccess() {
       contractAddress: '0x0ff1e228e6a95aa69c76bdcb366e3e6fe1a614d3'
     },
     {
-      id: 'nodeme',
-      name: 'NodeMe NFT',
-      type: 'NODEME' as const,
+      id: 'special',
+      name: 'Special Access NFT',
+      type: 'SPECIAL' as const,
       owned: false, // This would be determined by actual NFT ownership check
-      benefits: ['NodeMe Pool Access', 'Staking Rewards', 'Governance Rights'],
+      benefits: ['Exclusive Features', 'Special Rewards', 'Governance Rights'],
       mintDate: undefined,
       contractAddress: '0x870467a76281b5db1e0d861c3d113f3829861104'
     }
@@ -82,8 +82,8 @@ export function CommunityGatedAccess() {
         return 'from-[#4DA2FF] to-[#011829]'
       case 'ROYAL':
         return 'from-yellow-400 to-yellow-600'
-      case 'NODEME':
-        return 'from-green-400 to-green-600'
+      case 'SPECIAL':
+        return 'from-purple-400 to-purple-600'
       default:
         return 'from-gray-400 to-gray-600'
     }
@@ -143,7 +143,7 @@ export function CommunityGatedAccess() {
             </div>
             <div className="space-y-4">
               <p className="text-[#C0E6FF] text-sm">
-                Join our exclusive Discord server for tech discussions, blockchain insights, and community engagement.
+                Join our exclusive Discord server for tech discussions, blockchain insights, and AIO Connect engagement.
               </p>
 
               <div className="space-y-3">

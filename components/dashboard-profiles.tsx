@@ -68,7 +68,7 @@ export function DashboardProfiles() {
       name: 'MetadudesX PRO',
       type: 'PRO',
       owned: tier === 'PRO' || tier === 'ROYAL',
-      benefits: ['Crypto Trading Bots', 'Community Access', 'Portfolio Ideas'],
+      benefits: ['Crypto Trading Bots', 'Community Access', 'AIO Creators'],
       mintDate: tier === 'PRO' || tier === 'ROYAL' ? '2024-01-15' : undefined
     },
     {
@@ -80,11 +80,11 @@ export function DashboardProfiles() {
       mintDate: tier === 'ROYAL' ? '2024-02-20' : undefined
     },
     {
-      id: 'nodeme',
-      name: 'NodeMe Pool NFT',
-      type: 'NODEME',
-      owned: tier === 'ROYAL', // Assuming ROYAL tier gets NodeMe access
-      benefits: ['Staking Rewards', 'Pool Governance', 'Priority Access'],
+      id: 'special',
+      name: 'Special Access NFT',
+      type: 'SPECIAL',
+      owned: tier === 'ROYAL', // Assuming ROYAL tier gets special access
+      benefits: ['Exclusive Features', 'Special Rewards', 'Priority Access'],
       mintDate: tier === 'ROYAL' ? '2024-03-10' : undefined
     }
   ]

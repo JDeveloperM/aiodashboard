@@ -393,7 +393,7 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-[#4DA2FF] rounded-full animate-pulse" />
               <span className="text-[#C0E6FF] text-sm font-medium">
-                {users.length} Community Member{users.length !== 1 ? 's' : ''}
+                {users.length} AIO Connect Member{users.length !== 1 ? 's' : ''}
               </span>
             </div>
             <div className="text-xs text-[#C0E6FF]/60">

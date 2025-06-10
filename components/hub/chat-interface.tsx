@@ -99,12 +99,12 @@ export function ChatInterface() {
                 <span className="text-[#C0E6FF]/70 text-sm">
                   {isDirectMessage && "Direct message conversation"}
                   {selectedChannel === "announcements" && "Official announcements and important updates"}
-                  {selectedChannel === "community-rules" && "Community rules and guidelines"}
-                  {selectedChannel === "community-updates" && "Latest community updates and changes"}
+                  {selectedChannel === "community-rules" && "AIO Connect rules and guidelines"}
+                  {selectedChannel === "community-updates" && "Latest AIO Connect updates and changes"}
                   {selectedChannel === "market-daily" && "Daily market analysis and insights"}
                   {selectedChannel === "market-updates" && "Real-time market updates and news"}
                   {selectedChannel === "market-thoughts" && "Share your market thoughts and predictions"}
-                  {selectedChannel === "general-chat" && "General community discussions"}
+                  {selectedChannel === "general-chat" && "General AIO Connect discussions"}
                   {selectedChannel === "farming-chat" && "Discuss farming strategies and opportunities"}
                   {selectedChannel === "charting-chat" && "Technical analysis and chart discussions"}
                   {selectedChannel === "gaming-chat" && "Gaming discussions and updates"}

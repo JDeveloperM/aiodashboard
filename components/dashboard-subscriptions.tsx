@@ -58,7 +58,7 @@ const nftTiers: NFTTier[] = [
     features: [
       'No Cycle Payments',
       'Discord PRO Role',
-      'Portfolio Ideas Access',
+      'AIO Creators Access',
       'Ambassador Program',
       'MetaGo Academy Premium',
       'Priority Support'

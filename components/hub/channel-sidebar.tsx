@@ -34,20 +34,20 @@ interface DirectMessage {
 const channels: Channel[] = [
   // MAIN
   { id: "announcements", name: "Announcements", type: "text", category: "MAIN" },
-  { id: "community-rules", name: "Community Rules", type: "text", category: "MAIN" },
-  { id: "community-updates", name: "Community Updates", type: "text", category: "MAIN" },
+  { id: "community-rules", name: "AIO Connect Rules", type: "text", category: "MAIN" },
+  { id: "community-updates", name: "AIO Connect Updates", type: "text", category: "MAIN" },
 
-  // COMMUNITY CHANNELS
-  { id: "market-daily", name: "Market Daily", type: "text", category: "COMMUNITY CHANNELS" },
-  { id: "market-updates", name: "Market Updates", type: "text", category: "COMMUNITY CHANNELS" },
-  { id: "market-thoughts", name: "Market Thoughts", type: "text", category: "COMMUNITY CHANNELS" },
+  // AIO CONNECT CHANNELS
+  { id: "market-daily", name: "Market Daily", type: "text", category: "AIO CONNECT CHANNELS" },
+  { id: "market-updates", name: "Market Updates", type: "text", category: "AIO CONNECT CHANNELS" },
+  { id: "market-thoughts", name: "Market Thoughts", type: "text", category: "AIO CONNECT CHANNELS" },
 
-  // COMMUNITY CHATS
-  { id: "general-chat", name: "General Chat", type: "text", category: "COMMUNITY CHATS" },
-  { id: "farming-chat", name: "Farming Chat", type: "text", category: "COMMUNITY CHATS" },
-  { id: "charting-chat", name: "Charting Chat", type: "text", category: "COMMUNITY CHATS" },
-  { id: "gaming-chat", name: "Gaming Chat", type: "text", category: "COMMUNITY CHATS" },
-  { id: "ai-chat", name: "AI Chat", type: "text", category: "COMMUNITY CHATS" },
+  // AIO CONNECT CHATS
+  { id: "general-chat", name: "General Chat", type: "text", category: "AIO CONNECT CHATS" },
+  { id: "farming-chat", name: "Farming Chat", type: "text", category: "AIO CONNECT CHATS" },
+  { id: "charting-chat", name: "Charting Chat", type: "text", category: "AIO CONNECT CHATS" },
+  { id: "gaming-chat", name: "Gaming Chat", type: "text", category: "AIO CONNECT CHATS" },
+  { id: "ai-chat", name: "AI Chat", type: "text", category: "AIO CONNECT CHATS" },
 ]
 
 // Mock direct messages data

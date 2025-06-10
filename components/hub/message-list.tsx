@@ -101,7 +101,7 @@ const mockMessages: Record<string, Message[]> = {
     {
       id: "r1",
       user: { name: "MetaBot", avatar: "/images/aibot.png", isBot: true },
-      content: "📋 **Community Rules**\n\n1. Be respectful to all members\n2. No spam or excessive self-promotion\n3. Keep discussions relevant to the channel topic\n4. No NSFW content\n5. Follow Discord's Terms of Service",
+      content: "📋 **AIO Connect Rules**\n\n1. Be respectful to all members\n2. No spam or excessive self-promotion\n3. Keep discussions relevant to the channel topic\n4. No NSFW content\n5. Follow Discord's Terms of Service",
       timestamp: "12:00 PM"
     }
   ]

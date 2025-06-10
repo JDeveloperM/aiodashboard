@@ -99,7 +99,7 @@ const allNotifications: Notification[] = [
   // Community Updates
   {
     id: "6",
-    title: "New Community Event",
+    title: "New AIO Connect Event",
     message: "Join our upcoming trading competition with $10K prizes. Registration opens tomorrow and the competition runs for 2 weeks.",
     date: "3 hours ago",
     read: false,
@@ -109,7 +109,7 @@ const allNotifications: Notification[] = [
   },
   {
     id: "7",
-    title: "Community Milestone",
+    title: "AIO Connect Milestone",
     message: "We've reached 50,000 active traders! Thank you for being part of our growing community. Special rewards are coming soon.",
     date: "2 days ago",
     read: true,
@@ -119,7 +119,7 @@ const allNotifications: Notification[] = [
   },
   {
     id: "10",
-    title: "Weekly Community Digest",
+    title: "Weekly AIO Connect Digest",
     message: "Check out this week's top performing traders and learn from their strategies. New educational content available.",
     date: "1 week ago",
     read: true,
@@ -265,7 +265,7 @@ export default function NotificationsPage() {
                 }
               >
                 <Users className="h-4 w-4 mr-1" />
-                Community ({communityCount})
+                AIO Connect ({communityCount})
               </Button>
             </div>
           </div>
