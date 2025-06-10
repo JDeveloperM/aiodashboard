@@ -6,7 +6,8 @@ import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import { SuiWalletWithSocial } from "@/components/sui-wallet-with-social";
+import { SignedIn, SignedOut, useSuiAuth } from "@/contexts/sui-auth-context";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -74,21 +75,18 @@ export function Header() {
 
         {/* Auth Buttons */}
         <div className="hidden md:flex items-center space-x-4">
-          <SignInButton mode="modal">
-            <Button
-              variant="ghost"
-              className="text-white/90 hover:text-white hover:bg-white/10"
-            >
-              Sign In
-            </Button>
-          </SignInButton>
-          <SignUpButton mode="modal">
-            <Button
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 rounded-full px-6"
-            >
-              Get Started
-            </Button>
-          </SignUpButton>
+          <SignedOut>
+            <SuiWalletWithSocial />
+          </SignedOut>
+          <SignedIn>
+            <Link href="/profile">
+              <Button
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 rounded-full px-6"
+              >
+                Go to Dashboard
+              </Button>
+            </Link>
+          </SignedIn>
         </div>
 
         {/* Mobile Menu Button */}
@@ -140,21 +138,18 @@ export function Header() {
               Pricing
             </Link>
             <div className="flex flex-col space-y-3 pt-4 border-t border-white/10">
-              <SignInButton mode="modal">
-                <Button
-                  variant="ghost"
-                  className="text-white/90 hover:text-white hover:bg-white/10 w-full justify-start"
-                >
-                  Sign In
-                </Button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <Button
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 rounded-full"
-                >
-                  Get Started
-                </Button>
-              </SignUpButton>
+              <SignedOut>
+                <SuiWalletWithSocial />
+              </SignedOut>
+              <SignedIn>
+                <Link href="/profile">
+                  <Button
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 rounded-full w-full"
+                  >
+                    Go to Dashboard
+                  </Button>
+                </Link>
+              </SignedIn>
             </div>
           </nav>
         </div>

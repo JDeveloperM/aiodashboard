@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { RoleImage } from "@/components/ui/role-image"
 import { ExternalLink, Users, Shield, CheckCircle, Crown } from "lucide-react"
 import { useSubscription } from "@/contexts/subscription-context"
-import { useUser } from "@clerk/nextjs"
+import { useSuiAuth } from "@/contexts/sui-auth-context"
 
 // Official Discord icon component
 const DiscordIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
@@ -38,7 +38,7 @@ const TelegramIcon = ({ className, style }: { className?: string; style?: React.
 
 export function CommunityGatedAccess() {
   const { tier } = useSubscription()
-  const { user } = useUser()
+  const { user } = useSuiAuth()
   const [discordSynced, setDiscordSynced] = useState(false)
   const [telegramSynced, setTelegramSynced] = useState(false)
   const [isConnecting, setIsConnecting] = useState<'discord' | 'telegram' | null>(null)

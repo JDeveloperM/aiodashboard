@@ -10,20 +10,23 @@ import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import React from "react"
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs"
-import { useUser } from "@clerk/nextjs"
-import { Coins } from "lucide-react"
-// Remove this line
-// import { dark } from "@clerk/themes"
-
-// Add this import instead
-import { customDarkTheme } from "@/lib/clerk-theme"
+import { SignedIn, SignedOut, useSuiAuth } from "@/contexts/sui-auth-context"
+import { Coins, User, LogOut } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export function TopNav() {
   const pathname = usePathname()
   const pathSegments = pathname.split("/").filter(Boolean)
   const { tier } = useSubscription()
-  const { isSignedIn, user } = useUser()
+  const { isSignedIn, user, signOut, formatAddress } = useSuiAuth()
   const { balance } = usePoints()
 
   const getTierColor = () => {
@@ -77,25 +80,53 @@ export function TopNav() {
           <Notifications />
 
           {/* Sui Wallet Connect with Social Login */}
-          <SignedIn>
-            <SuiWalletWithSocial />
-          </SignedIn>
+          <SuiWalletWithSocial />
 
-          <SignedOut>
-            <SignInButton>
-              <Button variant="outline" size="sm">Sign In</Button>
-            </SignInButton>
-          </SignedOut>
+          {/* User Menu for authenticated users */}
           <SignedIn>
-            <UserButton
-              afterSignOutUrl="/"
-              appearance={customDarkTheme}
-            >
-              <UserButton.MenuItems>
-                <UserButton.Action label="manageAccount" />
-                <UserButton.Action label="signOut" />
-              </UserButton.MenuItems>
-            </UserButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user?.profileImage} alt={user?.username} />
+                    <AvatarFallback className="bg-[#4DA2FF] text-white">
+                      {user?.username?.charAt(0)?.toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56 bg-[#030F1C] border-[#1e3a8a]" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal text-white">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user?.username}</p>
+                    <p className="text-xs leading-none text-[#C0E6FF]">
+                      {user?.address && formatAddress(user.address)}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-[#1e3a8a]" />
+                <DropdownMenuItem asChild className="text-[#C0E6FF] hover:bg-[#1e3a8a] hover:text-white">
+                  <Link href="/profile">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="text-[#C0E6FF] hover:bg-[#1e3a8a] hover:text-white">
+                  <Link href="/settings">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-[#1e3a8a]" />
+                <DropdownMenuItem
+                  className="text-[#C0E6FF] hover:bg-[#1e3a8a] hover:text-white cursor-pointer"
+                  onClick={() => signOut()}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sign out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SignedIn>
         </div>
       </div>

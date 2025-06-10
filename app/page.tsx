@@ -9,12 +9,12 @@ import { PricingSection } from "@/components/landing/pricing-section"
 import { CTASection } from "@/components/landing/cta-section"
 import { FAQSection } from "@/components/landing/faq-section"
 import { Footer } from "@/components/landing/footer"
-import { useUser } from "@clerk/nextjs"
+import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { useEffect, useState } from "react"
 import { redirect } from "next/navigation"
 
 export default function LandingPage() {
-  const { isLoaded, isSignedIn } = useUser()
+  const { isLoaded, isSignedIn } = useSuiAuth()
   const [scrollY, setScrollY] = useState(0)
 
   // Handle scroll events

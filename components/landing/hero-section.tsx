@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { SignInButton, SignUpButton } from "@clerk/nextjs"
+import { SuiWalletWithSocial } from "@/components/sui-wallet-with-social"
+import { SignedIn, SignedOut } from "@/contexts/sui-auth-context"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import Image from "next/image"

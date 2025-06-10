@@ -2,7 +2,7 @@
 
 import { Sidebar } from "@/components/sidebar"
 import { TopNav } from "@/components/top-nav"
-import { useUser } from "@clerk/nextjs"
+import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { useEffect } from "react"
 import { redirect } from "next/navigation"
 import { usePathname } from "next/navigation"
@@ -14,7 +14,7 @@ export default function AppLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { isLoaded, isSignedIn } = useUser()
+  const { isLoaded, isSignedIn } = useSuiAuth()
   const pathname = usePathname()
 
   // Check if we're on the dashboard page
@@ -28,7 +28,11 @@ export default function AppLayout({
   }, [isLoaded, isSignedIn])
 
   if (!isLoaded) {
-    return <div>Loading...</div>
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-dashboard-dark">
+        <div className="text-white">Loading...</div>
+      </div>
+    )
   }
 
   return (

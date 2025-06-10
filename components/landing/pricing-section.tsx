@@ -3,7 +3,9 @@
 import { useRef, useState, useEffect } from "react"
 import { Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { SignUpButton } from "@clerk/nextjs"
+import { SuiWalletWithSocial } from "@/components/sui-wallet-with-social"
+import { SignedIn, SignedOut } from "@/contexts/sui-auth-context"
+import Link from "next/link"
 
 // Simplified InView implementation
 const useInView = (ref, options = {}) => {
@@ -175,18 +177,25 @@ function PricingCard({ plan, index }) {
         </div>
         <p className="text-white/70 mb-6">{plan.description}</p>
 
-        <SignUpButton mode="modal">
-          <Button
-            className={`w-full mb-6 rounded-full py-6 h-auto ${
-              plan.popular 
-                ? 'bg-white hover:bg-white/90 text-black' 
-                : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
-            }`}
-            variant={plan.popular ? 'default' : 'outline'}
-          >
-            {plan.buttonText}
-          </Button>
-        </SignUpButton>
+        <SignedOut>
+          <div className="w-full mb-6">
+            <SuiWalletWithSocial />
+          </div>
+        </SignedOut>
+        <SignedIn>
+          <Link href="/subscriptions">
+            <Button
+              className={`w-full mb-6 rounded-full py-6 h-auto ${
+                plan.popular
+                  ? 'bg-white hover:bg-white/90 text-black'
+                  : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
+              }`}
+              variant={plan.popular ? 'default' : 'outline'}
+            >
+              {plan.buttonText}
+            </Button>
+          </Link>
+        </SignedIn>
 
         <div className="space-y-4">
           {plan.features.map((feature, featureIndex) => (

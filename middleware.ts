@@ -1,41 +1,63 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 // Define public routes that don't require authentication
-const isPublicRoute = createRouteMatcher([
+const publicRoutes = [
   '/',                  // Landing page
-  '/sign-in/(.*)?',     // Sign in pages
-  '/sign-up/(.*)?',     // Sign up pages
   '/api/(.*)?',         // API routes
   '/images/(.*)?',      // Public images
-])
+  '/_next/(.*)?',       // Next.js internals
+  '/favicon.ico',       // Favicon
+]
 
 // Define app routes that require authentication
-const isAppRoute = createRouteMatcher([
-  '/dashboard(.*)?',
-  '/profile(.*)?',
-  '/subscriptions(.*)?',
-  '/settings(.*)?',
-  '/notifications(.*)?',
-  '/crypto-bots(.*)?',
-  '/stock-bots(.*)?',
-  '/forex-bots(.*)?',
-  '/mint-nft(.*)?',
-  '/community(.*)?',
-  '/copy-trading(.*)?',
-  '/dapps(.*)?',
-  '/metago-academy(.*)?',
-  '/marketplace(.*)?',
-])
+const protectedRoutes = [
+  '/dashboard',
+  '/profile',
+  '/subscriptions',
+  '/settings',
+  '/notifications',
+  '/crypto-bots',
+  '/stock-bots',
+  '/forex-bots',
+  '/mint-nft',
+  '/community',
+  '/copy-trading',
+  '/dapps',
+  '/metago-academy',
+  '/marketplace',
+]
 
-export default clerkMiddleware({
-  // Protect app routes
-  afterAuth(auth, req) {
-    // If the user is not signed in and the route is an app route, redirect to landing page
-    if (!auth.userId && isAppRoute(req.nextUrl.pathname)) {
-      return Response.redirect(new URL('/', req.url))
+function isPublicRoute(pathname: string): boolean {
+  return publicRoutes.some(route => {
+    if (route.includes('(.*)?')) {
+      const baseRoute = route.replace('(.*)?', '')
+      return pathname.startsWith(baseRoute)
     }
-  },
-})
+    return pathname === route
+  })
+}
+
+function isProtectedRoute(pathname: string): boolean {
+  return protectedRoutes.some(route => pathname.startsWith(route))
+}
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Allow public routes
+  if (isPublicRoute(pathname)) {
+    return NextResponse.next()
+  }
+
+  // For protected routes, we'll handle authentication on the client side
+  // since we can't access wallet state in middleware
+  if (isProtectedRoute(pathname)) {
+    return NextResponse.next()
+  }
+
+  return NextResponse.next()
+}
 
 export const config = {
   matcher: [

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SuiClientProvider, WalletProvider } from '@mysten/dapp-kit'
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client'
 import { ZkLoginProvider } from './zklogin-provider'
+import { SuiAuthProvider } from '@/contexts/sui-auth-context'
 import '@mysten/dapp-kit/dist/index.css'
 import { useState } from 'react'
 
@@ -33,7 +34,9 @@ export function SuiProviders({ children }: { children: React.ReactNode }) {
       <SuiClientProvider networks={networks} defaultNetwork="devnet">
         <WalletProvider>
           <ZkLoginProvider suiClient={suiClient}>
-            {children}
+            <SuiAuthProvider>
+              {children}
+            </SuiAuthProvider>
           </ZkLoginProvider>
         </WalletProvider>
       </SuiClientProvider>
