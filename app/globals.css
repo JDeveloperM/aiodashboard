@@ -657,14 +657,14 @@ button[data-dapp-kit="connectButton"]:hover,
 /* Enhanced Card Styles */
 .enhanced-card {
   background: linear-gradient(135deg, #252D4A, #1A3C6D);
-  padding: 20px;
+  padding: 0;
   border-radius: 15px;
   flex: 1;
   transition: none !important;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2), inset 0 0 10px rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(0, 184, 230, 0.2);
   position: relative;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .enhanced-card-content {

@@ -74,6 +74,7 @@ export function Sidebar() {
       ]
     },
     { name: "Community", href: "/community", icon: Globe, restricted: false },
+    { name: "AIO Creators", href: "/aio-creators", icon: Users, restricted: false },
     { name: "Portfolio Ideas", href: "/community/portfolio-ideas", icon: TrendingUp, restricted: false },
     {
       name: "DApps",
