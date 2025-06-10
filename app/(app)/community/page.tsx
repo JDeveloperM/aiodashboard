@@ -1,14 +1,18 @@
 "use client"
 
-import { ChatInterface } from "@/components/hub/chat-interface"
+import { UserSearchInterface } from "@/components/user-search-interface"
 
 export default function CommunityPage() {
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Chat Interface */}
-      <div className="flex-1 overflow-hidden">
-        <ChatInterface />
+    <div className="space-y-6 p-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Community</h1>
+          <p className="text-gray-400 mt-1">Search and connect with other users in the MetadudesX community</p>
+        </div>
       </div>
+
+      <UserSearchInterface />
     </div>
   )
 }
