@@ -80,7 +80,9 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
           }
           
           // Save updated user data
-          localStorage.setItem(`sui_user_${currentUser.address}`, JSON.stringify(currentUser))
+          if (currentUser) {
+            localStorage.setItem(`sui_user_${currentUser.address}`, JSON.stringify(currentUser))
+          }
         }
 
         setUser(currentUser)

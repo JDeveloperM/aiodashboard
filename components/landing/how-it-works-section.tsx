@@ -4,27 +4,31 @@ import { useRef, useState, useEffect } from "react"
 import { UserPlus, Settings, LineChart, DollarSign } from "lucide-react"
 import StarBorder from "@/components/ui/star-border"
 
+// Custom interface for IntersectionObserver options with 'once' property
+interface InViewOptions extends IntersectionObserverInit {
+  once?: boolean
+}
+
 // Simplified InView implementation
-const useInView = (ref, options = {}) => {
+const useInView = (ref: React.RefObject<Element>, options: InViewOptions = {}) => {
   const [isInView, setIsInView] = useState(false)
 
   useEffect(() => {
-    if (!ref.current) return
+    const currentRef = ref.current
+    if (!currentRef) return
 
     const observer = new IntersectionObserver(([entry]) => {
       setIsInView(entry.isIntersecting)
 
-      if (entry.isIntersecting && options.once) {
+      if (entry.isIntersecting && options.once && ref.current) {
         observer.unobserve(ref.current)
       }
     }, options)
 
-    observer.observe(ref.current)
+    observer.observe(currentRef)
 
     return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current)
-      }
+      observer.unobserve(currentRef)
     }
   }, [ref, options.once, options.threshold])
 
@@ -60,7 +64,7 @@ const steps = [
 
 export function HowItWorksSection() {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.2 })
+  const isInView = useInView(ref, { once: true, threshold: 0.2 })
 
   return (
     <section className="py-32 bg-black relative overflow-hidden" id="how-it-works">

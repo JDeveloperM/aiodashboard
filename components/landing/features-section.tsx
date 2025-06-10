@@ -4,27 +4,31 @@ import { useRef, useState, useEffect } from "react"
 import { TrendingUp, BarChart2, Shield, Zap, Users, Globe } from "lucide-react"
 import { SpotlightCard } from "@/components/ui/spotlight-card"
 
+// Custom interface for IntersectionObserver options with 'once' property
+interface InViewOptions extends IntersectionObserverInit {
+  once?: boolean
+}
+
 // Simplified InView implementation
-const useInView = (ref, options = {}) => {
+const useInView = (ref: React.RefObject<Element>, options: InViewOptions = {}) => {
   const [isInView, setIsInView] = useState(false)
 
   useEffect(() => {
-    if (!ref.current) return
+    const currentRef = ref.current
+    if (!currentRef) return
 
     const observer = new IntersectionObserver(([entry]) => {
       setIsInView(entry.isIntersecting)
 
-      if (entry.isIntersecting && options.once) {
+      if (entry.isIntersecting && options.once && ref.current) {
         observer.unobserve(ref.current)
       }
     }, options)
 
-    observer.observe(ref.current)
+    observer.observe(currentRef)
 
     return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current)
-      }
+      observer.unobserve(currentRef)
     }
   }, [ref, options.once, options.threshold])
 
@@ -99,7 +103,14 @@ export function FeaturesSection() {
   )
 }
 
-function FeatureCard({ feature, index }) {
+function FeatureCard({ feature, index }: {
+  feature: {
+    icon: React.ComponentType<{ className?: string }>,
+    title: string,
+    description: string
+  },
+  index: number
+}) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, threshold: 0.3 })
 

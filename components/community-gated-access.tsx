@@ -282,20 +282,20 @@ export function CommunityGatedAccess() {
             {/* User Profile Section */}
             <div className="flex items-center gap-4 p-4 bg-[#030F1C] rounded-lg border border-[#C0E6FF]/20">
               <Avatar className="h-16 w-16 bg-blue-100">
-                <AvatarImage src={user?.imageUrl} alt={user?.fullName || user?.firstName || 'User'} />
+                <AvatarImage src={user?.profileImage} alt={user?.username || 'User'} />
                 <AvatarFallback className="bg-[#4DA2FF] text-white text-lg font-semibold">
-                  {user?.firstName?.charAt(0) || user?.emailAddresses?.[0]?.emailAddress?.charAt(0) || 'U'}
+                  {user?.username?.charAt(0)?.toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
                 <h4 className="text-white font-semibold text-lg">
-                  {user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'User'}
+                  {user?.username || 'User'}
                 </h4>
-                <p className="text-[#C0E6FF] text-sm">
-                  {user?.primaryEmailAddress?.emailAddress || 'No email provided'}
+                <p className="text-[#C0E6FF] text-sm font-mono">
+                  {user?.address ? `${user.address.slice(0, 6)}...${user.address.slice(-4)}` : 'No wallet connected'}
                 </p>
                 <div className="flex items-center gap-2 mt-2">
-                  <RoleImage role={tier as "Copier" | "PRO" | "ROYAL"} size="sm" />
+                  <RoleImage role={tier} size="sm" />
                   <Badge className={`${
                     tier === 'ROYAL' ? 'bg-yellow-500 text-black' :
                     tier === 'PRO' ? 'bg-blue-600 text-white' :

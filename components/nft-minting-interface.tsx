@@ -123,8 +123,8 @@ export function NFTMintingInterface() {
   }
 
   const canUpgrade = (tierToMint: NFTTier) => {
-    if (tierToMint.id === 'PRO') return tier === 'Copier'
-    if (tierToMint.id === 'ROYAL') return tier === 'Copier' || tier === 'PRO'
+    if (tierToMint.id === 'PRO') return tier === 'NOMAD'
+    if (tierToMint.id === 'ROYAL') return tier === 'NOMAD' || tier === 'PRO'
     return false
   }
 
@@ -148,7 +148,7 @@ export function NFTMintingInterface() {
       </div>
 
       {/* Current Tier Status */}
-      {tier !== 'Copier' && (
+      {tier !== 'NOMAD' && (
         <Card className="dashboard-card">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">

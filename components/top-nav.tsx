@@ -67,7 +67,7 @@ export function TopNav() {
           </span>
         </div>
         <div className="flex items-center gap-2 md:gap-4">
-          <RoleImage role={tier as "Copier" | "PRO" | "ROYAL"} size="md" />
+          <RoleImage role={tier} size="md" />
           <SignedIn>
             <Badge className="bg-[#4da2ff] text-white text-xs md:text-sm">
               <div className="flex items-center gap-1">

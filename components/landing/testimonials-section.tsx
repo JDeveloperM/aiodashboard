@@ -6,27 +6,31 @@ import { Button } from "@/components/ui/button"
 import { usePlaceholderImage } from "./placeholder-images"
 import Image from "next/image"
 
+// Custom interface for IntersectionObserver options with 'once' property
+interface InViewOptions extends IntersectionObserverInit {
+  once?: boolean
+}
+
 // Simplified InView implementation
-const useInView = (ref, options = {}) => {
+const useInView = (ref: React.RefObject<Element>, options: InViewOptions = {}) => {
   const [isInView, setIsInView] = useState(false)
 
   useEffect(() => {
-    if (!ref.current) return
+    const currentRef = ref.current
+    if (!currentRef) return
 
     const observer = new IntersectionObserver(([entry]) => {
       setIsInView(entry.isIntersecting)
 
-      if (entry.isIntersecting && options.once) {
+      if (entry.isIntersecting && options.once && ref.current) {
         observer.unobserve(ref.current)
       }
     }, options)
 
-    observer.observe(ref.current)
+    observer.observe(currentRef)
 
     return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current)
-      }
+      observer.unobserve(currentRef)
     }
   }, [ref, options.once, options.threshold])
 

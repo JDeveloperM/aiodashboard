@@ -674,7 +674,7 @@ export function ProfileSystem() {
               <TooltipProvider>
                 <div className="grid grid-cols-3 gap-1.5">
                   {profileData.achievements.map((achievement, index) => {
-                    const Icon = achievement.icon
+                    const Icon = achievement.icon as React.ComponentType<{ className?: string; style?: React.CSSProperties }>
                     const isLocked = !achievement.unlocked
                     const canClaim = achievement.unlocked && !achievement.claimed
 
@@ -751,7 +751,7 @@ export function ProfileSystem() {
                                         className="w-10 h-10 object-contain"
                                       />
                                     )
-                                  } else if (typeof Icon === 'function') {
+                                  } else if (Icon && typeof Icon === 'function') {
                                     return (
                                       <div
                                         className="p-2 rounded-full flex items-center justify-center"
@@ -764,14 +764,15 @@ export function ProfileSystem() {
                                       </div>
                                     )
                                   } else {
+                                    // Fallback for achievements without icons
                                     return (
                                       <div
                                         className="p-2 rounded-full flex items-center justify-center"
                                         style={{ backgroundColor: `${achievement.color}20` }}
                                       >
-                                        <Icon
-                                          className="w-5 h-5"
-                                          style={{ color: achievement.color }}
+                                        <div
+                                          className="w-5 h-5 rounded-full"
+                                          style={{ backgroundColor: achievement.color }}
                                         />
                                       </div>
                                     )

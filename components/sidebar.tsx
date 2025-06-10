@@ -96,7 +96,21 @@ export function Sidebar() {
     { name: "Settings", href: "/settings", icon: Settings, restricted: false },
   ]
 
-  const NavItem = ({ item }) => {
+  interface NavItemType {
+    name: string
+    href: string
+    icon: React.ComponentType<{ className?: string }>
+    restricted?: boolean
+    hasDropdown?: boolean
+    subItems?: Array<{
+      name: string
+      href: string
+      icon: React.ComponentType<{ className?: string }>
+      restricted?: boolean
+    }>
+  }
+
+  const NavItem = ({ item }: { item: NavItemType }) => {
     const isActive = item.hasDropdown
       ? item.subItems?.some(subItem => pathname === subItem.href) || pathname === item.href
       : pathname === item.href

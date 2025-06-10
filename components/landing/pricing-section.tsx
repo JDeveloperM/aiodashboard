@@ -7,27 +7,31 @@ import { SuiWalletWithSocial } from "@/components/sui-wallet-with-social"
 import { SignedIn, SignedOut } from "@/contexts/sui-auth-context"
 import Link from "next/link"
 
+// Custom interface for IntersectionObserver options with 'once' property
+interface InViewOptions extends IntersectionObserverInit {
+  once?: boolean
+}
+
 // Simplified InView implementation
-const useInView = (ref, options = {}) => {
+const useInView = (ref: React.RefObject<Element>, options: InViewOptions = {}) => {
   const [isInView, setIsInView] = useState(false)
 
   useEffect(() => {
-    if (!ref.current) return
+    const currentRef = ref.current
+    if (!currentRef) return
 
     const observer = new IntersectionObserver(([entry]) => {
       setIsInView(entry.isIntersecting)
 
-      if (entry.isIntersecting && options.once) {
+      if (entry.isIntersecting && options.once && ref.current) {
         observer.unobserve(ref.current)
       }
     }, options)
 
-    observer.observe(ref.current)
+    observer.observe(currentRef)
 
     return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current)
-      }
+      observer.unobserve(currentRef)
     }
   }, [ref, options.once, options.threshold])
 
@@ -136,9 +140,21 @@ export function PricingSection() {
   )
 }
 
-function PricingCard({ plan, index }) {
+function PricingCard({ plan, index }: {
+  plan: {
+    name: string
+    price: string
+    period?: string
+    description: string
+    features: Array<{ included: boolean; text: string }>
+    popular: boolean
+    buttonText: string
+    color: string
+  }
+  index: number
+}) {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.3 })
+  const isInView = useInView(ref, { once: true, threshold: 0.3 })
 
   return (
     <div

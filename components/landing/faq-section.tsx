@@ -3,8 +3,13 @@
 import { useRef, useState, useEffect } from "react"
 import { ChevronDown } from "lucide-react"
 
+// Custom interface for IntersectionObserver options with 'once' property
+interface InViewOptions extends IntersectionObserverInit {
+  once?: boolean
+}
+
 // Simplified InView implementation
-const useInView = (ref: React.RefObject<Element>, options: IntersectionObserverInit = {}) => {
+const useInView = (ref: React.RefObject<Element>, options: InViewOptions = {}) => {
   const [isInView, setIsInView] = useState(false)
 
   useEffect(() => {
@@ -111,7 +116,7 @@ export function FAQSection() {
   )
 }
 
-function FAQItem({ faq, index, isInView }) {
+function FAQItem({ faq, index, isInView }: { faq: { question: string; answer: string }, index: number, isInView: boolean }) {
   const [isOpen, setIsOpen] = useState(false)
   const contentRef = useRef(null)
 

@@ -231,15 +231,11 @@ export function DashboardProfiles() {
                       className="hidden"
                       id="profile-upload"
                     />
-                    <label htmlFor="profile-upload">
-                      <Button
-                        as="span"
-                        variant="outline"
-                        className="w-full border-[#C0E6FF] text-[#C0E6FF] cursor-pointer"
-                      >
+                    <label htmlFor="profile-upload" className="cursor-pointer">
+                      <span className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full border-[#C0E6FF] text-[#C0E6FF]">
                         <Upload className="w-4 h-4 mr-2" />
                         Upload Image
-                      </Button>
+                      </span>
                     </label>
                   </div>
                 )}
