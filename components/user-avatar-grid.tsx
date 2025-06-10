@@ -124,15 +124,14 @@ function UserAvatar({ user, onCardToggle, isCardOpen }: UserAvatarProps) {
   }
 
   return (
-    <TooltipProvider>
-      <div className="relative group">
-        {/* Stacked Avatar Container */}
-        <div 
-          className="relative cursor-pointer transform transition-all duration-300 hover:scale-110 hover:z-10"
-          onClick={handleClick}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
+    <div className="relative group">
+      {/* Stacked Avatar Container */}
+      <div
+        className="relative cursor-pointer transform transition-all duration-300 hover:scale-110 hover:z-10"
+        onClick={handleClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
           {/* Main Avatar */}
           <div className="relative">
             <Avatar className="h-16 w-16 bg-blue-100 ring-2 ring-[#4DA2FF]/30 hover:ring-[#4DA2FF] transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-[#4DA2FF]/20">
@@ -175,7 +174,7 @@ function UserAvatar({ user, onCardToggle, isCardOpen }: UserAvatarProps) {
                       />
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white text-xs">
+                  <TooltipContent className="text-xs">
                     <div className="font-medium">{social.platform}</div>
                     <div className="text-[#C0E6FF]/70">{social.username}</div>
                   </TooltipContent>
@@ -281,7 +280,7 @@ function UserAvatar({ user, onCardToggle, isCardOpen }: UserAvatarProps) {
                                   )}
                                 </div>
                               </TooltipTrigger>
-                              <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white text-xs">
+                              <TooltipContent className="text-xs">
                                 <div className="font-medium">{achievement.name}</div>
                                 <div className="text-[#C0E6FF]/70">{achievement.tooltip}</div>
                               </TooltipContent>
@@ -314,8 +313,7 @@ function UserAvatar({ user, onCardToggle, isCardOpen }: UserAvatarProps) {
         )}
 
 
-      </div>
-    </TooltipProvider>
+    </div>
   )
 }
 
@@ -385,9 +383,10 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
   const displayedUser = isMobile ? selectedUser : hoveredUser
 
   return (
-    <div className="relative">
-      {/* Avatar Grid */}
-      <div className="enhanced-card">
+    <TooltipProvider delayDuration={300} skipDelayDuration={100}>
+      <div className="relative">
+        {/* Avatar Grid */}
+        <div className="enhanced-card">
         <div className="enhanced-card-content">
           {/* Grid Header */}
           <div className="flex items-center justify-between mb-6">
@@ -486,8 +485,7 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
 
             {/* Card Shadow/Glow Effect */}
             <div className="absolute inset-0 bg-[#4DA2FF]/20 rounded-lg blur-xl scale-110 pointer-events-none" />
-            <TooltipProvider>
-              <div className="relative bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg p-4">
+            <div className="relative bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg p-4">
               {/* Header */}
               <div className="flex items-center gap-3 mb-3">
                 <Avatar className="h-12 w-12 bg-blue-100">
@@ -588,7 +586,7 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
                                 )}
                               </div>
                             </TooltipTrigger>
-                            <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white text-xs">
+                            <TooltipContent className="text-xs">
                               <div className="font-medium">{achievement.name}</div>
                               <div className="text-[#C0E6FF]/70">{achievement.tooltip}</div>
                             </TooltipContent>
@@ -609,11 +607,11 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
                   <UserPlus className="w-3 h-3" />
                 </Button>
               </div>
-              </div>
-            </TooltipProvider>
+            </div>
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </TooltipProvider>
   )
 }

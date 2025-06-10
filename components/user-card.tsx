@@ -193,7 +193,7 @@ export function UserCard({ user }: UserCardProps) {
                   <span>Joined {formatDate(user.joinDate)}</span>
                 </div>
               </TooltipTrigger>
-              <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
+              <TooltipContent>
                 <p>Member since: {formatDate(user.joinDate)}</p>
               </TooltipContent>
             </Tooltip>
@@ -205,7 +205,7 @@ export function UserCard({ user }: UserCardProps) {
                   <span>Active {user.lastActive}</span>
                 </div>
               </TooltipTrigger>
-              <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
+              <TooltipContent>
                 <p>Last seen: {user.lastActive}</p>
               </TooltipContent>
             </Tooltip>

@@ -145,7 +145,7 @@ export function UserListItem({ user }: UserListItemProps) {
                   </span>
                 </div>
               </TooltipTrigger>
-              <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
+              <TooltipContent>
                 <p>KYC Status: {user.kycStatus.replace('_', ' ').toUpperCase()}</p>
               </TooltipContent>
             </Tooltip>
@@ -182,7 +182,7 @@ export function UserListItem({ user }: UserListItemProps) {
                 <div className="text-white font-bold">{user.level}</div>
               </div>
             </TooltipTrigger>
-            <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
+            <TooltipContent>
               <p>User Level: {user.level}/10</p>
             </TooltipContent>
           </Tooltip>
