@@ -4,6 +4,7 @@ import { Notifications } from "./notifications"
 import { useSubscription } from "@/contexts/subscription-context"
 import { usePoints } from "@/contexts/points-context"
 import { RoleImage } from "@/components/ui/role-image"
+import { SuiWalletWithSocial } from "@/components/sui-wallet-with-social"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -72,7 +73,14 @@ export function TopNav() {
               </div>
             </Badge>
           </SignedIn>
+
           <Notifications />
+
+          {/* Sui Wallet Connect with Social Login */}
+          <SignedIn>
+            <SuiWalletWithSocial />
+          </SignedIn>
+
           <SignedOut>
             <SignInButton>
               <Button variant="outline" size="sm">Sign In</Button>

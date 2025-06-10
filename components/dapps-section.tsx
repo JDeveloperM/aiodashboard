@@ -107,8 +107,6 @@ export function DAppsSection() {
 
   return (
     <div className="space-y-6">
-      
-
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         {dapps.map((dapp, index) => (
           <div key={dapp.name} className={`enhanced-card group hover:border-[#4DA2FF]/50 transition-all duration-300 ${dapp.flagship ? 'ring-2 ring-[#4DA2FF] ring-opacity-50' : ''}`}>

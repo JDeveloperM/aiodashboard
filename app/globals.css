@@ -5,6 +5,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Sui Connect Button Styling - Multiple selectors for higher specificity */
+.sui-connect-button-wrapper button,
+.sui-connect-button-wrapper [data-dapp-kit="connectButton"],
+button[data-dapp-kit="connectButton"],
+[data-dapp-kit="connectButton"] {
+  background: #4DA2FF !important;
+  background-color: #4DA2FF !important;
+  border: none !important;
+  border-radius: 0.5rem !important;
+  color: white !important;
+  font-weight: 500 !important;
+  padding: 0.5rem 1rem !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 2px 4px rgba(77, 162, 255, 0.2) !important;
+}
+
+.sui-connect-button-wrapper button:hover,
+.sui-connect-button-wrapper [data-dapp-kit="connectButton"]:hover,
+button[data-dapp-kit="connectButton"]:hover,
+[data-dapp-kit="connectButton"]:hover {
+  background: rgba(77, 162, 255, 0.8) !important;
+  background-color: rgba(77, 162, 255, 0.8) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(77, 162, 255, 0.3) !important;
+}
+
+
+
 /* Font variables */
 :root {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -684,4 +713,47 @@
 .nav-item-active {
   background: linear-gradient(90deg, #00B8E6, #007ACC) !important;
   color: white !important;
+}
+
+/* Sui dApp Kit Styles */
+/* Basic wallet connect button styles */
+.sui-connect-button {
+  background: linear-gradient(to right, #3b82f6, #8b5cf6);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  padding: 8px 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sui-connect-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Wallet modal styles */
+.sui-wallet-modal {
+  background: #030f1c;
+  border: 1px solid rgba(77, 162, 255, 0.3);
+  border-radius: 12px;
+  color: white;
+}
+
+.sui-wallet-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(77, 162, 255, 0.3);
+  border-radius: 8px;
+  background: #030f1c;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sui-wallet-item:hover {
+  background: rgba(77, 162, 255, 0.1);
+  border-color: rgba(77, 162, 255, 0.5);
 }
