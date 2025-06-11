@@ -2,7 +2,7 @@
 
 import { useState, useEffect, MouseEvent } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useSubscription } from "@/contexts/subscription-context"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,7 @@ import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, Line
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [copyTradingExpanded, setCopyTradingExpanded] = useState(false)
@@ -186,7 +187,7 @@ export function Sidebar() {
   }
 
   function handleUpgrade(event: MouseEvent<HTMLButtonElement>): void {
-    window.location.href = '/subscriptions'
+    router.push('/dashboard/subscriptions')
   }
 
   return (
@@ -294,7 +295,7 @@ export function Sidebar() {
               <p className="text-xs text-gray-300 mb-3">Get access to all features and premium bots</p>
               <Button
     className="w-full bg-[#4da2ff] hover:bg-[#3d8ae6] text-white shadow-lg transition-all duration-200"
-    onClick={() => window.location.href = '/subscriptions'}
+    onClick={() => router.push('/dashboard/subscriptions')}
   >
     <TrendingUp className="w-4 h-4 animate-pulse" />
     Upgrade
@@ -308,7 +309,7 @@ export function Sidebar() {
                   <Button
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                     size="icon"
-                    onClick={() => window.location.href = '/subscriptions'}
+                    onClick={() => router.push('/dashboard/subscriptions')}
                   >
                     <TrendingUp className="h-4 w-4" />
                   </Button>

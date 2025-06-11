@@ -4,7 +4,7 @@ import { Sidebar } from "@/components/sidebar"
 import { TopNav } from "@/components/top-nav"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { useEffect } from "react"
-import { redirect } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { usePathname } from "next/navigation"
 import Squares from "@/components/ui/squares"
 import WaterDrops from "@/components/ui/water-drops"
@@ -16,16 +16,26 @@ export default function AppLayout({
 }) {
   const { isLoaded, isSignedIn } = useSuiAuth()
   const pathname = usePathname()
+  const router = useRouter()
 
   // Check if we're on the dashboard page
   const isDashboardPage = pathname === '/dashboard'
 
-  // Redirect if not signed in
+  // Redirect if not signed in (only after initial load is complete)
   useEffect(() => {
+    // Only redirect if we're sure the user is not signed in
+    // and we've had enough time for the wallet to connect
     if (isLoaded && !isSignedIn) {
-      redirect("/")
+      const timer = setTimeout(() => {
+        // Double-check the sign-in status before redirecting
+        if (!isSignedIn) {
+          router.push("/")
+        }
+      }, 500) // Give more time for wallet connection to establish
+
+      return () => clearTimeout(timer)
     }
-  }, [isLoaded, isSignedIn])
+  }, [isLoaded, isSignedIn, router])
 
   if (!isLoaded) {
     return (

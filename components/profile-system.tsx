@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -42,7 +42,12 @@ import {
   ArrowUp,
   Link,
   Search,
-  Filter
+  Filter,
+  Hash,
+  MessageCircle,
+  Bell,
+  Gift,
+  MoreHorizontal
 } from "lucide-react"
 
 // Social media image paths
@@ -89,6 +94,7 @@ interface InvitedUser {
   status: 'NOMAD' | 'PRO' | 'ROYAL'
   commission: number
   kycStatus: 'verified' | 'pending' | 'not_verified'
+  level: number
 }
 
 export function ProfileSystem() {
@@ -239,52 +245,132 @@ export function ProfileSystem() {
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<'ALL' | 'NOMAD' | 'PRO' | 'ROYAL'>('ALL')
+  const [selectedLevelFilter, setSelectedLevelFilter] = useState<'ALL' | '1-3' | '4-6' | '7-10'>('ALL')
+
+  // Pagination states
+  const [displayedCount, setDisplayedCount] = useState(5)
+  const [showLatestOnly, setShowLatestOnly] = useState(false)
 
   const [invitedUsers] = useState<InvitedUser[]>([
     {
       id: "1",
       username: "CryptoTrader_01",
       email: "trader01@email.com",
-      joinDate: "2024-01-15",
+      joinDate: "2024-02-15",
       status: "ROYAL",
       commission: 150,
-      kycStatus: "verified"
+      kycStatus: "verified",
+      level: 8
     },
     {
       id: "2",
       username: "BlockchainFan",
       email: "blockchain@email.com",
-      joinDate: "2024-01-12",
+      joinDate: "2024-02-12",
       status: "PRO",
       commission: 75,
-      kycStatus: "verified"
+      kycStatus: "verified",
+      level: 6
     },
     {
       id: "3",
       username: "DeFiExplorer",
       email: "defi@email.com",
-      joinDate: "2024-01-10",
+      joinDate: "2024-02-10",
       status: "NOMAD",
       commission: 0,
-      kycStatus: "not_verified"
+      kycStatus: "not_verified",
+      level: 2
     },
     {
       id: "4",
       username: "NFTCollector",
       email: "nft@email.com",
-      joinDate: "2024-01-08",
+      joinDate: "2024-02-08",
       status: "PRO",
       commission: 75,
-      kycStatus: "pending"
+      kycStatus: "pending",
+      level: 5
     },
     {
       id: "5",
       username: "MetaTrader",
       email: "meta@email.com",
-      joinDate: "2024-01-05",
+      joinDate: "2024-02-05",
       status: "ROYAL",
       commission: 150,
-      kycStatus: "verified"
+      kycStatus: "verified",
+      level: 9
+    },
+    {
+      id: "6",
+      username: "YieldFarmer",
+      email: "yield@email.com",
+      joinDate: "2024-01-28",
+      status: "PRO",
+      commission: 75,
+      kycStatus: "verified",
+      level: 7
+    },
+    {
+      id: "7",
+      username: "TokenHunter",
+      email: "hunter@email.com",
+      joinDate: "2024-01-25",
+      status: "NOMAD",
+      commission: 0,
+      kycStatus: "verified",
+      level: 3
+    },
+    {
+      id: "8",
+      username: "SmartContract_Dev",
+      email: "dev@email.com",
+      joinDate: "2024-01-22",
+      status: "ROYAL",
+      commission: 150,
+      kycStatus: "verified",
+      level: 10
+    },
+    {
+      id: "9",
+      username: "CryptoWhale",
+      email: "whale@email.com",
+      joinDate: "2024-01-20",
+      status: "PRO",
+      commission: 75,
+      kycStatus: "pending",
+      level: 6
+    },
+    {
+      id: "10",
+      username: "DAppBuilder",
+      email: "builder@email.com",
+      joinDate: "2024-01-18",
+      status: "PRO",
+      commission: 75,
+      kycStatus: "verified",
+      level: 8
+    },
+    {
+      id: "11",
+      username: "Web3Pioneer",
+      email: "pioneer@email.com",
+      joinDate: "2024-01-15",
+      status: "NOMAD",
+      commission: 0,
+      kycStatus: "not_verified",
+      level: 1
+    },
+    {
+      id: "12",
+      username: "StakingMaster",
+      email: "staking@email.com",
+      joinDate: "2024-01-12",
+      status: "ROYAL",
+      commission: 150,
+      kycStatus: "verified",
+      level: 9
     }
   ])
 
@@ -454,13 +540,38 @@ export function ProfileSystem() {
     // Role filter
     const roleMatch = selectedRoleFilter === 'ALL' || user.status === selectedRoleFilter
 
+    // Level filter
+    const levelMatch = selectedLevelFilter === 'ALL' ||
+      (selectedLevelFilter === '1-3' && user.level >= 1 && user.level <= 3) ||
+      (selectedLevelFilter === '4-6' && user.level >= 4 && user.level <= 6) ||
+      (selectedLevelFilter === '7-10' && user.level >= 7 && user.level <= 10)
+
     // Search filter (search in username and email)
     const searchMatch = searchTerm === '' ||
       user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
 
-    return roleMatch && searchMatch
+    return roleMatch && levelMatch && searchMatch
   })
+
+  // Sort by join date (newest first) and get latest 5 or paginated results
+  const sortedUsers = [...filteredUsers].sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
+
+  // Get latest 5 referrals for the "Latest Referrals" section
+  const latestReferrals = sortedUsers.slice(0, 5)
+
+  // Get displayed users based on pagination
+  const displayedUsers = showLatestOnly ? latestReferrals : sortedUsers.slice(0, displayedCount)
+
+  // Show more functionality
+  const handleShowMore = () => {
+    setDisplayedCount(prev => prev + 5)
+  }
+
+  const handleToggleLatest = () => {
+    setShowLatestOnly(!showLatestOnly)
+    setDisplayedCount(5) // Reset pagination when switching views
+  }
 
   // Check if device is mobile
   const isMobile = () => {
@@ -472,6 +583,34 @@ export function ProfileSystem() {
       e.stopPropagation()
       setMobileTooltipOpen(mobileTooltipOpen === index ? null : index)
     }
+  }
+
+  // Referral action handlers
+  const handleDirectMessage = (user: InvitedUser) => {
+    // In a real app, this would open a direct message interface
+    console.log(`Opening direct message to ${user.username}`)
+    // You could integrate with a chat system or messaging API
+    alert(`Direct message feature would open for ${user.username}`)
+  }
+
+  const handleSendEmail = (user: InvitedUser) => {
+    // In a real app, this would open email composer or send via API
+    console.log(`Sending email to ${user.email}`)
+    const subject = encodeURIComponent('Message from MetadudesX')
+    const body = encodeURIComponent(`Hi ${user.username},\n\nI hope you're enjoying your experience with MetadudesX!\n\nBest regards`)
+    window.open(`mailto:${user.email}?subject=${subject}&body=${body}`, '_blank')
+  }
+
+  const handleSubscriptionReminder = (user: InvitedUser) => {
+    // In a real app, this would send a subscription reminder via API
+    console.log(`Sending subscription reminder to ${user.username}`)
+    alert(`Subscription reminder sent to ${user.username}!\n\nThey will receive an email about upgrading their membership.`)
+  }
+
+  const handleSpecialBonusOffer = (user: InvitedUser) => {
+    // In a real app, this would send a special bonus offer via API
+    console.log(`Sending special bonus offer to ${user.username}`)
+    alert(`Special bonus offer sent to ${user.username}!\n\nThey will receive an exclusive promotion via email and in-app notification.`)
   }
 
   const handleClaimAchievement = (achievement: any) => {
@@ -942,6 +1081,105 @@ export function ProfileSystem() {
                   ))}
                 </div>
               </div>
+
+              {/* Channels Section */}
+              <div className="mb-6">
+                {/* Channels Joined */}
+                <div className="mb-4">
+                  <h4 className="text-white font-semibold mb-3 text-center">Channels Joined</h4>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {[
+                      { id: '1', name: 'Daily Market Updates', type: 'free', price: 0, subscribers: 8500, color: '#10b981' },
+                      { id: '2', name: 'Premium Trading Signals', type: 'premium', price: 5.0, subscribers: 2100, color: '#f59e0b' },
+                      { id: '3', name: 'DeFi Basics', type: 'free', price: 0, subscribers: 9200, color: '#3b82f6' },
+                      { id: '4', name: 'Advanced Bot Strategies', type: 'premium', price: 12.0, subscribers: 2100, color: '#f97316' },
+                    ].map((channel) => (
+                      <TooltipProvider key={channel.id}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div
+                              className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all hover:scale-110 border-2 border-[#C0E6FF]/20"
+                              style={{ backgroundColor: channel.color }}
+                            >
+                              <Hash className="w-4 h-4 text-white" />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-[#1a2f51] border border-[#C0E6FF]/20 text-white p-3 max-w-xs">
+                            <div className="space-y-2">
+                              <div className="font-semibold text-sm">{channel.name}</div>
+                              <div className="flex items-center gap-2 text-xs">
+                                <Badge className={`${
+                                  channel.type === 'free'
+                                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                                    : 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+                                } text-xs`}>
+                                  {channel.type.toUpperCase()}
+                                </Badge>
+                                {channel.type !== 'free' && (
+                                  <span className="text-[#C0E6FF]">{channel.price} SUI</span>
+                                )}
+                              </div>
+                              <div className="text-xs text-[#C0E6FF]">
+                                {channel.subscribers.toLocaleString()} subscribers
+                              </div>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Channels Owned */}
+                <div>
+                  <h4 className="text-white font-semibold mb-3 text-center">Channels Owned</h4>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {[
+                      { id: '5', name: 'My Trading Tips', type: 'premium', price: 8.0, subscribers: 1250, color: '#8b5cf6' },
+                      { id: '6', name: 'Crypto News Daily', type: 'free', price: 0, subscribers: 3400, color: '#06b6d4' },
+                    ].map((channel) => (
+                      <TooltipProvider key={channel.id}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div
+                              className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all hover:scale-110 border-2 border-yellow-400/50"
+                              style={{ backgroundColor: channel.color }}
+                            >
+                              <Crown className="w-4 h-4 text-white" />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-[#1a2f51] border border-[#C0E6FF]/20 text-white p-3 max-w-xs">
+                            <div className="space-y-2">
+                              <div className="font-semibold text-sm flex items-center gap-2">
+                                {channel.name}
+                                <Crown className="w-3 h-3 text-yellow-400" />
+                              </div>
+                              <div className="flex items-center gap-2 text-xs">
+                                <Badge className={`${
+                                  channel.type === 'free'
+                                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                                    : 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+                                } text-xs`}>
+                                  {channel.type.toUpperCase()}
+                                </Badge>
+                                {channel.type !== 'free' && (
+                                  <span className="text-[#C0E6FF]">{channel.price} SUI</span>
+                                )}
+                              </div>
+                              <div className="text-xs text-[#C0E6FF]">
+                                {channel.subscribers.toLocaleString()} subscribers
+                              </div>
+                              <div className="text-xs text-yellow-400">
+                                Owner
+                              </div>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1017,10 +1255,38 @@ export function ProfileSystem() {
         <div className="enhanced-card-content">
           {/* Header with Search and Filter Controls */}
           <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-6">
-            {/* Title */}
-            <div className="flex items-center gap-2 text-[#FFFFFF]">
-              <Users className="w-5 h-5 text-[#4DA2FF]" />
-              <h3 className="text-xl font-semibold">Referrals</h3>
+            {/* Title and View Toggle */}
+            <div className="flex items-center gap-4 text-[#FFFFFF]">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-[#4DA2FF]" />
+                <h3 className="text-xl font-semibold">Referrals</h3>
+              </div>
+
+              {/* View Toggle Buttons */}
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleToggleLatest}
+                  size="sm"
+                  variant={showLatestOnly ? "default" : "outline"}
+                  className={showLatestOnly
+                    ? "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white text-xs h-7 px-3"
+                    : "border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 text-xs h-7 px-3"
+                  }
+                >
+                  Latest 5
+                </Button>
+                <Button
+                  onClick={handleToggleLatest}
+                  size="sm"
+                  variant={!showLatestOnly ? "default" : "outline"}
+                  className={!showLatestOnly
+                    ? "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white text-xs h-7 px-3"
+                    : "border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 text-xs h-7 px-3"
+                  }
+                >
+                  All Referrals
+                </Button>
+              </div>
             </div>
 
             {/* Search and Filter Controls */}
@@ -1068,60 +1334,313 @@ export function ProfileSystem() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Level Filter */}
+              <div className="w-full sm:w-48">
+                <Select value={selectedLevelFilter} onValueChange={(value: 'ALL' | '1-3' | '4-6' | '7-10') => setSelectedLevelFilter(value)}>
+                  <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF]">
+                    <div className="flex items-center gap-2">
+                      <Award className="w-4 h-4 text-[#C0E6FF]" />
+                      <SelectValue placeholder="Filter by level" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#1a2f51] border-[#C0E6FF]/30">
+                    <SelectItem value="ALL" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">All Levels</SelectItem>
+                    <SelectItem value="1-3" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                      <div className="flex items-center gap-2">
+                        <Award className="w-3 h-3 text-[#4DA2FF]" />
+                        Level 1-3
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="4-6" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                      <div className="flex items-center gap-2">
+                        <Award className="w-3 h-3 text-[#4DA2FF]" />
+                        Level 4-6
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="7-10" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                      <div className="flex items-center gap-2">
+                        <Award className="w-3 h-3 text-[#4DA2FF]" />
+                        Level 7-10
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full table-fixed">
-              <thead>
-                <tr className="border-b border-[#C0E6FF]/20">
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium w-1/5">Username</th>
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium w-1/3">Email</th>
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium w-1/5">Join Date</th>
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium w-1/6">Status</th>
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium w-1/6">Points</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.length > 0 ? (
-                  filteredUsers.map((user) => (
-                    <tr key={user.id} className="border-b border-[#C0E6FF]/10 hover:bg-[#4DA2FF]/5 transition-colors">
-                      <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm">
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3">
+            {displayedUsers.length > 0 ? (
+              displayedUsers.map((user) => {
+                const [isExpanded, setIsExpanded] = React.useState(false)
+
+                return (
+                  <div key={user.id} className="bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg overflow-hidden">
+                    {/* Main User Info */}
+                    <div
+                      className="p-4 cursor-pointer"
+                      onClick={() => setIsExpanded(!isExpanded)}
+                    >
+                      {/* Header Row */}
+                      <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <span className="truncate">{user.username}</span>
+                          <span className="text-white font-semibold text-base">{user.username}</span>
                           <Badge className={`${getKycStatusColor(user.kycStatus)} bg-transparent border-0 text-xs font-semibold px-1 py-0`}>
                             {getKycStatusText(user.kycStatus)}
                           </Badge>
                         </div>
-                      </td>
-                      <td className="py-3 px-2 text-left text-[#C0E6FF] text-sm">
-                        <div className="flex items-center gap-2">
-                          <Mail className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{user.email}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-2 text-left text-[#C0E6FF] text-sm">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-3 h-3 flex-shrink-0" />
-                          <span>{new Date(user.joinDate).toLocaleDateString()}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-2 text-left">
-                        <Badge className={getStatusColor(user.status)}>
-                          <div className="flex items-center gap-1">
-                            <RoleImage role={user.status as "NOMAD" | "PRO" | "ROYAL"} size="md" />
-                            {user.status}
+                        <MoreHorizontal className={`w-4 h-4 text-[#C0E6FF] transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                      </div>
+
+                      {/* Email */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <Mail className="w-3 h-3 text-[#C0E6FF]" />
+                        <span className="text-[#C0E6FF] text-sm">{user.email}</span>
+                      </div>
+
+                      {/* Stats Row */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Award className="w-3 h-3 text-[#4DA2FF]" />
+                            <span className="text-[#C0E6FF] text-sm">Level {user.level}</span>
                           </div>
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm font-semibold">
-                        {user.commission.toLocaleString()}
-                      </td>
-                    </tr>
-                  ))
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-3 h-3 text-[#C0E6FF]" />
+                            <span className="text-[#C0E6FF] text-xs">{new Date(user.joinDate).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <Badge className={`${getStatusColor(user.status)} mb-2`}>
+                            <div className="flex items-center gap-1">
+                              <RoleImage role={user.status as "NOMAD" | "PRO" | "ROYAL"} size="xs" />
+                              <span className="text-xs">{user.status}</span>
+                            </div>
+                          </Badge>
+                          <div className="text-[#4DA2FF] font-bold text-lg">
+                            {user.commission.toLocaleString()}
+                            <span className="text-xs ml-1">SUI</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expanded Action Buttons */}
+                    {isExpanded && (
+                      <div className="bg-[#0a1628] p-4 border-t border-[#C0E6FF]/20">
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Direct Message Button */}
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDirectMessage(user)
+                            }}
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm h-10 w-full"
+                          >
+                            <MessageCircle className="w-4 h-4 mr-2" />
+                            Message
+                          </Button>
+
+                          {/* Send Email Button */}
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleSendEmail(user)
+                            }}
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 text-white text-sm h-10 w-full"
+                          >
+                            <Mail className="w-4 h-4 mr-2" />
+                            Email
+                          </Button>
+
+                          {/* Subscription Reminder Button */}
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleSubscriptionReminder(user)
+                            }}
+                            size="sm"
+                            className="bg-orange-600 hover:bg-orange-700 text-white text-sm h-10 w-full"
+                          >
+                            <Bell className="w-4 h-4 mr-2" />
+                            Remind
+                          </Button>
+
+                          {/* Special Bonus Offer Button */}
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleSpecialBonusOffer(user)
+                            }}
+                            size="sm"
+                            className="bg-purple-600 hover:bg-purple-700 text-white text-sm h-10 w-full"
+                          >
+                            <Gift className="w-4 h-4 mr-2" />
+                            Bonus
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            ) : (
+              <div className="bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg p-8 text-center">
+                <Search className="w-8 h-8 text-[#C0E6FF]/50 mx-auto mb-2" />
+                <p className="text-sm text-[#C0E6FF]">No referrals found matching your criteria</p>
+                <p className="text-xs text-[#C0E6FF]/70">Try adjusting your search or filter settings</p>
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[#C0E6FF]/20">
+                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[140px]">Username</th>
+                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[180px]">Email</th>
+                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[100px]">Join Date</th>
+                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[80px]">Level</th>
+                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[100px]">Status</th>
+                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[80px]">SUI</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayedUsers.length > 0 ? (
+                  displayedUsers.map((user) => {
+                    const [isHovered, setIsHovered] = React.useState(false)
+
+                    return (
+                      <tr
+                        key={user.id}
+                        className="border-b border-[#C0E6FF]/10 hover:bg-[#4DA2FF]/5 transition-colors cursor-pointer"
+                        onMouseEnter={() => setIsHovered(true)}
+                        onMouseLeave={() => setIsHovered(false)}
+                      >
+                        {!isHovered ? (
+                          // Normal row content
+                          <>
+                            <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm">
+                              <div className="flex items-center gap-2">
+                                <span className="truncate">{user.username}</span>
+                                <Badge className={`${getKycStatusColor(user.kycStatus)} bg-transparent border-0 text-xs font-semibold px-1 py-0`}>
+                                  {getKycStatusText(user.kycStatus)}
+                                </Badge>
+                                <MoreHorizontal className="w-3 h-3 text-[#C0E6FF]/60 ml-auto" />
+                              </div>
+                            </td>
+                            <td className="py-3 px-2 text-left text-[#C0E6FF] text-sm">
+                              <div className="flex items-center gap-2">
+                                <Mail className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">{user.email}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-2 text-left text-[#C0E6FF] text-sm">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-3 h-3 flex-shrink-0" />
+                                <span className="text-xs">{new Date(user.joinDate).toLocaleDateString()}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm">
+                              <div className="flex items-center gap-2">
+                                <Award className="w-3 h-3 flex-shrink-0 text-[#4DA2FF]" />
+                                <span className="font-semibold">{user.level}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-2 text-left">
+                              <Badge className={getStatusColor(user.status)}>
+                                <div className="flex items-center gap-1">
+                                  <RoleImage role={user.status as "NOMAD" | "PRO" | "ROYAL"} size="sm" />
+                                  <span className="text-xs">{user.status}</span>
+                                </div>
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm font-semibold">
+                              {user.commission.toLocaleString()}
+                            </td>
+                          </>
+                        ) : (
+                          // Action buttons row spanning all columns
+                          <td colSpan={6} className="py-3 px-4 bg-[#0a1628] border border-[#C0E6FF]/30">
+                            <div className="flex items-center justify-between flex-wrap gap-3">
+                              <div className="flex items-center gap-3">
+                                <div className="text-left">
+                                  <p className="text-white font-semibold text-sm">{user.username}</p>
+                                  <p className="text-[#C0E6FF] text-xs">{user.email}</p>
+                                </div>
+                              </div>
+
+                              <div className="flex gap-2 flex-wrap">
+                                {/* Direct Message Button */}
+                                <Button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleDirectMessage(user)
+                                  }}
+                                  size="sm"
+                                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8 px-2 lg:px-3"
+                                >
+                                  <MessageCircle className="w-3 h-3 mr-1" />
+                                  <span className="hidden lg:inline">Message</span>
+                                  <span className="lg:hidden">Msg</span>
+                                </Button>
+
+                                {/* Send Email Button */}
+                                <Button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleSendEmail(user)
+                                  }}
+                                  size="sm"
+                                  className="bg-green-600 hover:bg-green-700 text-white text-xs h-8 px-2 lg:px-3"
+                                >
+                                  <Mail className="w-3 h-3 mr-1" />
+                                  <span className="hidden lg:inline">Email</span>
+                                  <span className="lg:hidden">Mail</span>
+                                </Button>
+
+                                {/* Subscription Reminder Button */}
+                                <Button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleSubscriptionReminder(user)
+                                  }}
+                                  size="sm"
+                                  className="bg-orange-600 hover:bg-orange-700 text-white text-xs h-8 px-2 lg:px-3"
+                                >
+                                  <Bell className="w-3 h-3 mr-1" />
+                                  <span className="hidden lg:inline">Remind</span>
+                                  <span className="lg:hidden">Rem</span>
+                                </Button>
+
+                                {/* Special Bonus Offer Button */}
+                                <Button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleSpecialBonusOffer(user)
+                                  }}
+                                  size="sm"
+                                  className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8 px-2 lg:px-3"
+                                >
+                                  <Gift className="w-3 h-3 mr-1" />
+                                  <span className="hidden lg:inline">Bonus</span>
+                                  <span className="lg:hidden">Bon</span>
+                                </Button>
+                              </div>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })
                 ) : (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-[#C0E6FF]">
+                    <td colSpan={6} className="py-8 text-center text-[#C0E6FF]">
                       <div className="flex flex-col items-center gap-2">
                         <Search className="w-8 h-8 text-[#C0E6FF]/50" />
                         <p className="text-sm">No referrals found matching your criteria</p>
@@ -1134,13 +1653,35 @@ export function ProfileSystem() {
             </table>
           </div>
 
-          {/* Results Count - Bottom Center */}
-          <div className="mt-4 text-center">
-            <p className="text-[#C0E6FF] text-sm">
-              Showing {filteredUsers.length} of {invitedUsers.length} referrals
-              {searchTerm && ` matching "${searchTerm}"`}
-              {selectedRoleFilter !== 'ALL' && ` with ${selectedRoleFilter} role`}
-            </p>
+          {/* Show More Button and Results Count */}
+          <div className="mt-4 space-y-3">
+            {/* Show More Button */}
+            {!showLatestOnly && displayedUsers.length < filteredUsers.length && (
+              <div className="text-center">
+                <Button
+                  onClick={handleShowMore}
+                  variant="outline"
+                  size="sm"
+                  className="border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
+                >
+                  Show More ({Math.min(5, filteredUsers.length - displayedUsers.length)} more)
+                </Button>
+              </div>
+            )}
+
+            {/* Results Count */}
+            <div className="text-center">
+              <p className="text-[#C0E6FF] text-sm">
+                {showLatestOnly ? (
+                  <>Showing latest {displayedUsers.length} of {filteredUsers.length} referrals</>
+                ) : (
+                  <>Showing {displayedUsers.length} of {filteredUsers.length} referrals</>
+                )}
+                {searchTerm && ` matching "${searchTerm}"`}
+                {selectedRoleFilter !== 'ALL' && ` with ${selectedRoleFilter} role`}
+                {selectedLevelFilter !== 'ALL' && ` at level ${selectedLevelFilter}`}
+              </p>
+            </div>
           </div>
         </div>
       </div>
