@@ -38,7 +38,7 @@ interface ProfileData {
 interface NFTData {
   id: string
   name: string
-  type: 'PRO' | 'ROYAL' | 'NODEME'
+  type: 'NOMAD' | 'PRO' | 'ROYAL'
   owned: boolean
   benefits: string[]
   mintDate?: string
@@ -64,6 +64,14 @@ export function DashboardProfiles() {
   // NFT Data based on current tier
   const nftData: NFTData[] = [
     {
+      id: 'nomad',
+      name: 'MetadudesX NOMAD',
+      type: 'NOMAD',
+      owned: tier === 'NOMAD' || tier === 'PRO' || tier === 'ROYAL',
+      benefits: ['Copy Trading Access', 'Community Access', 'Basic Support'],
+      mintDate: tier !== 'NOMAD' ? undefined : '2024-01-01'
+    },
+    {
       id: 'pro',
       name: 'MetadudesX PRO',
       type: 'PRO',
@@ -78,14 +86,6 @@ export function DashboardProfiles() {
       owned: tier === 'ROYAL',
       benefits: ['All PRO Benefits', 'Forex Trading Bots', 'VIP Support', 'Exclusive Events'],
       mintDate: tier === 'ROYAL' ? '2024-02-20' : undefined
-    },
-    {
-      id: 'special',
-      name: 'Special Access NFT',
-      type: 'SPECIAL',
-      owned: tier === 'ROYAL', // Assuming ROYAL tier gets special access
-      benefits: ['Exclusive Features', 'Special Rewards', 'Priority Access'],
-      mintDate: tier === 'ROYAL' ? '2024-03-10' : undefined
     }
   ]
 
@@ -140,12 +140,12 @@ export function DashboardProfiles() {
   // NFT Helper Functions
   const getNFTIcon = (type: string) => {
     switch (type) {
+      case 'NOMAD':
+        return <Users className="w-6 h-6" />
       case 'PRO':
         return <Star className="w-6 h-6" />
       case 'ROYAL':
         return <Crown className="w-6 h-6" />
-      case 'NODEME':
-        return <Users className="w-6 h-6" />
       default:
         return <Star className="w-6 h-6" />
     }
@@ -153,12 +153,12 @@ export function DashboardProfiles() {
 
   const getNFTColor = (type: string) => {
     switch (type) {
+      case 'NOMAD':
+        return 'from-gray-500 to-gray-700'
       case 'PRO':
         return 'from-[#4DA2FF] to-[#011829]'
       case 'ROYAL':
         return 'from-[#FFD700] to-[#FFA500]'
-      case 'NODEME':
-        return 'from-[#00D4FF] to-[#007ACC]'
       default:
         return 'from-[#4DA2FF] to-[#011829]'
     }
