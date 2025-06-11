@@ -1415,7 +1415,7 @@ export function ProfileSystem() {
                         <div className="text-right">
                           <Badge className={`${getStatusColor(user.status)} mb-2`}>
                             <div className="flex items-center gap-1">
-                              <RoleImage role={user.status as "NOMAD" | "PRO" | "ROYAL"} size="xs" />
+                              <RoleImage role={user.status as "NOMAD" | "PRO" | "ROYAL"} size="sm" />
                               <span className="text-xs">{user.status}</span>
                             </div>
                           </Badge>
