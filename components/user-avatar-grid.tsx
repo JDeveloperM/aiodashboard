@@ -497,13 +497,11 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
                                 className="flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  if (onSocialSelect) {
-                                    onSocialSelect({
-                                      platform: social.platform,
-                                      username: social.username || 'Connected',
-                                      url: social.url
-                                    })
-                                  }
+                                  setSelectedSocial({
+                                    platform: social.platform,
+                                    username: social.username || 'Connected',
+                                    url: social.url
+                                  })
                                 }}
                               >
                                 <Image
