@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -47,7 +48,9 @@ import {
   MessageCircle,
   Bell,
   Gift,
-  MoreHorizontal
+  MoreHorizontal,
+  History,
+  AlertTriangle
 } from "lucide-react"
 
 // Social media image paths
@@ -98,6 +101,7 @@ interface InvitedUser {
 }
 
 export function ProfileSystem() {
+  const router = useRouter()
   const { tier } = useSubscription()
   const { addPoints, balance } = usePoints()
   const [affiliateLink] = useState("https://aionet.io/ref/MDX789ABC")
@@ -663,11 +667,12 @@ export function ProfileSystem() {
       {/* User Profile Section */}
       <div className="enhanced-card">
         <div className="enhanced-card-content">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Column 1: Profile Info + Referral Link - Centered */}
-            <div className="flex flex-col items-center text-center">
-              <div className="relative group mb-4 mt-2">
-                <Avatar className="h-36 w-36 bg-blue-100">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Column 1: Profile Info & Channels Joined */}
+            <div className="enhanced-card bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg p-8 m-2">
+              <div className="flex flex-col items-center text-center space-y-6">
+                <div className="relative group mb-4 mt-6">
+                  <Avatar className="h-44 w-44 bg-blue-100">
                   <AvatarImage src={profileData.profileImage} alt={profileData.name} />
                   <AvatarFallback className="bg-[#4DA2FF] text-white text-3xl font-semibold">
                     {profileData.name.charAt(0)}
@@ -700,39 +705,107 @@ export function ProfileSystem() {
                 onChange={handleFileChange}
                 className="hidden"
               />
-              <h2 className="text-2xl font-bold text-white">{profileData.name}</h2>
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <p className="text-[#C0E6FF] text-sm">{profileData.username}</p>
-                <Badge className={`${getRoleStatusColor(tier)} text-xs`}>
-                  <div className="flex items-center gap-1">
-                    <RoleImage role={tier as "NOMAD" | "PRO" | "ROYAL"} size="md" />
-                    {tier}
-                  </div>
-                </Badge>
+
+              {/* Profile Details Below Avatar */}
+              <div className="space-y-4 w-full">
+                <h2 className="text-2xl font-bold text-white">{profileData.name}</h2>
+                <div className="flex items-center justify-center gap-2">
+                  <p className="text-[#C0E6FF] text-sm">{profileData.username}</p>
+                  <Badge className={`${getRoleStatusColor(tier)} text-xs`}>
+                    <div className="flex items-center gap-1">
+                      <RoleImage role={tier as "NOMAD" | "PRO" | "ROYAL"} size="md" />
+                      {tier}
+                    </div>
+                  </Badge>
+                </div>
+
+                {/* Profile Level */}
+                <div className="flex items-center justify-center">
+                  <Badge className="bg-transparent text-white text-lg px-4 py-2 border border-[#C0E6FF]/30">
+                    Profile Level 5
+                  </Badge>
+                </div>
               </div>
 
-              {/* Profile Level and KYC Status */}
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <Badge className="bg-[#4DA2FF] text-white">
-                  Profile Level 5
-                </Badge>
-                {profileData.kycStatus === "verified" ? (
-                  <div className="flex items-center gap-1">
-                    <CheckCircle2 className="w-4 h-4 text-green-500" />
-                    <span className="text-green-500 font-semibold text-sm">KYC Verified</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1">
-                    <XCircle className="w-4 h-4 text-red-500" />
-                    <span className="text-red-500 font-semibold text-sm">KYC Not Verified</span>
-                  </div>
-                )}
-              </div>
+              {/* Channels Joined Section */}
+              <div className="w-full bg-[#1a2f51]/30 rounded-lg p-4 border border-[#C0E6FF]/10">
+                <h4 className="text-white font-semibold mb-4 text-center">Channels Joined</h4>
+                <div className="flex flex-wrap justify-center gap-3">
+                  {[
+                    { id: '1', name: 'Daily Market Updates', type: 'free', price: 0, subscribers: 8500, color: '#10b981' },
+                    { id: '2', name: 'Premium Trading Signals', type: 'premium', price: 5.0, subscribers: 2100, color: '#f59e0b' },
+                    { id: '3', name: 'DeFi Basics', type: 'free', price: 0, subscribers: 9200, color: '#3b82f6' },
+                    { id: '4', name: 'Advanced Bot Strategies', type: 'premium', price: 12.0, subscribers: 2100, color: '#f97316' },
+                  ].map((channel) => (
+                    <TooltipProvider key={channel.id}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div
+                            className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all hover:scale-110 border-2 border-[#C0E6FF]/20"
+                            style={{ backgroundColor: channel.color }}
+                          >
+                            <Hash className="w-4 h-4 text-white" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-[#1a2f51] border border-[#C0E6FF]/20 text-white p-3 max-w-xs">
+                          <div className="space-y-2">
+                            <div className="font-semibold text-sm">{channel.name}</div>
+                            <div className="flex items-center gap-2 text-xs">
+                              <Badge className={`${
+                                channel.type === 'free'
+                                  ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                                  : 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+                              } text-xs`}>
+                                {channel.type.toUpperCase()}
+                              </Badge>
+                              {channel.type !== 'free' && (
+                                <span className="text-[#C0E6FF]">{channel.price} SUI</span>
+                              )}
+                            </div>
+                            <div className="text-xs text-[#C0E6FF]">
+                              {channel.subscribers.toLocaleString()} subscribers
+                            </div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ))}
+                </div>
 
-              {/* Referral Link */}
-              <div className="mb-6 w-full">
-                <h3 className="text-white font-semibold mb-3">Referral Link</h3>
-                <div className="space-y-3">
+                {/* KYC Management and Transaction History Buttons */}
+                <div className="w-full space-y-3 mt-6">
+                  <Button
+                    className={`w-full px-6 py-3 text-base font-semibold text-white ${
+                      profileData.kycStatus === "verified"
+                        ? "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+                        : "bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800"
+                    }`}
+                  >
+                    {profileData.kycStatus === "verified" ? (
+                      <CheckCircle2 className="w-5 h-5 mr-2" />
+                    ) : (
+                      <AlertTriangle className="w-5 h-5 mr-2" />
+                    )}
+                    {profileData.kycStatus === "verified" ? "KYC Verified" : "Complete KYC"}
+                  </Button>
+
+                  <Button
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 text-base font-semibold"
+                  >
+                    <History className="w-5 h-5 mr-2" />
+                    Transaction History
+                  </Button>
+                </div>
+              </div>
+              </div>
+            </div>
+
+            {/* Column 2: Referral Link, Affiliate Controls & Social Media */}
+            <div className="enhanced-card bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg p-8 m-2">
+              <div className="flex flex-col justify-center space-y-8">
+                <div className="w-full bg-[#1a2f51]/30 rounded-lg p-5 border border-[#C0E6FF]/10">
+                  <h3 className="text-white font-semibold mb-4 text-center">Referral Link</h3>
+                  <div className="space-y-4">
                   <div className="flex gap-2">
                     <Input
                       value={affiliateLink}
@@ -759,7 +832,7 @@ export function ProfileSystem() {
                       <ExternalLink className="w-3 h-3" />
                     </Button>
                   </div>
-                  <div className="text-[#C0E6FF] text-xs text-center space-y-1">
+                  <div className="text-[#C0E6FF] text-xs space-y-1">
                     <p className="font-semibold">Earn additional bonuses from your referrals:</p>
                     <p>10 Points for every Copy Trade within the 10% Cycle.</p>
                     <p>100 Points for each PRO purchase made by your referrals.</p>
@@ -768,10 +841,24 @@ export function ProfileSystem() {
                 </div>
               </div>
 
-              {/* Social Media Links */}
-              <div className="w-full">
-                <h3 className="text-white font-semibold mb-3 text-center">Social Media</h3>
-                <div className="space-y-2">
+              {/* Affiliate Controls Button */}
+              <div className="w-full bg-[#1a2f51]/30 rounded-lg p-5 border border-[#C0E6FF]/10">
+                <div className="flex justify-center">
+                  <Button
+                    onClick={() => router.push('/affiliate-controls')}
+                    className="bg-[#4da2ffcc] hover:bg-[#4da2ffcc]/80 text-white px-6 py-3 text-base font-semibold"
+                  >
+                    <Users className="w-5 h-5 mr-2" />
+                    Affiliate Controls
+                  </Button>
+                </div>
+                <p className="text-[#C0E6FF] text-xs mt-2 text-center">Manage your referrals and view detailed metrics</p>
+              </div>
+
+              {/* Social Media */}
+              <div className="w-full bg-[#1a2f51]/30 rounded-lg p-5 border border-[#C0E6FF]/10">
+                <h3 className="text-white font-semibold mb-4 text-center">Social Media</h3>
+                <div className="space-y-3">
                   {profileData.socialMedia.map((social, index) => {
                     return (
                       <div
@@ -806,167 +893,171 @@ export function ProfileSystem() {
                 </div>
               </div>
             </div>
+          </div>
+          </div>
+        </div>
+      </div>
 
-            {/* Column 2: Achievement Badges - 6x3 Grid */}
-            <div>
-              <h3 className="text-white font-semibold mb-4 text-center">Achievements</h3>
-              <TooltipProvider>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {profileData.achievements.map((achievement, index) => {
-                    const Icon = achievement.icon as React.ComponentType<{ className?: string; style?: React.CSSProperties }>
-                    const isLocked = !achievement.unlocked
-                    const canClaim = achievement.unlocked && !achievement.claimed
+      {/* Achievements Card */}
+      <div className="enhanced-card">
+        <div className="enhanced-card-content">
+          <h3 className="text-white font-semibold mb-4 text-center">Achievements</h3>
+          <TooltipProvider>
+            <div className="grid grid-cols-3 md:grid-cols-7 gap-3">
+              {profileData.achievements.map((achievement, index) => {
+                const Icon = achievement.icon as React.ComponentType<{ className?: string; style?: React.CSSProperties }>
+                const isLocked = !achievement.unlocked
+                const canClaim = achievement.unlocked && !achievement.claimed
 
-                    const achievementCard = (
-                      <div
-                        key={index}
-                        className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg border transition-all duration-200 cursor-pointer group relative min-h-[80px] ${
-                          isLocked
-                            ? 'bg-[#030f1c] border-[#C0E6FF]/10 opacity-60'
-                            : achievement.claimed
-                            ? 'bg-[#1a2f51] border-green-500/30 opacity-80'
-                            : 'bg-[#1a2f51] border-[#C0E6FF]/20 hover:border-[#C0E6FF]/40'
-                        }`}
-                        onClick={(e) => handleMobileTooltipClick(index, e)}
-                      >
-                        {/* Claimed badge */}
-                        {achievement.claimed && (
-                          <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                            ✓
-                          </div>
-                        )}
-
-                        {/* Mobile tooltip for achievement name */}
-                        {mobileTooltipOpen === index && (
-                          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded z-50 whitespace-nowrap md:hidden">
-                            {achievement.name}
-                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-black"></div>
-                          </div>
-                        )}
-
-                        {/* Main content - centered for locked, flex for unlocked with buttons */}
-                        <div className={`flex flex-col items-center ${canClaim ? 'justify-between h-full' : 'justify-center'} gap-1`}>
-                          <div className="flex flex-col items-center gap-2">
-                            {/* Icon and text in horizontal layout - text hidden on mobile */}
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={`flex items-center justify-center transition-transform duration-200 ${
-                                  !isLocked ? 'group-hover:scale-110' : ''
-                                }`}
-                              >
-                                {isLocked ? (
-                                  <div
-                                    className="p-2 rounded-full flex items-center justify-center"
-                                    style={{ backgroundColor: `${achievement.color}20` }}
-                                  >
-                                    <Lock
-                                      className="w-5 h-5"
-                                      style={{ color: '#6B7280' }}
-                                    />
-                                  </div>
-                                ) : (() => {
-                                  // Check if achievement has a custom image path (for social media achievements)
-                                  if (achievement.image) {
-                                    return (
-                                      <Image
-                                        src={achievement.image}
-                                        alt={achievement.name}
-                                        width={40}
-                                        height={40}
-                                        className="w-10 h-10 object-contain"
-                                      />
-                                    )
-                                  }
-
-                                  // Check for custom achievement images
-                                  const customImage = getAchievementImage(achievement.name)
-                                  if (customImage) {
-                                    return (
-                                      <Image
-                                        src={customImage}
-                                        alt={achievement.name}
-                                        width={40}
-                                        height={40}
-                                        className="w-10 h-10 object-contain"
-                                      />
-                                    )
-                                  } else if (Icon && typeof Icon === 'function') {
-                                    return (
-                                      <div
-                                        className="p-2 rounded-full flex items-center justify-center"
-                                        style={{ backgroundColor: `${achievement.color}20` }}
-                                      >
-                                        <Icon
-                                          className="w-5 h-5"
-                                          style={{ color: achievement.color }}
-                                        />
-                                      </div>
-                                    )
-                                  } else {
-                                    // Fallback for achievements without icons
-                                    return (
-                                      <div
-                                        className="p-2 rounded-full flex items-center justify-center"
-                                        style={{ backgroundColor: `${achievement.color}20` }}
-                                      >
-                                        <div
-                                          className="w-5 h-5 rounded-full"
-                                          style={{ backgroundColor: achievement.color }}
-                                        />
-                                      </div>
-                                    )
-                                  }
-                                })()}
-                              </div>
-                              {/* Text hidden on mobile (md:block = show on medium screens and up) */}
-                              <span className={`hidden md:block text-xs text-center leading-tight ${
-                                isLocked ? 'text-[#6B7280]' : achievement.claimed ? 'text-green-400' : 'text-[#C0E6FF]'
-                              }`}>
-                                {achievement.name.split(' ').map((word, i) => (
-                                  <span key={i} className="block">{word}</span>
-                                ))}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Claim button for unlocked, unclaimed achievements */}
-                          {canClaim && (
-                            <Button
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleClaimAchievement(achievement)
-                              }}
-                              className="bg-green-600 hover:bg-green-700 text-white text-xs h-4 px-1 w-full mt-1"
-                            >
-                              Claim
-                            </Button>
-                          )}
-                        </div>
+                const achievementCard = (
+                  <div
+                    key={index}
+                    className={`flex flex-col items-center ${achievement.claimed ? 'justify-center' : 'justify-between'} gap-3 p-4 rounded-lg border transition-all duration-200 cursor-pointer group relative min-h-[120px] ${
+                      isLocked
+                        ? 'bg-[#030f1c] border-[#C0E6FF]/10 opacity-60'
+                        : achievement.claimed
+                        ? 'bg-[#1a2f51] border-green-500/30 opacity-80'
+                        : 'bg-[#1a2f51] border-[#C0E6FF]/20 hover:border-[#C0E6FF]/40'
+                    }`}
+                    onClick={(e) => handleMobileTooltipClick(index, e)}
+                  >
+                    {/* Claimed badge */}
+                    {achievement.claimed && (
+                      <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                        ✓
                       </div>
-                    )
+                    )}
 
-                    // Always show tooltip if available
-                    if (achievement.tooltip) {
-                      return (
-                        <Tooltip key={index}>
-                          <TooltipTrigger asChild>
-                            {achievementCard}
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{achievement.tooltip}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      )
-                    }
+                    {/* Mobile tooltip for achievement name */}
+                    {mobileTooltipOpen === index && (
+                      <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded z-50 whitespace-nowrap md:hidden">
+                        {achievement.name}
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-black"></div>
+                      </div>
+                    )}
 
-                    return achievementCard
-                  })}
-                </div>
-              </TooltipProvider>
+                    {/* Icon - centered for claimed, at top for others */}
+                    <div className={`flex items-center justify-center transition-transform duration-200 ${
+                      !isLocked ? 'group-hover:scale-110' : ''
+                    } ${achievement.claimed ? 'flex-1' : ''}`}>
+                      {isLocked ? (
+                        <div
+                          className="p-4 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: `${achievement.color}20` }}
+                        >
+                          <Lock
+                            className="w-8 h-8"
+                            style={{ color: '#6B7280' }}
+                          />
+                        </div>
+                      ) : (() => {
+                        // Check if achievement has a custom image path (for social media achievements)
+                        if (achievement.image) {
+                          return (
+                            <Image
+                              src={achievement.image}
+                              alt={achievement.name}
+                              width={64}
+                              height={64}
+                              className="w-16 h-16 object-contain"
+                            />
+                          )
+                        }
+
+                        // Check for custom achievement images
+                        const customImage = getAchievementImage(achievement.name)
+                        if (customImage) {
+                          return (
+                            <Image
+                              src={customImage}
+                              alt={achievement.name}
+                              width={64}
+                              height={64}
+                              className="w-16 h-16 object-contain"
+                            />
+                          )
+                        } else if (Icon && typeof Icon === 'function') {
+                          return (
+                            <div
+                              className="p-4 rounded-full flex items-center justify-center"
+                              style={{ backgroundColor: `${achievement.color}20` }}
+                            >
+                              <Icon
+                                className="w-8 h-8"
+                                style={{ color: achievement.color }}
+                              />
+                            </div>
+                          )
+                        } else {
+                          // Fallback for achievements without icons
+                          return (
+                            <div
+                              className="p-4 rounded-full flex items-center justify-center"
+                              style={{ backgroundColor: `${achievement.color}20` }}
+                            >
+                              <div
+                                className="w-8 h-8 rounded-full"
+                                style={{ backgroundColor: achievement.color }}
+                              />
+                            </div>
+                          )
+                        }
+                      })()}
+                    </div>
+
+                    {/* Text below icon - only show if not claimed */}
+                    {!achievement.claimed && (
+                      <div className="text-center flex-1 flex items-center justify-center">
+                        <span className={`text-xs font-medium leading-tight ${
+                          isLocked ? 'text-[#6B7280]' : 'text-[#C0E6FF]'
+                        }`}>
+                          {achievement.name}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Claim button at bottom */}
+                    {canClaim && (
+                      <Button
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleClaimAchievement(achievement)
+                        }}
+                        className="bg-green-600 hover:bg-green-700 text-white text-xs py-1 px-3 w-full"
+                      >
+                        Claim
+                      </Button>
+                    )}
+                  </div>
+                )
+
+                // Always show tooltip if available
+                if (achievement.tooltip) {
+                  return (
+                    <Tooltip key={index}>
+                      <TooltipTrigger asChild>
+                        {achievementCard}
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{achievement.tooltip}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )
+                }
+
+                return achievementCard
+              })}
             </div>
+          </TooltipProvider>
+        </div>
+      </div>
 
-            {/* Column 3: Level Progress */}
+      {/* Level Progress and Level Rewards Combined Card */}
+      <div className="enhanced-card">
+        <div className="enhanced-card-content">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Column 1: Level Progress */}
             <div>
               <h3 className="text-white font-semibold mb-4 text-center">Level Progress</h3>
 
@@ -1040,7 +1131,7 @@ export function ProfileSystem() {
               </div>
 
               {/* XP Level Progression & Rewards Button */}
-              <div className="mb-6">
+              <div>
                 <Button
                   onClick={() => setShowProgressionModal(true)}
                   className="w-full bg-gradient-to-r from-[#4DA2FF] to-[#00D4AA] hover:from-[#4DA2FF]/80 hover:to-[#00D4AA]/80 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300"
@@ -1051,640 +1142,45 @@ export function ProfileSystem() {
                   </div>
                 </Button>
               </div>
-
-              {/* Level Grid Component */}
-              <div className="mb-6">
-                <h4 className="text-white font-semibold mb-3 text-center">Level Rewards</h4>
-                <div className="grid grid-cols-5 gap-2">
-                  {levelRewards.map((reward) => (
-                    <div key={reward.level} className="bg-[#1a2f51] rounded-lg p-3 border border-[#C0E6FF]/20 text-center">
-                      <div className="text-white font-bold text-sm mb-2">Level {reward.level}</div>
-                      {reward.claimed ? (
-                        <div className="flex items-center justify-center py-1">
-                          <CheckCircle className="w-5 h-5 text-green-400" />
-                        </div>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => reward.available && !reward.claimed && handleLevelClaim(reward)}
-                          className={`w-full text-white text-xs py-1 px-2 ${
-                            reward.available && !reward.claimed
-                              ? 'bg-green-600 hover:bg-green-700'
-                              : 'bg-gray-600 hover:bg-gray-700'
-                          }`}
-                          disabled={!reward.available || reward.claimed}
-                        >
-                          Claim
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Channels Section */}
-              <div className="mb-6">
-                {/* Channels Joined */}
-                <div className="mb-4">
-                  <h4 className="text-white font-semibold mb-3 text-center">Channels Joined</h4>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {[
-                      { id: '1', name: 'Daily Market Updates', type: 'free', price: 0, subscribers: 8500, color: '#10b981' },
-                      { id: '2', name: 'Premium Trading Signals', type: 'premium', price: 5.0, subscribers: 2100, color: '#f59e0b' },
-                      { id: '3', name: 'DeFi Basics', type: 'free', price: 0, subscribers: 9200, color: '#3b82f6' },
-                      { id: '4', name: 'Advanced Bot Strategies', type: 'premium', price: 12.0, subscribers: 2100, color: '#f97316' },
-                    ].map((channel) => (
-                      <TooltipProvider key={channel.id}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div
-                              className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all hover:scale-110 border-2 border-[#C0E6FF]/20"
-                              style={{ backgroundColor: channel.color }}
-                            >
-                              <Hash className="w-4 h-4 text-white" />
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-[#1a2f51] border border-[#C0E6FF]/20 text-white p-3 max-w-xs">
-                            <div className="space-y-2">
-                              <div className="font-semibold text-sm">{channel.name}</div>
-                              <div className="flex items-center gap-2 text-xs">
-                                <Badge className={`${
-                                  channel.type === 'free'
-                                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                                    : 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-                                } text-xs`}>
-                                  {channel.type.toUpperCase()}
-                                </Badge>
-                                {channel.type !== 'free' && (
-                                  <span className="text-[#C0E6FF]">{channel.price} SUI</span>
-                                )}
-                              </div>
-                              <div className="text-xs text-[#C0E6FF]">
-                                {channel.subscribers.toLocaleString()} subscribers
-                              </div>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Channels Owned */}
-                <div>
-                  <h4 className="text-white font-semibold mb-3 text-center">Channels Owned</h4>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {[
-                      { id: '5', name: 'My Trading Tips', type: 'premium', price: 8.0, subscribers: 1250, color: '#8b5cf6' },
-                      { id: '6', name: 'Crypto News Daily', type: 'free', price: 0, subscribers: 3400, color: '#06b6d4' },
-                    ].map((channel) => (
-                      <TooltipProvider key={channel.id}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div
-                              className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all hover:scale-110 border-2 border-yellow-400/50"
-                              style={{ backgroundColor: channel.color }}
-                            >
-                              <Crown className="w-4 h-4 text-white" />
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-[#1a2f51] border border-[#C0E6FF]/20 text-white p-3 max-w-xs">
-                            <div className="space-y-2">
-                              <div className="font-semibold text-sm flex items-center gap-2">
-                                {channel.name}
-                                <Crown className="w-3 h-3 text-yellow-400" />
-                              </div>
-                              <div className="flex items-center gap-2 text-xs">
-                                <Badge className={`${
-                                  channel.type === 'free'
-                                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                                    : 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-                                } text-xs`}>
-                                  {channel.type.toUpperCase()}
-                                </Badge>
-                                {channel.type !== 'free' && (
-                                  <span className="text-[#C0E6FF]">{channel.price} SUI</span>
-                                )}
-                              </div>
-                              <div className="text-xs text-[#C0E6FF]">
-                                {channel.subscribers.toLocaleString()} subscribers
-                              </div>
-                              <div className="text-xs text-yellow-400">
-                                Owner
-                              </div>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Metrics Overview */}
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-        <div className="enhanced-card">
-          <div className="enhanced-card-content">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-[#C0E6FF]">Total Invites</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">{metrics.totalInvites}</p>
-                <p className="text-xs text-[#C0E6FF] mt-1">Users invited via your link</p>
-              </div>
-              <div className="bg-[#4DA2FF]/20 p-3 rounded-full">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="enhanced-card">
-          <div className="enhanced-card-content">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-[#C0E6FF]">New Users</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">{metrics.newUsers}</p>
-                <p className="text-xs text-[#C0E6FF] mt-1">Successfully joined</p>
-              </div>
-              <div className="bg-[#4DA2FF]/20 p-3 rounded-full">
-                <CheckCircle className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="enhanced-card">
-          <div className="enhanced-card-content">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-[#C0E6FF]">Total Points</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">{metrics.totalCommission.toLocaleString()}</p>
-                <p className="text-xs text-[#C0E6FF] mt-1">Lifetime earnings</p>
-              </div>
-              <div className="bg-[#4DA2FF]/20 p-3 rounded-full">
-                <Star className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="enhanced-card">
-          <div className="enhanced-card-content">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-[#C0E6FF]">Conversion Rate</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">
-                  {Math.round((metrics.newUsers / metrics.totalInvites) * 100)}%
-                </p>
-                <p className="text-xs text-[#C0E6FF] mt-1">Invite to signup rate</p>
-              </div>
-              <div className="bg-[#4DA2FF]/20 p-3 rounded-full">
-                <Badge className="bg-[#4DA2FF] text-white">68%</Badge>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Invited Users Table */}
-      <div className="enhanced-card">
-        <div className="enhanced-card-content">
-          {/* Header with Search and Filter Controls */}
-          <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-6">
-            {/* Title and View Toggle */}
-            <div className="flex items-center gap-4 text-[#FFFFFF]">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-[#4DA2FF]" />
-                <h3 className="text-xl font-semibold">Referrals</h3>
-              </div>
-
-              {/* View Toggle Buttons */}
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleToggleLatest}
-                  size="sm"
-                  variant={showLatestOnly ? "default" : "outline"}
-                  className={showLatestOnly
-                    ? "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white text-xs h-7 px-3"
-                    : "border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 text-xs h-7 px-3"
-                  }
-                >
-                  Latest 5
-                </Button>
-                <Button
-                  onClick={handleToggleLatest}
-                  size="sm"
-                  variant={!showLatestOnly ? "default" : "outline"}
-                  className={!showLatestOnly
-                    ? "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white text-xs h-7 px-3"
-                    : "border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 text-xs h-7 px-3"
-                  }
-                >
-                  All Referrals
-                </Button>
-              </div>
             </div>
 
-            {/* Search and Filter Controls */}
-            <div className="flex flex-col sm:flex-row gap-3 lg:ml-auto">
-              {/* Search Input */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#C0E6FF]" />
-                <Input
-                  placeholder="Search by username or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full sm:w-64 bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF] placeholder:text-[#C0E6FF]/60"
-                />
-              </div>
-
-              {/* Role Filter */}
-              <div className="w-full sm:w-48">
-                <Select value={selectedRoleFilter} onValueChange={(value: 'ALL' | 'NOMAD' | 'PRO' | 'ROYAL') => setSelectedRoleFilter(value)}>
-                  <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF]">
-                    <div className="flex items-center gap-2">
-                      <Filter className="w-4 h-4 text-[#C0E6FF]" />
-                      <SelectValue placeholder="Filter by role" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#1a2f51] border-[#C0E6FF]/30">
-                    <SelectItem value="ALL" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">All Roles</SelectItem>
-                    <SelectItem value="NOMAD" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <RoleImage role="NOMAD" size="sm" />
-                        NOMAD
+            {/* Column 2: Level Rewards */}
+            <div>
+              <h3 className="text-white font-semibold mb-4 text-center">Level Rewards</h3>
+              <div className="grid grid-cols-5 gap-2">
+                {levelRewards.map((reward) => (
+                  <div key={reward.level} className="bg-[#1a2f51] rounded-lg p-3 border border-[#C0E6FF]/20 text-center">
+                    <div className="text-white font-bold text-sm mb-2">Level {reward.level}</div>
+                    {reward.claimed ? (
+                      <div className="flex items-center justify-center py-1">
+                        <CheckCircle className="w-5 h-5 text-green-400" />
                       </div>
-                    </SelectItem>
-                    <SelectItem value="PRO" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <RoleImage role="PRO" size="sm" />
-                        PRO
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="ROYAL" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <RoleImage role="ROYAL" size="sm" />
-                        ROYAL
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Level Filter */}
-              <div className="w-full sm:w-48">
-                <Select value={selectedLevelFilter} onValueChange={(value: 'ALL' | '1-3' | '4-6' | '7-10') => setSelectedLevelFilter(value)}>
-                  <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF]">
-                    <div className="flex items-center gap-2">
-                      <Award className="w-4 h-4 text-[#C0E6FF]" />
-                      <SelectValue placeholder="Filter by level" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#1a2f51] border-[#C0E6FF]/30">
-                    <SelectItem value="ALL" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">All Levels</SelectItem>
-                    <SelectItem value="1-3" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Award className="w-3 h-3 text-[#4DA2FF]" />
-                        Level 1-3
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="4-6" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Award className="w-3 h-3 text-[#4DA2FF]" />
-                        Level 4-6
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="7-10" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Award className="w-3 h-3 text-[#4DA2FF]" />
-                        Level 7-10
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile Card View */}
-          <div className="md:hidden space-y-3">
-            {displayedUsers.length > 0 ? (
-              displayedUsers.map((user) => {
-                const [isExpanded, setIsExpanded] = React.useState(false)
-
-                return (
-                  <div key={user.id} className="bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg overflow-hidden">
-                    {/* Main User Info */}
-                    <div
-                      className="p-4 cursor-pointer"
-                      onClick={() => setIsExpanded(!isExpanded)}
-                    >
-                      {/* Header Row */}
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-white font-semibold text-base">{user.username}</span>
-                          <Badge className={`${getKycStatusColor(user.kycStatus)} bg-transparent border-0 text-xs font-semibold px-1 py-0`}>
-                            {getKycStatusText(user.kycStatus)}
-                          </Badge>
-                        </div>
-                        <MoreHorizontal className={`w-4 h-4 text-[#C0E6FF] transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-                      </div>
-
-                      {/* Email */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <Mail className="w-3 h-3 text-[#C0E6FF]" />
-                        <span className="text-[#C0E6FF] text-sm">{user.email}</span>
-                      </div>
-
-                      {/* Stats Row */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <Award className="w-3 h-3 text-[#4DA2FF]" />
-                            <span className="text-[#C0E6FF] text-sm">Level {user.level}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-3 h-3 text-[#C0E6FF]" />
-                            <span className="text-[#C0E6FF] text-xs">{new Date(user.joinDate).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <Badge className={`${getStatusColor(user.status)} mb-2`}>
-                            <div className="flex items-center gap-1">
-                              <RoleImage role={user.status as "NOMAD" | "PRO" | "ROYAL"} size="sm" />
-                              <span className="text-xs">{user.status}</span>
-                            </div>
-                          </Badge>
-                          <div className="text-[#4DA2FF] font-bold text-lg">
-                            {user.commission.toLocaleString()}
-                            <span className="text-xs ml-1">SUI</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Expanded Action Buttons */}
-                    {isExpanded && (
-                      <div className="bg-[#0a1628] p-4 border-t border-[#C0E6FF]/20">
-                        <div className="grid grid-cols-2 gap-3">
-                          {/* Direct Message Button */}
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDirectMessage(user)
-                            }}
-                            size="sm"
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm h-10 w-full"
-                          >
-                            <MessageCircle className="w-4 h-4 mr-2" />
-                            Message
-                          </Button>
-
-                          {/* Send Email Button */}
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleSendEmail(user)
-                            }}
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700 text-white text-sm h-10 w-full"
-                          >
-                            <Mail className="w-4 h-4 mr-2" />
-                            Email
-                          </Button>
-
-                          {/* Subscription Reminder Button */}
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleSubscriptionReminder(user)
-                            }}
-                            size="sm"
-                            className="bg-orange-600 hover:bg-orange-700 text-white text-sm h-10 w-full"
-                          >
-                            <Bell className="w-4 h-4 mr-2" />
-                            Remind
-                          </Button>
-
-                          {/* Special Bonus Offer Button */}
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleSpecialBonusOffer(user)
-                            }}
-                            size="sm"
-                            className="bg-purple-600 hover:bg-purple-700 text-white text-sm h-10 w-full"
-                          >
-                            <Gift className="w-4 h-4 mr-2" />
-                            Bonus
-                          </Button>
-                        </div>
-                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => reward.available && !reward.claimed && handleLevelClaim(reward)}
+                        className={`w-full text-white text-xs py-1 px-2 ${
+                          reward.available && !reward.claimed
+                            ? 'bg-green-600 hover:bg-green-700'
+                            : 'bg-gray-600 hover:bg-gray-700'
+                        }`}
+                        disabled={!reward.available || reward.claimed}
+                      >
+                        Claim
+                      </Button>
                     )}
                   </div>
-                )
-              })
-            ) : (
-              <div className="bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg p-8 text-center">
-                <Search className="w-8 h-8 text-[#C0E6FF]/50 mx-auto mb-2" />
-                <p className="text-sm text-[#C0E6FF]">No referrals found matching your criteria</p>
-                <p className="text-xs text-[#C0E6FF]/70">Try adjusting your search or filter settings</p>
+                ))}
               </div>
-            )}
-          </div>
-
-          {/* Desktop Table View */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[#C0E6FF]/20">
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[140px]">Username</th>
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[180px]">Email</th>
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[100px]">Join Date</th>
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[80px]">Level</th>
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[100px]">Status</th>
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[80px]">SUI</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayedUsers.length > 0 ? (
-                  displayedUsers.map((user) => {
-                    const [isHovered, setIsHovered] = React.useState(false)
-
-                    return (
-                      <tr
-                        key={user.id}
-                        className="border-b border-[#C0E6FF]/10 hover:bg-[#4DA2FF]/5 transition-colors cursor-pointer"
-                        onMouseEnter={() => setIsHovered(true)}
-                        onMouseLeave={() => setIsHovered(false)}
-                      >
-                        {!isHovered ? (
-                          // Normal row content
-                          <>
-                            <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm">
-                              <div className="flex items-center gap-2">
-                                <span className="truncate">{user.username}</span>
-                                <Badge className={`${getKycStatusColor(user.kycStatus)} bg-transparent border-0 text-xs font-semibold px-1 py-0`}>
-                                  {getKycStatusText(user.kycStatus)}
-                                </Badge>
-                                <MoreHorizontal className="w-3 h-3 text-[#C0E6FF]/60 ml-auto" />
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 text-left text-[#C0E6FF] text-sm">
-                              <div className="flex items-center gap-2">
-                                <Mail className="w-3 h-3 flex-shrink-0" />
-                                <span className="truncate">{user.email}</span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 text-left text-[#C0E6FF] text-sm">
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-3 h-3 flex-shrink-0" />
-                                <span className="text-xs">{new Date(user.joinDate).toLocaleDateString()}</span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm">
-                              <div className="flex items-center gap-2">
-                                <Award className="w-3 h-3 flex-shrink-0 text-[#4DA2FF]" />
-                                <span className="font-semibold">{user.level}</span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 text-left">
-                              <Badge className={getStatusColor(user.status)}>
-                                <div className="flex items-center gap-1">
-                                  <RoleImage role={user.status as "NOMAD" | "PRO" | "ROYAL"} size="sm" />
-                                  <span className="text-xs">{user.status}</span>
-                                </div>
-                              </Badge>
-                            </td>
-                            <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm font-semibold">
-                              {user.commission.toLocaleString()}
-                            </td>
-                          </>
-                        ) : (
-                          // Action buttons row spanning all columns
-                          <td colSpan={6} className="py-3 px-4 bg-[#0a1628] border border-[#C0E6FF]/30">
-                            <div className="flex items-center justify-between flex-wrap gap-3">
-                              <div className="flex items-center gap-3">
-                                <div className="text-left">
-                                  <p className="text-white font-semibold text-sm">{user.username}</p>
-                                  <p className="text-[#C0E6FF] text-xs">{user.email}</p>
-                                </div>
-                              </div>
-
-                              <div className="flex gap-2 flex-wrap">
-                                {/* Direct Message Button */}
-                                <Button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleDirectMessage(user)
-                                  }}
-                                  size="sm"
-                                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8 px-2 lg:px-3"
-                                >
-                                  <MessageCircle className="w-3 h-3 mr-1" />
-                                  <span className="hidden lg:inline">Message</span>
-                                  <span className="lg:hidden">Msg</span>
-                                </Button>
-
-                                {/* Send Email Button */}
-                                <Button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleSendEmail(user)
-                                  }}
-                                  size="sm"
-                                  className="bg-green-600 hover:bg-green-700 text-white text-xs h-8 px-2 lg:px-3"
-                                >
-                                  <Mail className="w-3 h-3 mr-1" />
-                                  <span className="hidden lg:inline">Email</span>
-                                  <span className="lg:hidden">Mail</span>
-                                </Button>
-
-                                {/* Subscription Reminder Button */}
-                                <Button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleSubscriptionReminder(user)
-                                  }}
-                                  size="sm"
-                                  className="bg-orange-600 hover:bg-orange-700 text-white text-xs h-8 px-2 lg:px-3"
-                                >
-                                  <Bell className="w-3 h-3 mr-1" />
-                                  <span className="hidden lg:inline">Remind</span>
-                                  <span className="lg:hidden">Rem</span>
-                                </Button>
-
-                                {/* Special Bonus Offer Button */}
-                                <Button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleSpecialBonusOffer(user)
-                                  }}
-                                  size="sm"
-                                  className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8 px-2 lg:px-3"
-                                >
-                                  <Gift className="w-3 h-3 mr-1" />
-                                  <span className="hidden lg:inline">Bonus</span>
-                                  <span className="lg:hidden">Bon</span>
-                                </Button>
-                              </div>
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    )
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="py-8 text-center text-[#C0E6FF]">
-                      <div className="flex flex-col items-center gap-2">
-                        <Search className="w-8 h-8 text-[#C0E6FF]/50" />
-                        <p className="text-sm">No referrals found matching your criteria</p>
-                        <p className="text-xs text-[#C0E6FF]/70">Try adjusting your search or filter settings</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Show More Button and Results Count */}
-          <div className="mt-4 space-y-3">
-            {/* Show More Button */}
-            {!showLatestOnly && displayedUsers.length < filteredUsers.length && (
-              <div className="text-center">
-                <Button
-                  onClick={handleShowMore}
-                  variant="outline"
-                  size="sm"
-                  className="border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
-                >
-                  Show More ({Math.min(5, filteredUsers.length - displayedUsers.length)} more)
-                </Button>
-              </div>
-            )}
-
-            {/* Results Count */}
-            <div className="text-center">
-              <p className="text-[#C0E6FF] text-sm">
-                {showLatestOnly ? (
-                  <>Showing latest {displayedUsers.length} of {filteredUsers.length} referrals</>
-                ) : (
-                  <>Showing {displayedUsers.length} of {filteredUsers.length} referrals</>
-                )}
-                {searchTerm && ` matching "${searchTerm}"`}
-                {selectedRoleFilter !== 'ALL' && ` with ${selectedRoleFilter} role`}
-                {selectedLevelFilter !== 'ALL' && ` at level ${selectedLevelFilter}`}
-              </p>
             </div>
           </div>
         </div>
       </div>
+
+
+
+
+
 
       {/* Festive Claim Dialog */}
       {showClaimDialog && claimingAchievement && (
