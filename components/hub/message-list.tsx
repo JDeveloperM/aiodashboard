@@ -92,7 +92,7 @@ const mockMessages: Record<string, Message[]> = {
   "verify": [
     {
       id: "v1",
-      user: { name: "MetaBot", avatar: "/images/aibot.png", isBot: true },
+      user: { name: "AIOBot", avatar: "/images/aibot.png", isBot: true },
       content: "Welcome to the verification channel! Please follow the instructions to verify your account.",
       timestamp: "12:00 PM"
     }
@@ -100,7 +100,7 @@ const mockMessages: Record<string, Message[]> = {
   "rules": [
     {
       id: "r1",
-      user: { name: "MetaBot", avatar: "/images/aibot.png", isBot: true },
+      user: { name: "AIOBot", avatar: "/images/aibot.png", isBot: true },
       content: "📋 **AIO Connect Rules**\n\n1. Be respectful to all members\n2. No spam or excessive self-promotion\n3. Keep discussions relevant to the channel topic\n4. No NSFW content\n5. Follow Discord's Terms of Service",
       timestamp: "12:00 PM"
     }

@@ -68,7 +68,7 @@ const faqCategories = [
         answer: "Our Discord and Telegram communities have role-based access. PRO and ROYAL NFT holders get exclusive roles and access to premium channels. Roles are automatically synced with your NFT holdings."
       },
       {
-        question: "What is the Ambassador System?",
+        question: "What is the Affiliate System?",
         answer: "Our affiliate program allows you to earn commissions by inviting new users. You'll receive 25% of fees from PRO and ROYAL users you refer. Track your referrals and earnings in the AIO Connect section."
       },
       {

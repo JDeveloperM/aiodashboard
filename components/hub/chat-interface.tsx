@@ -28,7 +28,7 @@ export function ChatInterface() {
       "user-1": "Trou",
       "user-2": "CryptoKing",
       "user-3": "NFTTrader",
-      "user-4": "MetaGamer",
+      "user-4": "AIOGamer",
       "user-5": "BlockchainDev"
     }
     return userMap[userId] || "Unknown User"

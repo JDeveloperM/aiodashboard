@@ -51,7 +51,7 @@ export function DashboardProfiles() {
     profilePicture: "",
     firstName: "Dimitris",
     lastName: "Papadopoulos",
-    username: "metadude_gr_01",
+    username: "affiliate_gr_01",
     email: "dimitris.papadopoulos@example.com",
     walletAddress: "0x742d35Cc6634C0532925a3b8D404fddF4f8b2c1a9e",
     kycStatus: 'verified',

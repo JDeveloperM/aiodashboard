@@ -48,7 +48,7 @@ const nftTiers: NFTTier[] = [
       'No Cycle Payments',
       'Discord PRO Role',
       'AIO Creators Access',
-      'Ambassador Program',
+      'Affiliate Program',
       'MetaGo Academy Premium'
     ],
     icon: <RoleImage role="PRO" size="lg" />,

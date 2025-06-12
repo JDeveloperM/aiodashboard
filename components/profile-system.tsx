@@ -167,8 +167,8 @@ export function ProfileSystem() {
 
   // Profile data with image upload functionality
   const [profileData, setProfileData] = useState({
-    name: "MetaDude User",
-    username: "@metadude_user",
+    name: "Affiliate User",
+    username: "@affiliate_user",
     profileImage: "", // Will be loaded from localStorage
     kycStatus: "verified", // "verified" or "not-verified"
     socialMedia: [
@@ -177,7 +177,7 @@ export function ProfileSystem() {
         image: socialImages.Discord,
         url: "https://discord.gg/aionet",
         connected: true,
-        username: "MetaDude#1234",
+        username: "Affiliate#1234",
         color: "#5865F2"
       },
       {
@@ -185,7 +185,7 @@ export function ProfileSystem() {
         image: socialImages.Telegram,
         url: "https://t.me/aionet",
         connected: true,
-        username: "@metadude_tg",
+        username: "@affiliate_tg",
         color: "#0088CC"
       },
       {
@@ -596,8 +596,8 @@ export function ProfileSystem() {
   const handleSendEmail = (user: InvitedUser) => {
     // In a real app, this would open email composer or send via API
     console.log(`Sending email to ${user.email}`)
-    const subject = encodeURIComponent('Message from MetadudesX')
-    const body = encodeURIComponent(`Hi ${user.username},\n\nI hope you're enjoying your experience with MetadudesX!\n\nBest regards`)
+    const subject = encodeURIComponent('Message from AIONET')
+    const body = encodeURIComponent(`Hi ${user.username},\n\nI hope you're enjoying your experience with AIONET!\n\nBest regards`)
     window.open(`mailto:${user.email}?subject=${subject}&body=${body}`, '_blank')
   }
 

@@ -76,8 +76,8 @@ const launchpadProjects: LaunchpadProject[] = [
   },
   {
     id: "2",
-    name: "MetaVerse Sui",
-    symbol: "MVSUI",
+    name: "AIOVerse Sui",
+    symbol: "AVSUI",
     description: "Immersive metaverse platform powered by Sui blockchain technology",
     category: "Gaming",
     totalRaise: "$5.0M",
@@ -92,8 +92,8 @@ const launchpadProjects: LaunchpadProject[] = [
     maxAllocation: "10,000 SUI",
     vesting: "10% TGE, 90% over 18 months",
     logo: "/api/placeholder/80/80",
-    website: "https://metaversesui.com",
-    whitepaper: "https://docs.metaversesui.com",
+    website: "https://aioversesui.com",
+    whitepaper: "https://docs.aioversesui.com",
     tier: "pro"
   },
   {

@@ -39,7 +39,7 @@ const navigationCards = [
     description: "Connect with traders, access exclusive content and portfolio ideas",
     icon: Users,
     href: "/community",
-    features: ["Discord Access", "User Search", "Ambassador Program"],
+    features: ["Discord Access", "User Search", "Affiliate Program"],
     color: "#C0E6FF"
   },
   {

@@ -50,18 +50,18 @@ const mockUsers: User[] = [
   },
   {
     id: "6",
-    name: "MetaUser1",
+    name: "AffiliateUser1",
     status: "online"
   },
   {
     id: "7",
-    name: "MetaUser2",
+    name: "AffiliateUser2",
     status: "dnd",
     activity: "In a meeting"
   },
   {
     id: "8",
-    name: "MetaUser3",
+    name: "AffiliateUser3",
     status: "idle"
   }
 ]
