@@ -82,9 +82,10 @@ interface UserAvatarProps {
   user: User
   onCardToggle: (user: User | null) => void
   isCardOpen: boolean
+  onSocialSelect?: (social: { platform: string; username: string; url: string }) => void
 }
 
-function UserAvatar({ user, onCardToggle, isCardOpen }: UserAvatarProps) {
+function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect }: UserAvatarProps) {
   const isMobile = useIsMobile()
   const [showCard, setShowCard] = useState(false)
 
@@ -134,7 +135,7 @@ function UserAvatar({ user, onCardToggle, isCardOpen }: UserAvatarProps) {
       >
           {/* Main Avatar */}
           <div className="relative">
-            <Avatar className="h-16 w-16 bg-blue-100 ring-2 ring-[#4DA2FF]/30 hover:ring-[#4DA2FF] transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-[#4DA2FF]/20">
+            <Avatar className="h-20 w-20 bg-blue-100 ring-2 ring-[#4DA2FF]/30 hover:ring-[#4DA2FF] transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-[#4DA2FF]/20">
               <AvatarImage src={user.avatar} alt={user.name} />
               <AvatarFallback className="bg-[#4DA2FF] text-white text-lg font-semibold">
                 {user.name.charAt(0)}
@@ -158,19 +159,41 @@ function UserAvatar({ user, onCardToggle, isCardOpen }: UserAvatarProps) {
 
         {/* Social Media Icons - Under Avatar */}
         {user.socialMedia && user.socialMedia.length > 0 && (
-          <div className="flex gap-1 justify-center mt-1">
+          <div className={cn("flex justify-center mt-1", isMobile ? "gap-0" : "gap-1")}>
             {user.socialMedia
               .filter(social => social.connected)
               .map((social, index) => (
                 <Tooltip key={index}>
                   <TooltipTrigger asChild>
-                    <div className="w-4 h-4 flex items-center justify-center hover:scale-110 transition-transform cursor-pointer">
+                    <div
+                      className={cn(
+                        "flex items-center justify-center hover:scale-110 transition-transform cursor-pointer",
+                        isMobile ? "w-[1.8rem] h-[1.8rem]" : "w-4 h-4"
+                      )}
+                      onClick={(e) => {
+                        if (isMobile && onSocialSelect) {
+                          e.stopPropagation()
+                          // Close user card first, then show social popup
+                          onCardToggle(null)
+                          setTimeout(() => {
+                            onSocialSelect({
+                              platform: social.platform,
+                              username: social.username || 'Connected',
+                              url: social.url
+                            })
+                          }, 100)
+                        }
+                      }}
+                    >
                       <Image
                         src={social.image}
                         alt={social.platform}
-                        width={16}
-                        height={16}
-                        className="w-4 h-4 object-contain opacity-80 hover:opacity-100 transition-opacity"
+                        width={isMobile ? 29 : 16}
+                        height={isMobile ? 29 : 16}
+                        className={cn(
+                          "object-contain opacity-80 hover:opacity-100 transition-opacity",
+                          isMobile ? "w-[1.8rem] h-[1.8rem]" : "w-4 h-4"
+                        )}
                       />
                     </div>
                   </TooltipTrigger>
@@ -182,6 +205,8 @@ function UserAvatar({ user, onCardToggle, isCardOpen }: UserAvatarProps) {
               ))}
           </div>
         )}
+
+
 
         {/* Floating User Card - Positioned Above Avatar */}
         {!isMobile && showCard && (
@@ -214,14 +239,10 @@ function UserAvatar({ user, onCardToggle, isCardOpen }: UserAvatarProps) {
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-3 gap-2 mb-2">
+                <div className="grid grid-cols-2 gap-2 mb-2">
                   <div className="text-center p-1 bg-[#1a2f51]/50 rounded">
                     <div className="text-[#4DA2FF] text-xs">Level</div>
                     <div className="text-white font-bold text-sm">{user.level}</div>
-                  </div>
-                  <div className="text-center p-1 bg-[#1a2f51]/50 rounded">
-                    <div className="text-yellow-400 text-xs">Points</div>
-                    <div className="text-white font-bold text-sm">{user.totalPoints.toLocaleString()}</div>
                   </div>
                   <div className="text-center p-1 bg-[#1a2f51]/50 rounded">
                     <div className={cn("text-xs", getKycStatusColor(user.kycStatus))}>KYC</div>
@@ -321,6 +342,11 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [hoveredUser, setHoveredUser] = useState<User | null>(null)
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [selectedSocial, setSelectedSocial] = useState<{
+    platform: string
+    username: string
+    url: string
+  } | null>(null)
   const isMobile = useIsMobile()
 
   const handleCardToggle = (user: User | null) => {
@@ -402,7 +428,7 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
           </div>
 
           {/* Stacked Avatar Grid */}
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-6 justify-items-center">
+          <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-3 justify-items-center">
             {users.map((user, index) => (
               <div
                 key={user.id}
@@ -416,6 +442,7 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
                   user={user}
                   onCardToggle={handleCardToggle}
                   isCardOpen={displayedUser?.id === user.id}
+                  onSocialSelect={setSelectedSocial}
                 />
               </div>
             ))}
@@ -468,7 +495,7 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
       {/* Modal User Card - Mobile Click */}
       {isMobile && selectedUser && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in-0 duration-300"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center p-4 animate-in fade-in-0 duration-300"
           onClick={closeCard}
         >
           <div
@@ -506,14 +533,10 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-2 mb-3">
+              <div className="grid grid-cols-2 gap-2 mb-3">
                 <div className="text-center p-1 bg-[#1a2f51]/50 rounded">
                   <div className="text-[#4DA2FF] text-xs">Level</div>
                   <div className="text-white font-bold text-sm">{selectedUser.level}</div>
-                </div>
-                <div className="text-center p-1 bg-[#1a2f51]/50 rounded">
-                  <div className="text-yellow-400 text-xs">Points</div>
-                  <div className="text-white font-bold text-sm">{selectedUser.totalPoints.toLocaleString()}</div>
                 </div>
                 <div className="text-center p-1 bg-[#1a2f51]/50 rounded">
                   <div className={cn("text-xs", getKycStatusColor(selectedUser.kycStatus))}>KYC</div>
@@ -611,6 +634,71 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
           </div>
         </div>
       )}
+
+      {/* Mobile Social Media Popup - Rendered AFTER user card to ensure higher z-index */}
+      {isMobile && selectedSocial && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex items-center justify-center p-4 animate-in fade-in-0 duration-300"
+          onClick={() => setSelectedSocial(null)}
+        >
+          <div
+            className="relative w-72 animate-in slide-in-from-bottom-4 zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setSelectedSocial(null)}
+              className="absolute top-2 right-2 z-10 bg-[#1a2f51] hover:bg-[#4DA2FF] text-white rounded-full p-2 transition-colors duration-200 shadow-lg"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Card Shadow/Glow Effect */}
+            <div className="absolute inset-0 bg-[#4DA2FF]/20 rounded-lg blur-xl scale-110 pointer-events-none" />
+            <div className="relative bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg p-6">
+              {/* Content */}
+              <div className="text-center">
+                <div className="mb-4">
+                  <div className="w-16 h-16 mx-auto mb-3 bg-[#1a2f51]/50 rounded-full flex items-center justify-center">
+                    {selectedSocial.platform === 'discord' && <MessageSquare className="w-8 h-8 text-[#5865F2]" />}
+                    {selectedSocial.platform === 'telegram' && <Send className="w-8 h-8 text-[#0088cc]" />}
+                    {selectedSocial.platform === 'x' && (
+                      <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                        <span className="text-black font-bold text-lg">𝕏</span>
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="text-white font-semibold text-lg mb-1 capitalize">{selectedSocial.platform}</h3>
+                  <p className="text-[#C0E6FF] text-sm">@{selectedSocial.username}</p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => {
+                      window.open(selectedSocial.url, '_blank')
+                      setSelectedSocial(null)
+                    }}
+                    className="flex-1 bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Visit Profile
+                  </Button>
+                  <Button
+                    onClick={() => setSelectedSocial(null)}
+                    variant="outline"
+                    className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       </div>
     </TooltipProvider>
   )

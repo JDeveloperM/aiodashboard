@@ -58,13 +58,18 @@ export function CopyTradingInterface() {
         {/* Total Earnings */}
         <div className="enhanced-card">
           <div className="enhanced-card-content">
-            <div className="flex items-center gap-2 text-white mb-4">
-              <DollarSign className="w-5 h-5 text-white" />
-              <h3 className="font-semibold">Total Earnings</h3>
-            </div>
-            <div className="space-y-2">
-              <div className="text-2xl font-bold text-white">{tradingStats.totalEarnings}</div>
-              <p className="text-xs text-[#C0E6FF]">From Bybit copy trading</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-white">Total Earnings</p>
+                <p className="text-2xl font-bold text-white">{tradingStats.totalEarnings}</p>
+                <div className="flex items-center mt-1">
+                  <DollarSign className="w-4 h-4 text-green-400 mr-1" />
+                  <span className="text-green-400 text-sm">From Bybit copy trading</span>
+                </div>
+              </div>
+              <div className="bg-[#4DA2FF]/20 p-3 rounded-full">
+                <DollarSign className="w-6 h-6 text-white" />
+              </div>
             </div>
           </div>
         </div>
@@ -72,13 +77,18 @@ export function CopyTradingInterface() {
         {/* Stable Coin Profits */}
         <div className="enhanced-card">
           <div className="enhanced-card-content">
-            <div className="flex items-center gap-2 text-white mb-4">
-              <TrendingUp className="w-5 h-5 text-white" />
-              <h3 className="font-semibold">Stable Coin Profits</h3>
-            </div>
-            <div className="space-y-2">
-              <div className="text-2xl font-bold text-white">{tradingStats.stableCoinProfits}</div>
-              <p className="text-xs text-[#4DA2FF]">+{tradingStats.lastMonthPercentage}% from last month</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-white">Stable Coin Profits</p>
+                <p className="text-2xl font-bold text-white">{tradingStats.stableCoinProfits}</p>
+                <div className="flex items-center mt-1">
+                  <TrendingUp className="w-4 h-4 text-green-400 mr-1" />
+                  <span className="text-[#C0E6FF] text-sm">+{tradingStats.lastMonthPercentage}% from last month</span>
+                </div>
+              </div>
+              <div className="bg-[#4DA2FF]/20 p-3 rounded-full">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
             </div>
           </div>
         </div>
@@ -86,29 +96,33 @@ export function CopyTradingInterface() {
         {/* Connection Button */}
         <div className="enhanced-card">
           <div className="enhanced-card-content">
-            <div className="flex items-center gap-2 text-white mb-4">
-              <LinkIcon className="w-5 h-5 text-white" />
-              <h3 className="font-semibold">Bybit Connection</h3>
-            </div>
-            <div className="space-y-3">
-              <Button
-                onClick={handleBybitConnection}
-                disabled={isConnecting}
-                className="w-full bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
-              >
-                {isConnecting ? "Connecting..." : "Connect to Bybit"}
-              </Button>
-              <p className="text-xs text-[#C0E6FF]">
-                You haven't a Bybit account yet?{" "}
-                <a
-                  href="https://www.bybit.com/register?affiliate_id=METADUDESX"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#4DA2FF] hover:underline inline-flex items-center gap-1"
-                >
-                  Sign up here <ExternalLink className="w-3 h-3" />
-                </a>
-              </p>
+            <div className="flex items-center justify-between">
+              <div className="flex-1 pr-3">
+                <p className="text-sm font-medium text-white">Bybit Connection</p>
+                <div className="mt-2 space-y-2">
+                  <Button
+                    onClick={handleBybitConnection}
+                    disabled={isConnecting}
+                    className="w-full bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white text-xs py-1 h-8"
+                  >
+                    {isConnecting ? "Connecting..." : "Connect to Bybit"}
+                  </Button>
+                  <p className="text-xs text-[#C0E6FF]">
+                    No account?{" "}
+                    <a
+                      href="https://www.bybit.com/register?affiliate_id=METADUDESX"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#4DA2FF] hover:underline inline-flex items-center gap-1"
+                    >
+                      Sign up <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </p>
+                </div>
+              </div>
+              <div className="bg-[#4DA2FF]/20 p-3 rounded-full">
+                <LinkIcon className="w-6 h-6 text-white" />
+              </div>
             </div>
           </div>
         </div>
@@ -116,26 +130,25 @@ export function CopyTradingInterface() {
         {/* Connection Status */}
         <div className="enhanced-card">
           <div className="enhanced-card-content">
-            <div className="flex items-center gap-2 text-white mb-4">
-              <Activity className="w-5 h-5 text-white" />
-              <h3 className="font-semibold">Status</h3>
-            </div>
-            <div className="space-y-2">
-              <Badge
-                variant={tradingStats.connectionStatus === 'connected' ? 'default' : 'secondary'}
-                className={tradingStats.connectionStatus === 'connected'
-                  ? 'bg-[#4DA2FF] text-white'
-                  : 'bg-red-500 text-white'
-                }
-              >
-                {tradingStats.connectionStatus === 'connected' ? 'Connected & Active' : 'Not Connected'}
-              </Badge>
-              <p className="text-xs text-[#C0E6FF]">
-                {tradingStats.connectionStatus === 'connected'
-                  ? 'Trading bot is running'
-                  : 'Connect to start trading'
-                }
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-white">Connection Status</p>
+                <p className="text-2xl font-bold text-white">
+                  {tradingStats.connectionStatus === 'connected' ? 'Active' : 'Inactive'}
+                </p>
+                <div className="flex items-center mt-1">
+                  <Activity className={`w-4 h-4 mr-1 ${tradingStats.connectionStatus === 'connected' ? 'text-green-400' : 'text-red-400'}`} />
+                  <span className={`text-sm ${tradingStats.connectionStatus === 'connected' ? 'text-green-400' : 'text-red-400'}`}>
+                    {tradingStats.connectionStatus === 'connected'
+                      ? 'Trading bot is running'
+                      : 'Connect to start trading'
+                    }
+                  </span>
+                </div>
+              </div>
+              <div className="bg-[#4DA2FF]/20 p-3 rounded-full">
+                <Activity className="w-6 h-6 text-white" />
+              </div>
             </div>
           </div>
         </div>

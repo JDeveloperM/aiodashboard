@@ -670,9 +670,8 @@ button[data-dapp-kit="connectButton"]:hover,
 .enhanced-card-content {
   text-align: left;
   padding: 15px;
-  background: linear-gradient(135deg, #252D4A, #1A3C6D);
+  background: transparent;
   border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* Sidebar and Header Gradients */

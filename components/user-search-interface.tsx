@@ -280,6 +280,228 @@ const mockUsers: User[] = [
       { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: false, username: "", color: "#0088CC" },
       { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: false, username: "", color: "#000000" }
     ]
+  },
+  {
+    id: "5",
+    name: "David Chen",
+    username: "@david_crypto",
+    email: "david.chen@example.com",
+    avatar: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/38184074.jpg-M4vCjTSSWVw5RwWvvmrxXBcNVU8MBU.jpeg",
+    role: "PRO",
+    status: "online",
+    joinDate: "2024-02-20",
+    lastActive: "5 minutes ago",
+    kycStatus: "verified",
+    totalPoints: 8750,
+    level: 6,
+    activity: "DeFi farming",
+    location: "Singapore",
+    bio: "DeFi enthusiast and yield farmer",
+    achievements: [
+      { name: "Profile Picture", color: "#4DA2FF", unlocked: true, claimed: true, xp: 15, tooltip: "Upload a profile picture" },
+      { name: "Connect Discord", color: "#5865F2", unlocked: true, claimed: true, xp: 15, tooltip: "Connect Discord account" },
+      { name: "Upgrade to PRO", color: "#4DA2FF", unlocked: true, claimed: true, xp: 50, tooltip: "Upgrade to PRO membership" }
+    ],
+    socialMedia: [
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "DavidCrypto#9876", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: true, username: "@david_defi", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: false, username: "", color: "#000000" }
+    ]
+  },
+  {
+    id: "6",
+    name: "Emma Rodriguez",
+    username: "@emma_nft",
+    email: "emma.rodriguez@example.com",
+    avatar: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/38184074.jpg-M4vCjTSSWVw5RwWvvmrxXBcNVU8MBU.jpeg",
+    role: "ROYAL",
+    status: "idle",
+    joinDate: "2024-01-10",
+    lastActive: "1 hour ago",
+    kycStatus: "verified",
+    totalPoints: 18900,
+    level: 9,
+    activity: "NFT collecting",
+    location: "Madrid, Spain",
+    bio: "NFT collector and digital artist",
+    achievements: [
+      { name: "Profile Picture", color: "#4DA2FF", unlocked: true, claimed: true, xp: 15, tooltip: "Upload a profile picture" },
+      { name: "Connect Discord", color: "#5865F2", unlocked: true, claimed: true, xp: 15, tooltip: "Connect Discord account" },
+      { name: "Connect Telegram", color: "#0088CC", unlocked: true, claimed: true, xp: 15, tooltip: "Connect Telegram account" },
+      { name: "Upgrade to PRO", color: "#4DA2FF", unlocked: true, claimed: true, xp: 50, tooltip: "Upgrade to PRO membership" },
+      { name: "Upgrade to ROYAL", color: "#FFD700", unlocked: true, claimed: true, xp: 75, tooltip: "Upgrade to ROYAL membership" }
+    ],
+    socialMedia: [
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "EmmaNFT#1234", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: true, username: "@emma_artist", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: true, username: "@emma_nft_art", color: "#000000" }
+    ]
+  },
+  {
+    id: "7",
+    name: "James Wilson",
+    username: "@james_hodl",
+    email: "james.wilson@example.com",
+    avatar: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/38184074.jpg-M4vCjTSSWVw5RwWvvmrxXBcNVU8MBU.jpeg",
+    role: "NOMAD",
+    status: "online",
+    joinDate: "2024-03-15",
+    lastActive: "Just now",
+    kycStatus: "pending",
+    totalPoints: 3200,
+    level: 3,
+    activity: "Learning crypto",
+    location: "London, UK",
+    bio: "New to crypto, eager to learn",
+    achievements: [
+      { name: "Profile Picture", color: "#4DA2FF", unlocked: true, claimed: true, xp: 15, tooltip: "Upload a profile picture" },
+      { name: "Connect Discord", color: "#5865F2", unlocked: true, claimed: false, xp: 15, tooltip: "Connect Discord account" }
+    ],
+    socialMedia: [
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "JamesHODL#5555", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: false, username: "", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: false, username: "", color: "#000000" }
+    ]
+  },
+  {
+    id: "8",
+    name: "Sophia Kim",
+    username: "@sophia_web3",
+    email: "sophia.kim@example.com",
+    avatar: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/38184074.jpg-M4vCjTSSWVw5RwWvvmrxXBcNVU8MBU.jpeg",
+    role: "PRO",
+    status: "dnd",
+    joinDate: "2024-01-25",
+    lastActive: "30 minutes ago",
+    kycStatus: "verified",
+    totalPoints: 11200,
+    level: 7,
+    activity: "Building dApps",
+    location: "Seoul, South Korea",
+    bio: "Web3 developer and blockchain enthusiast",
+    achievements: [
+      { name: "Profile Picture", color: "#4DA2FF", unlocked: true, claimed: true, xp: 15, tooltip: "Upload a profile picture" },
+      { name: "Connect Discord", color: "#5865F2", unlocked: true, claimed: true, xp: 15, tooltip: "Connect Discord account" },
+      { name: "Connect Telegram", color: "#0088CC", unlocked: true, claimed: true, xp: 15, tooltip: "Connect Telegram account" },
+      { name: "Upgrade to PRO", color: "#4DA2FF", unlocked: true, claimed: true, xp: 50, tooltip: "Upgrade to PRO membership" }
+    ],
+    socialMedia: [
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "SophiaWeb3#7890", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: true, username: "@sophia_dev", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: true, username: "@sophia_web3", color: "#000000" }
+    ]
+  },
+  {
+    id: "9",
+    name: "Michael Brown",
+    username: "@mike_trader",
+    email: "michael.brown@example.com",
+    avatar: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/38184074.jpg-M4vCjTSSWVw5RwWvvmrxXBcNVU8MBU.jpeg",
+    role: "PRO",
+    status: "online",
+    joinDate: "2024-02-05",
+    lastActive: "3 minutes ago",
+    kycStatus: "verified",
+    totalPoints: 9800,
+    level: 6,
+    activity: "Swing trading",
+    location: "Toronto, Canada",
+    bio: "Professional swing trader and market analyst",
+    achievements: [
+      { name: "Profile Picture", color: "#4DA2FF", unlocked: true, claimed: true, xp: 15, tooltip: "Upload a profile picture" },
+      { name: "Connect Discord", color: "#5865F2", unlocked: true, claimed: true, xp: 15, tooltip: "Connect Discord account" },
+      { name: "Upgrade to PRO", color: "#4DA2FF", unlocked: true, claimed: true, xp: 50, tooltip: "Upgrade to PRO membership" },
+      { name: "Connect Bybit", color: "#F7931A", unlocked: true, claimed: true, xp: 25, tooltip: "Connect Bybit account" }
+    ],
+    socialMedia: [
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "MikeTrader#3456", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: false, username: "", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: true, username: "@mike_trades", color: "#000000" }
+    ]
+  },
+  {
+    id: "10",
+    name: "Isabella Garcia",
+    username: "@bella_crypto",
+    email: "isabella.garcia@example.com",
+    avatar: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/38184074.jpg-M4vCjTSSWVw5RwWvvmrxXBcNVU8MBU.jpeg",
+    role: "ROYAL",
+    status: "online",
+    joinDate: "2024-01-08",
+    lastActive: "1 minute ago",
+    kycStatus: "verified",
+    totalPoints: 22100,
+    level: 10,
+    activity: "Community management",
+    location: "Barcelona, Spain",
+    bio: "Community manager and crypto educator",
+    achievements: [
+      { name: "Profile Picture", color: "#4DA2FF", unlocked: true, claimed: true, xp: 15, tooltip: "Upload a profile picture" },
+      { name: "Connect Discord", color: "#5865F2", unlocked: true, claimed: true, xp: 15, tooltip: "Connect Discord account" },
+      { name: "Connect Telegram", color: "#0088CC", unlocked: true, claimed: true, xp: 15, tooltip: "Connect Telegram account" },
+      { name: "Upgrade to PRO", color: "#4DA2FF", unlocked: true, claimed: true, xp: 50, tooltip: "Upgrade to PRO membership" },
+      { name: "Upgrade to ROYAL", color: "#FFD700", unlocked: true, claimed: true, xp: 75, tooltip: "Upgrade to ROYAL membership" },
+      { name: "Refer 5 Users", color: "#10B981", unlocked: true, claimed: true, xp: 100, tooltip: "Successfully refer 5 users" }
+    ],
+    socialMedia: [
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "BellaCrypto#1111", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: true, username: "@bella_community", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: true, username: "@bella_crypto_ed", color: "#000000" }
+    ]
+  },
+  {
+    id: "11",
+    name: "Ryan O'Connor",
+    username: "@ryan_defi",
+    email: "ryan.oconnor@example.com",
+    avatar: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/38184074.jpg-M4vCjTSSWVw5RwWvvmrxXBcNVU8MBU.jpeg",
+    role: "NOMAD",
+    status: "idle",
+    joinDate: "2024-03-20",
+    lastActive: "2 hours ago",
+    kycStatus: "not_verified",
+    totalPoints: 1800,
+    level: 2,
+    activity: "Exploring DeFi",
+    location: "Dublin, Ireland",
+    bio: "New to DeFi, exploring opportunities",
+    achievements: [
+      { name: "Profile Picture", color: "#4DA2FF", unlocked: true, claimed: true, xp: 15, tooltip: "Upload a profile picture" }
+    ],
+    socialMedia: [
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: false, username: "", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: true, username: "@ryan_explorer", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: false, username: "", color: "#000000" }
+    ]
+  },
+  {
+    id: "12",
+    name: "Aisha Patel",
+    username: "@aisha_blockchain",
+    email: "aisha.patel@example.com",
+    avatar: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/38184074.jpg-M4vCjTSSWVw5RwWvvmrxXBcNVU8MBU.jpeg",
+    role: "PRO",
+    status: "online",
+    joinDate: "2024-02-12",
+    lastActive: "Just now",
+    kycStatus: "verified",
+    totalPoints: 13500,
+    level: 8,
+    activity: "Smart contract auditing",
+    location: "Mumbai, India",
+    bio: "Blockchain security expert and smart contract auditor",
+    achievements: [
+      { name: "Profile Picture", color: "#4DA2FF", unlocked: true, claimed: true, xp: 15, tooltip: "Upload a profile picture" },
+      { name: "Connect Discord", color: "#5865F2", unlocked: true, claimed: true, xp: 15, tooltip: "Connect Discord account" },
+      { name: "Connect Telegram", color: "#0088CC", unlocked: true, claimed: true, xp: 15, tooltip: "Connect Telegram account" },
+      { name: "Upgrade to PRO", color: "#4DA2FF", unlocked: true, claimed: true, xp: 50, tooltip: "Upgrade to PRO membership" },
+      { name: "Security Expert", color: "#EF4444", unlocked: true, claimed: true, xp: 75, tooltip: "Complete security audit" }
+    ],
+    socialMedia: [
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "AishaBlockchain#2468", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: true, username: "@aisha_security", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: true, username: "@aisha_audits", color: "#000000" }
+    ]
   }
 ]
 
