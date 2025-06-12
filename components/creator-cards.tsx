@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { RoleImage } from "@/components/ui/role-image"
 import { TipPaymentModal } from "./tip-payment-modal"
+import { useSubscription } from "@/contexts/subscription-context"
 import {
   Users,
   Coins,
@@ -77,6 +78,7 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [userAccess, setUserAccess] = useState<Record<string, string>>({})
+  const { tier } = useSubscription()
 
   // Load user access from localStorage
   useEffect(() => {
@@ -103,6 +105,15 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
       return
     }
 
+    // PRO and ROYAL users have free access to all channels
+    if (tier === 'PRO' || tier === 'ROYAL') {
+      if (channel.telegramUrl) {
+        window.open(channel.telegramUrl, '_blank')
+      }
+      onAccessChannel(creator.id, channel.id)
+      return
+    }
+
     const accessKey = `${creator.id}_${channel.id}`
     if (userAccess[accessKey]) {
       // User has access, redirect to Telegram channel
@@ -113,7 +124,7 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
       return
     }
 
-    // Show payment modal for premium/vip channels
+    // Show payment modal for premium/vip channels (NOMAD users only)
     setSelectedCreator(creator)
     setSelectedChannel(channel)
     setShowPaymentModal(true)
@@ -186,6 +197,11 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
   }
 
   const hasAccess = (creatorId: string, channelId: string) => {
+    // PRO and ROYAL users have access to all channels
+    if (tier === 'PRO' || tier === 'ROYAL') {
+      return true
+    }
+
     const accessKey = `${creatorId}_${channelId}`
     return !!userAccess[accessKey]
   }
@@ -257,42 +273,23 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
                     </div>
                     <p className="text-white/80 text-xs">@{creator.username}</p>
 
-                    {/* Two Icons - Telegram Channel & Direct Message */}
-                    <div className="flex gap-2 mt-1">
-                      {/* Public Telegram Channel - Official Telegram Icon */}
-                      {creator.socialLinks.telegram && (
-                        <a
-                          href={creator.socialLinks.telegram}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 bg-white/10 rounded hover:bg-white/20 transition-colors"
-                          title="Public Telegram Channel"
-                        >
-                          <Image
-                            src="/images/social/telegram.png"
-                            alt="Public Channel"
-                            width={16}
-                            height={16}
-                            className="w-4 h-4 opacity-90 hover:opacity-100"
-                          />
-                        </a>
-                      )}
-
-                      {/* Direct Message to Creator - Chat Bubble Icon */}
-                      <button
-                        onClick={() => {
-                          // TODO: Implement direct message functionality
-                          console.log('Direct message to creator:', creator.name)
-                        }}
-                        className="p-1.5 bg-white/10 rounded hover:bg-white/20 transition-colors"
-                        title="Direct Message Creator"
-                      >
-                        <MessageCircle className="w-4 h-4 text-white opacity-90 hover:opacity-100" />
-                      </button>
-                    </div>
                   </div>
 
-
+                  {/* Chat Icon - Right Corner */}
+                  <div className="flex items-center">
+                    {/* Direct Message to Creator - Personal Telegram */}
+                    {creator.socialLinks.telegram && (
+                      <a
+                        href={creator.socialLinks.telegram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:scale-110 transition-transform"
+                        title="Direct Message Creator on Telegram"
+                      >
+                        <MessageCircle className="w-5 h-5 text-white opacity-90 hover:opacity-100" />
+                      </a>
+                    )}
+                  </div>
                 </div>
 
 
@@ -353,9 +350,9 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
                         key={channel.id}
                         className="bg-[#1a2f51] rounded p-2 space-y-1"
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1 flex-1 min-w-0">
-                            <span className="text-white text-xs font-medium truncate">{channel.name}</span>
+                        <div className="flex items-center justify-center">
+                          <div className="flex items-center gap-1">
+                            <span className="text-white text-xs font-medium">{channel.name}</span>
                             <Badge className={`text-xs ${getChannelTypeColor(channel.type)} px-1 py-0`}>
                               {channel.type[0].toUpperCase()}
                             </Badge>
@@ -384,7 +381,7 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
                           className={`w-full h-6 text-xs ${
                             channel.availability?.status === 'full'
                               ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                              : channel.type === 'free' || hasChannelAccess
+                              : channel.type === 'free' || hasChannelAccess || tier === 'PRO' || tier === 'ROYAL'
                               ? "bg-green-600 hover:bg-green-700 text-white"
                               : "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
                           }`}
@@ -393,6 +390,8 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
                             'Full'
                           ) : channel.type === 'free' ? (
                             'Access Free'
+                          ) : tier === 'PRO' || tier === 'ROYAL' ? (
+                            'Access Free (Premium)'
                           ) : hasChannelAccess ? (
                             'Access'
                           ) : (

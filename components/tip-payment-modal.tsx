@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useCurrentAccount, useSuiClientQuery } from '@mysten/dapp-kit'
 import { useSuiAuth } from "@/contexts/sui-auth-context"
+import { useSubscription } from "@/contexts/subscription-context"
 import { Coins, Calendar, Shield, CheckCircle, AlertCircle, Wallet } from "lucide-react"
 import { toast } from "sonner"
 
@@ -61,17 +62,18 @@ interface TipPaymentModalProps {
   onPaymentSuccess: (creatorId: string, channelId: string) => void
 }
 
-export function TipPaymentModal({ 
-  isOpen, 
-  onClose, 
-  creator, 
-  channel, 
-  onPaymentSuccess 
+export function TipPaymentModal({
+  isOpen,
+  onClose,
+  creator,
+  channel,
+  onPaymentSuccess
 }: TipPaymentModalProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentStep, setPaymentStep] = useState<'confirm' | 'processing' | 'success'>('confirm')
   const account = useCurrentAccount()
   const { isSignedIn } = useSuiAuth()
+  const { tier } = useSubscription()
 
   // Query for SUI balance
   const { data: balance } = useSuiClientQuery(
@@ -143,6 +145,9 @@ export function TipPaymentModal({
   }
 
   if (!creator || !channel) return null
+
+  // PRO and ROYAL users should not see this modal as they have free access
+  if (tier === 'PRO' || tier === 'ROYAL') return null
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
