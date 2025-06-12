@@ -6,10 +6,9 @@ import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { RoleImage } from "@/components/ui/role-image"
 import { UserCard } from "./user-card"
-import { PrivateChatDialog } from "@/components/chat/private-chat-dialog"
+
 import { User } from "./user-search-interface"
-import { useSuiAuth } from "@/contexts/sui-auth-context"
-import { X, MessageCircle, UserPlus, Trophy, ExternalLink, MessageSquare, Send } from "lucide-react"
+import { X, Trophy, ExternalLink, MessageSquare, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
@@ -85,13 +84,11 @@ interface UserAvatarProps {
   onCardToggle: (user: User | null) => void
   isCardOpen: boolean
   onSocialSelect?: (social: { platform: string; username: string; url: string }) => void
-  onChatOpen?: (user: User) => void
 }
 
-function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect, onChatOpen }: UserAvatarProps) {
+function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect }: UserAvatarProps) {
   const isMobile = useIsMobile()
   const [showCard, setShowCard] = useState(false)
-  const { user: currentUser } = useSuiAuth()
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -107,6 +104,8 @@ function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect, onChatOpen
         return 'bg-gray-500'
     }
   }
+
+
 
 
 
@@ -161,54 +160,7 @@ function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect, onChatOpen
           <div className="absolute inset-0 rounded-full bg-[#4DA2FF]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md -z-10" />
         </div>
 
-        {/* Social Media Icons - Under Avatar */}
-        {user.socialMedia && user.socialMedia.length > 0 && (
-          <div className={cn("flex justify-center mt-1", isMobile ? "gap-0" : "gap-1")}>
-            {user.socialMedia
-              .filter(social => social.connected)
-              .map((social, index) => (
-                <Tooltip key={index}>
-                  <TooltipTrigger asChild>
-                    <div
-                      className={cn(
-                        "flex items-center justify-center hover:scale-110 transition-transform cursor-pointer",
-                        isMobile ? "w-[1.8rem] h-[1.8rem]" : "w-4 h-4"
-                      )}
-                      onClick={(e) => {
-                        if (isMobile && onSocialSelect) {
-                          e.stopPropagation()
-                          // Close user card first, then show social popup
-                          onCardToggle(null)
-                          setTimeout(() => {
-                            onSocialSelect({
-                              platform: social.platform,
-                              username: social.username || 'Connected',
-                              url: social.url
-                            })
-                          }, 100)
-                        }
-                      }}
-                    >
-                      <Image
-                        src={social.image}
-                        alt={social.platform}
-                        width={isMobile ? 29 : 16}
-                        height={isMobile ? 29 : 16}
-                        className={cn(
-                          "object-contain opacity-80 hover:opacity-100 transition-opacity",
-                          isMobile ? "w-[1.8rem] h-[1.8rem]" : "w-4 h-4"
-                        )}
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-xs">
-                    <div className="font-medium">{social.platform}</div>
-                    <div className="text-[#C0E6FF]/70">{social.username}</div>
-                  </TooltipContent>
-                </Tooltip>
-              ))}
-          </div>
-        )}
+
 
 
 
@@ -219,10 +171,10 @@ function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect, onChatOpen
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
-            <div className="relative max-w-sm">
+            <div className="relative w-64 max-h-80">
               {/* Card Shadow/Glow Effect */}
               <div className="absolute inset-0 bg-[#4DA2FF]/20 rounded-lg blur-xl scale-110 pointer-events-none" />
-              <div className="relative bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg p-3">
+              <div className="relative bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg p-3 flex flex-col">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-2">
                   <Avatar className="h-10 w-10 bg-blue-100">
@@ -234,11 +186,35 @@ function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect, onChatOpen
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-white font-semibold text-sm">{user.name}</h3>
-                      <Badge className="bg-[#4DA2FF] text-white text-xs px-1 py-0">
-                        {user.role}
-                      </Badge>
                     </div>
-                    <p className="text-[#C0E6FF] text-xs">{user.username}</p>
+                    <p className="text-[#C0E6FF] text-xs mb-1">{user.username}</p>
+
+                    {/* Social Media Icons */}
+                    {user.socialMedia && user.socialMedia.length > 0 && (
+                      <div className="flex gap-1">
+                        {user.socialMedia
+                          .filter(social => social.connected)
+                          .map((social, index) => (
+                            <Tooltip key={index}>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center justify-center hover:scale-110 transition-transform cursor-pointer">
+                                  <Image
+                                    src={social.image}
+                                    alt={social.platform}
+                                    width={16}
+                                    height={16}
+                                    className="w-4 h-4 object-contain opacity-80 hover:opacity-100 transition-opacity"
+                                  />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="text-xs">
+                                <div className="font-medium">{social.platform}</div>
+                                <div className="text-[#C0E6FF]/70">{social.username}</div>
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -254,30 +230,15 @@ function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect, onChatOpen
                   </div>
                 </div>
 
-                {/* Achievements Section */}
+                {/* Achievements Section - All achievements in 5 columns */}
                 {user.achievements && user.achievements.length > 0 && (
-                  <div className="mb-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-1">
-                        <span className="text-[#C0E6FF] text-xs font-medium">Achievements</span>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-[#4DA2FF] hover:text-[#4DA2FF]/80 text-xs h-5 px-1"
-                        onClick={() => {
-                          // TODO: Navigate to user profile page
-                          console.log('Navigate to profile:', user.id)
-                        }}
-                      >
-                        <ExternalLink className="w-3 h-3 mr-1" />
-                        See More
-                      </Button>
+                  <div className="mt-2">
+                    <div className="flex items-center gap-1 mb-2">
+                      <span className="text-[#C0E6FF] text-xs font-medium">Achievements</span>
                     </div>
-                    <div className="flex gap-1 justify-center">
+                    <div className="grid grid-cols-5 justify-items-center max-h-32 overflow-y-auto">
                       {user.achievements
                         .filter(achievement => achievement.unlocked)
-                        .slice(0, 5)
                         .map((achievement, index) => {
                           const customImage = getAchievementImage(achievement.name)
                           return (
@@ -288,20 +249,20 @@ function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect, onChatOpen
                                     <Image
                                       src={customImage}
                                       alt={achievement.name}
-                                      width={32}
-                                      height={32}
-                                      className="w-8 h-8 object-contain"
+                                      width={48}
+                                      height={48}
+                                      className="w-12 h-12 object-contain"
                                     />
                                   ) : achievement.image ? (
                                     <Image
                                       src={achievement.image}
                                       alt={achievement.name}
-                                      width={32}
-                                      height={32}
-                                      className="w-8 h-8 object-contain"
+                                      width={48}
+                                      height={48}
+                                      className="w-12 h-12 object-contain"
                                     />
                                   ) : (
-                                    <div className="w-7 h-7 rounded-full" style={{ backgroundColor: achievement.color }} />
+                                    <div className="w-12 h-12 rounded-full" style={{ backgroundColor: achievement.color }} />
                                   )}
                                 </div>
                               </TooltipTrigger>
@@ -318,27 +279,7 @@ function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect, onChatOpen
 
 
 
-                {/* Quick Actions */}
-                {currentUser && currentUser.id !== user.id && (
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => onChatOpen?.(user)}
-                      className="flex-1 bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white text-xs h-7"
-                    >
-                      <MessageCircle className="w-3 h-3 mr-1" />
-                      Message
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onChatOpen?.(user)}
-                      className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10 text-xs h-7"
-                    >
-                      <UserPlus className="w-3 h-3" />
-                    </Button>
-                  </div>
-                )}
+
               </div>
               {/* Arrow pointing to avatar */}
               <div className="absolute top-full left-1/2 transform -translate-x-1/2">
@@ -362,9 +303,8 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
     username: string
     url: string
   } | null>(null)
-  const [chatUser, setChatUser] = useState<User | null>(null)
+
   const isMobile = useIsMobile()
-  const { user: currentUser } = useSuiAuth()
 
   const handleCardToggle = (user: User | null) => {
     if (isMobile) {
@@ -460,7 +400,7 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
                   onCardToggle={handleCardToggle}
                   isCardOpen={displayedUser?.id === user.id}
                   onSocialSelect={setSelectedSocial}
-                  onChatOpen={setChatUser}
+
                 />
               </div>
             ))}
@@ -542,11 +482,47 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="text-white font-semibold text-sm">{selectedUser.name}</h3>
-                    <Badge className="bg-[#4DA2FF] text-white text-xs px-1 py-0">
-                      {selectedUser.role}
-                    </Badge>
                   </div>
-                  <p className="text-[#C0E6FF] text-xs">{selectedUser.username}</p>
+                  <p className="text-[#C0E6FF] text-xs mb-1">{selectedUser.username}</p>
+
+                  {/* Social Media Icons */}
+                  {selectedUser.socialMedia && selectedUser.socialMedia.length > 0 && (
+                    <div className="flex gap-1">
+                      {selectedUser.socialMedia
+                        .filter(social => social.connected)
+                        .map((social, index) => (
+                          <Tooltip key={index}>
+                            <TooltipTrigger asChild>
+                              <div
+                                className="flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  if (onSocialSelect) {
+                                    onSocialSelect({
+                                      platform: social.platform,
+                                      username: social.username || 'Connected',
+                                      url: social.url
+                                    })
+                                  }
+                                }}
+                              >
+                                <Image
+                                  src={social.image}
+                                  alt={social.platform}
+                                  width={16}
+                                  height={16}
+                                  className="w-4 h-4 object-contain opacity-80 hover:opacity-100 transition-opacity"
+                                />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="text-xs">
+                              <div className="font-medium">{social.platform}</div>
+                              <div className="text-[#C0E6FF]/70">{social.username}</div>
+                            </TooltipContent>
+                          </Tooltip>
+                        ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -579,27 +555,12 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
               {/* Achievements Section */}
               {selectedUser.achievements && selectedUser.achievements.length > 0 && (
                 <div className="mb-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1">
-                      <span className="text-[#C0E6FF] text-xs font-medium">Achievements</span>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-[#4DA2FF] hover:text-[#4DA2FF]/80 text-xs h-5 px-1"
-                      onClick={() => {
-                        // TODO: Navigate to user profile page
-                        console.log('Navigate to profile:', selectedUser.id)
-                      }}
-                    >
-                      <ExternalLink className="w-3 h-3 mr-1" />
-                      See More
-                    </Button>
+                  <div className="flex items-center gap-1 mb-2">
+                    <span className="text-[#C0E6FF] text-xs font-medium">Achievements</span>
                   </div>
-                  <div className="flex gap-1 justify-center">
+                  <div className="grid grid-cols-5 justify-items-center max-h-32 overflow-y-auto">
                     {selectedUser.achievements
                       .filter(achievement => achievement.unlocked)
-                      .slice(0, 5)
                       .map((achievement, index) => {
                         const customImage = getAchievementImage(achievement.name)
                         return (
@@ -610,20 +571,20 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
                                   <Image
                                     src={customImage}
                                     alt={achievement.name}
-                                    width={32}
-                                    height={32}
-                                    className="w-8 h-8 object-contain"
+                                    width={48}
+                                    height={48}
+                                    className="w-12 h-12 object-contain"
                                   />
                                 ) : achievement.image ? (
                                   <Image
                                     src={achievement.image}
                                     alt={achievement.name}
-                                    width={32}
-                                    height={32}
-                                    className="w-8 h-8 object-contain"
+                                    width={48}
+                                    height={48}
+                                    className="w-12 h-12 object-contain"
                                   />
                                 ) : (
-                                  <div className="w-7 h-7 rounded-full" style={{ backgroundColor: achievement.color }} />
+                                  <div className="w-12 h-12 rounded-full" style={{ backgroundColor: achievement.color }} />
                                 )}
                               </div>
                             </TooltipTrigger>
@@ -638,27 +599,7 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
                 </div>
               )}
 
-              {/* Quick Actions */}
-              {selectedUser && currentUser && currentUser.id !== selectedUser.id && (
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => setChatUser(selectedUser)}
-                    className="flex-1 bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white text-xs h-7"
-                  >
-                    <MessageCircle className="w-3 h-3 mr-1" />
-                    Message
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setChatUser(selectedUser)}
-                    className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10 text-xs h-7"
-                  >
-                    <UserPlus className="w-3 h-3" />
-                  </Button>
-                </div>
-              )}
+
             </div>
           </div>
         </div>
@@ -727,12 +668,7 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
         </div>
       )}
 
-      {/* Private Chat Dialog */}
-      <PrivateChatDialog
-        isOpen={!!chatUser}
-        onClose={() => setChatUser(null)}
-        targetUser={chatUser}
-      />
+
 
       </div>
     </TooltipProvider>

@@ -22,6 +22,7 @@ interface Channel {
   price: number
   description: string
   subscribers: number
+  telegramUrl: string // Telegram channel URL for access
   availability?: {
     hasLimit: boolean
     currentSlots?: number
@@ -36,6 +37,7 @@ interface Creator {
   username: string
   avatar: string
   role: string
+  tier: 'PRO' | 'ROYAL' // Status tier (NOMADS not allowed as creators)
   subscribers: number
   category: string
   channels: Channel[]
@@ -65,6 +67,7 @@ const mockCreators: Creator[] = [
     username: "cryptoalex",
     avatar: "/api/placeholder/64/64",
     role: "Trading Expert",
+    tier: "ROYAL",
     subscribers: 15420,
     category: "Trading",
     verified: true,
@@ -89,7 +92,8 @@ const mockCreators: Creator[] = [
         type: "free",
         price: 0,
         description: "Daily crypto market analysis and news updates",
-        subscribers: 8500
+        subscribers: 8500,
+        telegramUrl: "https://t.me/cryptoalex_daily"
       },
       {
         id: "1-2",
@@ -98,6 +102,7 @@ const mockCreators: Creator[] = [
         price: 5.0,
         description: "Exclusive trading signals with entry/exit points",
         subscribers: 2100,
+        telegramUrl: "https://t.me/cryptoalex_premium",
         availability: {
           hasLimit: true,
           currentSlots: 85,
@@ -112,6 +117,7 @@ const mockCreators: Creator[] = [
         price: 15.0,
         description: "Private strategy sessions and portfolio reviews",
         subscribers: 450,
+        telegramUrl: "https://t.me/cryptoalex_vip",
         availability: {
           hasLimit: true,
           currentSlots: 15,
@@ -127,6 +133,7 @@ const mockCreators: Creator[] = [
     username: "defiSarah",
     avatar: "/api/placeholder/64/64",
     role: "DeFi Specialist",
+    tier: "PRO",
     subscribers: 12800,
     category: "DeFi",
     verified: true,
@@ -150,7 +157,8 @@ const mockCreators: Creator[] = [
         type: "free",
         price: 0,
         description: "Learn DeFi fundamentals and protocols",
-        subscribers: 9200
+        subscribers: 9200,
+        telegramUrl: "https://t.me/defisarah_basics"
       },
       {
         id: "2-2",
@@ -159,6 +167,7 @@ const mockCreators: Creator[] = [
         price: 8.0,
         description: "Advanced yield farming and liquidity strategies",
         subscribers: 1800,
+        telegramUrl: "https://t.me/defisarah_advanced",
         availability: {
           hasLimit: true,
           currentSlots: 25,
@@ -174,6 +183,7 @@ const mockCreators: Creator[] = [
     username: "techanalyst",
     avatar: "/api/placeholder/64/64",
     role: "Technical Analyst",
+    tier: "ROYAL",
     subscribers: 18600,
     category: "Analysis",
     verified: true,
@@ -195,10 +205,11 @@ const mockCreators: Creator[] = [
       {
         id: "3-1",
         name: "Weekly Chart Reviews",
-        type: "free",
-        price: 0,
+        type: "premium",
+        price: 8.0,
         description: "Weekly technical analysis of major cryptocurrencies",
-        subscribers: 12400
+        subscribers: 12400,
+        telegramUrl: "https://t.me/techanalyst_charts"
       },
       {
         id: "3-2",
@@ -206,7 +217,8 @@ const mockCreators: Creator[] = [
         type: "premium",
         price: 10.0,
         description: "Live chart analysis and trading opportunities",
-        subscribers: 3200
+        subscribers: 3200,
+        telegramUrl: "https://t.me/techanalyst_realtime"
       },
       {
         id: "3-3",
@@ -214,7 +226,8 @@ const mockCreators: Creator[] = [
         type: "vip",
         price: 25.0,
         description: "One-on-one technical analysis sessions",
-        subscribers: 180
+        subscribers: 180,
+        telegramUrl: "https://t.me/techanalyst_private"
       }
     ]
   },
@@ -224,6 +237,7 @@ const mockCreators: Creator[] = [
     username: "cryptoeducator",
     avatar: "/api/placeholder/64/64",
     role: "Crypto Educator",
+    tier: "PRO",
     subscribers: 9400,
     category: "Education",
     verified: false,
@@ -237,17 +251,19 @@ const mockCreators: Creator[] = [
     },
     socialLinks: {
       website: "https://cryptoeducator.com",
-      twitter: "https://twitter.com/cryptoeducator"
+      twitter: "https://twitter.com/cryptoeducator",
+      telegram: "https://t.me/cryptoeducator"
     },
     bannerColor: "#3b82f6",
     channels: [
       {
         id: "4-1",
         name: "Crypto 101",
-        type: "free",
-        price: 0,
+        type: "premium",
+        price: 6.0,
         description: "Complete beginner's guide to cryptocurrency",
-        subscribers: 7800
+        subscribers: 7800,
+        telegramUrl: "https://t.me/cryptoeducator_101"
       },
       {
         id: "4-2",
@@ -255,7 +271,8 @@ const mockCreators: Creator[] = [
         type: "premium",
         price: 6.0,
         description: "Deep dive into blockchain technology and advanced topics",
-        subscribers: 1200
+        subscribers: 1200,
+        telegramUrl: "https://t.me/cryptoeducator_advanced"
       }
     ]
   },
@@ -265,6 +282,7 @@ const mockCreators: Creator[] = [
     username: "nftdavid",
     avatar: "/api/placeholder/64/64",
     role: "NFT Creator",
+    tier: "ROYAL",
     subscribers: 7200,
     category: "NFTs",
     verified: true,
@@ -279,6 +297,7 @@ const mockCreators: Creator[] = [
     socialLinks: {
       website: "https://nftdavid.art",
       twitter: "https://twitter.com/nftdavid",
+      telegram: "https://t.me/nftdavid",
       discord: "https://discord.gg/nftdavid"
     },
     bannerColor: "#ec4899",
@@ -286,10 +305,11 @@ const mockCreators: Creator[] = [
       {
         id: "5-1",
         name: "NFT Market Updates",
-        type: "free",
-        price: 0,
+        type: "premium",
+        price: 10.0,
         description: "Latest NFT trends and market analysis",
-        subscribers: 5100
+        subscribers: 5100,
+        telegramUrl: "https://t.me/nftdavid_updates"
       },
       {
         id: "5-2",
@@ -297,7 +317,8 @@ const mockCreators: Creator[] = [
         type: "premium",
         price: 12.0,
         description: "Early access to NFT drops and whitelist opportunities",
-        subscribers: 890
+        subscribers: 890,
+        telegramUrl: "https://t.me/nftdavid_drops"
       },
       {
         id: "5-3",
@@ -305,7 +326,8 @@ const mockCreators: Creator[] = [
         type: "vip",
         price: 20.0,
         description: "Learn digital art creation and NFT minting",
-        subscribers: 320
+        subscribers: 320,
+        telegramUrl: "https://t.me/nftdavid_workshop"
       }
     ]
   },
@@ -315,6 +337,7 @@ const mockCreators: Creator[] = [
     username: "cryptolisa",
     avatar: "/api/placeholder/64/64",
     role: "Market Analyst",
+    tier: "PRO",
     subscribers: 11200,
     category: "Analysis",
     verified: true,
@@ -336,10 +359,11 @@ const mockCreators: Creator[] = [
       {
         id: "6-1",
         name: "Daily Market Brief",
-        type: "free",
-        price: 0,
+        type: "premium",
+        price: 7.0,
         description: "Quick daily market overview and key events",
-        subscribers: 8900
+        subscribers: 8900,
+        telegramUrl: "https://t.me/cryptolisa_daily"
       },
       {
         id: "6-2",
@@ -347,7 +371,8 @@ const mockCreators: Creator[] = [
         type: "premium",
         price: 7.0,
         description: "In-depth market analysis and predictions",
-        subscribers: 1500
+        subscribers: 1500,
+        telegramUrl: "https://t.me/cryptolisa_premium"
       }
     ]
   },
@@ -357,6 +382,7 @@ const mockCreators: Creator[] = [
     username: "defiroberto",
     avatar: "/api/placeholder/64/64",
     role: "DeFi Developer",
+    tier: "ROYAL",
     subscribers: 6800,
     category: "DeFi",
     verified: false,
@@ -368,17 +394,19 @@ const mockCreators: Creator[] = [
     },
     socialLinks: {
       website: "https://defiroberto.dev",
-      twitter: "https://twitter.com/defiroberto"
+      twitter: "https://twitter.com/defiroberto",
+      telegram: "https://t.me/defiroberto"
     },
     bannerColor: "#84cc16",
     channels: [
       {
         id: "7-1",
         name: "DeFi Development",
-        type: "free",
-        price: 0,
+        type: "premium",
+        price: 9.0,
         description: "Learn DeFi development basics and best practices",
-        subscribers: 4200
+        subscribers: 4200,
+        telegramUrl: "https://t.me/defiroberto_dev"
       },
       {
         id: "7-2",
@@ -386,7 +414,8 @@ const mockCreators: Creator[] = [
         type: "premium",
         price: 9.0,
         description: "Live smart contract reviews and security analysis",
-        subscribers: 980
+        subscribers: 980,
+        telegramUrl: "https://t.me/defiroberto_audits"
       }
     ]
   },
@@ -396,6 +425,7 @@ const mockCreators: Creator[] = [
     username: "cryptoyuki",
     avatar: "/api/placeholder/64/64",
     role: "Trading Bot Expert",
+    tier: "PRO",
     subscribers: 13500,
     category: "Trading",
     verified: true,
@@ -418,10 +448,11 @@ const mockCreators: Creator[] = [
       {
         id: "8-1",
         name: "Bot Setup Guides",
-        type: "free",
-        price: 0,
-        description: "Free guides for setting up trading bots",
-        subscribers: 9800
+        type: "premium",
+        price: 12.0,
+        description: "Premium guides for setting up trading bots",
+        subscribers: 9800,
+        telegramUrl: "https://t.me/cryptoyuki_bots"
       },
       {
         id: "8-2",
@@ -429,7 +460,8 @@ const mockCreators: Creator[] = [
         type: "premium",
         price: 12.0,
         description: "Premium bot configurations and strategies",
-        subscribers: 2100
+        subscribers: 2100,
+        telegramUrl: "https://t.me/cryptoyuki_advanced"
       },
       {
         id: "8-3",
@@ -438,395 +470,17 @@ const mockCreators: Creator[] = [
         price: 30.0,
         description: "Personal bot development and optimization",
         subscribers: 150,
+        telegramUrl: "https://t.me/cryptoyuki_custom",
         availability: {
           hasLimit: true,
           currentSlots: 5,
           maxSlots: 10,
           status: 'available'
-        }
-      }
-    ]
-  },
-  {
-    id: "9",
-    name: "Maria Gonzalez",
-    username: "cryptomaria",
-    avatar: "/api/placeholder/64/64",
-    role: "Yield Farmer",
-    subscribers: 8900,
-    category: "DeFi",
-    verified: true,
-    contentTypes: ["Yield Strategies", "Farm Reviews", "Risk Analysis"],
-    languages: ["English", "Spanish"],
-    availability: {
-      hasLimit: true,
-      currentSlots: 18,
-      maxSlots: 25,
-      status: 'limited'
-    },
-    socialLinks: {
-      website: "https://cryptomaria.farm",
-      twitter: "https://twitter.com/cryptomaria",
-      telegram: "https://t.me/cryptomaria"
-    },
-    bannerColor: "#22c55e",
-    channels: [
-      {
-        id: "9-1",
-        name: "Yield Farming Basics",
-        type: "free",
-        price: 0,
-        description: "Learn the fundamentals of yield farming",
-        subscribers: 6200
-      },
-      {
-        id: "9-2",
-        name: "High-Yield Strategies",
-        type: "premium",
-        price: 11.0,
-        description: "Advanced yield farming strategies and opportunities",
-        subscribers: 1400,
-        availability: {
-          hasLimit: true,
-          currentSlots: 28,
-          maxSlots: 35,
-          status: 'limited'
-        }
-      }
-    ]
-  },
-  {
-    id: "10",
-    name: "Ahmed Hassan",
-    username: "cryptoahmed",
-    avatar: "/api/placeholder/64/64",
-    role: "Blockchain Developer",
-    subscribers: 5600,
-    category: "Education",
-    verified: false,
-    contentTypes: ["Smart Contracts", "Web3 Development", "Tutorials"],
-    languages: ["English", "Arabic"],
-    availability: {
-      hasLimit: false,
-      status: 'available'
-    },
-    socialLinks: {
-      website: "https://cryptoahmed.dev",
-      twitter: "https://twitter.com/cryptoahmed",
-      discord: "https://discord.gg/cryptoahmed"
-    },
-    bannerColor: "#6366f1",
-    channels: [
-      {
-        id: "10-1",
-        name: "Web3 Development",
-        type: "free",
-        price: 0,
-        description: "Learn Web3 and blockchain development",
-        subscribers: 3800
-      },
-      {
-        id: "10-2",
-        name: "Smart Contract Mastery",
-        type: "premium",
-        price: 14.0,
-        description: "Advanced smart contract development and security",
-        subscribers: 890
-      },
-      {
-        id: "10-3",
-        name: "1-on-1 Mentoring",
-        type: "vip",
-        price: 35.0,
-        description: "Personal mentoring sessions for blockchain development",
-        subscribers: 45,
-        availability: {
-          hasLimit: true,
-          currentSlots: 3,
-          maxSlots: 5,
-          status: 'limited'
-        }
-      }
-    ]
-  },
-  {
-    id: "11",
-    name: "Sophie Laurent",
-    username: "cryptosophie",
-    avatar: "/api/placeholder/64/64",
-    role: "NFT Strategist",
-    subscribers: 10300,
-    category: "NFTs",
-    verified: true,
-    contentTypes: ["NFT Analysis", "Collection Reviews", "Market Trends"],
-    languages: ["English", "French"],
-    availability: {
-      hasLimit: true,
-      currentSlots: 40,
-      maxSlots: 60,
-      status: 'available'
-    },
-    socialLinks: {
-      website: "https://cryptosophie.nft",
-      twitter: "https://twitter.com/cryptosophie",
-      discord: "https://discord.gg/cryptosophie"
-    },
-    bannerColor: "#a855f7",
-    channels: [
-      {
-        id: "11-1",
-        name: "NFT Market Watch",
-        type: "free",
-        price: 0,
-        description: "Daily NFT market updates and trending collections",
-        subscribers: 7500
-      },
-      {
-        id: "11-2",
-        name: "Alpha NFT Calls",
-        type: "premium",
-        price: 16.0,
-        description: "Early NFT project analysis and investment calls",
-        subscribers: 1800,
-        availability: {
-          hasLimit: true,
-          currentSlots: 45,
-          maxSlots: 50,
-          status: 'limited'
-        }
-      },
-      {
-        id: "11-3",
-        name: "NFT Portfolio Review",
-        type: "vip",
-        price: 28.0,
-        description: "Personal NFT portfolio analysis and optimization",
-        subscribers: 120,
-        availability: {
-          hasLimit: true,
-          currentSlots: 8,
-          maxSlots: 10,
-          status: 'limited'
-        }
-      }
-    ]
-  },
-  {
-    id: "12",
-    name: "Carlos Mendoza",
-    username: "cryptocarlos",
-    avatar: "/api/placeholder/64/64",
-    role: "Futures Trader",
-    subscribers: 14200,
-    category: "Trading",
-    verified: true,
-    contentTypes: ["Futures Trading", "Risk Management", "Leverage Strategies"],
-    languages: ["English", "Spanish", "Portuguese"],
-    availability: {
-      hasLimit: true,
-      currentSlots: 22,
-      maxSlots: 30,
-      status: 'limited'
-    },
-    socialLinks: {
-      website: "https://cryptocarlos.trade",
-      twitter: "https://twitter.com/cryptocarlos",
-      telegram: "https://t.me/cryptocarlos"
-    },
-    bannerColor: "#ef4444",
-    channels: [
-      {
-        id: "12-1",
-        name: "Futures Trading Basics",
-        type: "free",
-        price: 0,
-        description: "Learn the fundamentals of futures trading",
-        subscribers: 9800
-      },
-      {
-        id: "12-2",
-        name: "Advanced Leverage Strategies",
-        type: "premium",
-        price: 13.0,
-        description: "High-leverage trading strategies and risk management",
-        subscribers: 2400,
-        availability: {
-          hasLimit: true,
-          currentSlots: 18,
-          maxSlots: 25,
-          status: 'limited'
-        }
-      },
-      {
-        id: "12-3",
-        name: "Live Trading Sessions",
-        type: "vip",
-        price: 22.0,
-        description: "Real-time futures trading with live commentary",
-        subscribers: 680,
-        availability: {
-          hasLimit: true,
-          currentSlots: 12,
-          maxSlots: 15,
-          status: 'limited'
-        }
-      },
-      {
-        id: "12-4",
-        name: "Risk Management Masterclass",
-        type: "premium",
-        price: 9.0,
-        description: "Advanced risk management techniques for futures",
-        subscribers: 1200
-      }
-    ]
-  },
-  {
-    id: "13",
-    name: "Priya Sharma",
-    username: "cryptopriya",
-    avatar: "/api/placeholder/64/64",
-    role: "DeFi Researcher",
-    subscribers: 7800,
-    category: "DeFi",
-    verified: false,
-    contentTypes: ["Protocol Research", "Tokenomics", "DeFi Security"],
-    languages: ["English", "Hindi"],
-    availability: {
-      hasLimit: true,
-      currentSlots: 15,
-      maxSlots: 20,
-      status: 'available'
-    },
-    socialLinks: {
-      website: "https://cryptopriya.research",
-      twitter: "https://twitter.com/cryptopriya",
-      discord: "https://discord.gg/cryptopriya"
-    },
-    bannerColor: "#14b8a6",
-    channels: [
-      {
-        id: "13-1",
-        name: "DeFi Protocol Reviews",
-        type: "free",
-        price: 0,
-        description: "Weekly reviews of new DeFi protocols",
-        subscribers: 5200
-      },
-      {
-        id: "13-2",
-        name: "Tokenomics Deep Dive",
-        type: "premium",
-        price: 10.0,
-        description: "In-depth tokenomics analysis and research",
-        subscribers: 1600,
-        availability: {
-          hasLimit: true,
-          currentSlots: 8,
-          maxSlots: 12,
-          status: 'limited'
-        }
-      },
-      {
-        id: "13-3",
-        name: "Security Audits",
-        type: "vip",
-        price: 18.0,
-        description: "Smart contract security analysis and audits",
-        subscribers: 320,
-        availability: {
-          hasLimit: true,
-          currentSlots: 5,
-          maxSlots: 8,
-          status: 'available'
-        }
-      }
-    ]
-  },
-  {
-    id: "14",
-    name: "James Mitchell",
-    username: "cryptojames",
-    avatar: "/api/placeholder/64/64",
-    role: "Macro Analyst",
-    subscribers: 16500,
-    category: "Analysis",
-    verified: true,
-    contentTypes: ["Macro Analysis", "Economic Reports", "Market Cycles"],
-    languages: ["English"],
-    availability: {
-      hasLimit: true,
-      currentSlots: 48,
-      maxSlots: 50,
-      status: 'limited'
-    },
-    socialLinks: {
-      website: "https://cryptojames.macro",
-      twitter: "https://twitter.com/cryptojames",
-      telegram: "https://t.me/cryptojames"
-    },
-    bannerColor: "#0ea5e9",
-    channels: [
-      {
-        id: "14-1",
-        name: "Weekly Macro Report",
-        type: "free",
-        price: 0,
-        description: "Weekly macroeconomic analysis and crypto correlation",
-        subscribers: 12800
-      },
-      {
-        id: "14-2",
-        name: "Market Cycle Analysis",
-        type: "premium",
-        price: 15.0,
-        description: "Deep dive into market cycles and timing",
-        subscribers: 2900,
-        availability: {
-          hasLimit: true,
-          currentSlots: 35,
-          maxSlots: 40,
-          status: 'limited'
-        }
-      },
-      {
-        id: "14-3",
-        name: "Economic Data Alerts",
-        type: "premium",
-        price: 8.0,
-        description: "Real-time economic data and impact analysis",
-        subscribers: 1800
-      },
-      {
-        id: "14-4",
-        name: "Private Macro Calls",
-        type: "vip",
-        price: 25.0,
-        description: "Exclusive macro analysis and market predictions",
-        subscribers: 420,
-        availability: {
-          hasLimit: true,
-          currentSlots: 20,
-          maxSlots: 25,
-          status: 'limited'
-        }
-      },
-      {
-        id: "14-5",
-        name: "Institutional Insights",
-        type: "vip",
-        price: 35.0,
-        description: "Institutional-level macro analysis and positioning",
-        subscribers: 180,
-        availability: {
-          hasLimit: true,
-          currentSlots: 8,
-          maxSlots: 10,
-          status: 'limited'
         }
       }
     ]
   }
+
 ]
 
 export function AIOCreatorsInterface() {
@@ -869,21 +523,24 @@ export function AIOCreatorsInterface() {
   const handleAccessChannel = (creatorId: string, channelId: string) => {
     const creator = creators.find(c => c.id === creatorId)
     const channel = creator?.channels.find(ch => ch.id === channelId)
-    
+
     if (creator && channel) {
       toast.success(`Accessing ${channel.name} by ${creator.name}`)
-      // In a real implementation, this would redirect to the Telegram channel
-      // or open the content interface
+      // Redirect to Telegram channel
+      if (channel.telegramUrl) {
+        window.open(channel.telegramUrl, '_blank')
+      }
     }
   }
 
   const getTotalStats = () => {
     const totalCreators = filteredCreators.length
-    const totalSubscribers = filteredCreators.reduce((sum, creator) => sum + creator.subscribers, 0)
-    const totalChannels = filteredCreators.reduce((sum, creator) => sum + creator.channels.length, 0)
-    const freeChannels = filteredCreators.reduce((sum, creator) => 
+    // Fixed values as requested
+    const totalSubscribers = 340
+    const totalChannels = 8
+    const freeChannels = filteredCreators.reduce((sum, creator) =>
       sum + creator.channels.filter(ch => ch.type === 'free').length, 0)
-    
+
     return { totalCreators, totalSubscribers, totalChannels, freeChannels }
   }
 
@@ -940,23 +597,47 @@ export function AIOCreatorsInterface() {
           </div>
 
           {/* Stats Summary */}
-          <div className="flex items-center justify-between pt-4 border-t border-[#C0E6FF]/20 mt-4">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-[#4DA2FF]" />
-              <span className="text-[#C0E6FF] text-sm">
-                {stats.totalCreators} creator{stats.totalCreators !== 1 ? 's' : ''} found
-              </span>
+          <div className="pt-4 border-t border-[#C0E6FF]/20 mt-4">
+            {/* Mobile: Stack vertically */}
+            <div className="flex flex-col gap-3 md:hidden">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#4DA2FF]" />
+                <span className="text-[#C0E6FF] text-sm">
+                  {stats.totalCreators} creator{stats.totalCreators !== 1 ? 's' : ''} found
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="border-green-400 text-green-400 text-xs">
+                  {stats.freeChannels} Free Channels
+                </Badge>
+                <Badge variant="outline" className="border-[#4DA2FF] text-[#4DA2FF] text-xs">
+                  {stats.totalChannels} Total Channels
+                </Badge>
+                <Badge variant="outline" className="border-orange-400 text-orange-400 text-xs">
+                  {stats.totalSubscribers.toLocaleString()} Subscribers
+                </Badge>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <Badge variant="outline" className="border-green-400 text-green-400">
-                {stats.freeChannels} Free Channels
-              </Badge>
-              <Badge variant="outline" className="border-[#4DA2FF] text-[#4DA2FF]">
-                {stats.totalChannels} Total Channels
-              </Badge>
-              <Badge variant="outline" className="border-orange-400 text-orange-400">
-                {stats.totalSubscribers.toLocaleString()} Subscribers
-              </Badge>
+
+            {/* Desktop: Side by side */}
+            <div className="hidden md:flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#4DA2FF]" />
+                <span className="text-[#C0E6FF] text-sm">
+                  {stats.totalCreators} creator{stats.totalCreators !== 1 ? 's' : ''} found
+                </span>
+              </div>
+              <div className="flex items-center gap-4">
+                <Badge variant="outline" className="border-green-400 text-green-400">
+                  {stats.freeChannels} Free Channels
+                </Badge>
+                <Badge variant="outline" className="border-[#4DA2FF] text-[#4DA2FF]">
+                  {stats.totalChannels} Total Channels
+                </Badge>
+                <Badge variant="outline" className="border-orange-400 text-orange-400">
+                  {stats.totalSubscribers.toLocaleString()} Subscribers
+                </Badge>
+              </div>
             </div>
           </div>
         </div>

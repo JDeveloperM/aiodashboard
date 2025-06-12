@@ -5,6 +5,8 @@ import { useSubscription } from "@/contexts/subscription-context"
 import { usePoints } from "@/contexts/points-context"
 import { RoleImage } from "@/components/ui/role-image"
 import { SuiWalletWithSocial } from "@/components/sui-wallet-with-social"
+import { SessionStatus } from "@/components/session-status"
+import { SessionRestorationBadge } from "@/components/session-restoration-indicator"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -68,6 +70,14 @@ export function TopNav() {
         </div>
         <div className="flex items-center gap-2 md:gap-4">
           <Notifications />
+
+          {/* Session restoration indicator */}
+          <SessionRestorationBadge />
+
+          {/* Session Status for authenticated users */}
+          <SignedIn>
+            <SessionStatus className="hidden md:flex" />
+          </SignedIn>
 
           {/* Sui Wallet Connect with Social Login */}
           <SuiWalletWithSocial />

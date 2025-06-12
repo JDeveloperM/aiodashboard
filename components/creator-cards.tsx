@@ -5,27 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { RoleImage } from "@/components/ui/role-image"
 import { TipPaymentModal } from "./tip-payment-modal"
 import {
   Users,
-  Lock,
-  Unlock,
   Coins,
   Play,
   FileText,
   BookOpen,
   TrendingUp,
-  Shield,
-  Calendar,
   CheckCircle,
-  Globe,
-  ExternalLink,
   MessageCircle,
-  Hash,
   Clock,
   UserCheck,
-  UserX
+  UserX,
+  Send
 } from "lucide-react"
+import Image from "next/image"
 
 interface Channel {
   id: string
@@ -34,6 +30,7 @@ interface Channel {
   price: number // in SUI
   description: string
   subscribers: number
+  telegramUrl: string // Telegram channel URL for access
   availability?: {
     hasLimit: boolean
     currentSlots?: number
@@ -48,6 +45,7 @@ interface Creator {
   username: string
   avatar: string
   role: string
+  tier: 'PRO' | 'ROYAL' // Status tier (NOMADS not allowed as creators)
   subscribers: number
   category: string
   channels: Channel[]
@@ -97,16 +95,25 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
 
   const handleChannelAccess = (creator: Creator, channel: Channel) => {
     if (channel.type === 'free') {
+      // Redirect to Telegram channel for free access
+      if (channel.telegramUrl) {
+        window.open(channel.telegramUrl, '_blank')
+      }
       onAccessChannel(creator.id, channel.id)
       return
     }
 
     const accessKey = `${creator.id}_${channel.id}`
     if (userAccess[accessKey]) {
+      // User has access, redirect to Telegram channel
+      if (channel.telegramUrl) {
+        window.open(channel.telegramUrl, '_blank')
+      }
       onAccessChannel(creator.id, channel.id)
       return
     }
 
+    // Show payment modal for premium/vip channels
     setSelectedCreator(creator)
     setSelectedChannel(channel)
     setShowPaymentModal(true)
@@ -120,6 +127,14 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
       ...prev,
       [accessKey]: expiry.toISOString()
     }))
+
+    // Find the channel and redirect to Telegram
+    const creator = creators.find(c => c.id === creatorId)
+    const channel = creator?.channels.find(ch => ch.id === channelId)
+    if (channel?.telegramUrl) {
+      window.open(channel.telegramUrl, '_blank')
+    }
+
     onAccessChannel(creatorId, channelId)
   }
 
@@ -242,283 +257,151 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
                     </div>
                     <p className="text-white/80 text-xs">@{creator.username}</p>
 
-                    {/* Social Links - Moved below username */}
-                    <div className="flex gap-1 mt-1">
-                      {creator.socialLinks.website && (
-                        <a
-                          href={creator.socialLinks.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1 bg-white/10 rounded hover:bg-white/20 transition-colors"
-                        >
-                          <Globe className="w-3 h-3 text-white" />
-                        </a>
-                      )}
-                      {creator.socialLinks.twitter && (
-                        <a
-                          href={creator.socialLinks.twitter}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1 bg-white/10 rounded hover:bg-white/20 transition-colors"
-                        >
-                          <Hash className="w-3 h-3 text-white" />
-                        </a>
-                      )}
+                    {/* Two Icons - Telegram Channel & Direct Message */}
+                    <div className="flex gap-2 mt-1">
+                      {/* Public Telegram Channel - Official Telegram Icon */}
                       {creator.socialLinks.telegram && (
                         <a
                           href={creator.socialLinks.telegram}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-1 bg-white/10 rounded hover:bg-white/20 transition-colors"
+                          className="p-1.5 bg-white/10 rounded hover:bg-white/20 transition-colors"
+                          title="Public Telegram Channel"
                         >
-                          <MessageCircle className="w-3 h-3 text-white" />
+                          <Image
+                            src="/images/social/telegram.png"
+                            alt="Public Channel"
+                            width={16}
+                            height={16}
+                            className="w-4 h-4 opacity-90 hover:opacity-100"
+                          />
                         </a>
                       )}
+
+                      {/* Direct Message to Creator - Chat Bubble Icon */}
+                      <button
+                        onClick={() => {
+                          // TODO: Implement direct message functionality
+                          console.log('Direct message to creator:', creator.name)
+                        }}
+                        className="p-1.5 bg-white/10 rounded hover:bg-white/20 transition-colors"
+                        title="Direct Message Creator"
+                      >
+                        <MessageCircle className="w-4 h-4 text-white opacity-90 hover:opacity-100" />
+                      </button>
                     </div>
                   </div>
 
-                  {/* Channel Icons - Bottom Right Corner */}
-                  <div className="absolute bottom-2 right-2">
-                    <div className="flex gap-1">
-                      {creator.channels.slice(0, 4).map((channel) => {
-                        const hasChannelAccess = hasAccess(creator.id, channel.id)
 
-                        return (
-                          <div
-                            key={channel.id}
-                            onClick={() => handleChannelAccess(creator, channel)}
-                            className={`w-6 h-6 rounded-full flex items-center justify-center cursor-pointer transition-all hover:scale-110 ${
-                              channel.availability?.status === 'full'
-                                ? "bg-gray-600 cursor-not-allowed"
-                                : channel.type === 'free' || hasChannelAccess
-                                ? "bg-green-600 hover:bg-green-700"
-                                : "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80"
-                            }`}
-                            title={`${channel.name} - ${
-                              channel.availability?.status === 'full'
-                                ? 'Full'
-                                : channel.type === 'free'
-                                ? 'Free'
-                                : `${channel.price} SUI`
-                            }`}
-                          >
-                            {channel.type === 'free' ? (
-                              <Unlock className="w-2.5 h-2.5 text-white" />
-                            ) : hasChannelAccess ? (
-                              <CheckCircle className="w-2.5 h-2.5 text-white" />
-                            ) : channel.availability?.status === 'full' ? (
-                              <UserX className="w-2.5 h-2.5 text-gray-400" />
-                            ) : (
-                              <Lock className="w-2.5 h-2.5 text-white" />
-                            )}
-                          </div>
-                        )
-                      })}
-                      {creator.channels.length > 4 && (
-                        <div
-                          onClick={() => {
-                            const cardElement = document.getElementById(`creator-${creator.id}`)
-                            if (cardElement) {
-                              const mainContent = cardElement.querySelector('.banner-main-content')
-                              const expandedView = cardElement.querySelector('.banner-expanded-view')
-                              if (mainContent && expandedView) {
-                                mainContent.classList.add('hidden')
-                                expandedView.classList.remove('hidden')
-                              }
-                            }
-                          }}
-                          className="w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center cursor-pointer transition-all hover:scale-110"
-                          title={`+${creator.channels.length - 4} more channels`}
-                        >
-                          <span className="text-white text-xs font-bold">+{creator.channels.length - 4}</span>
-                        </div>
-                      )}
-                    </div>
+                </div>
+
+
+              </div>
+
+              <div className="p-3 space-y-3">
+                {/* Line 1: Role and Category */}
+                <div className="flex items-center justify-center gap-2">
+                  <Badge className="bg-[#4da2ff] text-white text-xs px-2 py-1">
+                    {creator.role}
+                  </Badge>
+                  <Badge className={`text-xs px-2 py-1 ${getCategoryColor(creator.category)}`}>
+                    <CategoryIcon className="w-3 h-3 mr-1" />
+                    {creator.category}
+                  </Badge>
+                </div>
+
+                {/* Line 2: Subscribers and Availability */}
+                <div className="flex items-center justify-center gap-4 text-xs text-[#C0E6FF]">
+                  <div className="flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    <span>{creator.subscribers > 1000 ? `${(creator.subscribers/1000).toFixed(1)}k` : creator.subscribers} subscribers</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {getAvailabilityIcon(creator.availability.status)}
+                    <span>{getAvailabilityText(creator.availability)}</span>
                   </div>
                 </div>
 
-                {/* Expanded Channels View - Hidden by default */}
-                {creator.channels.length > 4 && (
-                  <div className="banner-expanded-view hidden absolute inset-0 flex items-center justify-center p-3">
-                    <div className="flex flex-wrap gap-1.5 justify-center items-center max-w-full">
-                      {/* Close button at the beginning */}
-                      <button
-                        onClick={() => {
-                          const cardElement = document.getElementById(`creator-${creator.id}`)
-                          if (cardElement) {
-                            const mainContent = cardElement.querySelector('.banner-main-content')
-                            const expandedView = cardElement.querySelector('.banner-expanded-view')
-                            if (mainContent && expandedView) {
-                              expandedView.classList.add('hidden')
-                              mainContent.classList.remove('hidden')
-                            }
-                          }
-                        }}
-                        className="w-5 h-5 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center cursor-pointer transition-all text-white text-xs"
-                        title="Close"
+                {/* Line 3: Languages */}
+                <div className="flex flex-wrap gap-1 justify-center">
+                  {creator.languages.slice(0, 3).map((lang) => (
+                    <Badge
+                      key={lang}
+                      variant="outline"
+                      className="text-xs border-[#C0E6FF]/30 text-[#C0E6FF] px-1.5 py-0.5"
+                    >
+                      {lang}
+                    </Badge>
+                  ))}
+                  {creator.languages.length > 3 && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs border-[#C0E6FF]/30 text-[#C0E6FF] px-1.5 py-0.5"
+                    >
+                      +{creator.languages.length - 3}
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Channel Details - Full Width at Bottom */}
+                <div className="space-y-1.5">
+                  {creator.channels.slice(0, 1).map((channel) => {
+                    const hasChannelAccess = hasAccess(creator.id, channel.id)
+
+                    return (
+                      <div
+                        key={channel.id}
+                        className="bg-[#1a2f51] rounded p-2 space-y-1"
                       >
-                        ×
-                      </button>
-
-                      {/* All channels */}
-                      {creator.channels.map((channel) => {
-                        const hasChannelAccess = hasAccess(creator.id, channel.id)
-
-                        return (
-                          <div
-                            key={channel.id}
-                            onClick={() => handleChannelAccess(creator, channel)}
-                            className={`w-6 h-6 rounded-full flex items-center justify-center cursor-pointer transition-all hover:scale-110 ${
-                              channel.availability?.status === 'full'
-                                ? "bg-gray-600 cursor-not-allowed"
-                                : channel.type === 'free' || hasChannelAccess
-                                ? "bg-green-600 hover:bg-green-700"
-                                : "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80"
-                            }`}
-                            title={`${channel.name} - ${
-                              channel.availability?.status === 'full'
-                                ? 'Full'
-                                : channel.type === 'free'
-                                ? 'Free'
-                                : `${channel.price} SUI`
-                            }`}
-                          >
-                            {channel.type === 'free' ? (
-                              <Unlock className="w-2.5 h-2.5 text-white" />
-                            ) : hasChannelAccess ? (
-                              <CheckCircle className="w-2.5 h-2.5 text-white" />
-                            ) : channel.availability?.status === 'full' ? (
-                              <UserX className="w-2.5 h-2.5 text-gray-400" />
-                            ) : (
-                              <Lock className="w-2.5 h-2.5 text-white" />
-                            )}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1 flex-1 min-w-0">
+                            <span className="text-white text-xs font-medium truncate">{channel.name}</span>
+                            <Badge className={`text-xs ${getChannelTypeColor(channel.type)} px-1 py-0`}>
+                              {channel.type[0].toUpperCase()}
+                            </Badge>
                           </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-3">
-                {/* Two Column Layout */}
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  {/* Left Column - Role, Stats, Languages */}
-                  <div className="flex flex-col items-center space-y-2.5 py-1">
-                    {/* Role and Category - Centered */}
-                    <div className="flex flex-col items-center space-y-1.5">
-                      <Badge className="bg-[#4da2ff] text-white text-xs px-2 py-1">
-                        {creator.role}
-                      </Badge>
-                      <Badge className={`text-xs px-2 py-1 ${getCategoryColor(creator.category)}`}>
-                        <CategoryIcon className="w-3 h-3 mr-1" />
-                        {creator.category}
-                      </Badge>
-                    </div>
-
-                    {/* Stats - Centered */}
-                    <div className="flex flex-col items-center space-y-1.5 text-xs text-[#C0E6FF]">
-                      <div className="flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        <span>{creator.subscribers > 1000 ? `${(creator.subscribers/1000).toFixed(1)}k` : creator.subscribers} subscribers</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {getAvailabilityIcon(creator.availability.status)}
-                        <span>{getAvailabilityText(creator.availability)}</span>
-                      </div>
-                    </div>
-
-                    {/* Languages - Centered */}
-                    <div className="flex flex-wrap gap-1 justify-center">
-                      {creator.languages.slice(0, 3).map((lang) => (
-                        <Badge
-                          key={lang}
-                          variant="outline"
-                          className="text-xs border-[#C0E6FF]/30 text-[#C0E6FF] px-1.5 py-0.5"
-                        >
-                          {lang}
-                        </Badge>
-                      ))}
-                      {creator.languages.length > 3 && (
-                        <Badge
-                          variant="outline"
-                          className="text-xs border-[#C0E6FF]/30 text-[#C0E6FF] px-1.5 py-0.5"
-                        >
-                          +{creator.languages.length - 3}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right Column - Channel Details */}
-                  <div className="space-y-1.5">
-
-                    {creator.channels.slice(0, 2).map((channel) => {
-                      const hasChannelAccess = hasAccess(creator.id, channel.id)
-
-                      return (
-                        <div
-                          key={channel.id}
-                          className="bg-[#1a2f51] rounded p-2 space-y-1"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1 flex-1 min-w-0">
-                              <span className="text-white text-xs font-medium truncate">{channel.name}</span>
-                              <Badge className={`text-xs ${getChannelTypeColor(channel.type)} px-1 py-0`}>
-                                {channel.type[0].toUpperCase()}
-                              </Badge>
-                            </div>
-                          </div>
-
-                          {/* Price and Availability */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-xs">
-                              {channel.type !== 'free' && (
-                                <div className="flex items-center gap-1 text-[#4DA2FF]">
-                                  <Coins className="w-2 h-2" />
-                                  <span>{channel.price} SUI</span>
-                                </div>
-                              )}
-                              {channel.availability && channel.availability.hasLimit && (
-                                <div className="flex items-center gap-1">
-                                  {getAvailabilityIcon(channel.availability.status)}
-                                  <span className="text-[#C0E6FF]">
-                                    {channel.availability.status === 'full'
-                                      ? 'Full'
-                                      : `${channel.availability.currentSlots}/${channel.availability.maxSlots}`
-                                    }
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          <Button
-                            onClick={() => handleChannelAccess(creator, channel)}
-                            size="sm"
-                            disabled={channel.availability?.status === 'full'}
-                            className={`w-full h-6 text-xs ${
-                              channel.availability?.status === 'full'
-                                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                                : channel.type === 'free' || hasChannelAccess
-                                ? "bg-green-600 hover:bg-green-700 text-white"
-                                : "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
-                            }`}
-                          >
-                            {channel.availability?.status === 'full' ? (
-                              'Full'
-                            ) : channel.type === 'free' ? (
-                              'Access Free'
-                            ) : hasChannelAccess ? (
-                              'Access'
-                            ) : (
-                              `Tip ${channel.price} SUI`
-                            )}
-                          </Button>
                         </div>
-                      )
-                    })}
-                  </div>
+
+                        {/* Availability Only */}
+                        {channel.availability && channel.availability.hasLimit && (
+                          <div className="flex items-center justify-center">
+                            <div className="flex items-center gap-1 text-xs">
+                              {getAvailabilityIcon(channel.availability.status)}
+                              <span className="text-[#C0E6FF]">
+                                {channel.availability.status === 'full'
+                                  ? 'Full'
+                                  : `${channel.availability.currentSlots}/${channel.availability.maxSlots}`
+                                }
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        <Button
+                          onClick={() => handleChannelAccess(creator, channel)}
+                          size="sm"
+                          disabled={channel.availability?.status === 'full'}
+                          className={`w-full h-6 text-xs ${
+                            channel.availability?.status === 'full'
+                              ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                              : channel.type === 'free' || hasChannelAccess
+                              ? "bg-green-600 hover:bg-green-700 text-white"
+                              : "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
+                          }`}
+                        >
+                          {channel.availability?.status === 'full' ? (
+                            'Full'
+                          ) : channel.type === 'free' ? (
+                            'Access Free'
+                          ) : hasChannelAccess ? (
+                            'Access'
+                          ) : (
+                            `Tip ${channel.price} SUI`
+                          )}
+                        </Button>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             </div>

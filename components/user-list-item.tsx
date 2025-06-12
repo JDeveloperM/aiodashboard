@@ -2,7 +2,6 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { RoleImage } from "@/components/ui/role-image"
 import { User } from "./user-search-interface"
@@ -11,15 +10,10 @@ import {
   Calendar,
   Clock,
   Award,
-  Coins,
   CheckCircle,
   AlertCircle,
   XCircle,
-  MessageCircle,
-  UserPlus,
-  MoreHorizontal,
-  Trophy,
-  ExternalLink
+  Trophy
 } from "lucide-react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
@@ -130,12 +124,9 @@ export function UserListItem({ user }: UserListItemProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-white font-semibold truncate">{user.name}</h3>
-            <Badge className="bg-[#4DA2FF] text-white">
-              <div className="flex items-center gap-1">
-                <RoleImage role={user.role} size="sm" />
-                {user.role}
-              </div>
-            </Badge>
+            <div className="w-6 h-6 flex items-center justify-center">
+              <RoleImage role={user.role} size="md" />
+            </div>
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-1">
@@ -187,22 +178,7 @@ export function UserListItem({ user }: UserListItemProps) {
             </TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="text-center">
-                <div className="flex items-center gap-1 text-yellow-400 mb-1">
-                  <Coins className="w-3 h-3" />
-                  <span className="font-medium">Points</span>
-                </div>
-                <div className="text-white font-bold">
-                  {user.totalPoints.toLocaleString()}
-                </div>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
-              <p>Total Points: {user.totalPoints.toLocaleString()}</p>
-            </TooltipContent>
-          </Tooltip>
+
 
           <Tooltip>
             <TooltipTrigger asChild>
@@ -229,10 +205,9 @@ export function UserListItem({ user }: UserListItemProps) {
               <Trophy className="w-3 h-3" />
               <span className="font-medium text-xs">Achievements</span>
             </div>
-            <div className="flex items-center justify-center gap-1">
+            <div className="flex items-center justify-center gap-1 flex-wrap">
               {user.achievements
                 .filter(achievement => achievement.unlocked)
-                .slice(0, 5)
                 .map((achievement, index) => {
                   const customImage = getAchievementImage(achievement.name)
                   return (
@@ -243,20 +218,20 @@ export function UserListItem({ user }: UserListItemProps) {
                             <Image
                               src={customImage}
                               alt={achievement.name}
-                              width={20}
-                              height={20}
-                              className="w-5 h-5 object-contain"
+                              width={40}
+                              height={40}
+                              className="w-10 h-10 object-contain"
                             />
                           ) : achievement.image ? (
                             <Image
                               src={achievement.image}
                               alt={achievement.name}
-                              width={20}
-                              height={20}
-                              className="w-5 h-5 object-contain"
+                              width={40}
+                              height={40}
+                              className="w-10 h-10 object-contain"
                             />
                           ) : (
-                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: achievement.color }} />
+                            <div className="w-8 h-8 rounded-full" style={{ backgroundColor: achievement.color }} />
                           )}
                         </div>
                       </TooltipTrigger>
@@ -267,77 +242,11 @@ export function UserListItem({ user }: UserListItemProps) {
                     </Tooltip>
                   )
                 })}
-              {user.achievements.filter(achievement => achievement.unlocked).length > 5 && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-[#4DA2FF] hover:text-[#4DA2FF]/80 text-xs h-5 px-1 ml-1"
-                      onClick={() => {
-                        // TODO: Navigate to user profile page
-                        console.log('Navigate to profile:', user.id)
-                      }}
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white text-xs">
-                    <p>View all achievements</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
             </div>
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="sm"
-                className="bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
-              >
-                <MessageCircle className="w-3 h-3 mr-1" />
-                <span className="hidden sm:inline">Message</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
-              <p>Send a direct message</p>
-            </TooltipContent>
-          </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10"
-              >
-                <UserPlus className="w-3 h-3" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
-              <p>Add as friend</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10"
-              >
-                <MoreHorizontal className="w-3 h-3" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
-              <p>More options</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
       </div>
     </TooltipProvider>
   )

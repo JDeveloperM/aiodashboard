@@ -3,13 +3,11 @@
 import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { RoleImage } from "@/components/ui/role-image"
-import { PrivateChatDialog } from "@/components/chat/private-chat-dialog"
+
 import { User } from "./user-search-interface"
-import { useSuiAuth } from "@/contexts/sui-auth-context"
-import { useFriendRequests } from "@/hooks/use-friend-requests"
+
 import {
   Crown,
   Shield,
@@ -22,9 +20,7 @@ import {
   CheckCircle,
   AlertCircle,
   XCircle,
-  MessageCircle,
-  UserPlus,
-  MoreHorizontal,
+
   Trophy,
   ExternalLink,
   UserCheck,
@@ -38,12 +34,6 @@ interface UserCardProps {
 }
 
 export function UserCard({ user }: UserCardProps) {
-  const [isChatOpen, setIsChatOpen] = useState(false)
-  const { user: currentUser } = useSuiAuth()
-
-  if (!currentUser) return null
-
-  const isOwnProfile = currentUser.id === user.id
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'online':
@@ -112,12 +102,9 @@ export function UserCard({ user }: UserCardProps) {
         <div className="enhanced-card-content">
           {/* Header with Role Badge */}
           <div className="flex items-center justify-between mb-4">
-            <Badge className="bg-[#4DA2FF] text-white">
-              <div className="flex items-center gap-1">
-                <RoleImage role={user.role} size="sm" />
-                {user.role}
-              </div>
-            </Badge>
+            <div className="w-6 h-6 flex items-center justify-center">
+              <RoleImage role={user.role} size="md" />
+            </div>
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-1">
@@ -280,24 +267,19 @@ export function UserCard({ user }: UserCardProps) {
                 {user.achievements.slice(0, 6).map((achievement, index) => (
                   <Tooltip key={index}>
                     <TooltipTrigger asChild>
-                      <div className={cn(
-                        "w-6 h-6 rounded-full flex items-center justify-center text-xs border",
-                        achievement.unlocked
-                          ? "bg-[#4DA2FF]/20 border-[#4DA2FF]/50 text-[#4DA2FF]"
-                          : "bg-gray-600/20 border-gray-600/50 text-gray-500"
-                      )}>
+                      <div className="flex items-center justify-center hover:scale-110 transition-transform cursor-pointer">
                         {achievement.image ? (
                           <Image
                             src={achievement.image}
                             alt={achievement.name}
-                            width={16}
-                            height={16}
-                            className="w-4 h-4 object-contain"
+                            width={32}
+                            height={32}
+                            className="w-8 h-8 object-contain"
                           />
                         ) : achievement.icon ? (
-                          <achievement.icon className="w-3 h-3" />
+                          <achievement.icon className="w-8 h-8" />
                         ) : (
-                          <Star className="w-3 h-3" />
+                          <div className="w-8 h-8 rounded-full" style={{ backgroundColor: achievement.color }} />
                         )}
                       </div>
                     </TooltipTrigger>
@@ -370,66 +352,11 @@ export function UserCard({ user }: UserCardProps) {
             </div>
           )}
 
-          {/* Action Buttons */}
-          {!isOwnProfile && (
-            <div className="flex gap-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    onClick={() => setIsChatOpen(true)}
-                    className="flex-1 bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
-                  >
-                    <MessageCircle className="w-3 h-3 mr-1" />
-                    Message
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
-                  <p>Send a message</p>
-                </TooltipContent>
-              </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setIsChatOpen(true)}
-                    className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10"
-                  >
-                    <UserPlus className="w-3 h-3" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
-                  <p>Send friend request</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10"
-                  >
-                    <MoreHorizontal className="w-3 h-3" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
-                  <p>More options</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Private Chat Dialog */}
-      <PrivateChatDialog
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        targetUser={user}
-      />
+
     </TooltipProvider>
   )
 }

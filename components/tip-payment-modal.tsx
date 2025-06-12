@@ -44,6 +44,7 @@ interface Channel {
   price: number // in SUI
   description: string
   subscribers: number
+  telegramUrl: string // Telegram channel URL for access
   availability?: {
     hasLimit: boolean
     currentSlots?: number
@@ -115,6 +116,13 @@ export function TipPaymentModal({
 
       toast.success(`Successfully purchased 1-month access to ${channel.name}!`)
       onPaymentSuccess(creator.id, channel.id)
+
+      // Redirect to Telegram channel after successful payment
+      if (channel.telegramUrl) {
+        setTimeout(() => {
+          window.open(channel.telegramUrl, '_blank')
+        }, 1000) // Small delay to show success message first
+      }
 
       setTimeout(() => {
         onClose()

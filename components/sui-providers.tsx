@@ -5,6 +5,7 @@ import { SuiClientProvider, WalletProvider } from '@mysten/dapp-kit'
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client'
 import { ZkLoginProvider } from './zklogin-provider'
 import { SuiAuthProvider } from '@/contexts/sui-auth-context'
+import { WalletReconnection } from './wallet-reconnection'
 import '@mysten/dapp-kit/dist/index.css'
 import { useState } from 'react'
 
@@ -32,9 +33,14 @@ export function SuiProviders({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <SuiClientProvider networks={networks} defaultNetwork="devnet">
-        <WalletProvider>
+        <WalletProvider
+          autoConnect={true}
+          enableUnsafeBurner={false}
+          storageKey="sui-wallet-connection"
+        >
           <ZkLoginProvider suiClient={suiClient}>
             <SuiAuthProvider>
+              <WalletReconnection />
               {children}
             </SuiAuthProvider>
           </ZkLoginProvider>

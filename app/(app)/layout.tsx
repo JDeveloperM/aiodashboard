@@ -2,6 +2,7 @@
 
 import { Sidebar } from "@/components/sidebar"
 import { TopNav } from "@/components/top-nav"
+import { SessionRestorationIndicator } from "@/components/session-restoration-indicator"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -31,7 +32,7 @@ export default function AppLayout({
         if (!isSignedIn) {
           router.push("/")
         }
-      }, 500) // Give more time for wallet connection to establish
+      }, 1000) // Give more time for session restoration
 
       return () => clearTimeout(timer)
     }
@@ -76,6 +77,10 @@ export default function AppLayout({
       <div className="flex-1 flex flex-col w-full relative z-10">
         <TopNav />
         <div className="flex-1 p-4 md:p-6 w-full max-w-full overflow-x-hidden">
+          {/* Session restoration indicator */}
+          <div className="mb-4">
+            <SessionRestorationIndicator />
+          </div>
           <main className="w-full">{children}</main>
         </div>
       </div>

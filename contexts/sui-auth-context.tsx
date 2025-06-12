@@ -3,6 +3,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { useCurrentAccount } from '@mysten/dapp-kit'
 import { useZkLogin } from '@/components/zklogin-provider'
+import {
+  saveAuthSession,
+  getAuthSession,
+  clearAuthSession,
+  type AuthSession
+} from '@/lib/auth-cookies'
+import {
+  initializeSessionManager,
+  stopSessionManager,
+  validateSession,
+  addSessionEventListeners
+} from '@/lib/auth-session'
 
 interface SuiUser {
   id: string
@@ -39,12 +51,36 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SuiUser | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
 
+  // Initialize session manager
+  useEffect(() => {
+    initializeSessionManager()
+
+    // Add session event listeners
+    const cleanup = addSessionEventListeners({
+      onWarning: (detail) => {
+        console.warn(`Session expires in ${detail.minutes} minutes`)
+        // You can add toast notification here if needed
+      },
+      onLogout: (detail) => {
+        console.log('Force logout:', detail.reason)
+        setUser(null)
+        // Redirect to login page if needed
+      }
+    })
+
+    return () => {
+      stopSessionManager()
+      cleanup()
+    }
+  }, [])
+
   // Create or update user when wallet connects
   useEffect(() => {
     const createOrUpdateUser = async () => {
       try {
         let currentUser: SuiUser | null = null
 
+        // Check for active wallet or zkLogin connection first
         if (suiAccount?.address) {
           // Wallet connection
           currentUser = {
@@ -65,6 +101,24 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
             createdAt: new Date(),
             lastLoginAt: new Date()
           }
+        } else {
+          // No active connection, try to restore from cookie session
+          const existingSession = getAuthSession()
+          if (existingSession) {
+            // Restore user from cookie session
+            currentUser = {
+              id: existingSession.address,
+              address: existingSession.address,
+              connectionType: existingSession.connectionType,
+              username: existingSession.username,
+              email: existingSession.email,
+              profileImage: existingSession.profileImage,
+              createdAt: new Date(existingSession.createdAt),
+              lastLoginAt: new Date(existingSession.lastLoginAt)
+            }
+
+            console.log('User restored from cookie session, waiting for wallet reconnection...')
+          }
         }
 
         // Load existing user data from localStorage if available
@@ -78,10 +132,23 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
               lastLoginAt: new Date()
             }
           }
-          
-          // Save updated user data
+
+          // Save to both localStorage and cookies
           if (currentUser) {
             localStorage.setItem(`sui_user_${currentUser.address}`, JSON.stringify(currentUser))
+
+            // Save to cookie session
+            saveAuthSession({
+              address: currentUser.address,
+              connectionType: currentUser.connectionType,
+              username: currentUser.username,
+              email: currentUser.email,
+              profileImage: currentUser.profileImage,
+              createdAt: currentUser.createdAt.toISOString(),
+              lastLoginAt: currentUser.lastLoginAt.toISOString()
+            })
+
+            console.log('User session saved to cookies')
           }
         }
 
@@ -101,15 +168,20 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Clear user data
       setUser(null)
-      
+
+      // Clear cookies and localStorage
+      clearAuthSession()
+
       // Note: We can't programmatically disconnect wallets
       // Users need to disconnect from their wallet extension
       // or we can provide instructions
-      
+
       // Clear any stored user data
       if (user) {
         localStorage.removeItem(`sui_user_${user.address}`)
       }
+
+      console.log('User signed out and session cleared')
     } catch (error) {
       console.error('Error signing out:', error)
     }
@@ -121,9 +193,22 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const updatedUser = { ...user, ...data }
       setUser(updatedUser)
-      
+
       // Save to localStorage
       localStorage.setItem(`sui_user_${user.address}`, JSON.stringify(updatedUser))
+
+      // Save to cookie session
+      saveAuthSession({
+        address: updatedUser.address,
+        connectionType: updatedUser.connectionType,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        profileImage: updatedUser.profileImage,
+        createdAt: updatedUser.createdAt.toISOString(),
+        lastLoginAt: updatedUser.lastLoginAt.toISOString()
+      })
+
+      console.log('Profile updated and saved to cookies')
     } catch (error) {
       console.error('Error updating profile:', error)
     }
@@ -133,7 +218,7 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
     return `${address.slice(0, 6)}...${address.slice(-4)}`
   }
 
-  const isSignedIn = !!(suiAccount?.address || zkLoginUserAddress)
+  const isSignedIn = !!(suiAccount?.address || zkLoginUserAddress || user)
 
   const value: SuiAuthContextType = {
     user,

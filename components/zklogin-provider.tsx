@@ -3,14 +3,20 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import { SuiClient } from '@mysten/sui/client'
-import { 
-  generateNonce, 
-  generateRandomness, 
+import {
+  generateNonce,
+  generateRandomness,
   getExtendedEphemeralPublicKey,
   jwtToAddress,
   getZkLoginSignature,
   genAddressSeed
 } from '@mysten/sui/zklogin'
+import {
+  saveZkLoginSession,
+  getZkLoginSession,
+  clearZkLoginSession,
+  type ZkLoginSession
+} from '@/lib/auth-cookies'
 
 interface ZkLoginContextType {
   currentEpoch: number | null
@@ -94,7 +100,7 @@ export function ZkLoginProvider({ children, suiClient }: ZkLoginProviderProps) {
       const nonceValue = generateNonce(keyPair.getPublicKey(), maxEpochValue, randomnessValue)
       setNonce(nonceValue)
 
-      // Store values in localStorage for persistence
+      // Store values in localStorage for persistence (fallback)
       localStorage.setItem('zklogin_ephemeral_key', keyPair.getSecretKey())
       localStorage.setItem('zklogin_max_epoch', maxEpochValue.toString())
       localStorage.setItem('zklogin_randomness', randomnessValue)
@@ -135,7 +141,20 @@ export function ZkLoginProvider({ children, suiClient }: ZkLoginProviderProps) {
       const address = jwtToAddress(jwtToken, salt)
       setZkLoginUserAddress(address)
 
-      // Store in localStorage
+      // Store in cookies and localStorage
+      const zkLoginSessionData = {
+        jwt: jwtToken,
+        userSalt: salt,
+        address: address,
+        nonce: nonce || '',
+        maxEpoch: maxEpoch || 0,
+        randomness: randomness || '',
+        ephemeralKey: ephemeralKeyPair?.getSecretKey() || ''
+      }
+
+      saveZkLoginSession(zkLoginSessionData)
+
+      // Also store in localStorage as fallback
       localStorage.setItem('zklogin_jwt', jwtToken)
       localStorage.setItem('zklogin_user_salt', salt)
       localStorage.setItem('zklogin_address', address)
@@ -158,7 +177,10 @@ export function ZkLoginProvider({ children, suiClient }: ZkLoginProviderProps) {
     setRandomness(null)
     setError(null)
 
-    // Clear localStorage
+    // Clear cookies and localStorage
+    clearZkLoginSession()
+
+    // Clear localStorage as fallback
     localStorage.removeItem('zklogin_ephemeral_key')
     localStorage.removeItem('zklogin_max_epoch')
     localStorage.removeItem('zklogin_randomness')
@@ -168,8 +190,33 @@ export function ZkLoginProvider({ children, suiClient }: ZkLoginProviderProps) {
     localStorage.removeItem('zklogin_address')
   }
 
-  // Restore from localStorage on mount
+  // Restore from cookies and localStorage on mount
   useEffect(() => {
+    // Try to restore from cookies first
+    const zkLoginSession = getZkLoginSession()
+
+    if (zkLoginSession) {
+      setJwt(zkLoginSession.jwt)
+      setUserSalt(zkLoginSession.userSalt)
+      setZkLoginUserAddress(zkLoginSession.address)
+      setNonce(zkLoginSession.nonce)
+      setMaxEpoch(zkLoginSession.maxEpoch)
+      setRandomness(zkLoginSession.randomness)
+
+      if (zkLoginSession.ephemeralKey) {
+        try {
+          const keyPair = Ed25519Keypair.fromSecretKey(zkLoginSession.ephemeralKey)
+          setEphemeralKeyPair(keyPair)
+        } catch (err) {
+          console.error('Failed to restore ephemeral key from cookie:', err)
+        }
+      }
+
+      console.log('zkLogin session restored from cookies')
+      return
+    }
+
+    // Fallback to localStorage
     const storedJwt = localStorage.getItem('zklogin_jwt')
     const storedSalt = localStorage.getItem('zklogin_user_salt')
     const storedAddress = localStorage.getItem('zklogin_address')
@@ -182,6 +229,20 @@ export function ZkLoginProvider({ children, suiClient }: ZkLoginProviderProps) {
       setJwt(storedJwt)
       setUserSalt(storedSalt)
       setZkLoginUserAddress(storedAddress)
+
+      // Migrate to cookies
+      const zkLoginSessionData = {
+        jwt: storedJwt,
+        userSalt: storedSalt,
+        address: storedAddress,
+        nonce: storedNonce || '',
+        maxEpoch: storedMaxEpoch ? Number(storedMaxEpoch) : 0,
+        randomness: storedRandomness || '',
+        ephemeralKey: storedEphemeralKey || ''
+      }
+
+      saveZkLoginSession(zkLoginSessionData)
+      console.log('zkLogin session migrated from localStorage to cookies')
     }
 
     if (storedNonce) setNonce(storedNonce)
