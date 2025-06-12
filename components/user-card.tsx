@@ -1,11 +1,15 @@
 "use client"
 
+import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { RoleImage } from "@/components/ui/role-image"
+import { PrivateChatDialog } from "@/components/chat/private-chat-dialog"
 import { User } from "./user-search-interface"
+import { useSuiAuth } from "@/contexts/sui-auth-context"
+import { useFriendRequests } from "@/hooks/use-friend-requests"
 import {
   Crown,
   Shield,
@@ -22,7 +26,9 @@ import {
   UserPlus,
   MoreHorizontal,
   Trophy,
-  ExternalLink
+  ExternalLink,
+  UserCheck,
+  Loader2
 } from "lucide-react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
@@ -32,6 +38,12 @@ interface UserCardProps {
 }
 
 export function UserCard({ user }: UserCardProps) {
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const { user: currentUser } = useSuiAuth()
+
+  if (!currentUser) return null
+
+  const isOwnProfile = currentUser.id === user.id
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'online':
@@ -359,54 +371,65 @@ export function UserCard({ user }: UserCardProps) {
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  className="flex-1 bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
-                >
-                  <MessageCircle className="w-3 h-3 mr-1" />
-                  Message
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
-                <p>Send a direct message</p>
-              </TooltipContent>
-            </Tooltip>
+          {!isOwnProfile && (
+            <div className="flex gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    onClick={() => setIsChatOpen(true)}
+                    className="flex-1 bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
+                  >
+                    <MessageCircle className="w-3 h-3 mr-1" />
+                    Message
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
+                  <p>Send a message</p>
+                </TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10"
-                >
-                  <UserPlus className="w-3 h-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
-                <p>Add as friend</p>
-              </TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsChatOpen(true)}
+                    className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10"
+                  >
+                    <UserPlus className="w-3 h-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
+                  <p>Send friend request</p>
+                </TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10"
-                >
-                  <MoreHorizontal className="w-3 h-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
-                <p>More options</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10"
+                  >
+                    <MoreHorizontal className="w-3 h-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
+                  <p>More options</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Private Chat Dialog */}
+      <PrivateChatDialog
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        targetUser={user}
+      />
     </TooltipProvider>
   )
 }

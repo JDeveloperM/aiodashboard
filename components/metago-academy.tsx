@@ -21,6 +21,7 @@ import {
   X
 } from "lucide-react"
 import { useSubscription } from "@/contexts/subscription-context"
+import { CoursePaymentModal } from "@/components/course-payment-modal"
 
 interface Lesson {
   id: string
@@ -42,6 +43,7 @@ interface Course {
   progress: number
   isLocked: boolean
   requiredTier?: 'PRO' | 'ROYAL'
+  price?: number // Price in SUI for locked courses
   students: number
   rating: number
 }
@@ -239,6 +241,7 @@ const courses: Course[] = [
     progress: 0,
     isLocked: true,
     requiredTier: "PRO",
+    price: 5.0, // 5 SUI
     students: 634,
     rating: 4.9
   },
@@ -340,6 +343,7 @@ const courses: Course[] = [
     progress: 0,
     isLocked: true,
     requiredTier: "ROYAL",
+    price: 10.0, // 10 SUI
     students: 423,
     rating: 4.9
   }
@@ -350,9 +354,18 @@ export function MetaGoAcademy() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null)
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false)
+  const [courseForPurchase, setCourseForPurchase] = useState<Course | null>(null)
 
   const canAccessCourse = (course: Course) => {
     if (!course.isLocked) return true
+
+    // Check if course was purchased with SUI
+    const accessKey = `course_access_${course.id}`
+    const isPurchased = localStorage.getItem(accessKey) === 'purchased'
+    if (isPurchased) return true
+
+    // Check tier-based access
     if (course.requiredTier === "PRO" && (tier === "PRO" || tier === "ROYAL")) return true
     if (course.requiredTier === "ROYAL" && tier === "ROYAL") return true
     return false
@@ -381,6 +394,19 @@ export function MetaGoAcademy() {
   const handleCloseVideo = () => {
     setSelectedLesson(null)
     setIsVideoPlaying(false)
+  }
+
+  const handleBuyCourse = (course: Course) => {
+    setCourseForPurchase(course)
+    setPaymentModalOpen(true)
+  }
+
+  const handlePaymentSuccess = (courseId: string) => {
+    setPaymentModalOpen(false)
+    setCourseForPurchase(null)
+    // The course access is already updated in localStorage by the modal
+    // Force a re-render by updating a state that doesn't affect the UI
+    setSelectedCourse(null)
   }
 
   // Video Player Modal
@@ -565,7 +591,7 @@ export function MetaGoAcademy() {
             <div
               key={course.id}
               className={`enhanced-card transition-all duration-300 ${
-                hasAccess ? 'hover:border-[#4DA2FF]/50 cursor-pointer' : 'opacity-60'
+                hasAccess ? 'hover:border-[#4DA2FF]/50 cursor-pointer' : course.price ? '' : 'opacity-60'
               }`}
               onClick={() => hasAccess && setSelectedCourse(course)}
             >
@@ -623,7 +649,7 @@ export function MetaGoAcademy() {
                 {!hasAccess && course.requiredTier && (
                   <div className="p-3 bg-orange-500/10 rounded-lg border border-orange-500/30">
                     <p className="text-sm text-orange-400 text-center">
-                      Requires {course.requiredTier} NFT
+                      Requires {course.requiredTier} NFT {course.price ? `or ${course.price} SUI` : ''}
                     </p>
                   </div>
                 )}
@@ -642,6 +668,14 @@ export function MetaGoAcademy() {
                           Start Course
                         </>
                       )}
+                    </Button>
+                  ) : course.price ? (
+                    <Button
+                      onClick={() => handleBuyCourse(course)}
+                      className="w-full bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-[#FFFFFF]"
+                    >
+                      <Coins className="w-4 h-4 mr-2" />
+                      Buy for {course.price} SUI
                     </Button>
                   ) : (
                     <Button
@@ -687,6 +721,14 @@ export function MetaGoAcademy() {
           </div>
         </div>
       </div>
+
+      {/* Course Payment Modal */}
+      <CoursePaymentModal
+        isOpen={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+        course={courseForPurchase}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
     </div>
   )
 }

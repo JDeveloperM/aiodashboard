@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { RoleImage } from "@/components/ui/role-image"
 import { UserCard } from "./user-card"
+import { PrivateChatDialog } from "@/components/chat/private-chat-dialog"
 import { User } from "./user-search-interface"
+import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { X, MessageCircle, UserPlus, Trophy, ExternalLink, MessageSquare, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
@@ -83,11 +85,13 @@ interface UserAvatarProps {
   onCardToggle: (user: User | null) => void
   isCardOpen: boolean
   onSocialSelect?: (social: { platform: string; username: string; url: string }) => void
+  onChatOpen?: (user: User) => void
 }
 
-function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect }: UserAvatarProps) {
+function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect, onChatOpen }: UserAvatarProps) {
   const isMobile = useIsMobile()
   const [showCard, setShowCard] = useState(false)
+  const { user: currentUser } = useSuiAuth()
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -315,15 +319,26 @@ function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect }: UserAvat
 
 
                 {/* Quick Actions */}
-                <div className="flex gap-2">
-                  <Button size="sm" className="flex-1 bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white text-xs h-7">
-                    <MessageCircle className="w-3 h-3 mr-1" />
-                    Message
-                  </Button>
-                  <Button size="sm" variant="outline" className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10 text-xs h-7">
-                    <UserPlus className="w-3 h-3" />
-                  </Button>
-                </div>
+                {currentUser && currentUser.id !== user.id && (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => onChatOpen?.(user)}
+                      className="flex-1 bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white text-xs h-7"
+                    >
+                      <MessageCircle className="w-3 h-3 mr-1" />
+                      Message
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onChatOpen?.(user)}
+                      className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10 text-xs h-7"
+                    >
+                      <UserPlus className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
               </div>
               {/* Arrow pointing to avatar */}
               <div className="absolute top-full left-1/2 transform -translate-x-1/2">
@@ -347,7 +362,9 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
     username: string
     url: string
   } | null>(null)
+  const [chatUser, setChatUser] = useState<User | null>(null)
   const isMobile = useIsMobile()
+  const { user: currentUser } = useSuiAuth()
 
   const handleCardToggle = (user: User | null) => {
     if (isMobile) {
@@ -443,6 +460,7 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
                   onCardToggle={handleCardToggle}
                   isCardOpen={displayedUser?.id === user.id}
                   onSocialSelect={setSelectedSocial}
+                  onChatOpen={setChatUser}
                 />
               </div>
             ))}
@@ -621,15 +639,26 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
               )}
 
               {/* Quick Actions */}
-              <div className="flex gap-2">
-                <Button size="sm" className="flex-1 bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white text-xs h-7">
-                  <MessageCircle className="w-3 h-3 mr-1" />
-                  Message
-                </Button>
-                <Button size="sm" variant="outline" className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10 text-xs h-7">
-                  <UserPlus className="w-3 h-3" />
-                </Button>
-              </div>
+              {selectedUser && currentUser && currentUser.id !== selectedUser.id && (
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => setChatUser(selectedUser)}
+                    className="flex-1 bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white text-xs h-7"
+                  >
+                    <MessageCircle className="w-3 h-3 mr-1" />
+                    Message
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setChatUser(selectedUser)}
+                    className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10 text-xs h-7"
+                  >
+                    <UserPlus className="w-3 h-3" />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -698,6 +727,12 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
         </div>
       )}
 
+      {/* Private Chat Dialog */}
+      <PrivateChatDialog
+        isOpen={!!chatUser}
+        onClose={() => setChatUser(null)}
+        targetUser={chatUser}
+      />
 
       </div>
     </TooltipProvider>

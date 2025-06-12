@@ -51,18 +51,13 @@ export function SuiWalletWithSocial() {
 
     return (
       <div className="flex items-center gap-2">
-        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-          <CheckCircle className="w-3 h-3 mr-1" />
-          {connectionType}
-        </Badge>
-        
         {/* Show regular connect button for wallet connections */}
         {suiAccount && (
           <div className="sui-connect-button-wrapper">
             <ConnectButton />
           </div>
         )}
-        
+
         {/* Show address for zkLogin connections */}
         {zkLoginUserAddress && !suiAccount && (
           <div className="flex items-center gap-1">

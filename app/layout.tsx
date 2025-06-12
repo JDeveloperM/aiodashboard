@@ -7,6 +7,8 @@ import { SettingsProvider } from "@/contexts/settings-context"
 import { PointsProvider } from "@/contexts/points-context"
 import { SuiProviders } from "@/components/sui-providers"
 import { Toaster } from "@/components/ui/sonner"
+import { FloatingChatWidget } from "@/components/chat/floating-chat-widget"
+import { FriendRequestNotifications } from "@/components/friend-request-notifications"
 import type { Metadata, Viewport } from "next"
 import '@/styles/squares.css'
 
@@ -65,6 +67,8 @@ export default function RootLayout({
               <SettingsProvider>
                 <PointsProvider>
                   {children}
+                  <FloatingChatWidget />
+                  {/* <FriendRequestNotifications /> */}
                   <Toaster />
                 </PointsProvider>
               </SettingsProvider>
