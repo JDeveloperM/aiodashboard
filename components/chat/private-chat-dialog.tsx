@@ -24,9 +24,9 @@ export function PrivateChatDialog({ isOpen, onClose, targetUser }: PrivateChatDi
   const [isSending, setIsSending] = useState(false)
 
   // Temporarily simplified - will re-enable friend requests later
-  const sendFriendRequest = async () => false
-  const areFriends = () => false
-  const getFriendRequestStatus = () => null
+  const sendFriendRequest = async (receiverId: string, receiverName: string, receiverAvatar?: string, message?: string) => false
+  const areFriends = (otherUserId: string) => false
+  const getFriendRequestStatus = (otherUserId: string) => null
   const getPrivateChatRoom = (otherUserId: string) => `private_${[user?.id, otherUserId].sort().join('_')}`
   const isLoading = false
   const initialized = true
