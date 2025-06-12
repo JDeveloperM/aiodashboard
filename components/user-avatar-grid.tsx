@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { RoleImage } from "@/components/ui/role-image"
 import { UserCard } from "./user-card"
 import { User } from "./user-search-interface"
-import { X, MessageCircle, UserPlus, Trophy, ExternalLink } from "lucide-react"
+import { X, MessageCircle, UserPlus, Trophy, ExternalLink, MessageSquare, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
