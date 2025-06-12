@@ -221,7 +221,7 @@ export function Sidebar() {
             <div className={cn("flex h-16 items-center gap-2 px-4", isCollapsed && !isMobileOpen && "justify-center px-2")}>
               {(!isCollapsed || isMobileOpen) && (
                 <Link href="/" className="flex items-center font-semibold lg:ml-0 ml-12">
-                  <span className="text-lg text-white">MetadudesX</span>
+                  <span className="text-lg text-white">AIONET</span>
                 </Link>
               )}
 

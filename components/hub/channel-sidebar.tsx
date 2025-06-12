@@ -139,7 +139,7 @@ export function ChannelSidebar({ selectedChannel, onChannelSelect, isMobile, onC
               <span className="text-white font-bold text-sm">M</span>
             </div>
             <div>
-              <h3 className="text-white font-semibold text-sm">MetadudesX</h3>
+              <h3 className="text-white font-semibold text-sm">AIONET</h3>
             </div>
           </div>
           {/* Close Button for Mobile */}

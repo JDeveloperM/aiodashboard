@@ -122,7 +122,7 @@ export function HeroSection() {
                     <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
                   </svg>
                 </div>
-                app.metadudesx.io/dashboard
+                app.aionet.io/dashboard
               </div>
             </div>
 
@@ -130,7 +130,7 @@ export function HeroSection() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent z-10"></div>
               <Image
                 src="/images/landing/dashboard.png"
-                alt="MetadudesX Dashboard"
+                alt="AIONET Dashboard"
                 width={1200}
                 height={800}
                 className="w-full h-auto transform transition-transform duration-700 hover:scale-10"

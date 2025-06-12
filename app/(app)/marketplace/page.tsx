@@ -50,8 +50,8 @@ const marketplaceItems = {
   merchandise: [
     {
       id: "merch-1",
-      name: "MetadudesX Hoodie",
-      description: "Premium quality hoodie with MetadudesX logo",
+      name: "AIONET Hoodie",
+      description: "Premium quality hoodie with AIONET logo",
       image: "/images/aibot.png",
       pointsCost: 2000,
       category: "merchandise" as const,

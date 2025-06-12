@@ -131,9 +131,9 @@ export function NFTMintingInterface() {
   return (
     <div className="space-y-6">
       <div className="text-center space-y-4">
-        <h2 className="text-3xl font-bold text-white">MetadudesX NFT Collection</h2>
+        <h2 className="text-3xl font-bold text-white">AIONET NFT Collection</h2>
         <p className="text-[#C0E6FF] max-w-2xl mx-auto">
-          Mint your MetadudesX NFT to unlock exclusive features, trading bots, and community access.
+          Mint your AIONET NFT to unlock exclusive features, trading bots, and community access.
           Built on Sui Network for fast, low-cost transactions.
         </p>
 

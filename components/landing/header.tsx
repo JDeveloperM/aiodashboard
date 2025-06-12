@@ -35,7 +35,7 @@ export function Header() {
       <div className="container mx-auto px-4 flex items-center justify-between">
         <Link href="/" className="flex items-center">
           <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-            MetadudesX
+            AIONET
           </span>
         </Link>
 

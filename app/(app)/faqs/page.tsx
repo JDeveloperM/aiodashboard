@@ -9,11 +9,11 @@ const faqCategories = [
     category: "Getting Started",
     faqs: [
       {
-        question: "What is MetadudesX and how does it work?",
-        answer: "MetadudesX is a Web2.5 platform that bridges traditional Web2 simplicity with Web3 functionality. We offer automated trading bots, community features, DApps, and educational resources. Users can sign in with Google, get auto-generated wallets, and access various tiers (Copier, PRO, ROYAL) with different benefits."
+        question: "What is AIONET and how does it work?",
+        answer: "AIONET is a Web2.5 platform that bridges traditional Web2 simplicity with Web3 functionality. We offer automated trading bots, community features, DApps, and educational resources. Users can sign in with Google, get auto-generated wallets, and access various tiers (Copier, PRO, ROYAL) with different benefits."
       },
       {
-        question: "How do I get started with MetadudesX?",
+        question: "How do I get started with AIONET?",
         answer: "Simply sign up using your Google account or email. You'll automatically start as a Copier user with access to basic features. Connect your Bybit account to start using our trading bots, or explore our community features and educational content."
       },
       {
@@ -81,7 +81,7 @@ const faqCategories = [
     category: "Technical & Support",
     faqs: [
       {
-        question: "What blockchain does MetadudesX use?",
+        question: "What blockchain does AIONET use?",
         answer: "We use the Sui Network for its fast transactions and low fees. This enables seamless NFT minting, wallet integration, and DApp functionality while maintaining an excellent user experience."
       },
       {

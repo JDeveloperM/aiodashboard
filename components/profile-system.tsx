@@ -100,7 +100,7 @@ interface InvitedUser {
 export function ProfileSystem() {
   const { tier } = useSubscription()
   const { addPoints, balance } = usePoints()
-  const [affiliateLink] = useState("https://metadudesx.io/ref/MDX789ABC")
+  const [affiliateLink] = useState("https://aionet.io/ref/MDX789ABC")
   const [copied, setCopied] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -175,7 +175,7 @@ export function ProfileSystem() {
       {
         platform: "Discord",
         image: socialImages.Discord,
-        url: "https://discord.gg/metadudesx",
+        url: "https://discord.gg/aionet",
         connected: true,
         username: "MetaDude#1234",
         color: "#5865F2"
@@ -183,7 +183,7 @@ export function ProfileSystem() {
       {
         platform: "Telegram",
         image: socialImages.Telegram,
-        url: "https://t.me/metadudesx",
+        url: "https://t.me/aionet",
         connected: true,
         username: "@metadude_tg",
         color: "#0088CC"
@@ -191,7 +191,7 @@ export function ProfileSystem() {
       {
         platform: "X",
         image: socialImages.X,
-        url: "https://x.com/metadudesx",
+        url: "https://x.com/aionet",
         connected: false,
         username: "",
         color: "#000000"
@@ -445,8 +445,8 @@ export function ProfileSystem() {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: 'Join MetadudesX',
-        text: 'Join the MetadudesX community and start your Web3 journey!',
+        title: 'Join AIONET',
+        text: 'Join the AIONET community and start your Web3 journey!',
         url: affiliateLink
       })
     } else {

@@ -48,8 +48,8 @@ export function CopyTradingInterface() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-[#FFFFFF]">MetadudesX Copy Trading</h2>
-          <p className="text-[#C0E6FF] mt-1">Automated Bybit trading bots for MetadudesX NFT holders</p>
+          <h2 className="text-2xl font-bold text-[#FFFFFF]">AIONET Copy Trading</h2>
+          <p className="text-[#C0E6FF] mt-1">Automated Bybit trading bots for AIONET NFT holders</p>
         </div>
       </div>
 
@@ -110,7 +110,7 @@ export function CopyTradingInterface() {
                   <p className="text-xs text-[#C0E6FF]">
                     No account?{" "}
                     <a
-                      href="https://www.bybit.com/register?affiliate_id=METADUDESX"
+                      href="https://www.bybit.com/register?affiliate_id=AIONET"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[#4DA2FF] hover:underline inline-flex items-center gap-1"

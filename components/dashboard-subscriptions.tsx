@@ -131,7 +131,7 @@ export function DashboardSubscriptions() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-white">MetadudesX NFT Tiers</h2>
+          <h2 className="text-2xl font-bold text-white">AIONET NFT Tiers</h2>
           <p className="text-[#C0E6FF] mt-1">Mint your NFT on Sui Network to unlock exclusive features</p>
         </div>
         <Badge className={`bg-gradient-to-r ${currentTierData.gradient} text-white px-4 py-2`}>

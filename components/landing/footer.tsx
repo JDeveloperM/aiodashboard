@@ -34,7 +34,7 @@ export function Footer() {
           <div className="col-span-1 md:col-span-1">
             <Link href="/" className="inline-block mb-6">
               <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                MetadudesX
+                AIONET
               </span>
             </Link>
             <p className="text-white/60 mb-6">

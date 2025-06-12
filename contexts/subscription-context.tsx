@@ -20,7 +20,7 @@ const SubscriptionContext = createContext<SubscriptionContextType | undefined>(u
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const [tier, setTier] = useState<SubscriptionTier>("NOMAD")
 
-  // Determine access based on MetadudesX tier system
+  // Determine access based on AIONET tier system
   // According to guidelines: PRO and ROYAL have no cycle payments, ROYAL has VIP features
   const canAccessCryptoBots = tier === "PRO" || tier === "ROYAL"
   const canAccessForexBots = tier === "ROYAL"  // VIP-only (ROYAL tier)

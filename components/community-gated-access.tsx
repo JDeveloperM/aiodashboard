@@ -49,7 +49,7 @@ export function CommunityGatedAccess() {
   const nftData = [
     {
       id: 'pro',
-      name: 'MetadudesX PRO',
+      name: 'AIONET PRO',
       type: 'PRO' as const,
       owned: tier === 'PRO' || tier === 'ROYAL',
       benefits: ['Crypto Trading Bots', 'Community Access', 'AIO Creators'],
@@ -58,7 +58,7 @@ export function CommunityGatedAccess() {
     },
     {
       id: 'royal',
-      name: 'MetadudesX ROYAL',
+      name: 'AIONET ROYAL',
       type: 'ROYAL' as const,
       owned: tier === 'ROYAL',
       benefits: ['All PRO Benefits', 'Forex Trading Bots', 'VIP Support', 'Exclusive Events'],
@@ -103,7 +103,7 @@ export function CommunityGatedAccess() {
   }
 
   const handleDiscordJoin = () => {
-    window.open('https://discord.gg/metadudesx', '_blank')
+    window.open('https://discord.gg/aionet', '_blank')
   }
 
   const handleDiscordSync = () => {
@@ -117,7 +117,7 @@ export function CommunityGatedAccess() {
   }
 
   const handleTelegramJoin = () => {
-    window.open('https://t.me/metadudesx', '_blank')
+    window.open('https://t.me/aionet', '_blank')
   }
 
   const handleTelegramSync = () => {
@@ -325,7 +325,7 @@ export function CommunityGatedAccess() {
 
             {/* NFTs Owned Section */}
             <div>
-              <h4 className="text-white font-medium mb-3">MetadudesX NFTs Owned</h4>
+              <h4 className="text-white font-medium mb-3">AIONET NFTs Owned</h4>
               <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
                 {nftData.map((nft) => (
                   <div

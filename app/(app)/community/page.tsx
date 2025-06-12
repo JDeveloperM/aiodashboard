@@ -8,7 +8,7 @@ export default function CommunityPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">AIO Connect</h1>
-          <p className="text-gray-400 mt-1">Search and connect with other users in the MetadudesX AIO Connect</p>
+          <p className="text-gray-400 mt-1">Search and connect with other users in the AIONET AIO Connect</p>
         </div>
       </div>
 

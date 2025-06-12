@@ -83,9 +83,9 @@ const mockUsers: User[] = [
       { name: "Refer 5 ROYAL", color: "#FFD700", unlocked: true, claimed: false, xp: 80, tooltip: "Successfully refer 5 ROYAL members" }
     ],
     socialMedia: [
-      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "AlexTrader#1234", color: "#5865F2" },
-      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: true, username: "@alex_trader_tg", color: "#0088CC" },
-      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: true, username: "@alex_crypto_trader", color: "#000000" }
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/aionet", connected: true, username: "AlexTrader#1234", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/aionet", connected: true, username: "@alex_trader_tg", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/aionet", connected: true, username: "@alex_crypto_trader", color: "#000000" }
     ]
   },
   {
@@ -111,9 +111,9 @@ const mockUsers: User[] = [
       { name: "Refer 1 PRO", color: "#4DA2FF", unlocked: true, claimed: false, xp: 60, tooltip: "Successfully refer 1 PRO member" }
     ],
     socialMedia: [
-      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "SarahNFT#5678", color: "#5865F2" },
-      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: false, username: "", color: "#0088CC" },
-      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: false, username: "", color: "#000000" }
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/aionet", connected: true, username: "SarahNFT#5678", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/aionet", connected: false, username: "", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/aionet", connected: false, username: "", color: "#000000" }
     ]
   },
   {
@@ -139,9 +139,9 @@ const mockUsers: User[] = [
       { name: "Connect Bybit", color: "#F7931A", unlocked: true, claimed: false, xp: 25, tooltip: "Connect Bybit account" }
     ],
     socialMedia: [
-      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: false, username: "", color: "#5865F2" },
-      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: true, username: "@marcus_defi", color: "#0088CC" },
-      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: false, username: "", color: "#000000" }
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/aionet", connected: false, username: "", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/aionet", connected: true, username: "@marcus_defi", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/aionet", connected: false, username: "", color: "#000000" }
     ]
   },
   {
@@ -165,9 +165,9 @@ const mockUsers: User[] = [
       { name: "KYC Verification", color: "#10B981", unlocked: false, claimed: false, xp: 25, tooltip: "Complete KYC verification" }
     ],
     socialMedia: [
-      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "EmmaCrypto#9876", color: "#5865F2" },
-      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: false, username: "", color: "#0088CC" },
-      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: false, username: "", color: "#000000" }
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/aionet", connected: true, username: "EmmaCrypto#9876", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/aionet", connected: false, username: "", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/aionet", connected: false, username: "", color: "#000000" }
     ]
   },
   {
@@ -196,9 +196,9 @@ const mockUsers: User[] = [
       { name: "Refer 3 ROYAL", color: "#FFD700", unlocked: true, claimed: false, xp: 70, tooltip: "Successfully refer 3 ROYAL members" }
     ],
     socialMedia: [
-      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "DavidWhale#0001", color: "#5865F2" },
-      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: true, username: "@david_whale", color: "#0088CC" },
-      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: true, username: "@david_crypto_whale", color: "#000000" }
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/aionet", connected: true, username: "DavidWhale#0001", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/aionet", connected: true, username: "@david_whale", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/aionet", connected: true, username: "@david_crypto_whale", color: "#000000" }
     ]
   },
   {
@@ -223,9 +223,9 @@ const mockUsers: User[] = [
       { name: "Upgrade to PRO", color: "#4DA2FF", unlocked: true, claimed: true, xp: 50, tooltip: "Upgrade to PRO membership" }
     ],
     socialMedia: [
-      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: false, username: "", color: "#5865F2" },
-      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: true, username: "@lisa_analyst", color: "#0088CC" },
-      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: false, username: "", color: "#000000" }
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/aionet", connected: false, username: "", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/aionet", connected: true, username: "@lisa_analyst", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/aionet", connected: false, username: "", color: "#000000" }
     ]
   },
   {
@@ -248,9 +248,9 @@ const mockUsers: User[] = [
       { name: "KYC Verification", color: "#10B981", unlocked: false, claimed: false, xp: 25, tooltip: "Complete KYC verification" }
     ],
     socialMedia: [
-      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: false, username: "", color: "#5865F2" },
-      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: false, username: "", color: "#0088CC" },
-      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: false, username: "", color: "#000000" }
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/aionet", connected: false, username: "", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/aionet", connected: false, username: "", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/aionet", connected: false, username: "", color: "#000000" }
     ]
   },
   {
@@ -276,9 +276,9 @@ const mockUsers: User[] = [
       { name: "Make 3 Cycles", color: "#10B981", unlocked: true, claimed: false, xp: 50, tooltip: "Complete 3 trading cycles" }
     ],
     socialMedia: [
-      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "MariaTrader#4321", color: "#5865F2" },
-      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: false, username: "", color: "#0088CC" },
-      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: false, username: "", color: "#000000" }
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/aionet", connected: true, username: "MariaTrader#4321", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/aionet", connected: false, username: "", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/aionet", connected: false, username: "", color: "#000000" }
     ]
   },
   {
@@ -303,9 +303,9 @@ const mockUsers: User[] = [
       { name: "Upgrade to PRO", color: "#4DA2FF", unlocked: true, claimed: true, xp: 50, tooltip: "Upgrade to PRO membership" }
     ],
     socialMedia: [
-      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "DavidCrypto#9876", color: "#5865F2" },
-      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: true, username: "@david_defi", color: "#0088CC" },
-      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: false, username: "", color: "#000000" }
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/aionet", connected: true, username: "DavidCrypto#9876", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/aionet", connected: true, username: "@david_defi", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/aionet", connected: false, username: "", color: "#000000" }
     ]
   },
   {
@@ -332,9 +332,9 @@ const mockUsers: User[] = [
       { name: "Upgrade to ROYAL", color: "#FFD700", unlocked: true, claimed: true, xp: 75, tooltip: "Upgrade to ROYAL membership" }
     ],
     socialMedia: [
-      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "EmmaNFT#1234", color: "#5865F2" },
-      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: true, username: "@emma_artist", color: "#0088CC" },
-      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: true, username: "@emma_nft_art", color: "#000000" }
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/aionet", connected: true, username: "EmmaNFT#1234", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/aionet", connected: true, username: "@emma_artist", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/aionet", connected: true, username: "@emma_nft_art", color: "#000000" }
     ]
   },
   {
@@ -358,9 +358,9 @@ const mockUsers: User[] = [
       { name: "Connect Discord", color: "#5865F2", unlocked: true, claimed: false, xp: 15, tooltip: "Connect Discord account" }
     ],
     socialMedia: [
-      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "JamesHODL#5555", color: "#5865F2" },
-      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: false, username: "", color: "#0088CC" },
-      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: false, username: "", color: "#000000" }
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/aionet", connected: true, username: "JamesHODL#5555", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/aionet", connected: false, username: "", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/aionet", connected: false, username: "", color: "#000000" }
     ]
   },
   {
@@ -386,9 +386,9 @@ const mockUsers: User[] = [
       { name: "Upgrade to PRO", color: "#4DA2FF", unlocked: true, claimed: true, xp: 50, tooltip: "Upgrade to PRO membership" }
     ],
     socialMedia: [
-      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "SophiaWeb3#7890", color: "#5865F2" },
-      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: true, username: "@sophia_dev", color: "#0088CC" },
-      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: true, username: "@sophia_web3", color: "#000000" }
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/aionet", connected: true, username: "SophiaWeb3#7890", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/aionet", connected: true, username: "@sophia_dev", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/aionet", connected: true, username: "@sophia_web3", color: "#000000" }
     ]
   },
   {
@@ -414,9 +414,9 @@ const mockUsers: User[] = [
       { name: "Connect Bybit", color: "#F7931A", unlocked: true, claimed: true, xp: 25, tooltip: "Connect Bybit account" }
     ],
     socialMedia: [
-      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "MikeTrader#3456", color: "#5865F2" },
-      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: false, username: "", color: "#0088CC" },
-      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: true, username: "@mike_trades", color: "#000000" }
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/aionet", connected: true, username: "MikeTrader#3456", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/aionet", connected: false, username: "", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/aionet", connected: true, username: "@mike_trades", color: "#000000" }
     ]
   },
   {
@@ -444,9 +444,9 @@ const mockUsers: User[] = [
       { name: "Refer 5 Users", color: "#10B981", unlocked: true, claimed: true, xp: 100, tooltip: "Successfully refer 5 users" }
     ],
     socialMedia: [
-      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "BellaCrypto#1111", color: "#5865F2" },
-      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: true, username: "@bella_community", color: "#0088CC" },
-      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: true, username: "@bella_crypto_ed", color: "#000000" }
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/aionet", connected: true, username: "BellaCrypto#1111", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/aionet", connected: true, username: "@bella_community", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/aionet", connected: true, username: "@bella_crypto_ed", color: "#000000" }
     ]
   },
   {
@@ -469,9 +469,9 @@ const mockUsers: User[] = [
       { name: "Profile Picture", color: "#4DA2FF", unlocked: true, claimed: true, xp: 15, tooltip: "Upload a profile picture" }
     ],
     socialMedia: [
-      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: false, username: "", color: "#5865F2" },
-      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: true, username: "@ryan_explorer", color: "#0088CC" },
-      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: false, username: "", color: "#000000" }
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/aionet", connected: false, username: "", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/aionet", connected: true, username: "@ryan_explorer", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/aionet", connected: false, username: "", color: "#000000" }
     ]
   },
   {
@@ -498,9 +498,9 @@ const mockUsers: User[] = [
       { name: "Security Expert", color: "#EF4444", unlocked: true, claimed: true, xp: 75, tooltip: "Complete security audit" }
     ],
     socialMedia: [
-      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/metadudesx", connected: true, username: "AishaBlockchain#2468", color: "#5865F2" },
-      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/metadudesx", connected: true, username: "@aisha_security", color: "#0088CC" },
-      { platform: "X", image: socialImages.X, url: "https://x.com/metadudesx", connected: true, username: "@aisha_audits", color: "#000000" }
+      { platform: "Discord", image: socialImages.Discord, url: "https://discord.gg/aionet", connected: true, username: "AishaBlockchain#2468", color: "#5865F2" },
+      { platform: "Telegram", image: socialImages.Telegram, url: "https://t.me/aionet", connected: true, username: "@aisha_security", color: "#0088CC" },
+      { platform: "X", image: socialImages.X, url: "https://x.com/aionet", connected: true, username: "@aisha_audits", color: "#000000" }
     ]
   }
 ]

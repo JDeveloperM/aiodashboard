@@ -10,8 +10,8 @@ import { Badge } from "@/components/ui/badge"
 
 
 
-// MetadudesX Community Analytics
-const metadudesXAnalytics = {
+// AIONET Community Analytics
+const aionetAnalytics = {
   // Community Stats
   totalHolders: "283",
   nomadUsers: "156", // Users with NOMAD tier (basic users)
@@ -80,11 +80,11 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">MetadudesX Dashboard</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">AIONET Dashboard</h1>
         </div>
       </div>
 
-      {/* MetadudesX Community Stats */}
+      {/* AIONET Community Stats */}
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         {/* Total NFT Holders */}
         <div className="enhanced-card">
@@ -92,10 +92,10 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-white">Total NFT Holders</p>
-                <p className="text-2xl font-bold text-white">{metadudesXAnalytics.totalHolders}</p>
+                <p className="text-2xl font-bold text-white">{aionetAnalytics.totalHolders}</p>
                 <div className="flex items-center mt-1">
                   <TrendingUp className="w-4 h-4 text-green-400 mr-1" />
-                  <span className="text-green-400 text-sm">Target: {metadudesXAnalytics.targetHolders}</span>
+                  <span className="text-green-400 text-sm">Target: {aionetAnalytics.targetHolders}</span>
                 </div>
               </div>
               <div className="bg-[#4DA2FF]/20 p-3 rounded-full">
@@ -111,7 +111,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-white">NOMAD Users</p>
-                <p className="text-2xl font-bold text-white">{metadudesXAnalytics.nomadUsers}</p>
+                <p className="text-2xl font-bold text-white">{aionetAnalytics.nomadUsers}</p>
                 <div className="flex items-center mt-1">
                   <RoleImage role="NOMAD" size="sm" className="mr-1" />
                   <span className="text-[#C0E6FF] text-sm">Basic Tier</span>
@@ -128,7 +128,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-white">PRO NFT Holders</p>
-                <p className="text-2xl font-bold text-white">{metadudesXAnalytics.proHolders}</p>
+                <p className="text-2xl font-bold text-white">{aionetAnalytics.proHolders}</p>
                 <div className="flex items-center mt-1">
                   <RoleImage role="PRO" size="sm" className="mr-1" />
                   <span className="text-[#C0E6FF] text-sm">PRO Tier</span>
@@ -145,7 +145,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-white">ROYAL NFT Holders</p>
-                <p className="text-2xl font-bold text-white">{metadudesXAnalytics.royalHolders}</p>
+                <p className="text-2xl font-bold text-white">{aionetAnalytics.royalHolders}</p>
                 <div className="flex items-center mt-1">
                   <RoleImage role="ROYAL" size="sm" className="mr-1" />
                   <span className="text-[#C0E6FF] text-sm">ROYAL Tier</span>
@@ -213,13 +213,13 @@ export default function Dashboard() {
             <div className="space-y-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-white mb-2">
-                  {metadudesXAnalytics.totalHolders} / {metadudesXAnalytics.dewhaleTargetHolders}
+                  {aionetAnalytics.totalHolders} / {aionetAnalytics.dewhaleTargetHolders}
                 </div>
                 <div className="text-sm text-[#C0E6FF]">Holders for DEWhale Deployment</div>
                 <div className="w-full bg-gray-700 rounded-full h-3 mt-2">
                   <div
                     className="bg-gradient-to-r from-[#4DA2FF] to-[#007ACC] h-3 rounded-full transition-all duration-300"
-                    style={{ width: `${(parseInt(metadudesXAnalytics.totalHolders) / parseInt(metadudesXAnalytics.dewhaleTargetHolders)) * 100}%` }}
+                    style={{ width: `${(parseInt(aionetAnalytics.totalHolders) / parseInt(aionetAnalytics.dewhaleTargetHolders)) * 100}%` }}
                   ></div>
                 </div>
               </div>

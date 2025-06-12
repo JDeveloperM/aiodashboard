@@ -65,7 +65,7 @@ export function CTASection() {
           </h2>
 
           <p className="text-lg md:text-xl text-white/70 mb-10 max-w-3xl mx-auto">
-            Join the MetadudesX community and access exclusive NFT-gated features, decentralized investment opportunities, and educational resources. Start your Web3 journey today on Sui Network.
+            Join the AIONET community and access exclusive NFT-gated features, decentralized investment opportunities, and educational resources. Start your Web3 journey today on Sui Network.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
