@@ -60,9 +60,9 @@ const currentRound: CurrentRound = {
   roundNumber: 1,
   startDate: "Mon, Feb 10, 2025, 04:58:16 PM",
   endDate: "Mon, Feb 17, 2025, 04:58:16 PM",
-  prizePool: "0.2 POL",
+  prizePool: "0.2 SUI",
   totalTickets: 2,
-  ticketPrice: "0.1 POL",
+  ticketPrice: "0.1 SUI",
   yourTickets: "2/3 Available",
   isActive: true
 }
@@ -85,7 +85,12 @@ const ticketPurchases: TicketPurchase[] = [
 
 // Winners history data
 const winnersHistory: Winner[] = [
-  // No winners yet for demo
+  {
+    round: 0,
+    winner: "0x7F2A...B8C9",
+    prize: "0.15 SUI",
+    date: "Feb 3, 2025"
+  }
 ]
 
 // Slot Machine Component
@@ -176,7 +181,7 @@ function SlotMachine({ isSpinning, finalNumber, onSpinComplete }: SlotMachinePro
             ) : finalNumber !== null ? (
               <p className="text-green-400 font-semibold">🎉 Ticket #{finalNumber} minted successfully!</p>
             ) : (
-              <p className="text-[#C0E6FF]">Click "Mint with POL" to get your ticket number</p>
+              <p className="text-[#C0E6FF]">Click "Mint with SUI" to get your ticket number</p>
             )}
           </div>
         </div>
@@ -318,7 +323,7 @@ export default function RaffleCraftPage() {
 
         {/* Mint Section */}
         <div className="space-y-6">
-          {/* Mint with POL */}
+          {/* Mint with SUI */}
           <div className="enhanced-card">
             <div className="enhanced-card-content">
               <div className="space-y-4">
@@ -354,7 +359,7 @@ export default function RaffleCraftPage() {
                     onClick={handleMintTickets}
                     className="bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white px-8"
                   >
-                    Mint with POL
+                    Mint with SUI
                   </Button>
                 </div>
               </div>
