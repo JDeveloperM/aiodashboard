@@ -16,6 +16,7 @@ interface PremiumAccessContextType {
   premiumAccessRecords: PremiumAccessRecord[]
   canAccessPremiumForFree: (creatorId: string, channelId: string) => boolean
   recordPremiumAccess: (creatorId: string, channelId: string) => void
+  removePremiumAccess: (creatorId: string, channelId: string) => void
   getRemainingFreeAccess: () => number
   resetPremiumAccess: () => void
 }
@@ -108,6 +109,16 @@ export function PremiumAccessProvider({ children }: { children: React.ReactNode 
     }
   }
 
+  const removePremiumAccess = (creatorId: string, channelId: string) => {
+    // Remove the specific premium access record
+    setPremiumAccessRecords(prev =>
+      prev.filter(record =>
+        !(record.creatorId === creatorId && record.channelId === channelId)
+      )
+    )
+    console.log(`[PremiumAccess] Removed premium access for ${creatorId}_${channelId}`)
+  }
+
   const getRemainingFreeAccess = () => {
     return Math.max(0, premiumAccessLimit - premiumAccessCount)
   }
@@ -143,6 +154,7 @@ export function PremiumAccessProvider({ children }: { children: React.ReactNode 
         premiumAccessRecords: currentTierRecords,
         canAccessPremiumForFree,
         recordPremiumAccess,
+        removePremiumAccess,
         getRemainingFreeAccess,
         resetPremiumAccess,
       }}

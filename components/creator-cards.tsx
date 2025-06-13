@@ -92,7 +92,7 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
   const [userAccess, setUserAccess] = useState<Record<string, string>>({})
   const [showOnlyJoined, setShowOnlyJoined] = useState(false)
   const { tier } = useSubscription()
-  const { canAccessPremiumForFree, recordPremiumAccess, getRemainingFreeAccess, premiumAccessRecords } = usePremiumAccess()
+  const { canAccessPremiumForFree, recordPremiumAccess, removePremiumAccess, getRemainingFreeAccess, premiumAccessRecords } = usePremiumAccess()
 
   // Load user access from localStorage
   useEffect(() => {
@@ -173,8 +173,7 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
     localStorage.removeItem(accessKey)
 
     // Remove from premium access records (free access for PRO/ROYAL users)
-    const premiumAccessKey = `premium_access_${creator.id}_${channel.id}`
-    localStorage.removeItem(premiumAccessKey)
+    removePremiumAccess(creator.id, channel.id)
 
     // Update local state
     const newUserAccess = { ...userAccess }
