@@ -10,6 +10,7 @@ import { TipPaymentModal } from "./tip-payment-modal"
 import { useSubscription } from "@/contexts/subscription-context"
 import { usePremiumAccess } from "@/contexts/premium-access-context"
 import { Filter, FilterX } from "lucide-react"
+import { toast } from "sonner"
 import {
   Users,
   Coins,
@@ -22,7 +23,8 @@ import {
   Clock,
   UserCheck,
   UserX,
-  Send
+  Send,
+  LogOut
 } from "lucide-react"
 import Image from "next/image"
 
@@ -151,6 +153,37 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
     setSelectedCreator(creator)
     setSelectedChannel(channel)
     setShowPaymentModal(true)
+  }
+
+  const handleLeaveChannel = (creator: Creator, channel: Channel, event: React.MouseEvent) => {
+    event.stopPropagation() // Prevent triggering the access button
+
+    const channelName = channel.name
+    const creatorName = creator.name
+
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      `Are you sure you want to leave "${channelName}" by ${creatorName}?\n\nThis will remove your access to this premium channel. You'll need to purchase access again if you want to rejoin.`
+    )
+
+    if (!confirmed) return
+
+    // Remove from localStorage (paid access)
+    const accessKey = `channel_access_${creator.id}_${channel.id}`
+    localStorage.removeItem(accessKey)
+
+    // Remove from premium access records (free access for PRO/ROYAL users)
+    const premiumAccessKey = `premium_access_${creator.id}_${channel.id}`
+    localStorage.removeItem(premiumAccessKey)
+
+    // Update local state
+    const newUserAccess = { ...userAccess }
+    delete newUserAccess[`${creator.id}_${channel.id}`]
+    setUserAccess(newUserAccess)
+
+    // Show success message
+    console.log(`[CreatorCards] User left channel: ${channelName} by ${creatorName}`)
+    toast.success(`Successfully left "${channelName}". You no longer have access to this premium channel.`)
   }
 
   const handlePaymentSuccess = (creatorId: string, channelId: string) => {
@@ -462,33 +495,52 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
 
 
 
-                        <Button
-                          onClick={() => handleChannelAccess(creator, channel)}
-                          size="sm"
-                          disabled={channel.availability?.status === 'full'}
-                          className={`w-full h-6 text-xs ${
-                            channel.availability?.status === 'full'
-                              ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                              : channel.type === 'free' || hasChannelAccess || canAccessForFree
-                              ? "bg-green-600 hover:bg-green-700 text-white"
-                              : "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
-                          }`}
-                        >
-                          {channel.availability?.status === 'full' ? (
-                            'Full'
-                          ) : channel.type === 'free' ? (
-                            'Access Free'
-                          ) : hasChannelAccess ? (
-                            'Access'
-                          ) : canAccessForFree ? (
-                            `Access Free (${getRemainingFreeAccess()} left)`
-                          ) : (
-                            // Show specific amount only if single subscription option, otherwise just "Tip SUI"
-                            channel.subscriptionPackages && channel.subscriptionPackages.length > 1
-                              ? 'Tip SUI'
-                              : `Tip ${channel.price} SUI`
-                          )}
-                        </Button>
+                        {/* Show both Access and Leave buttons if user has access to premium/vip channels */}
+                        {(hasChannelAccess && channel.type !== 'free') ? (
+                          <div className="flex gap-1">
+                            <Button
+                              onClick={() => handleChannelAccess(creator, channel)}
+                              size="sm"
+                              className="flex-1 h-6 text-xs bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              Access
+                            </Button>
+                            <Button
+                              onClick={(e) => handleLeaveChannel(creator, channel, e)}
+                              size="sm"
+                              className="h-6 text-xs bg-red-600 hover:bg-red-700 text-white px-2"
+                              title="Leave Channel"
+                            >
+                              <LogOut className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            onClick={() => handleChannelAccess(creator, channel)}
+                            size="sm"
+                            disabled={channel.availability?.status === 'full'}
+                            className={`w-full h-6 text-xs ${
+                              channel.availability?.status === 'full'
+                                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                                : channel.type === 'free' || canAccessForFree
+                                ? "bg-green-600 hover:bg-green-700 text-white"
+                                : "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
+                            }`}
+                          >
+                            {channel.availability?.status === 'full' ? (
+                              'Full'
+                            ) : channel.type === 'free' ? (
+                              'Access Free'
+                            ) : canAccessForFree ? (
+                              `Access Free (${getRemainingFreeAccess()} left)`
+                            ) : (
+                              // Show specific amount only if single subscription option, otherwise just "Tip SUI"
+                              channel.subscriptionPackages && channel.subscriptionPackages.length > 1
+                                ? 'Tip SUI'
+                                : `Tip ${channel.price} SUI`
+                            )}
+                          </Button>
+                        )}
                       </div>
                     )
                   })}
