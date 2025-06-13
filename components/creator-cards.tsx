@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { RoleImage } from "@/components/ui/role-image"
 import { TipPaymentModal } from "./tip-payment-modal"
 import { useSubscription } from "@/contexts/subscription-context"
+import { usePremiumAccess } from "@/contexts/premium-access-context"
 import {
   Users,
   Coins,
@@ -49,7 +50,8 @@ interface Creator {
   role: string
   tier: 'PRO' | 'ROYAL' // Status tier (NOMADS not allowed as creators)
   subscribers: number
-  category: string
+  category: string // Primary category (for backward compatibility)
+  categories: string[] // All selected categories
   channels: Channel[]
   contentTypes: string[]
   verified: boolean
@@ -80,6 +82,7 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [userAccess, setUserAccess] = useState<Record<string, string>>({})
   const { tier } = useSubscription()
+  const { canAccessPremiumForFree, recordPremiumAccess, getRemainingFreeAccess } = usePremiumAccess()
 
   // Load user access from localStorage
   useEffect(() => {
@@ -106,13 +109,23 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
       return
     }
 
-    // PRO and ROYAL users have free access to all channels
+    // PRO and ROYAL users have limited free access to premium channels
     if (tier === 'PRO' || tier === 'ROYAL') {
-      if (channel.telegramUrl) {
-        window.open(channel.telegramUrl, '_blank')
+      if (canAccessPremiumForFree(creator.id, channel.id)) {
+        // User can access this premium channel for free
+        recordPremiumAccess(creator.id, channel.id)
+        if (channel.telegramUrl) {
+          window.open(channel.telegramUrl, '_blank')
+        }
+        onAccessChannel(creator.id, channel.id)
+        return
+      } else {
+        // User has exceeded their free premium channel limit, show payment modal
+        setSelectedCreator(creator)
+        setSelectedChannel(channel)
+        setShowPaymentModal(true)
+        return
       }
-      onAccessChannel(creator.id, channel.id)
-      return
     }
 
     const accessKey = `${creator.id}_${channel.id}`
@@ -198,13 +211,18 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
   }
 
   const hasAccess = (creatorId: string, channelId: string) => {
-    // PRO and ROYAL users have access to all channels
-    if (tier === 'PRO' || tier === 'ROYAL') {
+    // Check if user has paid access (NOMAD users or premium users who exceeded limit)
+    const accessKey = `${creatorId}_${channelId}`
+    if (userAccess[accessKey]) {
       return true
     }
 
-    const accessKey = `${creatorId}_${channelId}`
-    return !!userAccess[accessKey]
+    // PRO and ROYAL users have limited free access to premium channels
+    if (tier === 'PRO' || tier === 'ROYAL') {
+      return canAccessPremiumForFree(creatorId, channelId)
+    }
+
+    return false
   }
 
   const getAccessExpiry = (creatorId: string, channelId: string) => {
@@ -305,15 +323,27 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
               </div>
 
               <div className="p-3 space-y-3">
-                {/* Line 1: Role and Category */}
-                <div className="flex items-center justify-center gap-2">
+                {/* Line 1: Role and Categories */}
+                <div className="flex flex-wrap items-center justify-center gap-1">
                   <Badge className="bg-[#4da2ff] text-white text-xs px-2 py-1">
                     {creator.role}
                   </Badge>
-                  <Badge className={`text-xs px-2 py-1 ${getCategoryColor(creator.category)}`}>
-                    <CategoryIcon className="w-3 h-3 mr-1" />
-                    {creator.category}
-                  </Badge>
+                  {/* Display all categories */}
+                  {(creator.categories || [creator.category]).slice(0, 3).map((category, index) => {
+                    const CategoryIcon = getCategoryIcon(category)
+                    return (
+                      <Badge key={index} className={`text-xs px-2 py-1 ${getCategoryColor(category)}`}>
+                        <CategoryIcon className="w-3 h-3 mr-1" />
+                        {category}
+                      </Badge>
+                    )
+                  })}
+                  {/* Show +X more if there are more than 3 categories */}
+                  {creator.categories && creator.categories.length > 3 && (
+                    <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 text-xs px-2 py-1">
+                      +{creator.categories.length - 3}
+                    </Badge>
+                  )}
                 </div>
 
                 {/* Line 2: Subscribers and Availability */}
@@ -386,10 +416,10 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
                             'Full'
                           ) : channel.type === 'free' ? (
                             'Access Free'
-                          ) : tier === 'PRO' || tier === 'ROYAL' ? (
-                            'Access Free (Premium)'
                           ) : hasChannelAccess ? (
                             'Access'
+                          ) : (tier === 'PRO' || tier === 'ROYAL') && canAccessPremiumForFree(creator.id, channel.id) ? (
+                            `Access Free (${getRemainingFreeAccess()} left)`
                           ) : (
                             `Tip ${channel.price} SUI`
                           )}

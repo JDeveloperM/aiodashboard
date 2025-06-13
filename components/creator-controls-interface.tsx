@@ -71,8 +71,16 @@ type CreatorFormData = z.infer<typeof creatorFormSchema>
 
 // Constants for form options
 const LANGUAGES = [
-  "English", "Spanish", "French", "German", "Italian", "Portuguese", 
-  "Russian", "Chinese", "Japanese", "Korean", "Arabic", "Hindi"
+  // Major European Languages
+  "English", "Spanish", "French", "German", "Italian", "Portuguese", "Russian",
+  "Dutch", "Polish", "Romanian", "Greek", "Czech", "Hungarian", "Swedish",
+  "Norwegian", "Danish", "Finnish", "Bulgarian", "Croatian", "Slovak",
+  "Slovenian", "Lithuanian", "Latvian", "Estonian", "Maltese", "Irish",
+  "Welsh", "Catalan", "Basque", "Galician", "Albanian", "Macedonian",
+  "Serbian", "Bosnian", "Montenegrin", "Ukrainian", "Belarusian",
+  // Other Major Languages
+  "Chinese", "Japanese", "Korean", "Arabic", "Hindi", "Turkish",
+  "Hebrew", "Persian", "Thai", "Vietnamese", "Indonesian", "Malay"
 ]
 
 const CREATOR_ROLES = [
@@ -204,7 +212,8 @@ export function CreatorControlsInterface() {
         role: data.creatorRole,
         tier: tier as 'PRO' | 'ROYAL', // Use current user's tier
         subscribers: 0, // New creator starts with 0 subscribers
-        category: data.channelCategories[0] || "General", // Use first selected category
+        category: data.channelCategories[0] || "General", // Primary category (first selected)
+        categories: data.channelCategories, // All selected categories
         channels: [newChannel],
         contentTypes: ["Live Streams", "Analysis", "Tutorials"], // Default content types
         verified: false, // New creators start unverified
@@ -997,15 +1006,31 @@ export function CreatorControlsInterface() {
                 </div>
 
                 <div className="p-3 space-y-3">
-                  {/* Role and Category */}
-                  <div className="flex items-center justify-center gap-2">
+                  {/* Role and Categories */}
+                  <div className="flex flex-wrap items-center justify-center gap-1">
                     <Badge className="bg-[#4da2ff] text-white text-xs px-2 py-1">
                       {previewData.role}
                     </Badge>
-                    <Badge className="bg-green-600 text-white text-xs px-2 py-1">
-                      <TrendingUp className="w-3 h-3 mr-1" />
-                      {previewData.category}
-                    </Badge>
+                    {/* Display all selected categories */}
+                    {watchCategories.length > 0 ? (
+                      watchCategories.slice(0, 3).map((category, index) => (
+                        <Badge key={index} className="bg-green-600 text-white text-xs px-2 py-1">
+                          <TrendingUp className="w-3 h-3 mr-1" />
+                          {category}
+                        </Badge>
+                      ))
+                    ) : (
+                      <Badge className="bg-gray-500 text-white text-xs px-2 py-1">
+                        <TrendingUp className="w-3 h-3 mr-1" />
+                        Select Categories
+                      </Badge>
+                    )}
+                    {/* Show +X more if there are more than 3 categories */}
+                    {watchCategories.length > 3 && (
+                      <Badge className="bg-gray-600 text-white text-xs px-2 py-1">
+                        +{watchCategories.length - 3}
+                      </Badge>
+                    )}
                   </div>
 
                   {/* Subscribers and Availability */}

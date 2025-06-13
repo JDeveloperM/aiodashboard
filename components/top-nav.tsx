@@ -3,6 +3,7 @@
 import { Notifications } from "./notifications"
 import { useSubscription } from "@/contexts/subscription-context"
 import { usePoints } from "@/contexts/points-context"
+import { usePremiumAccess } from "@/contexts/premium-access-context"
 import { RoleImage } from "@/components/ui/role-image"
 import { SuiWalletWithSocial } from "@/components/sui-wallet-with-social"
 import { SessionStatus } from "@/components/session-status"
@@ -30,6 +31,7 @@ export function TopNav() {
   const { tier } = useSubscription()
   const { isSignedIn, user, signOut, formatAddress } = useSuiAuth()
   const { balance } = usePoints()
+  const { getRemainingFreeAccess, premiumAccessLimit } = usePremiumAccess()
 
   const getTierColor = () => {
     switch (tier) {
@@ -115,6 +117,14 @@ export function TopNav() {
                         </div>
                       </Badge>
                     </div>
+                    {/* Premium Access Status */}
+                    {(tier === 'PRO' || tier === 'ROYAL') && (
+                      <div className="pt-1">
+                        <div className="text-xs text-[#C0E6FF]">
+                          Premium Channels: {getRemainingFreeAccess()}/{premiumAccessLimit} free left
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-[#1e3a8a]" />

@@ -6,6 +6,7 @@ import { SubscriptionProvider } from "@/contexts/subscription-context"
 import { SettingsProvider } from "@/contexts/settings-context"
 import { PointsProvider } from "@/contexts/points-context"
 import { CreatorsProvider } from "@/contexts/creators-context"
+import { PremiumAccessProvider } from "@/contexts/premium-access-context"
 import { SuiProviders } from "@/components/sui-providers"
 import { Toaster } from "@/components/ui/sonner"
 
@@ -65,16 +66,18 @@ export default function RootLayout({
         <ThemeProvider defaultTheme="blue-theme" enableSystem={false}>
           <SuiProviders>
             <SubscriptionProvider>
-              <SettingsProvider>
-                <PointsProvider>
-                  <CreatorsProvider>
-                    {children}
+              <PremiumAccessProvider>
+                <SettingsProvider>
+                  <PointsProvider>
+                    <CreatorsProvider>
+                      {children}
 
-                    {/* <FriendRequestNotifications /> */}
-                    <Toaster />
-                  </CreatorsProvider>
-                </PointsProvider>
-              </SettingsProvider>
+                      {/* <FriendRequestNotifications /> */}
+                      <Toaster />
+                    </CreatorsProvider>
+                  </PointsProvider>
+                </SettingsProvider>
+              </PremiumAccessProvider>
             </SubscriptionProvider>
           </SuiProviders>
         </ThemeProvider>

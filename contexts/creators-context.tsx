@@ -27,7 +27,8 @@ interface Creator {
   role: string
   tier: 'PRO' | 'ROYAL' // Status tier (NOMADS not allowed as creators)
   subscribers: number
-  category: string
+  category: string // Primary category (for backward compatibility)
+  categories: string[] // All selected categories
   channels: Channel[]
   contentTypes: string[]
   verified: boolean
@@ -67,6 +68,7 @@ const initialMockCreators: Creator[] = [
     tier: "ROYAL",
     subscribers: 15420,
     category: "Trading",
+    categories: ["Crypto Trading", "Market Analysis", "Education"],
     verified: true,
     contentTypes: ["Live Streams", "Market Analysis", "Tutorials"],
     languages: ["English", "Spanish"],
@@ -133,6 +135,7 @@ const initialMockCreators: Creator[] = [
     tier: "PRO",
     subscribers: 12800,
     category: "DeFi",
+    categories: ["DeFi", "Yield Farming", "Education"],
     verified: true,
     contentTypes: ["Educational Content", "Protocol Reviews", "Yield Strategies"],
     languages: ["English", "Mandarin"],
@@ -184,6 +187,7 @@ const initialMockCreators: Creator[] = [
     tier: "ROYAL",
     subscribers: 9500,
     category: "Analysis",
+    categories: ["On-Chain Analysis", "Market Analysis", "Crypto Trading"],
     verified: true,
     contentTypes: ["On-Chain Analysis", "Market Reports", "Technical Analysis"],
     languages: ["English", "Spanish", "Portuguese"],
@@ -227,6 +231,7 @@ const initialMockCreators: Creator[] = [
     tier: "PRO",
     subscribers: 18200,
     category: "Education",
+    categories: ["Education", "Market Analysis", "Community"],
     verified: true,
     contentTypes: ["Beginner Guides", "Live Q&A", "Market Education"],
     languages: ["English", "French"],
@@ -278,6 +283,7 @@ const initialMockCreators: Creator[] = [
     tier: "ROYAL",
     subscribers: 7200,
     category: "NFTs",
+    categories: ["NFTs", "Community", "Education"],
     verified: true,
     contentTypes: ["NFT Reviews", "Art Creation", "Market Trends"],
     languages: ["English", "Korean", "Japanese"],
