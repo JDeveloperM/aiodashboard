@@ -30,10 +30,16 @@ interface Channel {
   id: string
   name: string
   type: 'free' | 'premium' | 'vip'
-  price: number // in SUI
+  price: number // in SUI (default price, usually for 30 days)
   description: string
   subscribers: number
   telegramUrl: string // Telegram channel URL for access
+  subscriptionPackages?: string[] // Available durations: ["30", "60", "90"]
+  pricing?: {
+    thirtyDays?: number
+    sixtyDays?: number
+    ninetyDays?: number
+  }
   availability?: {
     hasLimit: boolean
     currentSlots?: number
