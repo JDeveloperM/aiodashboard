@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { accessTokens } from '../../generate-access/route'
+import { getAccessToken, updateAccessToken } from '@/lib/telegram-storage'
 
 interface TelegramUser {
   id: number
@@ -26,7 +26,7 @@ export async function GET(
     console.log(`[Telegram Access] Telegram user: ${telegramUserId} (@${telegramUsername})`)
 
     // Retrieve token data
-    const tokenData = accessTokens.get(token)
+    const tokenData = getAccessToken(token)
     
     if (!tokenData) {
       console.log(`[Telegram Access] Token not found: ${token}`)
@@ -146,12 +146,14 @@ export async function GET(
     }
 
     // Mark token as used and store Telegram user info
-    tokenData.used = true
-    tokenData.usedAt = new Date().toISOString()
-    if (telegramUserId) tokenData.telegramUserId = telegramUserId
-    if (telegramUsername) tokenData.telegramUsername = telegramUsername
-    
-    accessTokens.set(token, tokenData)
+    const updates = {
+      used: true,
+      usedAt: new Date().toISOString(),
+      ...(telegramUserId && { telegramUserId }),
+      ...(telegramUsername && { telegramUsername })
+    }
+
+    updateAccessToken(token, updates)
 
     console.log(`[Telegram Access] Token successfully used: ${token}`)
     console.log(`[Telegram Access] Subscription valid until: ${tokenData.subscriptionEndDate}`)

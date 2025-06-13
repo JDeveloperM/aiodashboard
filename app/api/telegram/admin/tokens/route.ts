@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { accessTokens } from '../../generate-access/route'
+import {
+  getAllAccessTokens,
+  getStorageStats,
+  deleteAccessToken,
+  updateAccessToken,
+  storeAccessToken,
+  type StoredAccessToken
+} from '@/lib/telegram-storage'
 
 // Simple admin authentication (in production, use proper authentication)
 const ADMIN_TOKEN = process.env.TELEGRAM_ADMIN_TOKEN || 'admin-token-change-me'
@@ -28,11 +35,8 @@ export async function GET(request: NextRequest) {
     const creatorId = searchParams.get('creatorId')
     const status = searchParams.get('status') // 'used', 'unused', 'active', 'expired'
 
-    // Convert Map to Array for easier filtering
-    let tokens = Array.from(accessTokens.entries()).map(([token, data]) => ({
-      token,
-      ...data
-    }))
+    // Get all tokens
+    let tokens = getAllAccessTokens()
 
     // Apply filters
     if (userId) {
@@ -69,21 +73,7 @@ export async function GET(request: NextRequest) {
     tokens.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
     // Calculate statistics
-    const stats = {
-      totalTokens: accessTokens.size,
-      usedTokens: Array.from(accessTokens.values()).filter(t => t.used).length,
-      activeSubscriptions: Array.from(accessTokens.values()).filter(t => {
-        if (!t.used) return false
-        const now = new Date()
-        return now <= new Date(t.subscriptionEndDate)
-      }).length,
-      expiredSubscriptions: Array.from(accessTokens.values()).filter(t => {
-        if (!t.used) return false
-        const now = new Date()
-        return now > new Date(t.subscriptionEndDate)
-      }).length,
-      totalRevenue: Array.from(accessTokens.values()).reduce((sum, t) => sum + t.paymentAmount, 0)
-    }
+    const stats = getStorageStats()
 
     return NextResponse.json({
       success: true,
@@ -121,10 +111,9 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    if (accessTokens.has(token)) {
-      accessTokens.delete(token)
+    if (deleteAccessToken(token)) {
       console.log(`[Telegram Admin] Deleted token: ${token}`)
-      
+
       return NextResponse.json({
         success: true,
         message: 'Token deleted successfully'
@@ -165,14 +154,6 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const tokenData = accessTokens.get(token)
-    if (!tokenData) {
-      return NextResponse.json(
-        { error: 'Token not found' },
-        { status: 404 }
-      )
-    }
-
     // Update allowed fields
     const allowedUpdates = [
       'subscriptionEndDate',
@@ -182,21 +163,26 @@ export async function PATCH(request: NextRequest) {
       'telegramUsername'
     ]
 
-    const updatedData = { ...tokenData }
+    const filteredUpdates: Partial<StoredAccessToken> = {}
     for (const [key, value] of Object.entries(updates)) {
       if (allowedUpdates.includes(key)) {
-        (updatedData as any)[key] = value
+        (filteredUpdates as any)[key] = value
       }
     }
 
-    accessTokens.set(token, updatedData)
-    console.log(`[Telegram Admin] Updated token: ${token}`)
+    if (updateAccessToken(token, filteredUpdates)) {
+      console.log(`[Telegram Admin] Updated token: ${token}`)
 
-    return NextResponse.json({
-      success: true,
-      message: 'Token updated successfully',
-      tokenData: updatedData
-    })
+      return NextResponse.json({
+        success: true,
+        message: 'Token updated successfully'
+      })
+    } else {
+      return NextResponse.json(
+        { error: 'Token not found' },
+        { status: 404 }
+      )
+    }
 
   } catch (error) {
     console.error('[Telegram Admin] Error updating token:', error)

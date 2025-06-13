@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { accessTokens } from '../generate-access/route'
+import { getAllAccessTokens, getTokensByTelegramUserId, getStorageStats } from '@/lib/telegram-storage'
 
 interface TelegramUpdate {
   update_id: number
@@ -271,17 +271,18 @@ async function handleAccessCheck(telegramUserId: string, telegramUsername: strin
 // Helper functions
 function getUserSubscriptions(telegramUserId: string): UserSubscription[] {
   const subscriptions: UserSubscription[] = []
-  
-  for (const [token, tokenData] of accessTokens.entries()) {
-    if (tokenData.telegramUserId === telegramUserId && tokenData.used) {
+  const tokens = getTokensByTelegramUserId(telegramUserId)
+
+  for (const tokenData of tokens) {
+    if (tokenData.used) {
       const now = new Date()
       const endDate = new Date(tokenData.subscriptionEndDate)
       const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
       const isActive = now <= endDate
-      
+
       subscriptions.push({
         userId: tokenData.userId,
-        telegramUserId: tokenData.telegramUserId,
+        telegramUserId: tokenData.telegramUserId!,
         telegramUsername: tokenData.telegramUsername,
         channelId: tokenData.channelId,
         channelName: tokenData.channelName,
@@ -293,15 +294,15 @@ function getUserSubscriptions(telegramUserId: string): UserSubscription[] {
       })
     }
   }
-  
+
   return subscriptions
 }
 
 function checkChannelAccess(telegramUserId: string, channelId: string): boolean {
-  for (const [token, tokenData] of accessTokens.entries()) {
-    if (tokenData.telegramUserId === telegramUserId && 
-        tokenData.channelId === channelId && 
-        tokenData.used) {
+  const tokens = getTokensByTelegramUserId(telegramUserId)
+
+  for (const tokenData of tokens) {
+    if (tokenData.channelId === channelId && tokenData.used) {
       const now = new Date()
       const endDate = new Date(tokenData.subscriptionEndDate)
       return now <= endDate
@@ -316,10 +317,12 @@ export async function GET(request: NextRequest) {
   const action = searchParams.get('action')
   
   if (action === 'status') {
+    const stats = getStorageStats()
     return NextResponse.json({
       status: 'active',
       webhook_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/telegram/bot-webhook`,
-      active_subscriptions: accessTokens.size,
+      active_subscriptions: stats.activeSubscriptions,
+      total_tokens: stats.totalTokens,
       timestamp: new Date().toISOString()
     })
   }

@@ -1,31 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
-
-interface AccessTokenData {
-  userId: string
-  creatorId: string
-  channelId: string
-  subscriptionDuration: number // in days
-  subscriptionStartDate: string
-  subscriptionEndDate: string
-  tier: 'NOMAD' | 'PRO' | 'ROYAL'
-  paymentAmount: number
-  channelName: string
-  creatorName: string
-}
-
-interface StoredAccessToken extends AccessTokenData {
-  token: string
-  used: boolean
-  createdAt: string
-  usedAt?: string
-  telegramUserId?: string
-  telegramUsername?: string
-}
-
-// In-memory storage for demo purposes
-// In production, use a proper database like PostgreSQL, MongoDB, etc.
-const accessTokens = new Map<string, StoredAccessToken>()
+import {
+  type AccessTokenData,
+  type StoredAccessToken,
+  storeAccessToken,
+  getAccessToken,
+  getTokensByUserId
+} from '@/lib/telegram-storage'
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Store the token
-    accessTokens.set(token, accessTokenData)
+    storeAccessToken(token, accessTokenData)
 
     // Generate access URL
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
@@ -118,7 +99,7 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId')
 
     if (token) {
-      const tokenData = accessTokens.get(token)
+      const tokenData = getAccessToken(token)
       if (!tokenData) {
         return NextResponse.json(
           { error: 'Token not found' },
@@ -137,8 +118,7 @@ export async function GET(request: NextRequest) {
 
     if (userId) {
       // Get all tokens for a user
-      const userTokens = Array.from(accessTokens.values())
-        .filter(tokenData => tokenData.userId === userId)
+      const userTokens = getTokensByUserId(userId)
         .map(tokenData => ({
           ...tokenData,
           token: undefined // Don't expose the actual tokens
@@ -164,5 +144,4 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Export the storage for use in other API routes
-export { accessTokens }
+
