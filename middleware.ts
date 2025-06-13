@@ -23,6 +23,7 @@ const protectedRoutes = [
   '/mint-nft',
   '/community',
   '/aio-creators',
+  '/creator-controls',
   '/copy-trading',
   '/dapps',
   '/metago-academy',

@@ -252,12 +252,20 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
               <div
                 className="relative h-20 flex items-center p-3 rounded-t-lg overflow-hidden"
                 style={{
-                  background: `linear-gradient(135deg, ${creator.bannerColor}40, ${creator.bannerColor}20)`,
+                  background: creator.coverImage
+                    ? `url(${creator.coverImage})`
+                    : `linear-gradient(135deg, ${creator.bannerColor}40, ${creator.bannerColor}20)`,
+                  backgroundSize: creator.coverImage ? 'cover' : 'auto',
+                  backgroundPosition: creator.coverImage ? 'center' : 'auto',
                   borderBottom: `2px solid ${creator.bannerColor}60`
                 }}
               >
+                {/* Cover Image Overlay for better text readability */}
+                {creator.coverImage && (
+                  <div className="absolute inset-0 bg-black bg-opacity-40 rounded-t-lg"></div>
+                )}
                 {/* Main Banner Content */}
-                <div className="banner-main-content flex items-center gap-2 w-full">
+                <div className="banner-main-content flex items-center gap-2 w-full relative z-10">
                   <Avatar className="h-14 w-14 border-2 border-white/20">
                     <AvatarImage src={creator.avatar} alt={creator.name} />
                     <AvatarFallback className="bg-[#4DA2FF] text-white text-lg">
@@ -359,20 +367,7 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
                           </div>
                         </div>
 
-                        {/* Availability Only */}
-                        {channel.availability && channel.availability.hasLimit && (
-                          <div className="flex items-center justify-center">
-                            <div className="flex items-center gap-1 text-xs">
-                              {getAvailabilityIcon(channel.availability.status)}
-                              <span className="text-[#C0E6FF]">
-                                {channel.availability.status === 'full'
-                                  ? 'Full'
-                                  : `${channel.availability.currentSlots}/${channel.availability.maxSlots}`
-                                }
-                              </span>
-                            </div>
-                          </div>
-                        )}
+
 
                         <Button
                           onClick={() => handleChannelAccess(creator, channel)}

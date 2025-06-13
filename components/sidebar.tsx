@@ -7,7 +7,7 @@ import { useSubscription } from "@/contexts/subscription-context"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
-import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, LineChart, ArrowUpRight, Crown, ArrowRight, Bot, Users, BookOpen, ChevronDown, ChevronRight, Dice6, Rocket, Share2, HelpCircle, Globe } from "lucide-react"
+import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, LineChart, ArrowUpRight, Crown, ArrowRight, Bot, Users, BookOpen, ChevronDown, ChevronRight, Dice6, Rocket, Share2, HelpCircle, Globe, Settings } from "lucide-react"
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -16,6 +16,9 @@ export function Sidebar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [copyTradingExpanded, setCopyTradingExpanded] = useState(false)
   const { canAccessCryptoBots, canAccessForexBots, tier } = useSubscription()
+
+  // Creator Controls access (PRO and ROYAL only)
+  const canAccessCreatorControls = tier === "PRO" || tier === "ROYAL"
 
   // Close mobile sidebar when route changes
   useEffect(() => {
@@ -62,6 +65,7 @@ export function Sidebar() {
     },
     { name: "AIO Connect", href: "/community", icon: Globe, restricted: false },
     { name: "AIO Creators", href: "/aio-creators", icon: Users, restricted: false },
+    { name: "Creator Controls", href: "/creator-controls", icon: Settings, restricted: !canAccessCreatorControls },
     { name: "RaffleCraft", href: "/dapps/rafflecraft", icon: Dice6, restricted: false },
     { name: "DEWhale Launchpad", href: "/dapps/dewhale-launchpad", icon: Rocket, restricted: false },
     { name: "MetaGo Academy", href: "/metago-academy", icon: BookOpen, restricted: false },
