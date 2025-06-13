@@ -55,16 +55,18 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     initializeSessionManager()
 
-    // Add session event listeners
+    // Add session event listeners (less aggressive)
     const cleanup = addSessionEventListeners({
       onWarning: (detail) => {
         console.warn(`Session expires in ${detail.minutes} minutes`)
-        // You can add toast notification here if needed
+        // Only show warning, don't force logout
       },
       onLogout: (detail) => {
-        console.log('Force logout:', detail.reason)
-        setUser(null)
-        // Redirect to login page if needed
+        console.log('Session logout event:', detail.reason)
+        // Only clear user if it's a legitimate expiry, not a wallet disconnect
+        if (detail.reason === 'Session expired' && !suiAccount?.address && !zkLoginUserAddress) {
+          setUser(null)
+        }
       }
     })
 
@@ -105,7 +107,7 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
           // No active connection, try to restore from cookie session
           const existingSession = getAuthSession()
           if (existingSession) {
-            // Restore user from cookie session
+            // Restore user from cookie session (keep user logged in even if wallet temporarily disconnects)
             currentUser = {
               id: existingSession.address,
               address: existingSession.address,
@@ -117,7 +119,7 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
               lastLoginAt: new Date(existingSession.lastLoginAt)
             }
 
-            console.log('User restored from cookie session, waiting for wallet reconnection...')
+            console.log('User restored from session - wallet may reconnect automatically')
           }
         }
 

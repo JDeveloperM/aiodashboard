@@ -194,6 +194,12 @@ export function CreatorControlsInterface() {
         description: data.channelDescription,
         subscribers: 0, // New channel starts with 0 subscribers
         telegramUrl: `https://t.me/${data.telegramUsername}`, // Use the creator's telegram username
+        subscriptionPackages: data.isPremium ? data.subscriptionPackages : undefined,
+        pricing: data.isPremium ? {
+          thirtyDays: data.tipPricing.thirtyDays,
+          sixtyDays: data.tipPricing.sixtyDays,
+          ninetyDays: data.tipPricing.ninetyDays,
+        } : undefined,
         availability: data.maxSubscribers > 0 ? {
           hasLimit: true,
           currentSlots: 0,
@@ -299,6 +305,12 @@ export function CreatorControlsInterface() {
         description: watchChannelDescription || "Your channel description",
         subscribers: Math.floor(Math.random() * 500) + 50,
         telegramUrl: "https://t.me/your_channel",
+        subscriptionPackages: watchIsPremium ? watchSubscriptionPackages : undefined,
+        pricing: watchIsPremium ? {
+          thirtyDays: form.getValues("tipPricing.thirtyDays"),
+          sixtyDays: form.getValues("tipPricing.sixtyDays"),
+          ninetyDays: form.getValues("tipPricing.ninetyDays"),
+        } : undefined,
         availability: watchMaxSubscribers > 0 ? {
           hasLimit: true,
           currentSlots: Math.floor(watchMaxSubscribers * 0.7),

@@ -18,9 +18,9 @@ let lastActivity = Date.now()
 
 // Configuration
 const SESSION_CONFIG = {
-  ACTIVITY_INTERVAL: 5 * 60 * 1000, // Check activity every 5 minutes
-  ACTIVITY_THRESHOLD: 30 * 60 * 1000, // Update session if active within 30 minutes
-  WARNING_THRESHOLD: 10 * 60 * 1000, // Show warning 10 minutes before expiry
+  ACTIVITY_INTERVAL: 15 * 60 * 1000, // Check activity every 15 minutes (less frequent)
+  ACTIVITY_THRESHOLD: 60 * 60 * 1000, // Update session if active within 1 hour
+  WARNING_THRESHOLD: 60 * 60 * 1000, // Show warning 1 hour before expiry (less aggressive)
 }
 
 /**

@@ -30,8 +30,8 @@ const COOKIE_CONFIG = {
   AUTH_SESSION: 'aio_auth_session',
   ZKLOGIN_SESSION: 'aio_zklogin_session',
   SESSION_REFRESH: 'aio_session_refresh',
-  MAX_AGE: 7 * 24 * 60 * 60, // 7 days in seconds
-  REFRESH_THRESHOLD: 24 * 60 * 60, // Refresh if expires within 24 hours
+  MAX_AGE: 30 * 24 * 60 * 60, // 30 days in seconds (longer session)
+  REFRESH_THRESHOLD: 7 * 24 * 60 * 60, // Refresh if expires within 7 days (less aggressive)
   PATH: '/',
   SECURE: process.env.NODE_ENV === 'production',
   SAME_SITE: 'lax' as const,
@@ -143,10 +143,21 @@ export function getAuthSession(): AuthSession | null {
     
     const session: AuthSession = JSON.parse(sessionData)
     
-    // Check if session is expired
+    // Check if session is expired (with grace period)
     if (isSessionExpired(session.expiresAt)) {
-      clearAuthSession()
-      return null
+      console.log('Session expired, but keeping for wallet reconnection grace period')
+      // Don't immediately clear - give wallet time to reconnect
+      // Only clear if it's been expired for more than 1 hour
+      const expiredTime = new Date().getTime() - new Date(session.expiresAt).getTime()
+      const graceTime = 60 * 60 * 1000 // 1 hour grace period
+
+      if (expiredTime > graceTime) {
+        clearAuthSession()
+        return null
+      }
+
+      // Return session even if expired (within grace period)
+      return session
     }
     
     // Auto-refresh if needed
@@ -223,10 +234,20 @@ export function getZkLoginSession(): ZkLoginSession | null {
     
     const session: ZkLoginSession = JSON.parse(sessionData)
     
-    // Check if session is expired
+    // Check if session is expired (with grace period)
     if (isSessionExpired(session.expiresAt)) {
-      clearZkLoginSession()
-      return null
+      console.log('zkLogin session expired, but keeping for reconnection grace period')
+      // Don't immediately clear - give time to reconnect
+      const expiredTime = new Date().getTime() - new Date(session.expiresAt).getTime()
+      const graceTime = 60 * 60 * 1000 // 1 hour grace period
+
+      if (expiredTime > graceTime) {
+        clearZkLoginSession()
+        return null
+      }
+
+      // Return session even if expired (within grace period)
+      return session
     }
     
     // Auto-refresh if needed

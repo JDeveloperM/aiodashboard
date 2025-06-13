@@ -42,10 +42,16 @@ interface Channel {
   id: string
   name: string
   type: 'free' | 'premium' | 'vip'
-  price: number // in SUI
+  price: number // in SUI (default price, usually for 30 days)
   description: string
   subscribers: number
   telegramUrl: string // Telegram channel URL for access
+  subscriptionPackages?: string[] // Available durations: ["30", "60", "90"]
+  pricing?: {
+    thirtyDays?: number
+    sixtyDays?: number
+    ninetyDays?: number
+  }
   availability?: {
     hasLimit: boolean
     currentSlots?: number
@@ -71,6 +77,7 @@ export function TipPaymentModal({
 }: TipPaymentModalProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentStep, setPaymentStep] = useState<'confirm' | 'processing' | 'success'>('confirm')
+  const [selectedDuration, setSelectedDuration] = useState<string>("30") // Default to 30 days
   const account = useCurrentAccount()
   const { isSignedIn } = useSuiAuth()
   const { tier } = useSubscription()
@@ -88,6 +95,60 @@ export function TipPaymentModal({
   )
 
   const suiBalance = balance ? parseInt(balance.totalBalance) / 1000000000 : 0 // Convert from MIST to SUI
+
+  // Get price based on selected duration
+  const getPrice = () => {
+    if (!channel) return 0
+
+    if (channel.pricing) {
+      switch (selectedDuration) {
+        case "30":
+          return channel.pricing.thirtyDays || channel.price
+        case "60":
+          return channel.pricing.sixtyDays || channel.price
+        case "90":
+          return channel.pricing.ninetyDays || channel.price
+        default:
+          return channel.price
+      }
+    }
+
+    return channel.price
+  }
+
+  // Get available durations
+  const getAvailableDurations = () => {
+    if (!channel?.subscriptionPackages || channel.subscriptionPackages.length === 0) {
+      return [{ value: "30", label: "30 Days", price: channel?.price || 0 }]
+    }
+
+    return channel.subscriptionPackages.map(duration => {
+      let price = channel.price
+
+      if (channel.pricing) {
+        switch (duration) {
+          case "30":
+            price = channel.pricing.thirtyDays || channel.price
+            break
+          case "60":
+            price = channel.pricing.sixtyDays || channel.price
+            break
+          case "90":
+            price = channel.pricing.ninetyDays || channel.price
+            break
+        }
+      }
+
+      return {
+        value: duration,
+        label: `${duration} Days`,
+        price: price
+      }
+    })
+  }
+
+  const currentPrice = getPrice()
+  const availableDurations = getAvailableDurations()
 
   const handlePayment = async () => {
     if (!creator || !channel || !account) return
@@ -107,16 +168,17 @@ export function TipPaymentModal({
       // 5. Grant access to the channel
 
       setPaymentStep('success')
-      
-      // Grant access for 1 month
+
+      // Grant access for selected duration
       const accessExpiry = new Date()
-      accessExpiry.setMonth(accessExpiry.getMonth() + 1)
-      
+      const durationDays = parseInt(selectedDuration)
+      accessExpiry.setDate(accessExpiry.getDate() + durationDays)
+
       // Store access in localStorage (in production, this would be on-chain or backend)
       const accessKey = `channel_access_${creator.id}_${channel.id}`
       localStorage.setItem(accessKey, accessExpiry.toISOString())
 
-      toast.success(`Successfully purchased 1-month access to ${channel.name}!`)
+      toast.success(`Successfully purchased ${selectedDuration}-day access to ${channel.name}!`)
       onPaymentSuccess(creator.id, channel.id)
 
       // Redirect to Telegram channel after successful payment
@@ -145,9 +207,6 @@ export function TipPaymentModal({
   }
 
   if (!creator || !channel) return null
-
-  // PRO and ROYAL users should not see this modal as they have free access
-  if (tier === 'PRO' || tier === 'ROYAL') return null
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -182,9 +241,9 @@ export function TipPaymentModal({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-white font-medium">{channel.name}</h4>
-                  <Badge 
+                  <Badge
                     className={
-                      channel.type === 'premium' 
+                      channel.type === 'premium'
                         ? "bg-orange-500/20 text-orange-400 border-orange-500/30"
                         : "bg-purple-500/20 text-purple-400 border-purple-500/30"
                     }
@@ -195,25 +254,52 @@ export function TipPaymentModal({
                 <p className="text-[#C0E6FF] text-sm">{channel.description}</p>
                 <div className="flex items-center gap-4 text-sm text-[#C0E6FF]">
                   <span>{channel.subscribers} subscribers</span>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    <span>1 month access</span>
-                  </div>
                 </div>
               </div>
+
+              {/* Duration Selection */}
+              {availableDurations.length > 1 && (
+                <div className="space-y-3">
+                  <h5 className="text-white font-medium">Select Duration</h5>
+                  <div className="grid grid-cols-1 gap-2">
+                    {availableDurations.map((duration) => (
+                      <button
+                        key={duration.value}
+                        onClick={() => setSelectedDuration(duration.value)}
+                        className={`p-3 rounded-lg border text-left transition-colors ${
+                          selectedDuration === duration.value
+                            ? "bg-[#4DA2FF]/20 border-[#4DA2FF] text-white"
+                            : "bg-[#1a2f51] border-[#C0E6FF]/20 text-[#C0E6FF] hover:border-[#4DA2FF]/50"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            <span className="font-medium">{duration.label}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Coins className="w-4 h-4" />
+                            <span className="font-bold">{formatSUI(duration.price)} SUI</span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Payment Details */}
               <div className="bg-[#1a2f51] rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[#C0E6FF]">Channel Access (1 month)</span>
-                  <span className="text-white font-medium">{formatSUI(channel.price)} SUI</span>
+                  <span className="text-[#C0E6FF]">Channel Access ({selectedDuration} days)</span>
+                  <span className="text-white font-medium">{formatSUI(currentPrice)} SUI</span>
                 </div>
                 <div className="border-t border-[#C0E6FF]/20 pt-3">
                   <div className="flex items-center justify-between">
                     <span className="text-white font-medium">Total</span>
                     <div className="flex items-center gap-2">
                       <Coins className="w-4 h-4 text-[#4DA2FF]" />
-                      <span className="text-white font-bold">{formatSUI(channel.price)} SUI</span>
+                      <span className="text-white font-bold">{formatSUI(currentPrice)} SUI</span>
                     </div>
                   </div>
                 </div>
@@ -237,18 +323,18 @@ export function TipPaymentModal({
                     <AlertCircle className="w-6 h-6 text-orange-400 mx-auto mb-2" />
                     <p className="text-orange-400 text-sm">Please connect your Sui wallet to continue</p>
                   </div>
-                ) : suiBalance < channel.price ? (
+                ) : suiBalance < currentPrice ? (
                   <div className="text-center p-4 bg-red-500/10 rounded-lg border border-red-500/20">
                     <AlertCircle className="w-6 h-6 text-red-400 mx-auto mb-2" />
                     <p className="text-red-400 text-sm">Insufficient SUI balance</p>
                   </div>
                 ) : (
-                  <Button 
+                  <Button
                     onClick={handlePayment}
                     disabled={isProcessing}
                     className="w-full bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
                   >
-                    {isProcessing ? 'Processing...' : `Pay ${formatSUI(channel.price)} SUI`}
+                    {isProcessing ? 'Processing...' : `Pay ${formatSUI(currentPrice)} SUI`}
                   </Button>
                 )}
                 
@@ -276,11 +362,11 @@ export function TipPaymentModal({
               <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
               <h3 className="text-white font-semibold mb-2">Payment Successful!</h3>
               <p className="text-[#C0E6FF] text-sm mb-4">
-                You now have 1-month access to <strong>{channel.name}</strong>
+                You now have {selectedDuration}-day access to <strong>{channel.name}</strong>
               </p>
               <div className="flex items-center justify-center gap-2 text-green-400">
                 <Shield className="w-4 h-4" />
-                <span className="text-sm">Access granted until {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</span>
+                <span className="text-sm">Access granted until {new Date(Date.now() + parseInt(selectedDuration) * 24 * 60 * 60 * 1000).toLocaleDateString()}</span>
               </div>
             </div>
           )}

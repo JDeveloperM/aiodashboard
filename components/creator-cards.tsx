@@ -9,6 +9,7 @@ import { RoleImage } from "@/components/ui/role-image"
 import { TipPaymentModal } from "./tip-payment-modal"
 import { useSubscription } from "@/contexts/subscription-context"
 import { usePremiumAccess } from "@/contexts/premium-access-context"
+import { Filter, FilterX } from "lucide-react"
 import {
   Users,
   Coins,
@@ -81,8 +82,9 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [userAccess, setUserAccess] = useState<Record<string, string>>({})
+  const [showOnlyJoined, setShowOnlyJoined] = useState(false)
   const { tier } = useSubscription()
-  const { canAccessPremiumForFree, recordPremiumAccess, getRemainingFreeAccess } = usePremiumAccess()
+  const { canAccessPremiumForFree, recordPremiumAccess, getRemainingFreeAccess, premiumAccessRecords } = usePremiumAccess()
 
   // Load user access from localStorage
   useEffect(() => {
@@ -113,6 +115,7 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
     if (tier === 'PRO' || tier === 'ROYAL') {
       if (canAccessPremiumForFree(creator.id, channel.id)) {
         // User can access this premium channel for free
+        console.log(`[CreatorCards] Recording premium access for ${tier} user: ${creator.id}_${channel.id}`)
         recordPremiumAccess(creator.id, channel.id)
         if (channel.telegramUrl) {
           window.open(channel.telegramUrl, '_blank')
@@ -217,12 +220,13 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
       return true
     }
 
-    // PRO and ROYAL users have limited free access to premium channels
-    if (tier === 'PRO' || tier === 'ROYAL') {
-      return canAccessPremiumForFree(creatorId, channelId)
-    }
+    // Check if user has already used a free premium slot for this specific channel
+    // This means they've actually accessed it before, not just that they CAN access it
+    const alreadyAccessedForFree = premiumAccessRecords.some(
+      record => record.creatorId === creatorId && record.channelId === channelId
+    )
 
-    return false
+    return alreadyAccessedForFree
   }
 
   const getAccessExpiry = (creatorId: string, channelId: string) => {
@@ -259,10 +263,54 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
     }
   }
 
+  // Filter creators based on whether user has access to their channels
+  const filteredCreators = showOnlyJoined
+    ? creators.filter(creator =>
+        creator.channels.some(channel =>
+          channel.type === 'free' || hasAccess(creator.id, channel.id)
+        )
+      )
+    : creators
+
+  const joinedChannelsCount = creators.reduce((count, creator) => {
+    return count + creator.channels.filter(channel =>
+      channel.type === 'free' || hasAccess(creator.id, channel.id)
+    ).length
+  }, 0)
+
   return (
     <>
+      {/* Filter Toggle */}
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            onClick={() => setShowOnlyJoined(!showOnlyJoined)}
+            variant="outline"
+            size="sm"
+            className={`flex items-center gap-2 ${
+              showOnlyJoined
+                ? "bg-[#4DA2FF] text-white border-[#4DA2FF]"
+                : "bg-[#1a2f51] text-[#C0E6FF] border-[#C0E6FF]/20 hover:border-[#4DA2FF]/50"
+            }`}
+          >
+            {showOnlyJoined ? <FilterX className="w-4 h-4" /> : <Filter className="w-4 h-4" />}
+            {showOnlyJoined ? "Show All" : "Show Joined Only"}
+          </Button>
+
+          {showOnlyJoined && (
+            <span className="text-[#C0E6FF] text-sm">
+              {joinedChannelsCount} joined channel{joinedChannelsCount !== 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+
+        <div className="text-[#C0E6FF] text-sm">
+          {filteredCreators.length} creator{filteredCreators.length !== 1 ? 's' : ''} shown
+        </div>
+      </div>
+
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {creators.map((creator) => {
+        {filteredCreators.map((creator) => {
           const CategoryIcon = getCategoryIcon(creator.category)
 
           return (
@@ -285,9 +333,9 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
                 )}
                 {/* Main Banner Content */}
                 <div className="banner-main-content flex items-center gap-2 w-full relative z-10">
-                  <Avatar className="h-14 w-14 border-2 border-white/20">
+                  <Avatar className="h-16 w-16 border-2 border-white/20">
                     <AvatarImage src={creator.avatar} alt={creator.name} />
-                    <AvatarFallback className="bg-[#4DA2FF] text-white text-lg">
+                    <AvatarFallback className="bg-[#4DA2FF] text-white text-xl">
                       {creator.name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
@@ -299,6 +347,11 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
                       )}
                     </div>
                     <p className="text-white/80 text-xs">@{creator.username}</p>
+                    <div className="mt-1">
+                      <span className="text-white/70 text-xs font-medium">
+                        {creator.role}
+                      </span>
+                    </div>
 
                   </div>
 
@@ -323,25 +376,22 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
               </div>
 
               <div className="p-3 space-y-3">
-                {/* Line 1: Role and Categories */}
-                <div className="flex flex-wrap items-center justify-center gap-1">
-                  <Badge className="bg-[#4da2ff] text-white text-xs px-2 py-1">
-                    {creator.role}
-                  </Badge>
-                  {/* Display all categories */}
-                  {(creator.categories || [creator.category]).slice(0, 3).map((category, index) => {
+                {/* Categories - 3 per line */}
+                <div className="grid grid-cols-3 gap-1">
+                  {/* Display all categories in a 3-column grid */}
+                  {(creator.categories || [creator.category]).slice(0, 6).map((category, index) => {
                     const CategoryIcon = getCategoryIcon(category)
                     return (
-                      <Badge key={index} className={`text-xs px-2 py-1 ${getCategoryColor(category)}`}>
+                      <Badge key={index} className={`text-xs px-1.5 py-1 ${getCategoryColor(category)} flex items-center justify-center`}>
                         <CategoryIcon className="w-3 h-3 mr-1" />
-                        {category}
+                        <span className="truncate">{category}</span>
                       </Badge>
                     )
                   })}
-                  {/* Show +X more if there are more than 3 categories */}
-                  {creator.categories && creator.categories.length > 3 && (
-                    <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 text-xs px-2 py-1">
-                      +{creator.categories.length - 3}
+                  {/* Show +X more if there are more than 6 categories */}
+                  {creator.categories && creator.categories.length > 6 && (
+                    <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 text-xs px-1.5 py-1 flex items-center justify-center">
+                      +{creator.categories.length - 6}
                     </Badge>
                   )}
                 </div>
@@ -383,6 +433,12 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
                 <div className="space-y-1.5">
                   {creator.channels.slice(0, 1).map((channel) => {
                     const hasChannelAccess = hasAccess(creator.id, channel.id)
+                    const canAccessForFree = (tier === 'PRO' || tier === 'ROYAL') && canAccessPremiumForFree(creator.id, channel.id)
+
+                    // Debug: Only log when there's an issue
+                    if (hasChannelAccess && !canAccessForFree && channel.type === 'premium') {
+                      console.log(`[CreatorCards] DEBUG: Channel ${channel.name} shows "Access" but user can't access for free`)
+                    }
 
                     return (
                       <div
@@ -407,7 +463,7 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
                           className={`w-full h-6 text-xs ${
                             channel.availability?.status === 'full'
                               ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                              : channel.type === 'free' || hasChannelAccess || tier === 'PRO' || tier === 'ROYAL'
+                              : channel.type === 'free' || hasChannelAccess || canAccessForFree
                               ? "bg-green-600 hover:bg-green-700 text-white"
                               : "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
                           }`}
@@ -418,10 +474,13 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
                             'Access Free'
                           ) : hasChannelAccess ? (
                             'Access'
-                          ) : (tier === 'PRO' || tier === 'ROYAL') && canAccessPremiumForFree(creator.id, channel.id) ? (
+                          ) : canAccessForFree ? (
                             `Access Free (${getRemainingFreeAccess()} left)`
                           ) : (
-                            `Tip ${channel.price} SUI`
+                            // Show specific amount only if single subscription option, otherwise just "Tip SUI"
+                            channel.subscriptionPackages && channel.subscriptionPackages.length > 1
+                              ? 'Tip SUI'
+                              : `Tip ${channel.price} SUI`
                           )}
                         </Button>
                       </div>

@@ -31,7 +31,7 @@ export function TopNav() {
   const { tier } = useSubscription()
   const { isSignedIn, user, signOut, formatAddress } = useSuiAuth()
   const { balance } = usePoints()
-  const { getRemainingFreeAccess, premiumAccessLimit } = usePremiumAccess()
+  const { getRemainingFreeAccess, premiumAccessLimit, premiumAccessCount } = usePremiumAccess()
 
   const getTierColor = () => {
     switch (tier) {
@@ -121,7 +121,7 @@ export function TopNav() {
                     {(tier === 'PRO' || tier === 'ROYAL') && (
                       <div className="pt-1">
                         <div className="text-xs text-[#C0E6FF]">
-                          Premium Channels: {getRemainingFreeAccess()}/{premiumAccessLimit} free left
+                          Premium Channels: {premiumAccessCount}/{premiumAccessLimit} used
                         </div>
                       </div>
                     )}

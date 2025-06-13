@@ -41,11 +41,13 @@ export function PremiumAccessProvider({ children }: { children: React.ReactNode 
             accessedAt: new Date(record.accessedAt)
           }))
           setPremiumAccessRecords(parsedRecords)
-          console.log(`[PremiumAccess] Loaded ${parsedRecords.length} premium access records`)
+          console.log(`[PremiumAccess] Loaded ${parsedRecords.length} premium access records:`, parsedRecords)
         } catch (error) {
           console.error("Failed to parse premium access records:", error)
           setPremiumAccessRecords([])
         }
+      } else {
+        console.log(`[PremiumAccess] No saved records found - fresh start`)
       }
       setIsLoaded(true)
     }
@@ -65,6 +67,7 @@ export function PremiumAccessProvider({ children }: { children: React.ReactNode 
   const canAccessPremiumForFree = (creatorId: string, channelId: string) => {
     // NOMAD users never get free premium access
     if (tier === 'NOMAD') {
+      console.log(`[PremiumAccess] NOMAD user - no free access`)
       return false
     }
 
@@ -74,11 +77,14 @@ export function PremiumAccessProvider({ children }: { children: React.ReactNode 
     )
 
     if (alreadyAccessed) {
+      console.log(`[PremiumAccess] Already accessed ${channelId} - returning true`)
       return true // Already used a slot for this channel
     }
 
     // Check if user has remaining free access slots
-    return premiumAccessCount < premiumAccessLimit
+    const hasRemainingSlots = premiumAccessCount < premiumAccessLimit
+    console.log(`[PremiumAccess] ${tier} user: ${premiumAccessCount}/${premiumAccessLimit} used, can access: ${hasRemainingSlots}`)
+    return hasRemainingSlots
   }
 
   const recordPremiumAccess = (creatorId: string, channelId: string) => {
@@ -98,7 +104,7 @@ export function PremiumAccessProvider({ children }: { children: React.ReactNode 
       }
 
       setPremiumAccessRecords(prev => [...prev, newRecord])
-      console.log(`[PremiumAccess] Recorded premium access for ${tier} user: ${premiumAccessCount + 1}/${premiumAccessLimit}`)
+      console.log(`[PremiumAccess] Used free slot: ${premiumAccessCount + 1}/${premiumAccessLimit} for ${tier} user`)
     }
   }
 
@@ -120,6 +126,14 @@ export function PremiumAccessProvider({ children }: { children: React.ReactNode 
       resetPremiumAccess()
     }
   }, [tier])
+
+  // Add global reset function for testing
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).resetPremiumAccess = resetPremiumAccess
+      console.log(`[PremiumAccess] Global reset function available: window.resetPremiumAccess()`)
+    }
+  }, [resetPremiumAccess])
 
   return (
     <PremiumAccessContext.Provider
