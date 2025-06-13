@@ -45,6 +45,7 @@ interface Creator {
   name: string
   username: string
   avatar: string
+  coverImage?: string // Optional cover image for banner background
   role: string
   tier: 'PRO' | 'ROYAL' // Status tier (NOMADS not allowed as creators)
   subscribers: number
