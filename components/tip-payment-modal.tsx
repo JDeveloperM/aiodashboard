@@ -10,6 +10,12 @@ import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { useSubscription } from "@/contexts/subscription-context"
 import { Coins, Calendar, Shield, CheckCircle, AlertCircle, Wallet } from "lucide-react"
 import { toast } from "sonner"
+import { TelegramAccessModal } from "./telegram-access-modal"
+import {
+  generateTelegramAccessLink,
+  createSubscriptionSummary,
+  type SubscriptionSummary
+} from "@/lib/telegram-access"
 
 interface Creator {
   id: string
@@ -76,10 +82,13 @@ export function TipPaymentModal({
   onPaymentSuccess
 }: TipPaymentModalProps) {
   const [isProcessing, setIsProcessing] = useState(false)
-  const [paymentStep, setPaymentStep] = useState<'confirm' | 'processing' | 'success'>('confirm')
+  const [paymentStep, setPaymentStep] = useState<'confirm' | 'processing' | 'success' | 'telegram-access'>('confirm')
   const [selectedDuration, setSelectedDuration] = useState<string>("30") // Default to 30 days
+  const [subscriptionSummary, setSubscriptionSummary] = useState<SubscriptionSummary | null>(null)
+  const [showTelegramModal, setShowTelegramModal] = useState(false)
+  const [isGeneratingAccess, setIsGeneratingAccess] = useState(false)
   const account = useCurrentAccount()
-  const { isSignedIn } = useSuiAuth()
+  const { isSignedIn, user } = useSuiAuth()
   const { tier } = useSubscription()
 
   // Query for SUI balance
@@ -151,7 +160,7 @@ export function TipPaymentModal({
   const availableDurations = getAvailableDurations()
 
   const handlePayment = async () => {
-    if (!creator || !channel || !account) return
+    if (!creator || !channel || !account || !user) return
 
     setIsProcessing(true)
     setPaymentStep('processing')
@@ -181,17 +190,10 @@ export function TipPaymentModal({
       toast.success(`Successfully purchased ${selectedDuration}-day access to ${channel.name}!`)
       onPaymentSuccess(creator.id, channel.id)
 
-      // Redirect to Telegram channel after successful payment
-      if (channel.telegramUrl) {
-        setTimeout(() => {
-          window.open(channel.telegramUrl, '_blank')
-        }, 1000) // Small delay to show success message first
-      }
-
+      // Generate Telegram access link instead of direct redirect
       setTimeout(() => {
-        onClose()
-        setPaymentStep('confirm')
-      }, 2000)
+        handleGenerateTelegramAccess()
+      }, 1500)
 
     } catch (error) {
       console.error('Payment failed:', error)
@@ -199,6 +201,50 @@ export function TipPaymentModal({
       setPaymentStep('confirm')
     } finally {
       setIsProcessing(false)
+    }
+  }
+
+  const handleGenerateTelegramAccess = async () => {
+    if (!creator || !channel || !user) return
+
+    setIsGeneratingAccess(true)
+    setPaymentStep('telegram-access')
+
+    try {
+      const accessData = {
+        userId: user.id,
+        creatorId: creator.id,
+        channelId: channel.id,
+        subscriptionDuration: parseInt(selectedDuration),
+        tier,
+        paymentAmount: currentPrice,
+        channelName: channel.name,
+        creatorName: creator.name
+      }
+
+      console.log('[TipPaymentModal] Generating Telegram access with data:', accessData)
+
+      const accessLinkResponse = await generateTelegramAccessLink(accessData)
+
+      if (accessLinkResponse.success) {
+        const summary = await createSubscriptionSummary(accessLinkResponse)
+        if (summary) {
+          setSubscriptionSummary(summary)
+          setShowTelegramModal(true)
+          toast.success('Telegram access link generated successfully!')
+        } else {
+          throw new Error('Failed to create subscription summary')
+        }
+      } else {
+        throw new Error(accessLinkResponse.error || 'Failed to generate access link')
+      }
+
+    } catch (error) {
+      console.error('[TipPaymentModal] Error generating Telegram access:', error)
+      toast.error('Failed to generate Telegram access link. Please contact support.')
+      setPaymentStep('success') // Fall back to success state
+    } finally {
+      setIsGeneratingAccess(false)
     }
   }
 
@@ -364,14 +410,41 @@ export function TipPaymentModal({
               <p className="text-[#C0E6FF] text-sm mb-4">
                 You now have {selectedDuration}-day access to <strong>{channel.name}</strong>
               </p>
-              <div className="flex items-center justify-center gap-2 text-green-400">
+              <div className="flex items-center justify-center gap-2 text-green-400 mb-4">
                 <Shield className="w-4 h-4" />
                 <span className="text-sm">Access granted until {new Date(Date.now() + parseInt(selectedDuration) * 24 * 60 * 60 * 1000).toLocaleDateString()}</span>
               </div>
+              <Button
+                onClick={handleGenerateTelegramAccess}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={isGeneratingAccess}
+              >
+                {isGeneratingAccess ? 'Generating Access Link...' : 'Generate Telegram Access Link'}
+              </Button>
+            </div>
+          )}
+
+          {paymentStep === 'telegram-access' && (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <h3 className="text-white font-semibold mb-2">Generating Telegram Access</h3>
+              <p className="text-[#C0E6FF] text-sm">Creating your one-time access link and QR code...</p>
             </div>
           )}
         </div>
       </DialogContent>
+
+      {/* Telegram Access Modal */}
+      <TelegramAccessModal
+        isOpen={showTelegramModal}
+        onClose={() => {
+          setShowTelegramModal(false)
+          onClose()
+          setPaymentStep('confirm')
+        }}
+        subscriptionSummary={subscriptionSummary}
+        isLoading={isGeneratingAccess}
+      />
     </Dialog>
   )
 }

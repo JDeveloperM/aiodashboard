@@ -50,7 +50,8 @@ import {
   Gift,
   MoreHorizontal,
   History,
-  AlertTriangle
+  AlertTriangle,
+  Settings
 } from "lucide-react"
 
 // Social media image paths
@@ -732,19 +733,25 @@ export function ProfileSystem() {
                 <h4 className="text-white font-semibold mb-4 text-center">Channels Joined</h4>
                 <div className="flex flex-wrap justify-center gap-3">
                   {[
-                    { id: '1', name: 'Daily Market Updates', type: 'free', price: 0, subscribers: 8500, color: '#10b981' },
-                    { id: '2', name: 'Premium Trading Signals', type: 'premium', price: 5.0, subscribers: 2100, color: '#f59e0b' },
-                    { id: '3', name: 'DeFi Basics', type: 'free', price: 0, subscribers: 9200, color: '#3b82f6' },
-                    { id: '4', name: 'Advanced Bot Strategies', type: 'premium', price: 12.0, subscribers: 2100, color: '#f97316' },
+                    { id: '1', name: 'Daily Market Updates', type: 'free', price: 0, subscribers: 8500, color: '#10b981', avatar: '/images/channels/market-updates.png' },
+                    { id: '2', name: 'Premium Trading Signals', type: 'premium', price: 5.0, subscribers: 2100, color: '#f59e0b', avatar: '/images/channels/trading-signals.png' },
+                    { id: '3', name: 'DeFi Basics', type: 'free', price: 0, subscribers: 9200, color: '#3b82f6', avatar: '/images/channels/defi-basics.png' },
+                    { id: '4', name: 'Advanced Bot Strategies', type: 'premium', price: 12.0, subscribers: 2100, color: '#f97316', avatar: '/images/channels/bot-strategies.png' },
                   ].map((channel) => (
                     <TooltipProvider key={channel.id}>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div
-                            className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all hover:scale-110 border-2 border-[#C0E6FF]/20"
+                            className="w-36 h-16 rounded-lg flex items-center cursor-pointer transition-all hover:scale-105 border-2 border-[#C0E6FF]/20 relative overflow-hidden"
                             style={{ backgroundColor: channel.color }}
                           >
-                            <Hash className="w-4 h-4 text-white" />
+                            {/* Channel Avatar positioned on the left */}
+                            <div className="absolute left-2 top-1/2 transform -translate-y-1/2 w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                              <Hash className="w-6 h-6 text-white" />
+                            </div>
+
+                            {/* Background gradient overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent"></div>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent className="bg-[#1a2f51] border border-[#C0E6FF]/20 text-white p-3 max-w-xs">
@@ -773,26 +780,26 @@ export function ProfileSystem() {
                 </div>
 
                 {/* KYC Management and Transaction History Buttons */}
-                <div className="w-full space-y-3 mt-6">
+                <div className="w-full grid grid-cols-2 gap-3 mt-6">
                   <Button
-                    className={`w-full px-6 py-3 text-base font-semibold text-white ${
+                    className={`px-4 py-3 text-sm font-semibold text-white ${
                       profileData.kycStatus === "verified"
                         ? "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
                         : "bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800"
                     }`}
                   >
                     {profileData.kycStatus === "verified" ? (
-                      <CheckCircle2 className="w-5 h-5 mr-2" />
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
                     ) : (
-                      <AlertTriangle className="w-5 h-5 mr-2" />
+                      <AlertTriangle className="w-4 h-4 mr-2" />
                     )}
                     {profileData.kycStatus === "verified" ? "KYC Verified" : "Complete KYC"}
                   </Button>
 
                   <Button
-                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 text-base font-semibold"
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-3 text-sm font-semibold"
                   >
-                    <History className="w-5 h-5 mr-2" />
+                    <History className="w-4 h-4 mr-2" />
                     Transaction History
                   </Button>
                 </div>
@@ -841,18 +848,71 @@ export function ProfileSystem() {
                 </div>
               </div>
 
-              {/* Affiliate Controls Button */}
+              {/* Control Buttons */}
               <div className="w-full bg-[#1a2f51]/30 rounded-lg p-5 border border-[#C0E6FF]/10">
-                <div className="flex justify-center">
-                  <Button
-                    onClick={() => router.push('/affiliate-controls')}
-                    className="bg-[#4da2ffcc] hover:bg-[#4da2ffcc]/80 text-white px-6 py-3 text-base font-semibold"
-                  >
-                    <Users className="w-5 h-5 mr-2" />
-                    Affiliate Controls
-                  </Button>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Affiliate Controls Button - Always visible */}
+                  <div className="flex flex-col items-center">
+                    <Button
+                      onClick={() => router.push('/affiliate-controls')}
+                      className="bg-[#4da2ffcc] hover:bg-[#4da2ffcc]/80 text-white px-4 py-3 text-sm font-semibold w-full"
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      Affiliate Controls
+                    </Button>
+                    <p className="text-[#C0E6FF] text-xs mt-2 text-center">Manage referrals and metrics</p>
+                  </div>
+
+                  {/* Creator Controls Button - PRO and ROYAL only */}
+                  {(tier === 'PRO' || tier === 'ROYAL') ? (
+                    <div className="flex flex-col items-center">
+                      <Button
+                        onClick={() => router.push('/creator-controls')}
+                        className="bg-[#10b981] hover:bg-[#10b981]/80 text-white px-4 py-3 text-sm font-semibold w-full"
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        Creator Controls
+                      </Button>
+                      <p className="text-[#C0E6FF] text-xs mt-2 text-center">Manage premium channels</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                      <Button
+                        disabled
+                        className="bg-gray-600 text-gray-400 px-4 py-3 text-sm font-semibold w-full cursor-not-allowed"
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        Creator Controls
+                      </Button>
+                      <p className="text-gray-500 text-xs mt-2 text-center">PRO/ROYAL only</p>
+                    </div>
+                  )}
+
+                  {/* Telegram Controls Button - PRO and ROYAL only */}
+                  {(tier === 'PRO' || tier === 'ROYAL') ? (
+                    <div className="flex flex-col items-center">
+                      <Button
+                        onClick={() => router.push('/telegram-admin')}
+                        className="bg-[#0088cc] hover:bg-[#0088cc]/80 text-white px-4 py-3 text-sm font-semibold w-full"
+                      >
+                        <Bot className="w-4 h-4 mr-2" />
+                        Telegram Controls
+                      </Button>
+                      <p className="text-[#C0E6FF] text-xs mt-2 text-center">Monitor channel access</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                      <Button
+                        disabled
+                        className="bg-gray-600 text-gray-400 px-4 py-3 text-sm font-semibold w-full cursor-not-allowed"
+                      >
+                        <Bot className="w-4 h-4 mr-2" />
+                        Telegram Controls
+                      </Button>
+                      <p className="text-gray-500 text-xs mt-2 text-center">PRO/ROYAL only</p>
+                    </div>
+                  )}
                 </div>
-                <p className="text-[#C0E6FF] text-xs mt-2 text-center">Manage your referrals and view detailed metrics</p>
               </div>
 
               {/* Social Media */}

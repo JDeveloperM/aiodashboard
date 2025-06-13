@@ -17,8 +17,7 @@ export function Sidebar() {
   const [copyTradingExpanded, setCopyTradingExpanded] = useState(false)
   const { canAccessCryptoBots, canAccessForexBots, tier } = useSubscription()
 
-  // Creator Controls access (PRO and ROYAL only)
-  const canAccessCreatorControls = tier === "PRO" || tier === "ROYAL"
+
 
   // Close mobile sidebar when route changes
   useEffect(() => {
@@ -65,7 +64,6 @@ export function Sidebar() {
     },
     { name: "AIO Connect", href: "/community", icon: Globe, restricted: false },
     { name: "AIO Creators", href: "/aio-creators", icon: Users, restricted: false },
-    { name: "Creator Controls", href: "/creator-controls", icon: Settings, restricted: !canAccessCreatorControls },
     { name: "RaffleCraft", href: "/dapps/rafflecraft", icon: Dice6, restricted: false },
     { name: "DEWhale Launchpad", href: "/dapps/dewhale-launchpad", icon: Rocket, restricted: false },
     { name: "MetaGo Academy", href: "/metago-academy", icon: BookOpen, restricted: false },
