@@ -302,11 +302,11 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem(`sui_user_${user.address}`, JSON.stringify(updatedUser))
 
       // Update session cookie
-      const session: AuthSession = {
+      const session = {
         address: user.address,
         connectionType: user.connectionType,
-        expiresAt: Date.now() + (24 * 60 * 60 * 1000),
-        lastActivity: Date.now()
+        createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : new Date(user.createdAt).toISOString(),
+        lastLoginAt: new Date().toISOString()
       }
       saveAuthSession(session)
 

@@ -69,6 +69,7 @@ export function CreatorDebugPanel() {
     try {
       const testCreator = {
         id: `test-${Date.now()}`,
+        creatorAddress: currentAccount?.address || '0x0000000000000000000000000000000000000000', // Add required creatorAddress field
         name: 'Test Creator Channel',
         username: 'test_creator',
         avatar: '/api/placeholder/64/64',
