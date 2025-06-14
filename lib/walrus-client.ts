@@ -298,6 +298,5 @@ class WalrusService {
 // Export singleton instance
 export const walrusService = new WalrusService()
 
-// Export types and constants
-export type { WalrusContentType, WalrusStorageMetadata, WalrusBlobReference }
+// Export constants
 export { STORAGE_DURATIONS }

@@ -56,6 +56,7 @@ interface EncryptedProfile {
   achievements_data: Achievement[]
   referral_data: Record<string, any>
   display_preferences: Record<string, any>
+  payment_preferences: Record<string, any>
   walrus_metadata: Record<string, any>
 
   // Timestamps
@@ -200,7 +201,7 @@ class EncryptedDatabaseStorage {
       if (imageFile) {
         console.log('📸 Storing image in Walrus...')
         const imageData = new Uint8Array(await imageFile.arrayBuffer())
-        const imageResult = await walrusService.storeBlob(imageData, 'avatar', {
+        const imageResult = await walrusService.storeBlob(imageData, 'profile-image', {
           epochs: 365,
           deletable: true,
           originalName: imageFile.name,
@@ -294,6 +295,9 @@ class EncryptedDatabaseStorage {
       }
       if (profileData.display_preferences) {
         encryptedData.display_preferences = profileData.display_preferences
+      }
+      if (profileData.payment_preferences) {
+        encryptedData.payment_preferences = profileData.payment_preferences
       }
       if (profileData.walrus_metadata) {
         encryptedData.walrus_metadata = profileData.walrus_metadata
@@ -869,6 +873,9 @@ class EncryptedDatabaseStorage {
 
 // Export singleton
 export const encryptedStorage = new EncryptedDatabaseStorage()
+
+// Export types
+export type { DecryptedProfile, Achievement, SocialLink }
 
 // Helper functions for React components
 export async function updateEncryptedUserProfile(

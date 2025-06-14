@@ -225,7 +225,9 @@ export function usePersistentProfile(): ProfileState & ProfileActions {
           claimed_at: new Date().toISOString(),
           xp: xpReward,
           tooltip: `${achievementName} achievement`,
-          category: 'general'
+          category: 'general',
+          color: '#4DA2FF',
+          unlocked: true
         }
         updatedAchievements = [...existingAchievements, newAchievement]
         console.log('➕ Added new achievement to database:', newAchievement)

@@ -147,15 +147,15 @@ export function PersistentProfileSystem() {
 
       case "Connect Discord":
         // Unlocked if user has connected Discord
-        return profile?.social_links?.some(link => link.platform === 'Discord') || false
+        return profile?.social_links?.some((link: any) => link.platform === 'Discord') || false
 
       case "Connect Telegram":
         // Unlocked if user has connected Telegram
-        return profile?.social_links?.some(link => link.platform === 'Telegram') || false
+        return profile?.social_links?.some((link: any) => link.platform === 'Telegram') || false
 
       case "Connect X":
         // Unlocked if user has connected X
-        return profile?.social_links?.some(link => link.platform === 'X') || false
+        return profile?.social_links?.some((link: any) => link.platform === 'X') || false
 
       case "Upgrade to PRO":
         // Unlocked if user has PRO tier
@@ -207,9 +207,9 @@ export function PersistentProfileSystem() {
     ]
 
     // If we have saved achievements, merge them with base achievements
-    if (profile?.achievements_data?.length > 0) {
-      return baseAchievements.map(baseAchievement => {
-        const savedAchievement = profile.achievements_data.find(saved => saved.name === baseAchievement.name)
+    if (profile?.achievements_data && profile.achievements_data.length > 0) {
+      return baseAchievements.map((baseAchievement: any) => {
+        const savedAchievement = profile.achievements_data.find((saved: any) => saved.name === baseAchievement.name)
         return {
           ...baseAchievement,
           unlocked: checkAchievementUnlocked(baseAchievement.name),
@@ -220,7 +220,7 @@ export function PersistentProfileSystem() {
     }
 
     // Otherwise, create fresh achievements with proper unlock status
-    return baseAchievements.map(achievement => ({
+    return baseAchievements.map((achievement: any) => ({
       ...achievement,
       unlocked: checkAchievementUnlocked(achievement.name),
       claimed: false
@@ -232,7 +232,7 @@ export function PersistentProfileSystem() {
     name: profile?.username || user?.username || "Affiliate User",
     username: profile?.username || user?.username || "@affiliate_user",
     kycStatus: profile?.kyc_status || "not_verified",
-    socialMedia: profile?.social_links?.length > 0 ? profile.social_links : [
+    socialMedia: profile?.social_links && profile.social_links.length > 0 ? profile.social_links : [
       {
         platform: "Discord",
         image: socialImages.Discord,
@@ -283,7 +283,7 @@ export function PersistentProfileSystem() {
       // Use referral_data.level_rewards as temporary storage until we add proper column
       const claimedLevels = profile.referral_data?.level_rewards || []
 
-      setLevelRewards(prev => prev.map(reward => ({
+      setLevelRewards(prev => prev.map((reward: any) => ({
         ...reward,
         available: currentLevel >= reward.level,
         claimed: claimedLevels.some((claimed: any) => claimed.level === reward.level)
@@ -367,7 +367,7 @@ export function PersistentProfileSystem() {
       console.log('📋 Current achievements in database:', currentAchievements.length)
 
       // Check if achievement already exists in database
-      const existingAchievement = currentAchievements.find(a => a.name === claimingAchievement.name)
+      const existingAchievement = currentAchievements.find((a: any) => a.name === claimingAchievement.name)
       console.log('🔍 Existing achievement found:', !!existingAchievement)
 
       if (!existingAchievement) {
@@ -416,7 +416,7 @@ export function PersistentProfileSystem() {
           achievements_count: profile?.achievements_data?.length || 0,
           current_xp: profile?.current_xp,
           total_xp: profile?.total_xp,
-          claimed_achievements: profile?.achievements_data?.filter(a => a.claimed).map(a => a.name) || []
+          claimed_achievements: profile?.achievements_data?.filter((a: any) => a.claimed).map((a: any) => a.name) || []
         })
 
         const pointsText = claimingAchievement.points ? `, +${claimingAchievement.points} Points` : ''
@@ -506,7 +506,7 @@ export function PersistentProfileSystem() {
       console.log('✅ Level reward claimed successfully!')
 
       // Update local state
-      setLevelRewards(prev => prev.map(reward =>
+      setLevelRewards(prev => prev.map((reward: any) =>
         reward.level === claimingLevel.level
           ? { ...reward, claimed: true }
           : reward
@@ -638,7 +638,7 @@ export function PersistentProfileSystem() {
                   console.error('❌ Schema check failed:', schemaError)
                 } else {
                   console.log('📋 Current table columns:', columns)
-                  const columnNames = columns?.map(col => col.column_name) || []
+                  const columnNames = columns?.map((col: any) => col.column_name) || []
                   console.log('📝 Column names:', columnNames)
 
                   const missingColumns = ['current_xp', 'total_xp', 'profile_level', 'role_tier', 'kyc_status', 'points']
@@ -720,12 +720,12 @@ export function PersistentProfileSystem() {
             onClick={async () => {
               console.log('🏆 Achievement Debug Info:')
               console.log('📊 Profile achievements_data:', profile?.achievements_data)
-              console.log('📋 Local profileData.achievements:', profileData.achievements.map(a => ({
+              console.log('📋 Local profileData.achievements:', profileData.achievements.map((a: any) => ({
                 name: a.name,
                 claimed: a.claimed,
                 unlocked: a.unlocked
               })))
-              console.log('🔍 Claimed achievements in DB:', profile?.achievements_data?.filter(a => a.claimed).map(a => a.name) || [])
+              console.log('🔍 Claimed achievements in DB:', profile?.achievements_data?.filter((a: any) => a.claimed).map((a: any) => a.name) || [])
               console.log('🔍 Total achievements in DB:', profile?.achievements_data?.length || 0)
 
               toast.success('Achievement debug info logged to console')
@@ -854,7 +854,7 @@ export function PersistentProfileSystem() {
                     { id: '2', name: 'Premium Trading Signals', type: 'premium', price: 5.0, subscribers: 2100, color: '#f59e0b' },
                     { id: '3', name: 'DeFi Basics', type: 'free', price: 0, subscribers: 9200, color: '#3b82f6' },
                     { id: '4', name: 'Advanced Bot Strategies', type: 'premium', price: 12.0, subscribers: 2100, color: '#f97316' },
-                  ].map((channel) => (
+                  ].map((channel: any) => (
                     <TooltipProvider key={channel.id}>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -1031,7 +1031,7 @@ export function PersistentProfileSystem() {
               <div className="w-full bg-[#1a2f51]/30 rounded-lg p-5 border border-[#C0E6FF]/10">
                 <h3 className="text-white font-semibold mb-4 text-center">Social Media</h3>
                 <div className="space-y-3">
-                  {profileData.socialMedia.map((social, index) => (
+                  {profileData.socialMedia.map((social: any, index: number) => (
                     <div
                       key={index}
                       className="flex items-center justify-between p-2 rounded-lg bg-[#1a2f51] border border-[#C0E6FF]/20 hover:border-[#4DA2FF]/40 transition-all duration-200"
@@ -1074,7 +1074,7 @@ export function PersistentProfileSystem() {
           <h3 className="text-white font-semibold mb-4 text-center">Achievements</h3>
           <TooltipProvider>
             <div className="grid grid-cols-3 md:grid-cols-7 gap-3">
-              {profileData.achievements.map((achievement, index) => {
+              {profileData.achievements.map((achievement: any, index: number) => {
                 // Check if this achievement is claimed in the persistent profile
                 const persistentAchievement = profile?.achievements_data?.find(
                   (a: any) => a.name === achievement.name
@@ -1340,7 +1340,7 @@ export function PersistentProfileSystem() {
             <div>
               <h3 className="text-white font-semibold mb-4 text-center">Level Rewards</h3>
               <div className="grid grid-cols-5 gap-2">
-                {levelRewards.map((reward) => (
+                {levelRewards.map((reward: any) => (
                   <div key={reward.level} className="bg-[#1a2f51] rounded-lg p-3 border border-[#C0E6FF]/20 text-center">
                     <div className="text-white font-bold text-sm mb-2">Level {reward.level}</div>
                     {reward.claimed ? (
@@ -1557,7 +1557,7 @@ export function PersistentProfileSystem() {
                       { level: 8, xpRequired: 830, xpFromPrevious: 170, pointsUnlocked: 150, totalPoints: 550 },
                       { level: 9, xpRequired: 940, xpFromPrevious: 110, pointsUnlocked: 200, totalPoints: 750 },
                       { level: 10, xpRequired: 1000, xpFromPrevious: 60, pointsUnlocked: 250, totalPoints: 1000 }
-                    ].map((row, index) => (
+                    ].map((row: any, index: number) => (
                       <tr key={row.level} className="border-b border-[#C0E6FF]/10 hover:bg-[#1a2f51]/30 transition-colors">
                         <td className="py-3 px-4 text-white font-semibold">{row.level}</td>
                         <td className="py-3 px-4 text-[#C0E6FF]">{row.xpRequired}</td>

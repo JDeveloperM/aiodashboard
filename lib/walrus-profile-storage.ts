@@ -4,8 +4,7 @@
  * This creates a fully decentralized profile system
  */
 
-import { walrusService } from './walrus-client'
-import { WalrusContentType } from './walrus-types'
+import { walrusService, WalrusContentType } from './walrus-client'
 
 export interface UserProfileMetadata {
   address: string
@@ -34,7 +33,7 @@ export interface ProfileStorageResult {
 
 class WalrusProfileStorage {
   private readonly PROFILE_CONTENT_TYPE: WalrusContentType = 'user-profile'
-  private readonly PROFILE_INDEX_TYPE: WalrusContentType = 'profile-index'
+  private readonly PROFILE_INDEX_TYPE: WalrusContentType = 'user-profile'
 
   /**
    * Store user profile metadata in Walrus
@@ -174,7 +173,7 @@ class WalrusProfileStorage {
     try {
       // First, store the image
       const imageData = new Uint8Array(await imageFile.arrayBuffer())
-      const imageResult = await walrusService.storeBlob(imageData, 'avatar', {
+      const imageResult = await walrusService.storeBlob(imageData, 'profile-image', {
         epochs: 365,
         deletable: true,
         originalName: imageFile.name,

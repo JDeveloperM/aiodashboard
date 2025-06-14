@@ -175,8 +175,8 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
               username: user?.username,
               email: user?.email,
               profile_image_blob_id: result.blobId,
-              public_data: {
-                tier: user?.tier || 'NOMAD',
+              role_tier: 'NOMAD',
+              walrus_metadata: {
                 last_avatar_update: new Date().toISOString()
               }
             }

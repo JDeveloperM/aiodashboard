@@ -112,7 +112,7 @@ export function EnhancedBanner({
       console.log('☁️ Calling storeImage...')
       const result = await storeImage(
         selectedFile,
-        'banner-image',
+        'channel-banner',
         {
           epochs: useWalrusStorage ? storageEpochs : 90, // Default to 3 months
           deletable: true,
@@ -164,7 +164,7 @@ export function EnhancedBanner({
         setIsDialogOpen(false)
       } else {
         console.error('❌ Walrus storage failed:', result)
-        throw new Error(`Walrus storage failed: ${result.error || 'Unknown error'}`)
+        throw new Error('Walrus storage failed: Unknown error')
       }
     } catch (error) {
       console.error('Banner upload failed:', error)

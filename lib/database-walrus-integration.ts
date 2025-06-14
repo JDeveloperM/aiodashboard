@@ -66,7 +66,7 @@ class DatabaseWalrusIntegration {
       // Store image in Walrus if provided
       if (imageFile) {
         const imageData = new Uint8Array(await imageFile.arrayBuffer())
-        const imageResult = await walrusService.storeBlob(imageData, 'avatar', {
+        const imageResult = await walrusService.storeBlob(imageData, 'profile-image', {
           epochs: 365, // Store for 1 year
           deletable: true,
           originalName: imageFile.name,

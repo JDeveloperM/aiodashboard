@@ -272,7 +272,7 @@ export async function retrieveJsonData<T = any>(blobId: string): Promise<T> {
 
   // Cache the result
   if (cached) {
-    walrusCache.set(blobId, cached.blobReference, data)
+    walrusCache.set(blobId, cached.blobReference, data as string | object)
   }
 
   return data

@@ -485,7 +485,7 @@ class CreatorStorage {
 
       // Store image in Walrus
       const imageData = new Uint8Array(await imageFile.arrayBuffer())
-      const imageResult = await walrusService.storeBlob(imageData, 'creator-avatar', {
+      const imageResult = await walrusService.storeBlob(imageData, 'profile-image', {
         epochs: 365,
         deletable: true,
         originalName: imageFile.name,
@@ -528,7 +528,7 @@ class CreatorStorage {
 
       // Store image in Walrus
       const imageData = new Uint8Array(await imageFile.arrayBuffer())
-      const imageResult = await walrusService.storeBlob(imageData, 'creator-banner', {
+      const imageResult = await walrusService.storeBlob(imageData, 'channel-banner', {
         epochs: 365,
         deletable: true,
         originalName: imageFile.name,

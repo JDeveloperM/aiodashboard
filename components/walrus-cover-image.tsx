@@ -80,7 +80,7 @@ export function WalrusCoverImage({
     try {
       const result = await storeImage(
         selectedFile,
-        'creator-banner',
+        'channel-banner',
         {
           epochs: useWalrusStorage ? storageEpochs : undefined,
           deletable: true,
@@ -208,15 +208,52 @@ export function WalrusCoverImage({
             )}
 
             {/* Storage Options */}
-            <div className="space-y-3">
-              <StorageDurationSelector
-                value={storageEpochs}
-                onChange={setStorageEpochs}
-                useWalrus={useWalrusStorage}
-                onUseWalrusChange={setUseWalrusStorage}
-                estimatedCost={estimatedCost}
-              />
-            </div>
+            {selectedFile && (
+              <div className="space-y-4">
+                {/* Use Walrus toggle */}
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-[#C0E6FF]">
+                    Use Walrus Storage
+                  </label>
+                  <input
+                    type="checkbox"
+                    checked={useWalrusStorage && isInitialized}
+                    onChange={(e) => setUseWalrusStorage(e.target.checked)}
+                    disabled={!isInitialized}
+                    className="rounded"
+                  />
+                </div>
+
+                {/* Storage duration selector */}
+                {useWalrusStorage && isInitialized && (
+                  <StorageDurationSelector
+                    sizeInBytes={selectedFile.size}
+                    selectedEpochs={storageEpochs}
+                    onEpochsChange={setStorageEpochs}
+                  />
+                )}
+
+                {/* Cost estimate */}
+                {useWalrusStorage && estimatedCost > 0 && (
+                  <div className="p-3 bg-[#030f1c] rounded border border-[#C0E6FF]/20">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-[#C0E6FF]">
+                        Estimated cost: {estimatedCost.toFixed(6)} SUI
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Fallback notice */}
+                {(!useWalrusStorage || !isInitialized) && (
+                  <div className="p-3 bg-yellow-500/10 rounded border border-yellow-500/20">
+                    <div className="flex items-center gap-2 text-sm text-yellow-600">
+                      <span>Cover image will be stored locally</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Status */}
             <WalrusStatusIndicator />

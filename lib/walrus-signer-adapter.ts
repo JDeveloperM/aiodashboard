@@ -2,7 +2,7 @@
 
 import { Transaction } from '@mysten/sui/transactions'
 import { fromB64, toB64 } from '@mysten/sui/utils'
-import { Signer } from '@mysten/sui/cryptography'
+import { Signer, SignatureScheme } from '@mysten/sui/cryptography'
 
 /**
  * Adapter to make dApp kit account work with Walrus SDK
@@ -46,7 +46,7 @@ export class WalrusSignerAdapter implements Signer {
    * Sign and execute a transaction - required by Signer interface
    * This is the main method used by Walrus SDK
    */
-  async signAndExecuteTransaction(transaction: Transaction): Promise<any> {
+  async signAndExecuteTransaction({ transaction, client }: { transaction: Transaction; client?: any }): Promise<any> {
     if (!this.signAndExecute) {
       throw new Error('No signing function available')
     }
@@ -61,9 +61,9 @@ export class WalrusSignerAdapter implements Signer {
       let actualTransaction = transaction
 
       // If it's a Walrus transaction wrapper, extract the actual transaction
-      if (transaction.transaction) {
+      if ((transaction as any).transaction) {
         console.log('Found nested transaction object')
-        actualTransaction = transaction.transaction
+        actualTransaction = (transaction as any).transaction
       }
 
       // Create a transaction wrapper that has the toJSON method
@@ -134,7 +134,7 @@ export class WalrusSignerAdapter implements Signer {
    * Alternative method name that some versions might use
    */
   async signAndExecuteTransactionBlock(transaction: Transaction) {
-    return this.signAndExecuteTransaction(transaction)
+    return this.signAndExecuteTransaction({ transaction })
   }
 
   /**
@@ -142,8 +142,8 @@ export class WalrusSignerAdapter implements Signer {
    * Note: In a dApp environment, we typically need to execute transactions
    * to pay for storage, so this delegates to signAndExecuteTransaction
    */
-  async signTransaction(transaction: Transaction) {
-    return this.signAndExecuteTransaction(transaction)
+  async signTransaction(bytes: Uint8Array): Promise<any> {
+    throw new Error('Direct transaction signing not supported in dApp environment')
   }
 
   /**
@@ -157,8 +157,29 @@ export class WalrusSignerAdapter implements Signer {
   /**
    * Get the signature scheme (required by Signer interface)
    */
-  getKeyScheme(): string {
+  getKeyScheme(): SignatureScheme {
     return 'ED25519' // Default scheme, actual scheme depends on wallet
+  }
+
+  /**
+   * Sign with intent (required by Signer interface)
+   */
+  async signWithIntent(bytes: Uint8Array, intent: any): Promise<any> {
+    throw new Error('signWithIntent not supported in dApp environment')
+  }
+
+  /**
+   * Sign personal message (required by Signer interface)
+   */
+  async signPersonalMessage(message: Uint8Array): Promise<any> {
+    throw new Error('signPersonalMessage not supported in dApp environment')
+  }
+
+  /**
+   * Get public key (required by Signer interface)
+   */
+  getPublicKey(): any {
+    throw new Error('getPublicKey not supported in dApp environment')
   }
 }
 
