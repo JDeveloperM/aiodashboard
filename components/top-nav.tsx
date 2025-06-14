@@ -137,7 +137,7 @@ export function TopNav() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="text-[#C0E6FF] hover:bg-[#1e3a8a] hover:text-white">
-                  <Link href="/dashboard/subscriptions">
+                  <Link href="/subscriptions">
                     <CreditCard className="mr-2 h-4 w-4" />
                     <span>Subscriptions</span>
                   </Link>

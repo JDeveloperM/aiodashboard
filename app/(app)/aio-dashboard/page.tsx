@@ -71,8 +71,7 @@ const navigationCards = [
 
 
 
-
-export default function Dashboard() {
+export default function AIODashboard() {
   const { tier } = useSubscription()
 
   return (
@@ -80,7 +79,7 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">AIONET Dashboard</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">AIO Dashboard</h1>
         </div>
       </div>
 

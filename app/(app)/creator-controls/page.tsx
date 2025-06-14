@@ -59,7 +59,7 @@ export default function CreatorControlsPage() {
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button
-                  onClick={() => router.push('/dashboard/subscriptions')}
+                  onClick={() => router.push('/subscriptions')}
                   className="bg-[#4da2ff] hover:bg-[#3d8ae6] text-white px-6 py-3"
                 >
                   <TrendingUp className="w-5 h-5 mr-2" />

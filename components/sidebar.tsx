@@ -48,7 +48,7 @@ export function Sidebar() {
   }, [isMobileOpen])
 
   const navigation = [
-    { name: "Overview", href: "/dashboard", icon: LayoutDashboard, restricted: false },
+    { name: "AIO Dashboard", href: "/aio-dashboard", icon: LayoutDashboard, restricted: false },
     {
       name: "Copy Trading",
       href: "/copy-trading",
@@ -189,7 +189,7 @@ export function Sidebar() {
   }
 
   function handleUpgrade(event: MouseEvent<HTMLButtonElement>): void {
-    router.push('/dashboard/subscriptions')
+    router.push('/subscriptions')
   }
 
   return (
@@ -223,7 +223,11 @@ export function Sidebar() {
             <div className={cn("flex h-16 items-center gap-2 px-4", isCollapsed && !isMobileOpen && "justify-center px-2")}>
               {(!isCollapsed || isMobileOpen) && (
                 <Link href="/" className="flex items-center font-semibold lg:ml-0 ml-12">
-                  <span className="text-lg text-white">AIONET</span>
+                  <img
+                    src="/images/aionet-logo.png"
+                    alt="AIONET"
+                    className="h-8 w-auto"
+                  />
                 </Link>
               )}
 
@@ -311,7 +315,7 @@ export function Sidebar() {
                   <Button
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                     size="icon"
-                    onClick={() => router.push('/dashboard/subscriptions')}
+                    onClick={() => router.push('/subscriptions')}
                   >
                     <TrendingUp className="h-4 w-4" />
                   </Button>

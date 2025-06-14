@@ -13,6 +13,7 @@ const publicRoutes = [
 // Define app routes that require authentication
 const protectedRoutes = [
   '/dashboard',
+  '/aio-dashboard',
   '/profile',
   '/subscriptions',
   '/settings',

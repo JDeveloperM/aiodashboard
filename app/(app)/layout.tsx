@@ -20,7 +20,7 @@ export default function AppLayout({
   const router = useRouter()
 
   // Check if we're on the dashboard page
-  const isDashboardPage = pathname === '/dashboard'
+  const isDashboardPage = pathname === '/dashboard' || pathname === '/aio-dashboard'
 
   // Redirect if not signed in (only after initial load is complete)
   useEffect(() => {
