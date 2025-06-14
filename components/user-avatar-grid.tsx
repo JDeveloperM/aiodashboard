@@ -50,14 +50,6 @@ const getAchievementImage = (achievementName: string): string | null => {
 }
 
 // Helper functions
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'online': return 'bg-green-500'
-    case 'away': return 'bg-yellow-500'
-    case 'busy': return 'bg-red-500'
-    default: return 'bg-gray-500'
-  }
-}
 
 const getKycStatusColor = (status: string) => {
   switch (status) {
@@ -90,20 +82,7 @@ function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect }: UserAvat
   const isMobile = useIsMobile()
   const [showCard, setShowCard] = useState(false)
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'online':
-        return 'bg-green-500'
-      case 'idle':
-        return 'bg-yellow-500'
-      case 'dnd':
-        return 'bg-red-500'
-      case 'offline':
-        return 'bg-gray-500'
-      default:
-        return 'bg-gray-500'
-    }
-  }
+
 
 
 
@@ -145,13 +124,7 @@ function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect }: UserAvat
               </AvatarFallback>
             </Avatar>
 
-            {/* Status Indicator */}
-            <div className={cn(
-              "absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-[#030f1c] flex items-center justify-center transition-all duration-300",
-              getStatusColor(user.status)
-            )}>
-              <div className="w-3 h-3 rounded-full bg-white/90" />
-            </div>
+
 
 
           </div>
@@ -406,27 +379,7 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
             ))}
           </div>
 
-          {/* Grid Footer */}
-          <div className="mt-8 pt-4 border-t border-[#C0E6FF]/10">
-            <div className="flex items-center justify-center gap-4 text-xs text-[#C0E6FF]/50">
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full" />
-                <span>Online</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-                <span>Away</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-red-500 rounded-full" />
-                <span>Busy</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-gray-500 rounded-full" />
-                <span>Offline</span>
-              </div>
-            </div>
-          </div>
+
         </div>
       </div>
 
@@ -536,19 +489,7 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
                 </div>
               </div>
 
-              {/* Status & KYC */}
-              <div className="flex items-center justify-between text-xs mb-3">
-                <div className="flex items-center gap-1">
-                  <div className={cn("w-2 h-2 rounded-full", getStatusColor(selectedUser.status))} />
-                  <span className="text-white capitalize">{selectedUser.status}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  {getKycStatusIcon(selectedUser.kycStatus)}
-                  <span className={cn("font-medium", getKycStatusColor(selectedUser.kycStatus))}>
-                    KYC {selectedUser.kycStatus === 'verified' ? 'Verified' : selectedUser.kycStatus === 'pending' ? 'Pending' : 'Required'}
-                  </span>
-                </div>
-              </div>
+
 
               {/* Achievements Section */}
               {selectedUser.achievements && selectedUser.achievements.length > 0 && (

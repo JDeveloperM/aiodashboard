@@ -991,6 +991,80 @@ class EncryptedDatabaseStorage {
       return null
     }
   }
+
+  /**
+   * Get all public profiles for community discovery
+   */
+  async getAllPublicProfiles(limit = 100): Promise<DecryptedProfile[]> {
+    try {
+      console.log('🔍 Fetching all public profiles from database...')
+
+      // Simple query like the working ones
+      const { data, error } = await this.supabase
+        .from('user_profiles')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(limit)
+
+      if (error) {
+        console.error('❌ Database query error:', error)
+        throw error
+      }
+
+      console.log(`📊 Found ${data?.length || 0} profiles in database`)
+
+      if (!data || data.length === 0) {
+        console.log('ℹ️ No data returned from database')
+        return []
+      }
+
+      // Decrypt profiles using the same method as getDecryptedProfile
+      const decryptedProfiles: DecryptedProfile[] = []
+
+      for (const profile of data) {
+        try {
+          console.log(`🔓 Processing profile: ${profile.address}`)
+          const encryptionKey = this.generateEncryptionKey(profile.address)
+          const decryptedProfile = this.decryptProfile(profile, encryptionKey)
+          decryptedProfiles.push(decryptedProfile)
+          console.log(`✅ Successfully processed profile: ${profile.address}`)
+        } catch (decryptError) {
+          console.warn(`⚠️ Failed to decrypt profile ${profile.address}:`, decryptError)
+          // Add profile with public data only as fallback
+          const fallbackProfile: DecryptedProfile = {
+            address: profile.address,
+            username: `User ${profile.address.slice(0, 6)}`,
+            profile_image_blob_id: profile.profile_image_blob_id,
+            banner_image_blob_id: profile.banner_image_blob_id,
+            role_tier: profile.role_tier || 'NOMAD',
+            profile_level: profile.profile_level || 1,
+            current_xp: profile.current_xp || 0,
+            total_xp: profile.total_xp || 0,
+            points: profile.points || 0,
+            kyc_status: profile.kyc_status || 'not_verified',
+            join_date: profile.join_date,
+            last_active: profile.last_active,
+            achievements_data: profile.achievements_data || [],
+            referral_data: profile.referral_data || {},
+            display_preferences: profile.display_preferences || {},
+            walrus_metadata: profile.walrus_metadata || {},
+            social_links: [],
+            created_at: profile.created_at,
+            updated_at: profile.updated_at
+          }
+          console.log(`🔄 Added fallback profile for: ${profile.address}`)
+          decryptedProfiles.push(fallbackProfile)
+        }
+      }
+
+      console.log(`✅ Successfully decrypted ${decryptedProfiles.length} profiles`)
+      return decryptedProfiles
+
+    } catch (error) {
+      console.error('❌ Failed to get all public profiles:', error)
+      throw error
+    }
+  }
 }
 
 // Export singleton
