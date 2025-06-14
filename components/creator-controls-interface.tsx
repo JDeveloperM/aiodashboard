@@ -108,7 +108,7 @@ const SUBSCRIPTION_DURATIONS = [
 ]
 
 export function CreatorControlsInterface() {
-  const { addCreator, updateCreator, creators, refreshCreators } = useCreatorsDatabase()
+  const { addCreator, updateCreator, creators, refreshCreators, getUserCreators } = useCreatorsDatabase()
   const { tier } = useSubscription()
   const router = useRouter()
   const currentAccount = useCurrentAccount()
@@ -186,23 +186,11 @@ export function CreatorControlsInterface() {
     // Check channel creation limits based on user tier
     const userChannelLimit = tier === 'ROYAL' ? 3 : 2 // ROYAL: 3 channels, PRO: 2 channels
 
-    // Find existing creator profile for current user with flexible matching
-    const existingUserCreator = creators.find(creator => {
-      // Direct username match
-      if (creator.username === data.telegramUsername) {
-        return true
-      }
-
-      // Check social links telegram URL
-      if (creator.socialLinks?.telegram?.includes(data.telegramUsername)) {
-        return true
-      }
-
-      // Check individual channels for telegram URLs
-      return creator.channels.some(channel =>
-        channel.telegramUrl && channel.telegramUrl.includes(data.telegramUsername)
-      )
-    })
+    // Find existing creator profile for current user by wallet address
+    const existingUserCreator = creators.find(creator =>
+      creator.creatorAddress &&
+      creator.creatorAddress.toLowerCase() === currentAccount.address.toLowerCase()
+    )
 
     const currentChannelCount = existingUserCreator ? existingUserCreator.channels.length : 0
 
@@ -370,48 +358,18 @@ export function CreatorControlsInterface() {
 
   // Helper function to get current user's channel count
   const getCurrentUserChannelCount = () => {
-    // If there's only one creator in the database, it must be the current user
-    if (creators.length === 1) {
-      const channelCount = creators[0].channels.length
-      console.log(`📊 Single creator found with ${channelCount} channels`)
-      return channelCount
+    if (!currentAccount?.address) {
+      console.log('📊 No wallet connected, returning 0 channels')
+      return 0
     }
 
-    // If multiple creators, try to match by wallet address or telegram username
-    const telegramUsername = form.watch("telegramUsername")
+    // Use the getUserCreators method for accurate filtering
+    const userCreators = getUserCreators(currentAccount.address)
+    const totalChannels = userCreators.reduce((total, creator) => total + creator.channels.length, 0)
 
-    // First try to find by current wallet address (most reliable)
-    if (currentAccount?.address) {
-      // Note: We would need to store wallet address in creator records to match this way
-      // For now, fall back to telegram username matching
-    }
+    console.log(`📊 Found ${userCreators.length} creators for wallet ${currentAccount.address} with ${totalChannels} total channels`)
 
-    // Fall back to telegram username matching if provided
-    if (telegramUsername) {
-      const userCreator = creators.find(creator => {
-        // Direct username match
-        if (creator.username === telegramUsername) {
-          return true
-        }
-
-        // Check social links telegram URL
-        if (creator.socialLinks?.telegram?.includes(telegramUsername)) {
-          return true
-        }
-
-        // Check individual channels for telegram URLs
-        return creator.channels.some(channel =>
-          channel.telegramUrl && channel.telegramUrl.includes(telegramUsername)
-        )
-      })
-
-      const channelCount = userCreator ? userCreator.channels.length : 0
-      console.log(`📊 Channel count for ${telegramUsername}: ${channelCount}`)
-      return channelCount
-    }
-
-    // If no telegram username provided and multiple creators, return 0
-    return 0
+    return totalChannels
   }
 
   const currentChannelCount = getCurrentUserChannelCount()

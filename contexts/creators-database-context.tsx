@@ -76,6 +76,7 @@ interface CreatorsContextType {
   removeCreator: (id: string) => Promise<void>
   deleteChannel: (creatorId: string, channelId: string) => Promise<void>
   refreshCreators: () => Promise<void>
+  getUserCreators: (walletAddress: string) => Creator[]
   isLoading: boolean
   error: string | null
 }
@@ -282,6 +283,15 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
   useEffect(() => {
     refreshCreators()
   }, [])
+
+  const getUserCreators = (walletAddress: string): Creator[] => {
+    if (!walletAddress) return []
+
+    return creators.filter(creator =>
+      creator.creatorAddress &&
+      creator.creatorAddress.toLowerCase() === walletAddress.toLowerCase()
+    )
+  }
 
   const addCreator = async (creator: Creator, profileImageBlobId?: string, coverImageBlobId?: string) => {
     console.log('🔄 addCreator called with:', creator)
@@ -561,6 +571,7 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
     removeCreator,
     deleteChannel,
     refreshCreators,
+    getUserCreators,
     isLoading,
     error
   }
