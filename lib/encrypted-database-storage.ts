@@ -1032,6 +1032,7 @@ class EncryptedDatabaseStorage {
           console.warn(`⚠️ Failed to decrypt profile ${profile.address}:`, decryptError)
           // Add profile with public data only as fallback
           const fallbackProfile: DecryptedProfile = {
+            id: profile.id,
             address: profile.address,
             username: `User ${profile.address.slice(0, 6)}`,
             profile_image_blob_id: profile.profile_image_blob_id,
