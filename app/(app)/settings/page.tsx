@@ -16,7 +16,6 @@ import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { DashboardProfiles } from "@/components/dashboard-profiles"
 import { NewUserOnboarding } from "@/components/new-user-onboarding"
 import { KYCVerificationFlow } from "@/components/kyc-verification-flow"
-import { DatabaseTest } from "@/components/database-test"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -261,15 +260,7 @@ export default function SettingsPage() {
         </TabsList>
 
         <TabsContent value="account">
-          <div className="space-y-6">
-            <DashboardProfiles />
-
-            {/* Database Test Component - for debugging */}
-            <div className="border-t border-[#C0E6FF]/20 pt-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Database Diagnostics</h3>
-              <DatabaseTest />
-            </div>
-          </div>
+          <DashboardProfiles />
         </TabsContent>
 
         <TabsContent value="payment">
