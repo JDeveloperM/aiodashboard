@@ -56,7 +56,7 @@ interface EncryptedProfile {
   achievements_data: Achievement[]
   referral_data: Record<string, any>
   display_preferences: Record<string, any>
-  payment_preferences: Record<string, any>
+  // payment_preferences: Record<string, any> // Column doesn't exist in current schema
   walrus_metadata: Record<string, any>
 
   // Timestamps
@@ -101,19 +101,19 @@ interface DecryptedProfile {
     news_notifications?: boolean
     promo_notifications?: boolean
   }
-  payment_preferences: {
-    points_auto_renewal?: boolean
-    payment_methods?: Array<{
-      id: string
-      type: string
-      name: string
-      last4: string
-      expiryMonth: string
-      expiryYear: string
-      isDefault: boolean
-      autoRenewal: boolean
-    }>
-  }
+  // payment_preferences: { // Column doesn't exist in current schema
+  //   points_auto_renewal?: boolean
+  //   payment_methods?: Array<{
+  //     id: string
+  //     type: string
+  //     name: string
+  //     last4: string
+  //     expiryMonth: string
+  //     expiryYear: string
+  //     isDefault: boolean
+  //     autoRenewal: boolean
+  //   }>
+  // }
   walrus_metadata: Record<string, any>
 
   // Timestamps
@@ -194,6 +194,14 @@ class EncryptedDatabaseStorage {
       console.log('🔄 Database: Upserting profile for address:', address)
       console.log('📝 Profile data:', profileData)
 
+      // First test database connection
+      const connectionTest = await this.testConnection()
+      if (!connectionTest.success) {
+        console.error('❌ Database connection test failed:', connectionTest.error)
+        throw new Error(`Database connection failed: ${connectionTest.error}`)
+      }
+      console.log('✅ Database connection verified')
+
       const encryptionKey = this.generateEncryptionKey(address)
       let imageBlobId: string | undefined
 
@@ -212,25 +220,41 @@ class EncryptedDatabaseStorage {
         console.log(`🔒 Image stored in Walrus: ${imageBlobId}`)
       }
 
-      // Prepare encrypted data with defaults
-      const encryptedData: Partial<EncryptedProfile> = {
+      // Prepare basic data with only known columns
+      const encryptedData: any = {
         address, // Always public
         updated_at: new Date().toISOString(),
         last_active: new Date().toISOString(),
 
-        // Set default values for required fields if not provided
+        // Basic required fields that should exist
         role_tier: profileData.role_tier || 'NOMAD',
         profile_level: profileData.profile_level || 1,
-        current_xp: profileData.current_xp || 0,
-        total_xp: profileData.total_xp || 0,
-        points: profileData.points || 0,
-        kyc_status: profileData.kyc_status || 'not_verified',
-        join_date: profileData.join_date || new Date().toISOString(),
-        achievements_data: profileData.achievements_data || [],
-        referral_data: profileData.referral_data || {},
-        display_preferences: profileData.display_preferences || {},
-        payment_preferences: profileData.payment_preferences || {},
-        walrus_metadata: profileData.walrus_metadata || {}
+        current_xp: profileData.current_xp ?? 0,
+        total_xp: profileData.total_xp ?? 0,
+        points: profileData.points ?? 0,
+        kyc_status: profileData.kyc_status || 'not_verified'
+      }
+
+      // Only add optional fields if they exist in the data
+      if (profileData.achievements_data) {
+        encryptedData.achievements_data = profileData.achievements_data
+      }
+      if (profileData.referral_data) {
+        encryptedData.referral_data = profileData.referral_data
+      }
+      if (profileData.display_preferences) {
+        encryptedData.display_preferences = profileData.display_preferences
+      }
+      if (profileData.walrus_metadata) {
+        encryptedData.walrus_metadata = profileData.walrus_metadata
+      }
+      if (profileData.join_date) {
+        encryptedData.join_date = profileData.join_date
+      }
+
+      // Add created_at only if it's a new record
+      if (!profileData.id) {
+        encryptedData.created_at = new Date().toISOString()
       }
 
       // Set Walrus blob IDs
@@ -253,18 +277,19 @@ class EncryptedDatabaseStorage {
       if (profileData.bio) {
         encryptedData.bio_encrypted = this.encrypt(profileData.bio, encryptionKey)
       }
-      if (profileData.real_name) {
-        encryptedData.real_name_encrypted = this.encrypt(profileData.real_name, encryptionKey)
-      }
-      if (profileData.location) {
-        encryptedData.location_encrypted = this.encrypt(profileData.location, encryptionKey)
-      }
-      if (profileData.social_links) {
-        encryptedData.social_links_encrypted = this.encrypt(
-          JSON.stringify(profileData.social_links),
-          encryptionKey
-        )
-      }
+      // Skip fields that don't exist in current schema
+      // if (profileData.real_name) {
+      //   encryptedData.real_name_encrypted = this.encrypt(profileData.real_name, encryptionKey)
+      // }
+      // if (profileData.location) {
+      //   encryptedData.location_encrypted = this.encrypt(profileData.location, encryptionKey)
+      // }
+      // if (profileData.social_links) {
+      //   encryptedData.social_links_encrypted = this.encrypt(
+      //     JSON.stringify(profileData.social_links),
+      //     encryptionKey
+      //   )
+      // }
 
       // Set public fields (non-encrypted, searchable)
       if (profileData.role_tier) {
@@ -296,15 +321,19 @@ class EncryptedDatabaseStorage {
       if (profileData.display_preferences) {
         encryptedData.display_preferences = profileData.display_preferences
       }
-      if (profileData.payment_preferences) {
-        encryptedData.payment_preferences = profileData.payment_preferences
-      }
+      // Skip payment_preferences as it doesn't exist in current schema
+      // if (profileData.payment_preferences) {
+      //   encryptedData.payment_preferences = profileData.payment_preferences
+      // }
       if (profileData.walrus_metadata) {
         encryptedData.walrus_metadata = profileData.walrus_metadata
       }
 
       // Store in database
       console.log('💾 Inserting into database:', encryptedData)
+      console.log('🔗 Database URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+      console.log('🔑 Using API key:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.slice(0, 20) + '...')
+
       const { data, error } = await this.supabase
         .from('user_profiles')
         .upsert(encryptedData, { onConflict: 'address' })
@@ -314,8 +343,13 @@ class EncryptedDatabaseStorage {
       console.log('📡 Database upsert response:', { data, error })
 
       if (error) {
-        console.error('❌ Database upsert error:', error)
-        throw error
+        console.error('❌ Database upsert error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        })
+        throw new Error(`Database error: ${error.message} (Code: ${error.code})`)
       }
 
       console.log(`✅ Encrypted profile updated for ${address}`)
@@ -374,11 +408,11 @@ class EncryptedDatabaseStorage {
       achievements_data: encryptedProfile.achievements_data || [],
       referral_data: encryptedProfile.referral_data || {},
       display_preferences: encryptedProfile.display_preferences || {},
-      payment_preferences: encryptedProfile.payment_preferences || {},
+      // payment_preferences: encryptedProfile.payment_preferences || {}, // Column doesn't exist
       walrus_metadata: encryptedProfile.walrus_metadata || {},
 
       // Initialize encrypted fields
-      social_links: [],
+      social_links: [], // Will be populated from encrypted data if available
 
       // Timestamps
       created_at: encryptedProfile.created_at,
@@ -396,16 +430,17 @@ class EncryptedDatabaseStorage {
       if (encryptedProfile.bio_encrypted) {
         decrypted.bio = this.decrypt(encryptedProfile.bio_encrypted, key)
       }
-      if (encryptedProfile.real_name_encrypted) {
-        decrypted.real_name = this.decrypt(encryptedProfile.real_name_encrypted, key)
-      }
-      if (encryptedProfile.location_encrypted) {
-        decrypted.location = this.decrypt(encryptedProfile.location_encrypted, key)
-      }
-      if (encryptedProfile.social_links_encrypted) {
-        const socialLinksJson = this.decrypt(encryptedProfile.social_links_encrypted, key)
-        decrypted.social_links = JSON.parse(socialLinksJson)
-      }
+      // Skip fields that don't exist in current schema
+      // if (encryptedProfile.real_name_encrypted) {
+      //   decrypted.real_name = this.decrypt(encryptedProfile.real_name_encrypted, key)
+      // }
+      // if (encryptedProfile.location_encrypted) {
+      //   decrypted.location = this.decrypt(encryptedProfile.location_encrypted, key)
+      // }
+      // if (encryptedProfile.social_links_encrypted) {
+      //   const socialLinksJson = this.decrypt(encryptedProfile.social_links_encrypted, key)
+      //   decrypted.social_links = JSON.parse(socialLinksJson)
+      // }
     } catch (error) {
       console.error('Failed to decrypt some profile fields:', error)
       // Continue with partial data
@@ -645,6 +680,73 @@ class EncryptedDatabaseStorage {
   }
 
   /**
+   * Ensure profile exists for user (create if doesn't exist)
+   */
+  async ensureProfileExists(address: string): Promise<void> {
+    try {
+      console.log(`🔍 Checking if profile exists for ${address}...`)
+
+      const { data, error } = await this.supabase
+        .from('user_profiles')
+        .select('address')
+        .eq('address', address)
+        .single()
+
+      console.log('📊 Current profile data:', { data, error })
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.log('ℹ️ No profile found, creating new one...')
+          // Create a new profile with default values for new user
+          const { error: insertError } = await this.supabase
+            .from('user_profiles')
+            .insert({
+              address,
+              // username: `User ${address.slice(0, 6)}`, // Column might not exist, use encrypted version
+              current_xp: 0,
+              total_xp: 0,
+              profile_level: 1,
+              points: 100, // Give new users some starting points
+              role_tier: 'NOMAD',
+              kyc_status: 'not_verified',
+              achievements_data: [],
+              referral_data: {},
+              display_preferences: {
+                language: 'en',
+                performance_mode: false,
+                email_notifications: true,
+                push_notifications: true,
+                browser_notifications: false,
+                trade_notifications: true,
+                news_notifications: true,
+                promo_notifications: true
+              },
+              // payment_preferences column doesn't exist in current schema
+              // payment_preferences: {
+              //   payment_methods: [],
+              //   points_auto_renewal: true
+              // },
+              walrus_metadata: {},
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              last_active: new Date().toISOString()
+            })
+
+          if (insertError) throw insertError
+          console.log(`✅ Created new profile for ${address} with starting points and default settings`)
+          return
+        }
+        throw error
+      }
+
+      console.log(`✅ Profile already exists for ${address}`)
+    } catch (error) {
+      console.error('Failed to ensure profile exists:', error)
+      throw error
+    }
+  }
+
+  /**
    * Update user tier/role
    */
   async updateUserTier(address: string, tier: 'NOMAD' | 'PRO' | 'ROYAL'): Promise<void> {
@@ -667,11 +769,13 @@ class EncryptedDatabaseStorage {
   }
 
   /**
-   * Test database connection
+   * Test database connection and get table schema
    */
-  async testConnection(): Promise<{ success: boolean; error?: string }> {
+  async testConnection(): Promise<{ success: boolean; error?: string; schema?: any }> {
     try {
       console.log('🧪 Testing database connection...')
+
+      // Test 1: Basic connection
       const { data, error } = await this.supabase
         .from('user_profiles')
         .select('count')
@@ -679,10 +783,28 @@ class EncryptedDatabaseStorage {
 
       if (error) {
         console.error('❌ Database connection failed:', error)
-        return { success: false, error: error.message }
+        return { success: false, error: `Connection failed: ${error.message}` }
       }
 
-      console.log('✅ Database connection successful')
+      // Test 2: Check table structure by getting one record
+      const { data: tableInfo, error: tableError } = await this.supabase
+        .from('user_profiles')
+        .select('*')
+        .limit(1)
+
+      if (tableError) {
+        console.error('❌ Table structure check failed:', tableError)
+        return { success: false, error: `Table check failed: ${tableError.message}` }
+      }
+
+      // Log available columns
+      if (tableInfo && tableInfo.length > 0) {
+        const availableColumns = Object.keys(tableInfo[0])
+        console.log('📋 Available columns in user_profiles:', availableColumns)
+        return { success: true, schema: availableColumns }
+      }
+
+      console.log('✅ Database connection verified (empty table)')
       return { success: true }
     } catch (error) {
       console.error('❌ Database connection error:', error)
@@ -753,7 +875,7 @@ class EncryptedDatabaseStorage {
               achievements_data: [],
               referral_data: {},
               display_preferences: {},
-              payment_preferences: {},
+              // payment_preferences: {}, // Column doesn't exist
               walrus_metadata: {},
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),

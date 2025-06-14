@@ -14,6 +14,9 @@ import { useNotifications } from "@/hooks/use-notifications"
 import { usePersistentProfile } from "@/hooks/use-persistent-profile"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { DashboardProfiles } from "@/components/dashboard-profiles"
+import { NewUserOnboarding } from "@/components/new-user-onboarding"
+import { KYCVerificationFlow } from "@/components/kyc-verification-flow"
+import { DatabaseTest } from "@/components/database-test"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -42,13 +45,15 @@ export default function SettingsPage() {
     settings: notifications,
     updateSettings: setNotifications,
     requestPermission: requestNotificationPermission,
-    sendTestNotification,
     isSupported: isNotificationSupported
   } = useNotifications()
 
   // Use persistent profile system
-  const { user } = useSuiAuth()
+  const { user, isNewUser } = useSuiAuth()
   const { profile, updateProfile, isLoading } = usePersistentProfile()
+
+  // KYC flow state
+  const [showKYCFlow, setShowKYCFlow] = useState(false)
 
   // Payment method state - loaded from persistent profile
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
@@ -74,10 +79,16 @@ export default function SettingsPage() {
   // Load settings from persistent profile
   useEffect(() => {
     if (profile) {
-      // Load payment preferences
-      const paymentPrefs = profile.payment_preferences || {}
-      setPaymentMethods(paymentPrefs.payment_methods || [])
-      setPointsAutoRenewal(paymentPrefs.points_auto_renewal !== false)
+      // Load payment preferences (using localStorage fallback since column doesn't exist)
+      const savedPaymentMethods = localStorage.getItem(`payment_methods_${user?.address}`)
+      const savedAutoRenewal = localStorage.getItem(`points_auto_renewal_${user?.address}`)
+
+      if (savedPaymentMethods) {
+        setPaymentMethods(JSON.parse(savedPaymentMethods))
+      }
+      if (savedAutoRenewal) {
+        setPointsAutoRenewal(savedAutoRenewal === 'true')
+      }
 
       // Load display preferences
       const displayPrefs = profile.display_preferences || {}
@@ -86,21 +97,17 @@ export default function SettingsPage() {
     }
   }, [profile])
 
-  // Save payment preferences to database
+  // Save payment preferences to localStorage (since column doesn't exist in database)
   const savePaymentPreferences = async (updatedMethods: PaymentMethod[], autoRenewal: boolean) => {
     if (!user?.address) return
 
     try {
-      const paymentPreferences = {
-        payment_methods: updatedMethods,
-        points_auto_renewal: autoRenewal
-      }
+      // Save to localStorage as fallback
+      localStorage.setItem(`payment_methods_${user.address}`, JSON.stringify(updatedMethods))
+      localStorage.setItem(`points_auto_renewal_${user.address}`, autoRenewal.toString())
 
-      await updateProfile({
-        payment_preferences: paymentPreferences
-      })
-
-      console.log('✅ Payment preferences saved to database and Walrus')
+      console.log('✅ Payment preferences saved to localStorage')
+      toast.success('Payment preferences saved')
     } catch (error) {
       console.error('❌ Failed to save payment preferences:', error)
       toast.error('Failed to save payment preferences')
@@ -210,13 +217,40 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Settings</h1>
-          <p className="text-[#C0E6FF] mt-1">Manage your account settings and preferences</p>
+    <>
+      {/* New User Onboarding Modal */}
+      <NewUserOnboarding />
+
+      {/* KYC Verification Flow */}
+      <KYCVerificationFlow
+        isOpen={showKYCFlow}
+        onClose={() => setShowKYCFlow(false)}
+        onComplete={() => {
+          setShowKYCFlow(false)
+          toast.success('KYC verification completed!')
+        }}
+      />
+
+      <div className="space-y-6 p-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Settings</h1>
+            <p className="text-[#C0E6FF] mt-1">
+              {isNewUser && !user?.onboardingCompleted
+                ? "Complete your account setup to access all features"
+                : "Manage your account settings and preferences"
+              }
+            </p>
+          </div>
+          {profile?.kyc_status !== 'verified' && (
+            <Button
+              onClick={() => setShowKYCFlow(true)}
+              className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white"
+            >
+              Complete KYC
+            </Button>
+          )}
         </div>
-      </div>
 
       <Tabs defaultValue="account" className="space-y-4">
         <TabsList className="grid w-full grid-cols-4 bg-[#011829] border border-[#C0E6FF]/20">
@@ -227,7 +261,15 @@ export default function SettingsPage() {
         </TabsList>
 
         <TabsContent value="account">
-          <DashboardProfiles />
+          <div className="space-y-6">
+            <DashboardProfiles />
+
+            {/* Database Test Component - for debugging */}
+            <div className="border-t border-[#C0E6FF]/20 pt-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Database Diagnostics</h3>
+              <DatabaseTest />
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="payment">
@@ -712,5 +754,6 @@ export default function SettingsPage() {
 
       </Tabs>
     </div>
+    </>
   )
 }

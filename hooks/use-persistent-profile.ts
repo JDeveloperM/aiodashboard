@@ -35,7 +35,7 @@ interface ProfileActions {
 }
 
 export function usePersistentProfile(): ProfileState & ProfileActions {
-  const { user } = useSuiAuth()
+  const { user, refreshUserState } = useSuiAuth()
   const [profile, setProfile] = useState<DecryptedProfile | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -65,21 +65,34 @@ export function usePersistentProfile(): ProfileState & ProfileActions {
         }
         console.log('✅ Profile loaded from database')
       } else {
-        // Create default profile if none exists
-        console.log('📝 Creating default profile...')
+        // Create default profile if none exists (new user)
+        console.log('📝 Creating default profile for new user...')
         const defaultProfile: Partial<DecryptedProfile> = {
           username: user.username || `User ${user.address.slice(0, 6)}`,
           role_tier: 'NOMAD',
           profile_level: 1,
           current_xp: 0,
           total_xp: 0,
-          points: 0,
+          points: 100, // Give new users starting points
           kyc_status: 'not_verified',
           join_date: new Date().toISOString(),
           achievements_data: [],
-          social_links: [],
+          social_links: [], // Will be stored in encrypted format
           referral_data: {},
-          display_preferences: {},
+          display_preferences: {
+            language: 'en',
+            performance_mode: false,
+            email_notifications: true,
+            push_notifications: true,
+            browser_notifications: false,
+            trade_notifications: true,
+            news_notifications: true,
+            promo_notifications: true
+          },
+          // payment_preferences: { // Column doesn't exist in current schema
+          //   payment_methods: [],
+          //   points_auto_renewal: true
+          // },
           walrus_metadata: {}
         }
         
@@ -88,7 +101,7 @@ export function usePersistentProfile(): ProfileState & ProfileActions {
           defaultProfile
         )
         setProfile(createdProfile)
-        console.log('✅ Default profile created')
+        console.log('✅ Default profile created for new user with starting points')
       }
     } catch (error) {
       console.error('❌ Failed to load profile:', error)
@@ -108,18 +121,32 @@ export function usePersistentProfile(): ProfileState & ProfileActions {
 
     try {
       console.log('🔄 Updating profile:', data)
+      console.log('👤 User address:', user.address)
+
       const updatedProfile = await encryptedStorage.upsertEncryptedProfile(
         user.address,
         data
       )
       setProfile(updatedProfile)
       console.log('✅ Profile updated successfully')
+
+      // Refresh user state to update isNewUser status
+      await refreshUserState()
+
       toast.success('Profile updated')
       return true
     } catch (error) {
       console.error('❌ Failed to update profile:', error)
-      setError('Failed to update profile')
-      toast.error('Failed to update profile')
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        userAddress: user.address,
+        profileData: data
+      })
+
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      setError(`Failed to update profile: ${errorMessage}`)
+      toast.error(`Failed to save profile: ${errorMessage}`)
       return false
     } finally {
       setIsLoading(false)

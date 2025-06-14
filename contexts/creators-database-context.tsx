@@ -40,6 +40,7 @@ interface Channel {
 
 interface Creator {
   id: string
+  creatorAddress: string // Wallet address of the creator (for ownership verification)
   name: string
   username: string
   avatar: string
@@ -172,6 +173,7 @@ function convertDecryptedCreatorToCreator(decryptedCreator: DecryptedCreator): C
 
   return {
     id: decryptedCreator.id,
+    creatorAddress: decryptedCreator.creator_address, // Map the wallet address for ownership verification
     name: decryptedCreator.channel_name || 'Unnamed Creator',
     username: decryptedCreator.telegram_username || 'unknown',
     avatar,

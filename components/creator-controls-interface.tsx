@@ -311,6 +311,7 @@ export function CreatorControlsInterface() {
   const createNewCreatorWithChannel = async (data: CreatorFormData, newChannel: any, newCreatorId: string, profileImageBlobId: string, coverImageBlobId: string) => {
     const newCreator = {
       id: newCreatorId,
+      creatorAddress: currentAccount?.address || '', // Add the wallet address for ownership verification
       name: data.channelName, // Using channel name as creator name for now
       username: data.telegramUsername,
       avatar: profileImage || "/api/placeholder/64/64",

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { useCurrentAccount } from '@mysten/dapp-kit'
 import { useZkLogin } from '@/components/zklogin-provider'
 import {
@@ -15,6 +15,7 @@ import {
   validateSession,
   addSessionEventListeners
 } from '@/lib/auth-session'
+import { encryptedStorage } from '@/lib/encrypted-database-storage'
 
 interface SuiUser {
   id: string
@@ -26,6 +27,10 @@ interface SuiUser {
   profileImageBlobId?: string
   createdAt: Date
   lastLoginAt: Date
+  isNewUser?: boolean
+  onboardingCompleted?: boolean
+  profileSetupCompleted?: boolean
+  kycCompleted?: boolean
 }
 
 interface SuiAuthContextType {
@@ -33,13 +38,20 @@ interface SuiAuthContextType {
   user: SuiUser | null
   isLoaded: boolean
   isSignedIn: boolean
-  
+  isNewUser: boolean
+
   // Authentication methods
   signOut: () => Promise<void>
-  
+
   // User profile methods
   updateProfile: (data: Partial<SuiUser>) => Promise<void>
-  
+
+  // New user onboarding methods
+  completeOnboarding: () => Promise<void>
+  completeProfileSetup: () => Promise<void>
+  completeKYC: () => Promise<void>
+  refreshUserState: () => Promise<void>
+
   // Utility methods
   formatAddress: (address: string) => string
 }
@@ -51,6 +63,7 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
   const { zkLoginUserAddress } = useZkLogin()
   const [user, setUser] = useState<SuiUser | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [isNewUser, setIsNewUser] = useState(false)
 
   // Initialize session manager
   useEffect(() => {
@@ -82,9 +95,25 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
     const createOrUpdateUser = async () => {
       try {
         let currentUser: SuiUser | null = null
+        let userIsNew = false
 
         // Check for active wallet or zkLogin connection first
         if (suiAccount?.address) {
+          // Check if this is a new user by looking for existing profile
+          try {
+            const existingProfile = await encryptedStorage.getDecryptedProfile(suiAccount.address)
+            // User is new ONLY if no profile exists in database at all
+            userIsNew = !existingProfile
+            console.log(`🔍 User ${suiAccount.address} is ${userIsNew ? 'NEW' : 'EXISTING'}`, {
+              profileExists: !!existingProfile,
+              profileId: existingProfile?.id,
+              username: existingProfile?.username
+            })
+          } catch (error) {
+            console.log('📝 Profile check failed, treating as new user:', error)
+            userIsNew = true
+          }
+
           // Wallet connection
           currentUser = {
             id: suiAccount.address,
@@ -92,9 +121,28 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
             connectionType: 'wallet',
             username: `User ${suiAccount.address.slice(0, 6)}`,
             createdAt: new Date(),
-            lastLoginAt: new Date()
+            lastLoginAt: new Date(),
+            isNewUser: userIsNew,
+            onboardingCompleted: !userIsNew,
+            profileSetupCompleted: !userIsNew,
+            kycCompleted: false
           }
         } else if (zkLoginUserAddress) {
+          // Check if this is a new user by looking for existing profile
+          try {
+            const existingProfile = await encryptedStorage.getDecryptedProfile(zkLoginUserAddress)
+            // User is new ONLY if no profile exists in database at all
+            userIsNew = !existingProfile
+            console.log(`🔍 zkLogin User ${zkLoginUserAddress} is ${userIsNew ? 'NEW' : 'EXISTING'}`, {
+              profileExists: !!existingProfile,
+              profileId: existingProfile?.id,
+              username: existingProfile?.username
+            })
+          } catch (error) {
+            console.log('📝 Profile check failed, treating as new user:', error)
+            userIsNew = true
+          }
+
           // zkLogin connection
           currentUser = {
             id: zkLoginUserAddress,
@@ -102,7 +150,11 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
             connectionType: 'zklogin',
             username: `User ${zkLoginUserAddress.slice(0, 6)}`,
             createdAt: new Date(),
-            lastLoginAt: new Date()
+            lastLoginAt: new Date(),
+            isNewUser: userIsNew,
+            onboardingCompleted: !userIsNew,
+            profileSetupCompleted: !userIsNew,
+            kycCompleted: false
           }
         } else {
           // No active connection, try to restore from cookie session
@@ -122,6 +174,17 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             console.log('User restored from session - wallet may reconnect automatically')
+          }
+        }
+
+        // For new users, trigger database profile creation
+        if (currentUser && userIsNew) {
+          console.log('🆕 Creating database profile for new user...')
+          try {
+            await encryptedStorage.ensureProfileExists(currentUser.address)
+            console.log('✅ Database profile created for new user')
+          } catch (error) {
+            console.error('❌ Failed to create database profile:', error)
           }
         }
 
@@ -158,6 +221,7 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         setUser(currentUser)
+        setIsNewUser(userIsNew)
         setIsLoaded(true)
       } catch (error) {
         console.error('Error creating/updating user:', error)
@@ -220,6 +284,102 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // New user onboarding methods
+  const completeOnboarding = async () => {
+    if (!user) return
+
+    try {
+      const updatedUser = {
+        ...user,
+        onboardingCompleted: true,
+        isNewUser: false,
+        profileSetupCompleted: true
+      }
+      setUser(updatedUser)
+      setIsNewUser(false)
+
+      // Save to localStorage and cookies
+      localStorage.setItem(`sui_user_${user.address}`, JSON.stringify(updatedUser))
+
+      // Update session cookie
+      const session: AuthSession = {
+        address: user.address,
+        connectionType: user.connectionType,
+        expiresAt: Date.now() + (24 * 60 * 60 * 1000),
+        lastActivity: Date.now()
+      }
+      saveAuthSession(session)
+
+      console.log('✅ Onboarding completed for user')
+    } catch (error) {
+      console.error('❌ Failed to complete onboarding:', error)
+    }
+  }
+
+  const completeProfileSetup = async () => {
+    if (!user) return
+
+    try {
+      const updatedUser = { ...user, profileSetupCompleted: true }
+      setUser(updatedUser)
+
+      // Save to localStorage and cookies
+      localStorage.setItem(`sui_user_${user.address}`, JSON.stringify(updatedUser))
+      console.log('✅ Profile setup completed for user')
+    } catch (error) {
+      console.error('❌ Failed to complete profile setup:', error)
+    }
+  }
+
+  const completeKYC = async () => {
+    if (!user) return
+
+    try {
+      const updatedUser = { ...user, kycCompleted: true }
+      setUser(updatedUser)
+
+      // Save to localStorage and cookies
+      localStorage.setItem(`sui_user_${user.address}`, JSON.stringify(updatedUser))
+      console.log('✅ KYC completed for user')
+    } catch (error) {
+      console.error('❌ Failed to complete KYC:', error)
+    }
+  }
+
+  // Refresh user state (useful after profile updates)
+  const refreshUserState = useCallback(async () => {
+    if (user?.address) {
+      console.log('🔄 Refreshing user state...')
+      try {
+        const existingProfile = await encryptedStorage.getDecryptedProfile(user.address)
+        // User is new ONLY if no profile exists in database at all
+        const profileExists = !!existingProfile
+
+        const updatedUser = {
+          ...user,
+          isNewUser: !profileExists,
+          onboardingCompleted: profileExists,
+          profileSetupCompleted: profileExists
+        }
+
+        setUser(updatedUser)
+        setIsNewUser(!profileExists)
+
+        // Update localStorage
+        localStorage.setItem(`sui_user_${user.address}`, JSON.stringify(updatedUser))
+
+        console.log('✅ User state refreshed:', {
+          profileExists,
+          isNewUser: !profileExists,
+          profileId: existingProfile?.id,
+          username: existingProfile?.username
+        })
+      } catch (error) {
+        console.error('❌ Failed to refresh user state:', error)
+      }
+    }
+  }, [user])
+
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`
   }
@@ -230,8 +390,13 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
     user,
     isLoaded,
     isSignedIn,
+    isNewUser,
     signOut,
     updateProfile,
+    completeOnboarding,
+    completeProfileSetup,
+    completeKYC,
+    refreshUserState,
     formatAddress
   }
 

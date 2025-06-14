@@ -56,6 +56,7 @@ interface Channel {
 
 interface Creator {
   id: string
+  creatorAddress: string // Wallet address of the creator (for ownership verification)
   name: string
   username: string
   avatar: string
@@ -267,35 +268,26 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
 
   // Check if the current user owns a specific creator profile
   const isOwner = (creator: Creator): boolean => {
-    if (!currentAccount?.address && !user?.address) return false
+    if (!currentAccount?.address && !user?.address) {
+      console.log(`[CreatorCards] Ownership check: No user connected`)
+      return false
+    }
 
     const userAddress = currentAccount?.address || user?.address
 
-    // Method 1: Check if creator has a creatorAddress field (future enhancement)
-    // if (creator.creatorAddress) {
-    //   return creator.creatorAddress === userAddress
-    // }
-
-    // Method 2: Simple heuristic for current implementation
-    // If there's only one creator in the database and the user is connected, they likely own it
-    // This works for the current single-creator-per-wallet design
-    if (creators.length === 1 && userAddress) {
-      console.log(`[CreatorCards] Ownership check: Single creator found, user connected (${userAddress.slice(0, 8)}...)`)
-      return true
+    // Check if creator has a creatorAddress field (proper ownership verification)
+    if (creator.creatorAddress) {
+      const isOwner = creator.creatorAddress.toLowerCase() === userAddress?.toLowerCase()
+      console.log(`[CreatorCards] Ownership check: Creator ${creator.name}`, {
+        creatorAddress: creator.creatorAddress,
+        userAddress,
+        isOwner
+      })
+      return isOwner
     }
 
-    // Method 3: Check if user has created any channels (they must be the owner)
-    // This is a reasonable assumption since only creators can create channels
-    if (userAddress && creators.some(c => c.channels.length > 0)) {
-      // If the user is connected and there are creators with channels,
-      // and this is one of those creators, they likely own it
-      if (creator.channels.length > 0) {
-        console.log(`[CreatorCards] Ownership check: User has channels, assuming ownership`)
-        return true
-      }
-    }
-
-    console.log(`[CreatorCards] Ownership check: No ownership detected for creator ${creator.name}`)
+    // If no creatorAddress field, user doesn't own this creator
+    console.log(`[CreatorCards] Ownership check: No creatorAddress field for creator ${creator.name}`)
     return false
   }
 
@@ -667,12 +659,67 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
                               'Access Free'
                             ) : canAccessForFree ? (
                               `Access Free (${getRemainingFreeAccess()} left)`
-                            ) : (
-                              // Show specific amount only if single subscription option, otherwise just "Tip SUI"
-                              channel.subscriptionPackages && channel.subscriptionPackages.length > 1
-                                ? 'Tip SUI'
-                                : `Tip ${channel.price} SUI`
-                            )}
+                            ) : (() => {
+                              // Get the pricing information
+                              const getChannelPricing = () => {
+                                if (!channel.subscriptionPackages || channel.subscriptionPackages.length === 0) {
+                                  return `Tip ${channel.price} SUI`
+                                }
+
+                                if (channel.subscriptionPackages.length === 1) {
+                                  const duration = channel.subscriptionPackages[0]
+                                  let price = channel.price
+
+                                  if (channel.pricing) {
+                                    switch (duration) {
+                                      case "30":
+                                        price = channel.pricing.thirtyDays || channel.price
+                                        break
+                                      case "60":
+                                        price = channel.pricing.sixtyDays || channel.price
+                                        break
+                                      case "90":
+                                        price = channel.pricing.ninetyDays || channel.price
+                                        break
+                                    }
+                                  }
+
+                                  return `Tip ${price} SUI`
+                                }
+
+                                // Multiple subscription packages - show range or "from" price
+                                const prices = channel.subscriptionPackages.map(duration => {
+                                  let price = channel.price
+                                  if (channel.pricing) {
+                                    switch (duration) {
+                                      case "30":
+                                        price = channel.pricing.thirtyDays || channel.price
+                                        break
+                                      case "60":
+                                        price = channel.pricing.sixtyDays || channel.price
+                                        break
+                                      case "90":
+                                        price = channel.pricing.ninetyDays || channel.price
+                                        break
+                                    }
+                                  }
+                                  return price
+                                }).filter(price => price > 0)
+
+                                if (prices.length === 0) return 'Tip SUI'
+
+                                const minPrice = Math.min(...prices)
+                                const maxPrice = Math.max(...prices)
+
+                                if (minPrice === maxPrice) {
+                                  return `Tip ${minPrice} SUI`
+                                } else {
+                                  return `From ${minPrice} SUI`
+                                }
+                              }
+
+                              return getChannelPricing()
+                            })()}
                           </Button>
                         )}
                       </div>

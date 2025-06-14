@@ -30,6 +30,7 @@ interface Channel {
 
 interface Creator {
   id: string
+  creatorAddress: string // Wallet address of the creator (for ownership verification)
   name: string
   username: string
   avatar: string

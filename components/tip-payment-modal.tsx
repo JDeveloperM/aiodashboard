@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -19,6 +19,7 @@ import {
 
 interface Creator {
   id: string
+  creatorAddress: string // Wallet address of the creator (for ownership verification)
   name: string
   username: string
   avatar: string
@@ -83,7 +84,7 @@ export function TipPaymentModal({
 }: TipPaymentModalProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentStep, setPaymentStep] = useState<'confirm' | 'processing' | 'success' | 'telegram-access'>('confirm')
-  const [selectedDuration, setSelectedDuration] = useState<string>("30") // Default to 30 days
+  const [selectedDuration, setSelectedDuration] = useState<string>("") // Will be set based on available packages
   const [subscriptionSummary, setSubscriptionSummary] = useState<SubscriptionSummary | null>(null)
   const [showTelegramModal, setShowTelegramModal] = useState(false)
   const [isGeneratingAccess, setIsGeneratingAccess] = useState(false)
@@ -109,19 +110,34 @@ export function TipPaymentModal({
   const getPrice = () => {
     if (!channel) return 0
 
+    console.log('💰 Getting price for channel:', {
+      channelName: channel.name,
+      selectedDuration,
+      channelPrice: channel.price,
+      channelPricing: channel.pricing,
+      subscriptionPackages: channel.subscriptionPackages
+    })
+
     if (channel.pricing) {
+      let price = channel.price
       switch (selectedDuration) {
         case "30":
-          return channel.pricing.thirtyDays || channel.price
+          price = channel.pricing.thirtyDays || channel.price
+          break
         case "60":
-          return channel.pricing.sixtyDays || channel.price
+          price = channel.pricing.sixtyDays || channel.price
+          break
         case "90":
-          return channel.pricing.ninetyDays || channel.price
+          price = channel.pricing.ninetyDays || channel.price
+          break
         default:
-          return channel.price
+          price = channel.price
       }
+      console.log('💰 Calculated price:', price, 'for duration:', selectedDuration)
+      return price
     }
 
+    console.log('💰 Using default channel price:', channel.price)
     return channel.price
   }
 
@@ -158,6 +174,18 @@ export function TipPaymentModal({
 
   const currentPrice = getPrice()
   const availableDurations = getAvailableDurations()
+
+  // Set default selected duration when modal opens or channel changes
+  useEffect(() => {
+    if (channel && isOpen && !selectedDuration) {
+      const durations = getAvailableDurations()
+      if (durations.length > 0) {
+        // Set to the first available duration
+        setSelectedDuration(durations[0].value)
+        console.log('🎯 Set default duration:', durations[0].value, 'Price:', durations[0].price)
+      }
+    }
+  }, [channel, isOpen, selectedDuration])
 
   const handlePayment = async () => {
     if (!creator || !channel || !account || !user) return
