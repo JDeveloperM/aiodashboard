@@ -9,6 +9,9 @@ import { RoleImage } from "@/components/ui/role-image"
 import { TipPaymentModal } from "./tip-payment-modal"
 import { useSubscription } from "@/contexts/subscription-context"
 import { usePremiumAccess } from "@/contexts/premium-access-context"
+import { useCreatorsDatabase } from "@/contexts/creators-database-context"
+import { useSuiAuth } from "@/contexts/sui-auth-context"
+import { useCurrentAccount } from "@mysten/dapp-kit"
 import { Filter, FilterX } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -24,7 +27,8 @@ import {
   UserCheck,
   UserX,
   Send,
-  LogOut
+  LogOut,
+  Trash2
 } from "lucide-react"
 import Image from "next/image"
 
@@ -93,6 +97,9 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
   const [showOnlyJoined, setShowOnlyJoined] = useState(false)
   const { tier } = useSubscription()
   const { canAccessPremiumForFree, recordPremiumAccess, removePremiumAccess, getRemainingFreeAccess, premiumAccessRecords } = usePremiumAccess()
+  const { deleteChannel } = useCreatorsDatabase()
+  const { user } = useSuiAuth()
+  const currentAccount = useCurrentAccount()
 
   // Load user access from localStorage
   useEffect(() => {
@@ -183,6 +190,113 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
     // Show success message
     console.log(`[CreatorCards] User left channel: ${channelName} by ${creatorName}`)
     toast.success(`Successfully left "${channelName}". You no longer have access to this premium channel.`)
+  }
+
+  const handleDeleteChannel = async (creator: Creator, channel: Channel, event: React.MouseEvent) => {
+    event.stopPropagation() // Prevent triggering the access button
+
+    const channelName = channel.name
+    const creatorName = creator.name
+
+    // First confirmation dialog
+    const confirmed = window.confirm(
+      `⚠️ DELETE CHANNEL CONFIRMATION ⚠️\n\n` +
+      `Channel: "${channelName}"\n` +
+      `Creator: ${creatorName}\n\n` +
+      `This action will:\n` +
+      `• Permanently remove the channel from your profile\n` +
+      `• Remove all subscriber access to this channel\n` +
+      `• Cannot be undone\n\n` +
+      `Are you sure you want to continue?`
+    )
+
+    if (!confirmed) {
+      console.log(`[CreatorCards] Channel deletion cancelled by user: ${channelName}`)
+      return
+    }
+
+    // Second confirmation - type channel name
+    const typedName = window.prompt(
+      `FINAL CONFIRMATION\n\n` +
+      `To permanently delete this channel, please type the exact channel name:\n\n` +
+      `"${channelName}"\n\n` +
+      `Type here:`
+    )
+
+    if (typedName === null) {
+      // User clicked cancel
+      console.log(`[CreatorCards] Channel deletion cancelled by user: ${channelName}`)
+      return
+    }
+
+    if (typedName.trim() !== channelName) {
+      toast.error(`Channel name does not match. Expected "${channelName}" but got "${typedName}". Deletion cancelled.`)
+      return
+    }
+
+    try {
+      console.log(`[CreatorCards] Starting channel deletion: ${channelName} by ${creatorName}`)
+
+      // Show loading toast
+      const loadingToast = toast.loading(`Deleting channel "${channelName}"...`)
+
+      await deleteChannel(creator.id, channel.id)
+
+      // Clean up local access records for this channel
+      const accessKey = `channel_access_${creator.id}_${channel.id}`
+      localStorage.removeItem(accessKey)
+      removePremiumAccess(creator.id, channel.id)
+
+      // Update local state
+      const newUserAccess = { ...userAccess }
+      delete newUserAccess[`${creator.id}_${channel.id}`]
+      setUserAccess(newUserAccess)
+
+      // Dismiss loading toast
+      toast.dismiss(loadingToast)
+
+      console.log(`[CreatorCards] Channel deleted successfully: ${channelName}`)
+    } catch (error) {
+      console.error(`[CreatorCards] Failed to delete channel: ${channelName}`, error)
+
+      // Show specific error message
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      toast.error(`Failed to delete channel "${channelName}": ${errorMessage}`)
+    }
+  }
+
+  // Check if the current user owns a specific creator profile
+  const isOwner = (creator: Creator): boolean => {
+    if (!currentAccount?.address && !user?.address) return false
+
+    const userAddress = currentAccount?.address || user?.address
+
+    // Method 1: Check if creator has a creatorAddress field (future enhancement)
+    // if (creator.creatorAddress) {
+    //   return creator.creatorAddress === userAddress
+    // }
+
+    // Method 2: Simple heuristic for current implementation
+    // If there's only one creator in the database and the user is connected, they likely own it
+    // This works for the current single-creator-per-wallet design
+    if (creators.length === 1 && userAddress) {
+      console.log(`[CreatorCards] Ownership check: Single creator found, user connected (${userAddress.slice(0, 8)}...)`)
+      return true
+    }
+
+    // Method 3: Check if user has created any channels (they must be the owner)
+    // This is a reasonable assumption since only creators can create channels
+    if (userAddress && creators.some(c => c.channels.length > 0)) {
+      // If the user is connected and there are creators with channels,
+      // and this is one of those creators, they likely own it
+      if (creator.channels.length > 0) {
+        console.log(`[CreatorCards] Ownership check: User has channels, assuming ownership`)
+        return true
+      }
+    }
+
+    console.log(`[CreatorCards] Ownership check: No ownership detected for creator ${creator.name}`)
+    return false
   }
 
   const handlePaymentSuccess = (creatorId: string, channelId: string) => {
@@ -494,8 +608,28 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
 
 
 
-                        {/* Show both Access and Leave buttons if user has access to premium/vip channels */}
-                        {(hasChannelAccess && channel.type !== 'free') ? (
+                        {/* Show buttons based on user access and ownership */}
+                        {isOwner(creator) ? (
+                          // Owner view: Show delete button prominently
+                          <div className="flex gap-1">
+                            <Button
+                              onClick={() => handleChannelAccess(creator, channel)}
+                              size="sm"
+                              className="flex-1 h-6 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                              Preview
+                            </Button>
+                            <Button
+                              onClick={(e) => handleDeleteChannel(creator, channel, e)}
+                              size="sm"
+                              className="h-6 text-xs bg-red-600 hover:bg-red-700 text-white px-2"
+                              title={`Delete "${channel.name}"`}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ) : (hasChannelAccess && channel.type !== 'free') ? (
+                          // User has access: Show Access and Leave buttons
                           <div className="flex gap-1">
                             <Button
                               onClick={() => handleChannelAccess(creator, channel)}
@@ -514,6 +648,7 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
                             </Button>
                           </div>
                         ) : (
+                          // Regular user view: Show access/payment button
                           <Button
                             onClick={() => handleChannelAccess(creator, channel)}
                             size="sm"

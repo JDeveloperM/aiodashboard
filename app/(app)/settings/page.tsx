@@ -11,8 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Bell, Globe, Zap, AlertTriangle, User, CreditCard, Coins, Plus, Trash2 } from "lucide-react"
 import { useNotifications } from "@/hooks/use-notifications"
-import { usePoints } from "@/contexts/points-context"
+import { usePersistentProfile } from "@/hooks/use-persistent-profile"
+import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { DashboardProfiles } from "@/components/dashboard-profiles"
+import { toast } from "sonner"
 import {
   Dialog,
   DialogContent,
@@ -22,6 +24,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+
+interface PaymentMethod {
+  id: string
+  type: string
+  name: string
+  last4: string
+  expiryMonth: string
+  expiryYear: string
+  isDefault: boolean
+  autoRenewal: boolean
+}
 export default function SettingsPage() {
   // Use our notification hook
   const {
@@ -33,23 +46,12 @@ export default function SettingsPage() {
     isSupported: isNotificationSupported
   } = useNotifications()
 
-  // Use points context
-  const { balance } = usePoints()
+  // Use persistent profile system
+  const { user } = useSuiAuth()
+  const { profile, updateProfile, isLoading } = usePersistentProfile()
 
-  // Payment method state
-  const [paymentMethods, setPaymentMethods] = useState([
-    {
-      id: '1',
-      type: 'card',
-      name: 'Visa ending in 4242',
-      last4: '4242',
-      expiryMonth: '12',
-      expiryYear: '2025',
-      isDefault: true,
-      autoRenewal: true
-    }
-  ])
-
+  // Payment method state - loaded from persistent profile
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
   const [pointsAutoRenewal, setPointsAutoRenewal] = useState(false)
   const [showAddCardDialog, setShowAddCardDialog] = useState(false)
   const [newCardData, setNewCardData] = useState({
@@ -60,13 +62,54 @@ export default function SettingsPage() {
     name: ''
   })
 
+  // General settings state - loaded from persistent profile
+  const [language, setLanguage] = useState("en")
+  const [performanceMode, setPerformanceMode] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteConfirmation, setDeleteConfirmation] = useState("")
   const isDeleteConfirmed = deleteConfirmation === "DELETE"
 
+  // Load settings from persistent profile
+  useEffect(() => {
+    if (profile) {
+      // Load payment preferences
+      const paymentPrefs = profile.payment_preferences || {}
+      setPaymentMethods(paymentPrefs.payment_methods || [])
+      setPointsAutoRenewal(paymentPrefs.points_auto_renewal !== false)
+
+      // Load display preferences
+      const displayPrefs = profile.display_preferences || {}
+      setLanguage(displayPrefs.language || "en")
+      setPerformanceMode(displayPrefs.performance_mode || false)
+    }
+  }, [profile])
+
+  // Save payment preferences to database
+  const savePaymentPreferences = async (updatedMethods: PaymentMethod[], autoRenewal: boolean) => {
+    if (!user?.address) return
+
+    try {
+      const paymentPreferences = {
+        payment_methods: updatedMethods,
+        points_auto_renewal: autoRenewal
+      }
+
+      await updateProfile({
+        payment_preferences: paymentPreferences
+      })
+
+      console.log('✅ Payment preferences saved to database and Walrus')
+    } catch (error) {
+      console.error('❌ Failed to save payment preferences:', error)
+      toast.error('Failed to save payment preferences')
+    }
+  }
+
   // Payment method functions
-  const handleAddCard = () => {
-    const newCard = {
+  const handleAddCard = async () => {
+    const newCard: PaymentMethod = {
       id: Date.now().toString(),
       type: 'card',
       name: `${newCardData.name} ending in ${newCardData.number.slice(-4)}`,
@@ -76,57 +119,86 @@ export default function SettingsPage() {
       isDefault: paymentMethods.length === 0,
       autoRenewal: false
     }
-    setPaymentMethods([...paymentMethods, newCard])
+
+    const updatedMethods = [...paymentMethods, newCard]
+    setPaymentMethods(updatedMethods)
+    await savePaymentPreferences(updatedMethods, pointsAutoRenewal)
+
     setNewCardData({ number: '', expiryMonth: '', expiryYear: '', cvc: '', name: '' })
     setShowAddCardDialog(false)
+    toast.success('Payment method added successfully!')
   }
 
-  const handleRemoveCard = (cardId: string) => {
-    setPaymentMethods(paymentMethods.filter(method => method.id !== cardId))
+  const handleRemoveCard = async (cardId: string) => {
+    const updatedMethods = paymentMethods.filter(method => method.id !== cardId)
+    setPaymentMethods(updatedMethods)
+    await savePaymentPreferences(updatedMethods, pointsAutoRenewal)
+    toast.success('Payment method removed successfully!')
   }
 
-  const handleSetDefault = (cardId: string) => {
-    setPaymentMethods(paymentMethods.map(method => ({
+  const handleSetDefault = async (cardId: string) => {
+    const updatedMethods = paymentMethods.map(method => ({
       ...method,
       isDefault: method.id === cardId
-    })))
+    }))
+    setPaymentMethods(updatedMethods)
+    await savePaymentPreferences(updatedMethods, pointsAutoRenewal)
+    toast.success('Default payment method updated!')
   }
 
-  const handleToggleAutoRenewal = (cardId: string) => {
-    setPaymentMethods(paymentMethods.map(method =>
+  const handleToggleAutoRenewal = async (cardId: string) => {
+    const updatedMethods = paymentMethods.map(method =>
       method.id === cardId
         ? { ...method, autoRenewal: !method.autoRenewal }
         : method
-    ))
+    )
+    setPaymentMethods(updatedMethods)
+    await savePaymentPreferences(updatedMethods, pointsAutoRenewal)
+    toast.success('Auto-renewal setting updated!')
   }
 
-  // Load payment method settings from localStorage
-  useEffect(() => {
-    const savedPaymentMethods = localStorage.getItem("paymentMethods")
-    const savedPointsAutoRenewal = localStorage.getItem("pointsAutoRenewal")
+  const handlePointsAutoRenewalChange = async (checked: boolean) => {
+    setPointsAutoRenewal(checked)
+    await savePaymentPreferences(paymentMethods, checked)
+    toast.success('Points auto-renewal setting updated!')
+  }
 
-    if (savedPaymentMethods) {
-      try {
-        setPaymentMethods(JSON.parse(savedPaymentMethods))
-      } catch (error) {
-        console.error("Error parsing saved payment methods:", error)
+  // Save general settings to database
+  const saveGeneralSettings = async () => {
+    if (!user?.address) {
+      toast.error("Please connect your wallet first")
+      return
+    }
+
+    setIsSaving(true)
+
+    try {
+      console.log('💾 Saving general settings to database and Walrus...')
+
+      const displayPreferences = {
+        ...profile?.display_preferences,
+        language,
+        performance_mode: performanceMode,
+        email_notifications: notifications.email,
+        push_notifications: notifications.push,
+        browser_notifications: notifications.browser,
+        trade_notifications: notifications.trades,
+        news_notifications: notifications.news,
+        promo_notifications: notifications.promotions
       }
+
+      await updateProfile({
+        display_preferences: displayPreferences
+      })
+
+      toast.success('✅ Settings saved successfully to database and Walrus!')
+    } catch (error) {
+      console.error('💥 Error saving settings:', error)
+      toast.error(`Failed to save settings: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
 
-    if (savedPointsAutoRenewal) {
-      setPointsAutoRenewal(savedPointsAutoRenewal === "true")
-    }
-  }, [])
-
-  // Save payment methods to localStorage
-  useEffect(() => {
-    localStorage.setItem("paymentMethods", JSON.stringify(paymentMethods))
-  }, [paymentMethods])
-
-  // Save points auto-renewal setting to localStorage
-  useEffect(() => {
-    localStorage.setItem("pointsAutoRenewal", pointsAutoRenewal.toString())
-  }, [pointsAutoRenewal])
+    setIsSaving(false)
+  }
 
   const handleDeleteAccount = () => {
     if (!isDeleteConfirmed) return
@@ -184,7 +256,7 @@ export default function SettingsPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-white">{balance.toLocaleString()}</p>
+                        <p className="text-2xl font-bold text-white">{(profile?.points || 0).toLocaleString()}</p>
                         <p className="text-[#C0E6FF] text-sm">Points</p>
                       </div>
                     </div>
@@ -197,7 +269,7 @@ export default function SettingsPage() {
                       <Switch
                         id="points-auto-renewal"
                         checked={pointsAutoRenewal}
-                        onCheckedChange={setPointsAutoRenewal}
+                        onCheckedChange={handlePointsAutoRenewalChange}
                       />
                     </div>
                   </div>
@@ -391,7 +463,7 @@ export default function SettingsPage() {
                       </div>
                       <p className="text-sm text-[#C0E6FF]">Select your preferred language.</p>
                     </div>
-                  <Select defaultValue="en">
+                  <Select value={language} onValueChange={setLanguage}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Select language" />
                     </SelectTrigger>
@@ -413,13 +485,21 @@ export default function SettingsPage() {
                       </div>
                       <p className="text-sm text-[#C0E6FF]">Optimize for performance on slower devices.</p>
                     </div>
-                    <Switch id="performance" />
+                    <Switch
+                      id="performance"
+                      checked={performanceMode}
+                      onCheckedChange={setPerformanceMode}
+                    />
                   </div>
                 </div>
               </div>
               <div className="mt-6 pt-6 border-t border-[#C0E6FF]/20">
-                <Button className="bg-[#4da2ff] hover:bg-[#3d8ae6] text-white transition-colors duration-200">
-                  Save Changes
+                <Button
+                  onClick={saveGeneralSettings}
+                  disabled={isSaving || isLoading}
+                  className="bg-[#4da2ff] hover:bg-[#3d8ae6] text-white transition-colors duration-200"
+                >
+                  {isSaving ? "Saving to Database & Walrus..." : "Save Changes"}
                 </Button>
               </div>
             </div>
@@ -618,8 +698,12 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="mt-6 pt-6 border-t border-[#C0E6FF]/20">
-                <Button className="bg-[#4da2ff] hover:bg-[#3d8ae6] text-white transition-colors duration-200">
-                  Save Preferences
+                <Button
+                  onClick={saveGeneralSettings}
+                  disabled={isSaving || isLoading}
+                  className="bg-[#4da2ff] hover:bg-[#3d8ae6] text-white transition-colors duration-200"
+                >
+                  {isSaving ? "Saving to Database & Walrus..." : "Save Preferences"}
                 </Button>
               </div>
             </div>

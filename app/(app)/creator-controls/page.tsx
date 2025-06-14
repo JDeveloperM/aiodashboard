@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { CreatorControlsInterface } from "@/components/creator-controls-interface"
 import { useSubscription } from "@/contexts/subscription-context"
 import { Card, CardContent } from "@/components/ui/card"
@@ -8,8 +9,17 @@ import { Lock, Crown, TrendingUp } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 export default function CreatorControlsPage() {
-  const { tier } = useSubscription()
+  const { tier, setTier } = useSubscription()
   const router = useRouter()
+
+  // TEMPORARY: Auto-upgrade to PRO for testing Creator Controls
+  // Remove this in production
+  React.useEffect(() => {
+    if (tier === "NOMAD") {
+      console.log("🔧 TEMP: Auto-upgrading to PRO for Creator Controls testing")
+      setTier("PRO")
+    }
+  }, [tier, setTier])
 
   // Check if user has access (PRO or ROYAL only)
   const hasAccess = tier === "PRO" || tier === "ROYAL"

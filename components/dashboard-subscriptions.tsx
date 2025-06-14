@@ -105,7 +105,7 @@ const nftTiers: NFTTier[] = [
 ]
 
 export function DashboardSubscriptions() {
-  const { tier, setTier } = useSubscription()
+  const { tier, setTier, isUpdatingTier } = useSubscription()
   const [selectedTier, setSelectedTier] = useState<NFTTier | null>(null)
   const [isUpgrading, setIsUpgrading] = useState(false)
 
@@ -115,12 +115,20 @@ export function DashboardSubscriptions() {
     setIsUpgrading(true)
     setSelectedTier(targetTier)
 
-    // Simulate NFT purchase process
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    try {
+      // Simulate NFT purchase process
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
-    setTier(targetTier.id)
-    setIsUpgrading(false)
-    setSelectedTier(null)
+      // Update tier in database and Walrus storage
+      console.log(`🎯 Upgrading to ${targetTier.id}...`)
+      await setTier(targetTier.id)
+      console.log(`✅ Successfully upgraded to ${targetTier.id}`)
+    } catch (error) {
+      console.error(`❌ Failed to upgrade to ${targetTier.id}:`, error)
+    } finally {
+      setIsUpgrading(false)
+      setSelectedTier(null)
+    }
   }
 
   const getSupplyPercentage = (current: number, max: number) => {
@@ -215,14 +223,14 @@ export function DashboardSubscriptions() {
                   ) : canUpgrade ? (
                     <Button
                       onClick={() => handleUpgrade(tierData)}
-                      disabled={isUpgrading}
+                      disabled={isUpgrading || isUpdatingTier}
                       className={`w-full text-white ${
                         tierData.id === 'PRO'
                           ? 'bg-[#4da2ff] hover:bg-[#3d8bff] transition-colors duration-200'
                           : `bg-gradient-to-r ${tierData.gradient} hover:opacity-90`
                       }`}
                     >
-                      {isUpgrading && selectedTier?.id === tierData.id ? (
+                      {(isUpgrading && selectedTier?.id === tierData.id) || isUpdatingTier ? (
                         "Processing..."
                       ) : (
                         <>

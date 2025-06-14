@@ -4,9 +4,13 @@ import { useState, useRef } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { useCreators } from "@/contexts/creators-context"
+import { useCreatorsDatabase } from "@/contexts/creators-database-context"
 import { useSubscription } from "@/contexts/subscription-context"
 import { useRouter } from "next/navigation"
+import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit"
+import { useSuiAuth } from "@/contexts/sui-auth-context"
+import { createWalrusSigner } from "@/lib/walrus-signer-adapter"
+import { useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +19,8 @@ import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { WalrusProfileImage } from "@/components/walrus-profile-image"
+import { WalrusCoverImage } from "@/components/walrus-cover-image"
 import {
   Form,
   FormControl,
@@ -44,7 +50,8 @@ import {
   FileText,
   BookOpen,
   TrendingUp,
-  MessageCircle
+  MessageCircle,
+  Lock
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -101,14 +108,18 @@ const SUBSCRIPTION_DURATIONS = [
 ]
 
 export function CreatorControlsInterface() {
-  const { addCreator } = useCreators()
+  const { addCreator, updateCreator, creators, refreshCreators } = useCreatorsDatabase()
   const { tier } = useSubscription()
   const router = useRouter()
+  const currentAccount = useCurrentAccount()
+  const { user } = useSuiAuth()
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction()
+  // Image states - using Walrus integration like profile page
   const [profileImage, setProfileImage] = useState<string>("")
   const [coverImage, setCoverImage] = useState<string>("")
+  const [profileImageBlobId, setProfileImageBlobId] = useState<string>("")
+  const [coverImageBlobId, setCoverImageBlobId] = useState<string>("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const profileImageRef = useRef<HTMLInputElement>(null)
-  const coverImageRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<CreatorFormData>({
     resolver: zodResolver(creatorFormSchema),
@@ -135,57 +146,90 @@ export function CreatorControlsInterface() {
   const watchCategories = form.watch("channelCategories")
   const watchSubscriptionPackages = form.watch("subscriptionPackages") || []
 
-  const handleImageUpload = (type: 'profile' | 'cover') => {
-    if (type === 'profile') {
-      profileImageRef.current?.click()
-    } else {
-      coverImageRef.current?.click()
-    }
+  // Image update handlers - using Walrus integration like profile page
+  const handleProfileImageUpdate = (imageUrl: string, blobId?: string) => {
+    console.log('📸 Profile image updated:', { imageUrl, blobId })
+    setProfileImage(imageUrl)
+    setProfileImageBlobId(blobId || "")
   }
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'cover') => {
-    const file = event.target.files?.[0]
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please select an image file')
-        return
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size should be less than 5MB')
-        return
-      }
-
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const imageDataUrl = e.target?.result as string
-        if (type === 'profile') {
-          setProfileImage(imageDataUrl)
-        } else {
-          setCoverImage(imageDataUrl)
-        }
-      }
-      reader.readAsDataURL(file)
-    }
+  const handleCoverImageUpdate = (imageUrl: string, blobId?: string) => {
+    console.log('🖼️ Cover image updated:', { imageUrl, blobId })
+    setCoverImage(imageUrl)
+    setCoverImageBlobId(blobId || "")
   }
 
-  const removeImage = (type: 'profile' | 'cover') => {
-    if (type === 'profile') {
-      setProfileImage("")
-    } else {
-      setCoverImage("")
-    }
+  const handleProfileImageRemove = () => {
+    console.log('📸 Profile image removed')
+    setProfileImage("")
+    setProfileImageBlobId("")
+  }
+
+  const handleCoverImageRemove = () => {
+    console.log('🖼️ Cover image removed')
+    setCoverImage("")
+    setCoverImageBlobId("")
   }
 
   const onSubmit = async (data: CreatorFormData) => {
+    console.log('🚀 Form submission started')
+    console.log('📝 Form data:', data)
+
+    if (!currentAccount?.address) {
+      console.error('❌ No wallet connected')
+      toast.error('Please connect your wallet first')
+      return
+    }
+
+    console.log('✅ Wallet connected:', currentAccount.address)
+
+    // Check channel creation limits based on user tier
+    const userChannelLimit = tier === 'ROYAL' ? 3 : 2 // ROYAL: 3 channels, PRO: 2 channels
+
+    // Find existing creator profile for current user with flexible matching
+    const existingUserCreator = creators.find(creator => {
+      // Direct username match
+      if (creator.username === data.telegramUsername) {
+        return true
+      }
+
+      // Check social links telegram URL
+      if (creator.socialLinks?.telegram?.includes(data.telegramUsername)) {
+        return true
+      }
+
+      // Check individual channels for telegram URLs
+      return creator.channels.some(channel =>
+        channel.telegramUrl && channel.telegramUrl.includes(data.telegramUsername)
+      )
+    })
+
+    const currentChannelCount = existingUserCreator ? existingUserCreator.channels.length : 0
+
+    console.log(`🔍 Channel limit check: ${tier} tier allows ${userChannelLimit} channels`)
+    console.log(`📊 User has ${currentChannelCount} existing channels`)
+    console.log(`👤 Existing creator:`, existingUserCreator ? { name: existingUserCreator.name, channels: existingUserCreator.channels.length } : 'None')
+
+    if (currentChannelCount >= userChannelLimit) {
+      const tierName = tier === 'ROYAL' ? 'ROYAL' : 'PRO'
+      toast.error(`Channel limit reached! ${tierName} users can create maximum ${userChannelLimit} channels. You currently have ${currentChannelCount} channels.`)
+      console.error(`❌ Channel limit exceeded: ${currentChannelCount}/${userChannelLimit}`)
+      return
+    }
+
+    console.log(`✅ Channel limit check passed: ${currentChannelCount}/${userChannelLimit} channels used`)
+
     setIsSubmitting(true)
     try {
+      console.log('🚀 Creating creator profile...')
+
       // Generate unique ID for the new creator
       const newCreatorId = `creator_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      console.log('🆔 Generated creator ID:', newCreatorId)
 
-      // Create channel data
+      // Create channel data with channel-specific information
       const newChannel = {
-        id: `${newCreatorId}_channel_1`,
+        id: `${newCreatorId}_channel_${existingUserCreator ? existingUserCreator.channels.length + 1 : 1}`,
         name: data.channelName,
         type: data.isPremium ? "premium" as const : "free" as const,
         price: data.isPremium && data.subscriptionPackages?.includes("30")
@@ -205,61 +249,114 @@ export function CreatorControlsInterface() {
           currentSlots: 0,
           maxSlots: data.maxSubscribers,
           status: 'available' as const
-        } : undefined
+        } : { hasLimit: false, status: 'available' as const },
+
+        // Add channel-specific data
+        channelCategories: data.channelCategories, // Store categories per channel
+        channelLanguage: data.channelLanguage, // Store language per channel
+        channelRole: data.creatorRole, // Store role/profession per channel
+        // Generate unique identifier for this specific channel
+        channelIdentifier: `${data.telegramUsername}_${Date.now()}`
       }
 
-      // Create new creator object
-      const newCreator = {
-        id: newCreatorId,
-        name: data.channelName, // Using channel name as creator name for now
-        username: data.telegramUsername,
-        avatar: profileImage || "/api/placeholder/64/64",
-        coverImage: coverImage || undefined, // Save cover image if uploaded
-        role: data.creatorRole,
-        tier: tier as 'PRO' | 'ROYAL', // Use current user's tier
-        subscribers: 0, // New creator starts with 0 subscribers
-        category: data.channelCategories[0] || "General", // Primary category (first selected)
-        categories: data.channelCategories, // All selected categories
-        channels: [newChannel],
-        contentTypes: ["Live Streams", "Analysis", "Tutorials"], // Default content types
-        verified: false, // New creators start unverified
-        languages: [data.channelLanguage],
-        availability: {
-          hasLimit: data.maxSubscribers > 0,
-          currentSlots: 0,
-          maxSlots: data.maxSubscribers > 0 ? data.maxSubscribers : undefined,
-          status: 'available' as const
-        },
-        socialLinks: {
-          telegram: `https://t.me/${data.telegramUsername}`
-        },
-        bannerColor: "#4DA2FF" // Default banner color
+      // Check if user already has a creator profile
+      if (existingUserCreator) {
+        console.log('👤 Adding channel to existing creator profile')
+        await addChannelToExistingCreator(existingUserCreator, data, newChannel, profileImageBlobId, coverImageBlobId)
+      } else {
+        console.log('👤 Creating new creator profile with first channel')
+        await createNewCreatorWithChannel(data, newChannel, newCreatorId, profileImageBlobId, coverImageBlobId)
       }
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      console.log('✅ Channel created successfully')
 
-      // Add the new creator to the context
-      addCreator(newCreator)
+      // Force refresh the creators list to update the UI
+      console.log('🔄 Force refreshing creators list...')
+      await refreshCreators()
+      console.log('✅ Creators list refreshed')
 
-      toast.success('Channel created successfully! Your creator profile is now live.')
+      toast.success('Channel created successfully! Your channel is now live.')
 
       // Reset form
       form.reset()
       setProfileImage("")
       setCoverImage("")
+      setProfileImageBlobId("")
+      setCoverImageBlobId("")
 
-      // Redirect to AIO Creators page to see the new creator
+      // Redirect to AIO Creators page to see the updated creator
       setTimeout(() => {
         router.push('/aio-creators')
       }, 1500)
 
     } catch (error) {
-      console.error('Error creating creator:', error)
-      toast.error('Failed to create channel. Please try again.')
+      console.error('❌ Error creating creator:', error)
+
+      // More detailed error logging
+      if (error instanceof Error) {
+        console.error('❌ Error message:', error.message)
+        console.error('❌ Error stack:', error.stack)
+        toast.error(`Failed to create channel: ${error.message}`)
+      } else {
+        console.error('❌ Unknown error:', error)
+        toast.error('Failed to create channel. Please try again.')
+      }
     } finally {
+      console.log('🏁 Form submission completed')
       setIsSubmitting(false)
     }
+  }
+
+  // Helper function to create new creator with first channel
+  const createNewCreatorWithChannel = async (data: CreatorFormData, newChannel: any, newCreatorId: string, profileImageBlobId: string, coverImageBlobId: string) => {
+    const newCreator = {
+      id: newCreatorId,
+      name: data.channelName, // Using channel name as creator name for now
+      username: data.telegramUsername,
+      avatar: profileImage || "/api/placeholder/64/64",
+      coverImage: coverImage || undefined,
+      role: data.creatorRole,
+      tier: tier as 'PRO' | 'ROYAL',
+      subscribers: 0,
+      category: data.channelCategories[0] || "General",
+      categories: data.channelCategories,
+      channels: [newChannel],
+      contentTypes: ["Live Streams", "Analysis", "Tutorials"],
+      verified: false,
+      languages: [data.channelLanguage],
+      availability: {
+        hasLimit: data.maxSubscribers > 0,
+        currentSlots: 0,
+        maxSlots: data.maxSubscribers > 0 ? data.maxSubscribers : undefined,
+        status: 'available' as const
+      },
+      socialLinks: {
+        telegram: `https://t.me/${data.telegramUsername}`
+      },
+      bannerColor: "#4DA2FF"
+    }
+
+    console.log('📤 Creating new creator with first channel...')
+    await addCreator(newCreator, profileImageBlobId, coverImageBlobId)
+  }
+
+  // Helper function to add channel to existing creator
+  const addChannelToExistingCreator = async (existingCreator: any, data: CreatorFormData, newChannel: any, profileImageBlobId: string, coverImageBlobId: string) => {
+    console.log('📤 Adding channel to existing creator...')
+
+    // Create updated creator with new channel added
+    const updatedCreator = {
+      ...existingCreator,
+      channels: [...existingCreator.channels, newChannel],
+      // Update images if new ones were uploaded
+      avatar: profileImage || existingCreator.avatar,
+      coverImage: coverImage || existingCreator.coverImage,
+    }
+
+    console.log('📝 Updated creator with new channel:', updatedCreator)
+
+    // Use updateCreator instead of addCreator for existing creators
+    await updateCreator(existingCreator.id, updatedCreator, profileImageBlobId, coverImageBlobId)
   }
 
   // Get form values for preview
@@ -269,6 +366,68 @@ export function CreatorControlsInterface() {
   const watchChannelLanguage = form.watch("channelLanguage")
   const watchMaxSubscribers = form.watch("maxSubscribers")
   const watchTelegramUsername = form.watch("telegramUsername")
+
+  // Helper function to get current user's channel count
+  const getCurrentUserChannelCount = () => {
+    // If there's only one creator in the database, it must be the current user
+    if (creators.length === 1) {
+      const channelCount = creators[0].channels.length
+      console.log(`📊 Single creator found with ${channelCount} channels`)
+      return channelCount
+    }
+
+    // If multiple creators, try to match by wallet address or telegram username
+    const telegramUsername = form.watch("telegramUsername")
+
+    // First try to find by current wallet address (most reliable)
+    if (currentAccount?.address) {
+      // Note: We would need to store wallet address in creator records to match this way
+      // For now, fall back to telegram username matching
+    }
+
+    // Fall back to telegram username matching if provided
+    if (telegramUsername) {
+      const userCreator = creators.find(creator => {
+        // Direct username match
+        if (creator.username === telegramUsername) {
+          return true
+        }
+
+        // Check social links telegram URL
+        if (creator.socialLinks?.telegram?.includes(telegramUsername)) {
+          return true
+        }
+
+        // Check individual channels for telegram URLs
+        return creator.channels.some(channel =>
+          channel.telegramUrl && channel.telegramUrl.includes(telegramUsername)
+        )
+      })
+
+      const channelCount = userCreator ? userCreator.channels.length : 0
+      console.log(`📊 Channel count for ${telegramUsername}: ${channelCount}`)
+      return channelCount
+    }
+
+    // If no telegram username provided and multiple creators, return 0
+    return 0
+  }
+
+  const currentChannelCount = getCurrentUserChannelCount()
+  const maxChannels = tier === 'ROYAL' ? 3 : 2
+
+  // Force re-render when creators list changes
+  useEffect(() => {
+    // Silent update when creators list changes
+  }, [creators])
+
+  // Debug image states
+  console.log('🖼️ Current image states:', {
+    profileImage,
+    coverImage,
+    profileImageBlobId,
+    coverImageBlobId
+  })
 
   // Generate preview data
   const previewData = {
@@ -328,6 +487,54 @@ export function CreatorControlsInterface() {
         <div className="space-y-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          {/* Channel Limits Info */}
+          <Card className="enhanced-card">
+            <CardHeader>
+              <CardTitle className="text-white">Channel Creation Limits</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-[#1a2f51] rounded-lg">
+                  <div>
+                    <p className="text-white font-medium">Your Tier: {tier}</p>
+                    <p className="text-[#C0E6FF] text-sm">
+                      {tier === 'ROYAL' ? 'Maximum 3 channels allowed' : 'Maximum 2 channels allowed'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`font-medium ${currentChannelCount >= maxChannels ? 'text-red-400' : 'text-white'}`}>
+                      {currentChannelCount} / {maxChannels}
+                    </p>
+                    <p className="text-[#C0E6FF] text-sm">Channels Created</p>
+                  </div>
+                </div>
+
+                {/* Warning messages */}
+                {currentChannelCount >= maxChannels && (
+                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <p className="text-red-400 text-sm font-medium">⚠️ Channel limit reached!</p>
+                    <p className="text-red-300 text-xs mt-1">
+                      You have reached the maximum number of channels for {tier} tier.
+                      {tier === 'PRO' && ' Upgrade to ROYAL to create up to 3 channels.'}
+                    </p>
+                  </div>
+                )}
+
+                {currentChannelCount === maxChannels - 1 && (
+                  <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                    <p className="text-yellow-400 text-sm font-medium">⚠️ One channel remaining</p>
+                    <p className="text-yellow-300 text-xs mt-1">
+                      You can create {maxChannels - currentChannelCount} more channel with your {tier} tier.
+                      {tier === 'PRO' && ' Upgrade to ROYAL for more channels.'}
+                    </p>
+                  </div>
+                )}
+
+
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Channel Images Section */}
           <Card className="enhanced-card">
             <CardHeader>
@@ -338,107 +545,36 @@ export function CreatorControlsInterface() {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-[#C0E6FF]">Channel Profile Image</label>
                 <div className="flex items-center gap-4">
-                  <div className="relative group">
-                    <Avatar className="h-20 w-20 border-2 border-[#4DA2FF]">
-                      <AvatarImage src={profileImage} alt="Profile" />
-                      <AvatarFallback className="bg-[#4DA2FF] text-white text-xl">
-                        <Camera className="w-8 h-8" />
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer"
-                         onClick={() => handleImageUpload('profile')}>
-                      <Camera className="w-6 h-6 text-white" />
-                    </div>
+                  <WalrusProfileImage
+                    currentImage={profileImage}
+                    currentBlobId={profileImageBlobId}
+                    fallbackText={watchChannelName?.charAt(0) || "C"}
+                    size="xl"
+                    onImageUpdate={handleProfileImageUpdate}
+                    onImageRemove={handleProfileImageRemove}
+                    editable={true}
+                    className="border-2 border-[#4DA2FF]"
+                  />
 
-                    {profileImage && (
-                      <button
-                        type="button"
-                        onClick={() => removeImage('profile')}
-                        className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs transition-colors duration-200"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                  
                   <div className="flex-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => handleImageUpload('profile')}
-                      className="border-[#C0E6FF] text-[#C0E6FF] hover:bg-[#4DA2FF]/20"
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload Profile Image
-                    </Button>
-                    <p className="text-xs text-gray-400 mt-1">Recommended: 400x400px, max 5MB</p>
+                    <p className="text-xs text-gray-400">Recommended: 400x400px, max 5MB</p>
+                    <p className="text-xs text-[#C0E6FF] mt-1">Click the avatar to upload or change image</p>
                   </div>
                 </div>
-                
-                <input
-                  ref={profileImageRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileChange(e, 'profile')}
-                  className="hidden"
-                />
               </div>
 
               {/* Cover Image */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-[#C0E6FF]">Channel Cover Photo (Optional)</label>
-                <div className="space-y-2">
-                  {coverImage ? (
-                    <div className="relative group">
-                      <div className="w-full h-32 rounded-lg overflow-hidden border-2 border-[#4DA2FF]">
-                        <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
-                      </div>
-                      
-                      <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer"
-                           onClick={() => handleImageUpload('cover')}>
-                        <Camera className="w-8 h-8 text-white" />
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => removeImage('cover')}
-                        className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors duration-200"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div 
-                      className="w-full h-32 border-2 border-dashed border-[#C0E6FF]/30 rounded-lg flex items-center justify-center cursor-pointer hover:border-[#4DA2FF] transition-colors duration-200"
-                      onClick={() => handleImageUpload('cover')}
-                    >
-                      <div className="text-center">
-                        <Upload className="w-8 h-8 text-[#C0E6FF] mx-auto mb-2" />
-                        <p className="text-sm text-[#C0E6FF]">Click to upload cover image</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => handleImageUpload('cover')}
-                    className="border-[#C0E6FF] text-[#C0E6FF] hover:bg-[#4DA2FF]/20"
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    {coverImage ? 'Change Cover Image' : 'Upload Cover Image'}
-                  </Button>
-                  <p className="text-xs text-gray-400">Recommended: 1200x400px, max 5MB</p>
-                </div>
-                
-                <input
-                  ref={coverImageRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileChange(e, 'cover')}
-                  className="hidden"
+                <WalrusCoverImage
+                  currentImage={coverImage}
+                  currentBlobId={coverImageBlobId}
+                  onImageUpdate={handleCoverImageUpdate}
+                  onImageRemove={handleCoverImageRemove}
+                  editable={true}
+                  height="h-32"
                 />
+                <p className="text-xs text-gray-400">Recommended: 1200x400px, max 5MB</p>
               </div>
             </CardContent>
           </Card>
@@ -930,13 +1066,22 @@ export function CreatorControlsInterface() {
           <div className="flex justify-center pt-6">
             <Button
               type="submit"
-              disabled={isSubmitting}
-              className="bg-[#4da2ffcc] hover:bg-[#4da2ff] text-white px-8 py-3 text-lg font-semibold min-w-[200px]"
+              disabled={isSubmitting || currentChannelCount >= maxChannels}
+              className={`px-8 py-3 text-lg font-semibold min-w-[200px] ${
+                currentChannelCount >= maxChannels
+                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  : 'bg-[#4da2ffcc] hover:bg-[#4da2ff] text-white'
+              }`}
             >
               {isSubmitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Creating Channel...
+                </>
+              ) : currentChannelCount >= maxChannels ? (
+                <>
+                  <Lock className="w-5 h-5 mr-2" />
+                  Channel Limit Reached
                 </>
               ) : (
                 <>

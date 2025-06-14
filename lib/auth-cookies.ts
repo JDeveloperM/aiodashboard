@@ -9,6 +9,7 @@ export interface AuthSession {
   username?: string
   email?: string
   profileImage?: string
+  profileImageBlobId?: string
   createdAt: string
   lastLoginAt: string
   expiresAt: string

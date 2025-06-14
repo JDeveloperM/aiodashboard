@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { SubscriptionProvider } from "@/contexts/subscription-context"
 import { SettingsProvider } from "@/contexts/settings-context"
 import { PointsProvider } from "@/contexts/points-context"
-import { CreatorsProvider } from "@/contexts/creators-context"
+import { CreatorsDatabaseProvider } from "@/contexts/creators-database-context"
 import { PremiumAccessProvider } from "@/contexts/premium-access-context"
 import { SuiProviders } from "@/components/sui-providers"
 import { Toaster } from "@/components/ui/sonner"
@@ -69,12 +69,12 @@ export default function RootLayout({
               <PremiumAccessProvider>
                 <SettingsProvider>
                   <PointsProvider>
-                    <CreatorsProvider>
+                    <CreatorsDatabaseProvider>
                       {children}
 
                       {/* <FriendRequestNotifications /> */}
                       <Toaster />
-                    </CreatorsProvider>
+                    </CreatorsDatabaseProvider>
                   </PointsProvider>
                 </SettingsProvider>
               </PremiumAccessProvider>

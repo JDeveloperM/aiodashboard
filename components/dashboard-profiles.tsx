@@ -1,14 +1,19 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
+import { Textarea } from "@/components/ui/textarea"
 import { RoleImage } from "@/components/ui/role-image"
 import { useSubscription } from "@/contexts/subscription-context"
+import { usePersistentProfile } from "@/hooks/use-persistent-profile"
+import { useSuiAuth } from "@/contexts/sui-auth-context"
+import { EnhancedAvatar } from "@/components/enhanced-avatar"
+import { toast } from "sonner"
 import {
   User,
   Mail,
@@ -18,18 +23,20 @@ import {
   CheckCircle,
   AlertCircle,
   Upload,
-
+  MapPin,
+  FileText,
   Crown,
   Star,
   Users
 } from "lucide-react"
 
 interface ProfileData {
-  profilePicture: string
   firstName: string
   lastName: string
   username: string
   email: string
+  bio: string
+  location: string
   walletAddress: string
   kycStatus: 'pending' | 'verified' | 'rejected' | 'not-started'
   notifications: boolean
@@ -46,20 +53,50 @@ interface NFTData {
 
 export function DashboardProfiles() {
   const { tier } = useSubscription()
+  const { user } = useSuiAuth()
+  const { profile, isLoading, updateProfile, updateKYCStatus } = usePersistentProfile()
 
   const [profileData, setProfileData] = useState<ProfileData>({
-    profilePicture: "",
-    firstName: "Dimitris",
-    lastName: "Papadopoulos",
-    username: "affiliate_gr_01",
-    email: "dimitris.papadopoulos@example.com",
-    walletAddress: "0x742d35Cc6634C0532925a3b8D404fddF4f8b2c1a9e",
-    kycStatus: 'verified',
+    firstName: "",
+    lastName: "",
+    username: "",
+    email: "",
+    bio: "",
+    location: "",
+    walletAddress: "",
+    kycStatus: 'not-started',
     notifications: true
   })
 
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+
+  // Load profile data from persistent profile
+  useEffect(() => {
+    if (profile) {
+      const fullName = profile.real_name || ""
+      const [firstName = "", lastName = ""] = fullName.split(" ")
+
+      setProfileData({
+        firstName,
+        lastName: lastName || "",
+        username: profile.username || "",
+        email: profile.email || "",
+        bio: profile.bio || "",
+        location: profile.location || "",
+        walletAddress: user?.address || "",
+        kycStatus: profile.kyc_status === 'verified' ? 'verified' :
+                  profile.kyc_status === 'pending' ? 'pending' : 'not-started',
+        notifications: profile.display_preferences?.email_notifications !== false
+      })
+    } else if (user?.address) {
+      // Set wallet address if user is connected but no profile exists
+      setProfileData(prev => ({
+        ...prev,
+        walletAddress: user.address
+      }))
+    }
+  }, [profile, user?.address])
 
   // NFT Data based on current tier
   const nftData: NFTData[] = [
@@ -90,26 +127,56 @@ export function DashboardProfiles() {
   ]
 
   const handleSave = async () => {
+    if (!user?.address) {
+      toast.error("Please connect your wallet first")
+      return
+    }
+
     setIsSaving(true)
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
+
+    try {
+      console.log('💾 Saving profile data to database and Walrus...')
+
+      // Prepare profile data for database
+      const profileUpdateData = {
+        username: profileData.username,
+        email: profileData.email,
+        bio: profileData.bio,
+        real_name: `${profileData.firstName} ${profileData.lastName}`.trim(),
+        location: profileData.location,
+        display_preferences: {
+          ...profile?.display_preferences,
+          email_notifications: profileData.notifications
+        }
+      }
+
+      console.log('📋 Profile update data:', profileUpdateData)
+
+      // Update profile in database and Walrus
+      const success = await updateProfile(profileUpdateData)
+
+      if (success) {
+        // Update KYC status if it changed
+        if (profile?.kyc_status !== profileData.kycStatus) {
+          const kycStatus = profileData.kycStatus === 'verified' ? 'verified' :
+                           profileData.kycStatus === 'pending' ? 'pending' : 'not_verified'
+          await updateKYCStatus(kycStatus)
+        }
+
+        toast.success('✅ Profile saved successfully to database and Walrus!')
+        setIsEditing(false)
+      } else {
+        toast.error('❌ Failed to save profile')
+      }
+    } catch (error) {
+      console.error('💥 Error saving profile:', error)
+      toast.error(`Failed to save profile: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+
     setIsSaving(false)
-    setIsEditing(false)
   }
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setProfileData(prev => ({
-          ...prev,
-          profilePicture: e.target?.result as string
-        }))
-      }
-      reader.readAsDataURL(file)
-    }
-  }
+  // Avatar is now handled by the EnhancedAvatar component
 
   const getKycStatusColor = (status: string) => {
     switch (status) {
@@ -183,10 +250,10 @@ export function DashboardProfiles() {
               </Button>
               <Button
                 onClick={handleSave}
-                disabled={isSaving}
+                disabled={isSaving || isLoading}
                 className="bg-gradient-to-r from-[#4DA2FF] to-[#011829] text-white"
               >
-                {isSaving ? "Saving..." : "Save Changes"}
+                {isSaving ? "Saving to Database & Walrus..." : "Save Changes"}
               </Button>
             </>
           ) : (
@@ -202,44 +269,29 @@ export function DashboardProfiles() {
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         {/* Profile Picture */}
-        <div className="enhanced-card">
-          <div className="enhanced-card-content">
-            <div className="flex items-center gap-2 text-white mb-4">
+        <div className="enhanced-card relative overflow-hidden">
+          <div className="enhanced-card-content p-0 relative">
+            <div className="absolute top-4 left-4 z-10 flex items-center gap-2 text-white bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2">
               <Camera className="w-5 h-5 text-[#4DA2FF]" />
               <h3 className="font-semibold">Profile Picture</h3>
             </div>
-            <div className="space-y-4">
-              <div className="flex flex-col items-center space-y-4">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#4DA2FF] to-[#011829] flex items-center justify-center overflow-hidden">
-                  {profileData.profilePicture ? (
-                    <img
-                      src={profileData.profilePicture}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User className="w-12 h-12 text-white" />
-                  )}
+            <div className="relative w-full h-full min-h-[300px] flex items-center justify-center">
+              <EnhancedAvatar
+                size="2xl"
+                editable={isEditing}
+                showStorageInfo={true}
+                className="!w-full !h-full !min-h-[300px] rounded-lg"
+              />
+              {isEditing && (
+                <div className="absolute bottom-4 left-4 right-4 text-center bg-black/50 backdrop-blur-sm rounded-lg p-3">
+                  <p className="text-xs text-[#C0E6FF]/70">
+                    Click avatar to upload new image
+                  </p>
+                  <p className="text-xs text-[#C0E6FF]/50">
+                    Images are stored on Walrus for decentralized access
+                  </p>
                 </div>
-
-                {isEditing && (
-                  <div className="w-full">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      id="profile-upload"
-                    />
-                    <label htmlFor="profile-upload" className="cursor-pointer">
-                      <span className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full border-[#C0E6FF] text-[#C0E6FF]">
-                        <Upload className="w-4 h-4 mr-2" />
-                        Upload Image
-                      </span>
-                    </label>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -261,6 +313,7 @@ export function DashboardProfiles() {
                   onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
                   disabled={!isEditing}
                   className="bg-[#030F1C] border-[#C0E6FF]/30 text-white"
+                  placeholder="Enter your first name"
                 />
               </div>
 
@@ -272,6 +325,7 @@ export function DashboardProfiles() {
                   onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
                   disabled={!isEditing}
                   className="bg-[#030F1C] border-[#C0E6FF]/30 text-white"
+                  placeholder="Enter your last name"
                 />
               </div>
 
@@ -283,6 +337,7 @@ export function DashboardProfiles() {
                   onChange={(e) => setProfileData(prev => ({ ...prev, username: e.target.value }))}
                   disabled={!isEditing}
                   className="bg-[#030F1C] border-[#C0E6FF]/30 text-white"
+                  placeholder="Enter your username"
                 />
               </div>
 
@@ -295,7 +350,49 @@ export function DashboardProfiles() {
                   onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
                   disabled={!isEditing}
                   className="bg-[#030F1C] border-[#C0E6FF]/30 text-white"
+                  placeholder="Enter your email address"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="location" className="text-[#C0E6FF]">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    Location
+                  </div>
+                </Label>
+                <Input
+                  id="location"
+                  value={profileData.location}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, location: e.target.value }))}
+                  disabled={!isEditing}
+                  className="bg-[#030F1C] border-[#C0E6FF]/30 text-white"
+                  placeholder="Enter your location"
+                />
+              </div>
+            </div>
+
+            {/* Bio Section */}
+            <div className="space-y-2">
+              <Label htmlFor="bio" className="text-[#C0E6FF]">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Bio
+                </div>
+              </Label>
+              <Textarea
+                id="bio"
+                value={profileData.bio}
+                onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
+                disabled={!isEditing}
+                className="bg-[#030F1C] border-[#C0E6FF]/30 text-white min-h-[100px]"
+                placeholder="Tell us about yourself..."
+                maxLength={500}
+              />
+              <div className="text-right">
+                <span className="text-xs text-[#C0E6FF]/70">
+                  {profileData.bio.length}/500 characters
+                </span>
               </div>
             </div>
             </div>

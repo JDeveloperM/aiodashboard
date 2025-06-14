@@ -2,7 +2,7 @@
 
 import { Notifications } from "./notifications"
 import { useSubscription } from "@/contexts/subscription-context"
-import { usePoints } from "@/contexts/points-context"
+import { usePersistentProfile } from '@/hooks/use-persistent-profile'
 import { usePremiumAccess } from "@/contexts/premium-access-context"
 import { RoleImage } from "@/components/ui/role-image"
 import { SuiWalletWithSocial } from "@/components/sui-wallet-with-social"
@@ -24,14 +24,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useAvatar } from "@/contexts/avatar-context"
 
 export function TopNav() {
   const pathname = usePathname()
   const pathSegments = pathname.split("/").filter(Boolean)
   const { tier } = useSubscription()
   const { isSignedIn, user, signOut, formatAddress } = useSuiAuth()
-  const { balance } = usePoints()
+  const { profile } = usePersistentProfile()
   const { getRemainingFreeAccess, premiumAccessLimit, premiumAccessCount } = usePremiumAccess()
+  const { getAvatarUrl, getFallbackText } = useAvatar()
 
   const getTierColor = () => {
     switch (tier) {
@@ -90,9 +92,9 @@ export function TopNav() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.profileImage} alt={user?.username} />
+                    <AvatarImage src={getAvatarUrl()} alt={user?.username} />
                     <AvatarFallback className="bg-[#4DA2FF] text-white">
-                      {user?.username?.charAt(0)?.toUpperCase() || 'U'}
+                      {getFallbackText()}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -113,7 +115,7 @@ export function TopNav() {
                       <Badge className="bg-[#4da2ff] text-white text-xs">
                         <div className="flex items-center gap-1">
                           <Coins className="h-3 w-3" />
-                          <span className="font-medium">{balance.toLocaleString()}</span>
+                          <span className="font-medium">{(profile?.points || 0).toLocaleString()}</span>
                         </div>
                       </Badge>
                     </div>

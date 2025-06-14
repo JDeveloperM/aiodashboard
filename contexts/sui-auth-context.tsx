@@ -23,6 +23,7 @@ interface SuiUser {
   username?: string
   email?: string
   profileImage?: string
+  profileImageBlobId?: string
   createdAt: Date
   lastLoginAt: Date
 }
@@ -115,6 +116,7 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
               username: existingSession.username,
               email: existingSession.email,
               profileImage: existingSession.profileImage,
+              profileImageBlobId: existingSession.profileImageBlobId,
               createdAt: new Date(existingSession.createdAt),
               lastLoginAt: new Date(existingSession.lastLoginAt)
             }
@@ -146,8 +148,9 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
               username: currentUser.username,
               email: currentUser.email,
               profileImage: currentUser.profileImage,
-              createdAt: currentUser.createdAt.toISOString(),
-              lastLoginAt: currentUser.lastLoginAt.toISOString()
+              profileImageBlobId: currentUser.profileImageBlobId,
+              createdAt: currentUser.createdAt instanceof Date ? currentUser.createdAt.toISOString() : new Date(currentUser.createdAt).toISOString(),
+              lastLoginAt: currentUser.lastLoginAt instanceof Date ? currentUser.lastLoginAt.toISOString() : new Date(currentUser.lastLoginAt).toISOString()
             })
 
             console.log('User session saved to cookies')
@@ -206,8 +209,9 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
         username: updatedUser.username,
         email: updatedUser.email,
         profileImage: updatedUser.profileImage,
-        createdAt: updatedUser.createdAt.toISOString(),
-        lastLoginAt: updatedUser.lastLoginAt.toISOString()
+        profileImageBlobId: updatedUser.profileImageBlobId,
+        createdAt: updatedUser.createdAt instanceof Date ? updatedUser.createdAt.toISOString() : new Date(updatedUser.createdAt).toISOString(),
+        lastLoginAt: updatedUser.lastLoginAt instanceof Date ? updatedUser.lastLoginAt.toISOString() : new Date(updatedUser.lastLoginAt).toISOString()
       })
 
       console.log('Profile updated and saved to cookies')

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RoleImage } from "@/components/ui/role-image"
 import { useSubscription } from "@/contexts/subscription-context"
 import { usePoints } from "@/contexts/points-context"
+import { EnhancedAvatar } from "@/components/enhanced-avatar"
 import Image from "next/image"
 import {
   Copy,
@@ -107,7 +108,6 @@ export function ProfileSystem() {
   const { addPoints, balance } = usePoints()
   const [affiliateLink] = useState("https://aionet.io/ref/MDX789ABC")
   const [copied, setCopied] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Claim dialog state
   const [showClaimDialog, setShowClaimDialog] = useState(false)
@@ -170,11 +170,10 @@ export function ProfileSystem() {
     totalCommission: 2451
   })
 
-  // Profile data with image upload functionality
+  // Profile data
   const [profileData, setProfileData] = useState({
     name: "Affiliate User",
     username: "@affiliate_user",
-    profileImage: "", // Will be loaded from localStorage
     kycStatus: "verified", // "verified" or "not-verified"
     socialMedia: [
       {
@@ -379,12 +378,9 @@ export function ProfileSystem() {
     }
   ])
 
-  // Load profile image and achievement data from localStorage on component mount
+  // Load achievement data from localStorage on component mount
   useEffect(() => {
-    const savedImage = localStorage.getItem('user-profile-image')
-    if (savedImage) {
-      setProfileData(prev => ({ ...prev, profileImage: savedImage }))
-    }
+    // Profile image is now handled by AvatarProvider
 
     // Load achievement claim status from localStorage
     const savedAchievements = localStorage.getItem('user-achievements')
@@ -468,41 +464,7 @@ export function ProfileSystem() {
     console.log('Add new social media platform')
   }
 
-  const handleImageUpload = () => {
-    fileInputRef.current?.click()
-  }
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      // Check if file is an image
-      if (!file.type.startsWith('image/')) {
-        alert('Please select an image file')
-        return
-      }
-
-      // Check file size (limit to 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Image size should be less than 5MB')
-        return
-      }
-
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const imageDataUrl = e.target?.result as string
-        // Save to localStorage
-        localStorage.setItem('user-profile-image', imageDataUrl)
-        // Update state
-        setProfileData(prev => ({ ...prev, profileImage: imageDataUrl }))
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const handleRemoveImage = () => {
-    localStorage.removeItem('user-profile-image')
-    setProfileData(prev => ({ ...prev, profileImage: '' }))
-  }
+  // Avatar handling is now managed by EnhancedAvatar component
 
   const getStatusColor = (status: string) => {
     // No background color for status badges
@@ -672,40 +634,12 @@ export function ProfileSystem() {
             {/* Column 1: Profile Info & Channels Joined */}
             <div className="enhanced-card bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg p-8 m-2">
               <div className="flex flex-col items-center text-center space-y-6">
-                <div className="relative group mb-4 mt-6">
-                  <Avatar className="h-44 w-44 bg-blue-100">
-                  <AvatarImage src={profileData.profileImage} alt={profileData.name} />
-                  <AvatarFallback className="bg-[#4DA2FF] text-white text-3xl font-semibold">
-                    {profileData.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                {/* Upload overlay */}
-                <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer"
-                     onClick={handleImageUpload}>
-                  <Camera className="w-6 h-6 text-white" />
-                </div>
-
-                {/* Remove image button (only show if image exists) */}
-                {profileData.profileImage && (
-                  <button
-                    onClick={handleRemoveImage}
-                    className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs transition-colors duration-200"
-                    title="Remove image"
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-
-              {/* Hidden file input */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-              />
+                <EnhancedAvatar
+                  size="2xl"
+                  editable={true}
+                  showStorageInfo={true}
+                  className="mb-4 mt-6"
+                />
 
               {/* Profile Details Below Avatar */}
               <div className="space-y-4 w-full">

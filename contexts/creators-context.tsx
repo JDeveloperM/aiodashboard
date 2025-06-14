@@ -22,6 +22,10 @@ interface Channel {
     maxSlots?: number
     status: 'available' | 'limited' | 'full'
   }
+  // Channel-specific data for individual channel cards
+  channelCategories?: string[]
+  channelRole?: string
+  channelLanguage?: string
 }
 
 interface Creator {
@@ -67,10 +71,10 @@ const CreatorsContext = createContext<CreatorsContextType | undefined>(undefined
 const initialMockCreators: Creator[] = [
   {
     id: "1",
-    name: "Alex Thompson",
-    username: "cryptoalex",
+    name: "Kostas Trading",
+    username: "kostas33",
     avatar: "/api/placeholder/64/64",
-    role: "Trading Expert",
+    role: "NFT Trader",
     tier: "ROYAL",
     subscribers: 15420,
     category: "Trading",
@@ -85,50 +89,49 @@ const initialMockCreators: Creator[] = [
       status: 'limited'
     },
     socialLinks: {
-      website: "https://cryptoalex.com",
-      twitter: "https://twitter.com/cryptoalex",
-      telegram: "https://t.me/cryptoalex"
+      website: "https://kostas.com",
+      twitter: "https://twitter.com/kostas33",
+      telegram: "https://t.me/kostas33"
     },
     bannerColor: "#10b981",
     channels: [
       {
         id: "1-1",
-        name: "Daily Market Updates",
+        name: "Trading Signals Pro",
         type: "free",
         price: 0,
         description: "Daily crypto market analysis and news updates",
         subscribers: 8500,
-        telegramUrl: "https://t.me/cryptoalex_daily"
-      },
-      {
-        id: "1-2",
-        name: "Premium Trading Signals",
-        type: "premium",
-        price: 5.0,
-        description: "Exclusive trading signals with entry/exit points",
-        subscribers: 2100,
-        telegramUrl: "https://t.me/cryptoalex_premium",
+        telegramUrl: "https://t.me/kostas33",
+        // Channel-specific data
+        channelCategories: ["Trading", "Signals", "Premium"],
+        channelRole: "Trading Expert",
+        channelLanguage: "English",
         availability: {
           hasLimit: true,
-          currentSlots: 85,
-          maxSlots: 100,
+          currentSlots: 3,
+          maxSlots: 7,
           status: 'limited'
         }
       },
       {
-        id: "1-3",
-        name: "VIP Trading Room",
-        type: "vip",
-        price: 15.0,
-        description: "Exclusive VIP trading room with live calls",
-        subscribers: 450,
-        telegramUrl: "https://t.me/cryptoalex_vip",
+        id: "1-2",
+        name: "Market Analysis Hub",
+        type: "premium",
+        price: 5.0,
+        description: "Exclusive trading signals with entry/exit points",
+        subscribers: 2100,
+        telegramUrl: "https://t.me/kostas",
         availability: {
           hasLimit: true,
-          currentSlots: 18,
-          maxSlots: 25,
-          status: 'available'
-        }
+          currentSlots: 4,
+          maxSlots: 7,
+          status: 'limited'
+        },
+        // Channel-specific data
+        channelCategories: ["Analysis", "Education", "DeFi"],
+        channelRole: "Market Analyst",
+        channelLanguage: "Romanian"
       }
     ]
   },
@@ -165,7 +168,11 @@ const initialMockCreators: Creator[] = [
         price: 0,
         description: "Learn DeFi fundamentals and protocols",
         subscribers: 9200,
-        telegramUrl: "https://t.me/defisarah_basics"
+        telegramUrl: "https://t.me/defisarah_basics",
+        // Channel-specific data
+        channelCategories: ["DeFi", "Education", "Basics"],
+        channelRole: "DeFi Educator",
+        channelLanguage: "Spanish"
       },
       {
         id: "2-2",
@@ -177,10 +184,14 @@ const initialMockCreators: Creator[] = [
         telegramUrl: "https://t.me/defisarah_advanced",
         availability: {
           hasLimit: true,
-          currentSlots: 25,
-          maxSlots: 50,
-          status: 'available'
-        }
+          currentSlots: 0,
+          maxSlots: 8,
+          status: 'full'
+        },
+        // Channel-specific data
+        channelCategories: ["Yield Farming", "Liquidity", "Advanced"],
+        channelRole: "DeFi Strategist",
+        channelLanguage: "French"
       }
     ]
   },
