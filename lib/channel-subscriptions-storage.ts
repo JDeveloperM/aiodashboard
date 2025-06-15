@@ -190,7 +190,7 @@ class ChannelSubscriptionsStorage {
       } else if (channelData.avatarFile) {
         console.log('📸 Storing channel avatar in Walrus...')
         const imageData = new Uint8Array(await channelData.avatarFile.arrayBuffer())
-        const imageResult = await walrusService.storeBlob(imageData, 'channel-avatar', {
+        const imageResult = await walrusService.storeBlob(imageData, 'profile-image', {
           epochs: 365,
           deletable: true,
           originalName: channelData.avatarFile.name,
