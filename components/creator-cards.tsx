@@ -14,6 +14,8 @@ import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { useCurrentAccount } from "@mysten/dapp-kit"
 import { Filter, FilterX } from "lucide-react"
 import { toast } from "sonner"
+import { addUserChannelSubscription, channelSubscriptionsStorage } from "@/lib/channel-subscriptions-storage"
+import { createClient } from '@supabase/supabase-js'
 import {
   Users,
   Coins,
@@ -90,7 +92,55 @@ interface CreatorCardsProps {
   onAccessChannel: (creatorId: string, channelId: string) => void
 }
 
+// Helper function to extract blob ID from creator avatar URL
+function extractBlobIdFromCreatorAvatar(avatarUrl: string): string | undefined {
+  console.log('🔍 Extracting blob ID from avatar URL:', avatarUrl)
+
+  if (!avatarUrl) {
+    console.log('❌ No avatar URL provided')
+    return undefined
+  }
+
+  // Match Walrus URL pattern: https://aggregator.walrus-testnet.walrus.space/v1/blobs/{blobId}
+  const match = avatarUrl.match(/\/blobs\/([a-zA-Z0-9_-]+)/)
+  const blobId = match ? match[1] : undefined
+
+  console.log('🔍 Extracted blob ID:', blobId)
+  return blobId
+}
+
+// Helper function to get creator's profile image blob ID directly from database
+async function getCreatorProfileImageBlobIdDirect(creatorAddress: string): Promise<string | undefined> {
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    console.log('🔍 Fetching creator profile image blob ID directly for:', creatorAddress)
+
+    const { data, error } = await supabase
+      .from('creators')
+      .select('profile_image_blob_id')
+      .eq('creator_address', creatorAddress)
+      .single()
+
+    if (error) {
+      console.warn('⚠️ Failed to fetch creator profile image blob ID:', error)
+      return undefined
+    }
+
+    console.log('✅ Found creator profile image blob ID:', data?.profile_image_blob_id)
+    return data?.profile_image_blob_id || undefined
+
+  } catch (error) {
+    console.error('❌ Error fetching creator profile image blob ID:', error)
+    return undefined
+  }
+}
+
 export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
+  const { user } = useSuiAuth()
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null)
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
@@ -99,7 +149,6 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
   const { tier } = useSubscription()
   const { canAccessPremiumForFree, recordPremiumAccess, removePremiumAccess, getRemainingFreeAccess, premiumAccessRecords } = usePremiumAccess()
   const { deleteChannel } = useCreatorsDatabase()
-  const { user } = useSuiAuth()
   const currentAccount = useCurrentAccount()
 
   // Load user access from localStorage
@@ -117,8 +166,55 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
     setUserAccess(access)
   }, [creators])
 
-  const handleChannelAccess = (creator: Creator, channel: Channel) => {
+  const handleChannelAccess = async (creator: Creator, channel: Channel) => {
     if (channel.type === 'free') {
+      // Add free channel to database for profile tracking
+      if (user?.address) {
+        try {
+          console.log('💾 Adding free channel subscription to database...')
+          console.log('🔍 Creator data:', {
+            id: creator.id,
+            name: creator.name,
+            avatar: creator.avatar,
+            creatorAddress: creator.creatorAddress
+          })
+
+          // Get the actual profile image blob ID from the creator's database record
+          const avatarBlobId = await getCreatorProfileImageBlobIdDirect(creator.creatorAddress || creator.id)
+          console.log('🖼️ Retrieved creator profile image blob ID:', avatarBlobId)
+
+          // If no blob ID found, try extracting from avatar URL as fallback
+          const fallbackBlobId = avatarBlobId || extractBlobIdFromCreatorAvatar(creator.avatar)
+          console.log('🔄 Final blob ID (with fallback):', fallbackBlobId)
+
+          await addUserChannelSubscription(user.address, {
+            creatorAddress: creator.creatorAddress || creator.id,
+            channelId: channel.id,
+            channelName: channel.name,
+            channelType: channel.type,
+            channelDescription: channel.description,
+            pricePaid: 0,
+            subscriptionTier: channel.type,
+            expiryDate: undefined, // Free channels don't expire
+            telegramChannelUrl: channel.telegramUrl,
+            // Use the actual blob ID from database (with fallback)
+            channelAvatarBlobId: fallbackBlobId
+          })
+
+          console.log('✅ Free channel subscription added to database')
+          toast.success(`Joined ${channel.name}! Check your profile to see all joined channels.`)
+
+          // Trigger a custom event to notify profile page to refresh
+          window.dispatchEvent(new CustomEvent('channelAdded', {
+            detail: { channelId: channel.id, userAddress: user.address }
+          }))
+
+        } catch (error) {
+          console.error('❌ Failed to add free channel subscription to database:', error)
+          // Don't prevent access, just log the error
+        }
+      }
+
       // Redirect to Telegram channel for free access
       if (channel.telegramUrl) {
         window.open(channel.telegramUrl, '_blank')
@@ -133,6 +229,48 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
         // User can access this premium channel for free
         console.log(`[CreatorCards] Recording premium access for ${tier} user: ${creator.id}_${channel.id}`)
         recordPremiumAccess(creator.id, channel.id)
+
+        // Add free premium access to database for profile tracking
+        if (user?.address) {
+          try {
+            console.log('💾 Adding free premium channel subscription to database...')
+
+            // Get the actual profile image blob ID from the creator's database record
+            const avatarBlobId = await getCreatorProfileImageBlobIdDirect(creator.creatorAddress || creator.id)
+            console.log('🖼️ Retrieved creator profile image blob ID for premium access:', avatarBlobId)
+
+            // If no blob ID found, try extracting from avatar URL as fallback
+            const fallbackBlobId = avatarBlobId || extractBlobIdFromCreatorAvatar(creator.avatar)
+            console.log('🔄 Final blob ID for premium access (with fallback):', fallbackBlobId)
+
+            await addUserChannelSubscription(user.address, {
+              creatorAddress: creator.creatorAddress || creator.id,
+              channelId: channel.id,
+              channelName: channel.name,
+              channelType: channel.type,
+              channelDescription: channel.description,
+              pricePaid: 0, // Free for PRO/ROYAL users
+              subscriptionTier: channel.type,
+              expiryDate: undefined, // Free access doesn't expire
+              telegramChannelUrl: channel.telegramUrl,
+              // Use the actual blob ID from database (with fallback)
+              channelAvatarBlobId: fallbackBlobId
+            })
+
+            console.log('✅ Free premium channel subscription added to database')
+            toast.success(`Joined ${channel.name}! Check your profile to see all joined channels.`)
+
+            // Trigger a custom event to notify profile page to refresh
+            window.dispatchEvent(new CustomEvent('channelAdded', {
+              detail: { channelId: channel.id, userAddress: user.address }
+            }))
+
+          } catch (error) {
+            console.error('❌ Failed to add free premium channel subscription to database:', error)
+            // Don't prevent access, just log the error
+          }
+        }
+
         if (channel.telegramUrl) {
           window.open(channel.telegramUrl, '_blank')
         }
@@ -163,7 +301,7 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
     setShowPaymentModal(true)
   }
 
-  const handleLeaveChannel = (creator: Creator, channel: Channel, event: React.MouseEvent) => {
+  const handleLeaveChannel = async (creator: Creator, channel: Channel, event: React.MouseEvent) => {
     event.stopPropagation() // Prevent triggering the access button
 
     const channelName = channel.name
@@ -175,6 +313,26 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
     )
 
     if (!confirmed) return
+
+    // Remove from database
+    if (user?.address) {
+      try {
+        console.log('🗑️ Removing channel subscription from database...')
+
+        await channelSubscriptionsStorage.removeChannelSubscription(user.address, channel.id)
+
+        console.log('✅ Channel subscription removed from database')
+
+        // Trigger a custom event to notify profile page to refresh
+        window.dispatchEvent(new CustomEvent('channelRemoved', {
+          detail: { channelId: channel.id, userAddress: user.address }
+        }))
+
+      } catch (error) {
+        console.error('❌ Failed to remove channel subscription from database:', error)
+        // Continue with local cleanup even if database removal fails
+      }
+    }
 
     // Remove from localStorage (paid access)
     const accessKey = `channel_access_${creator.id}_${channel.id}`
@@ -291,7 +449,7 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
     return false
   }
 
-  const handlePaymentSuccess = (creatorId: string, channelId: string) => {
+  const handlePaymentSuccess = async (creatorId: string, channelId: string) => {
     const accessKey = `${creatorId}_${channelId}`
     const expiry = new Date()
     expiry.setMonth(expiry.getMonth() + 1)
@@ -300,9 +458,53 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
       [accessKey]: expiry.toISOString()
     }))
 
-    // Find the channel and redirect to Telegram
+    // Find the channel and creator details
     const creator = creators.find(c => c.id === creatorId)
     const channel = creator?.channels.find(ch => ch.id === channelId)
+
+    // Add subscription to database if user is connected and channel exists
+    if (user?.address && creator && channel) {
+      try {
+        console.log('💾 Adding channel subscription to database...')
+
+        // Get the actual profile image blob ID from the creator's database record
+        const avatarBlobId = await getCreatorProfileImageBlobIdDirect(creator.creatorAddress || creator.id)
+        console.log('🖼️ Retrieved creator profile image blob ID for payment success:', avatarBlobId)
+
+        // If no blob ID found, try extracting from avatar URL as fallback
+        const fallbackBlobId = avatarBlobId || extractBlobIdFromCreatorAvatar(creator.avatar)
+        console.log('🔄 Final blob ID for payment success (with fallback):', fallbackBlobId)
+
+        await addUserChannelSubscription(user.address, {
+          creatorAddress: creator.creatorAddress || creator.id, // Use creatorAddress if available, fallback to id
+          channelId: channel.id,
+          channelName: channel.name,
+          channelType: channel.type,
+          channelDescription: channel.description,
+          pricePaid: channel.price || 0,
+          subscriptionTier: channel.type,
+          expiryDate: expiry.toISOString(),
+          telegramChannelUrl: channel.telegramUrl,
+          // Use the actual blob ID from database (with fallback)
+          channelAvatarBlobId: fallbackBlobId
+        })
+
+        console.log('✅ Channel subscription added to database successfully')
+        toast.success(`Joined ${channel.name}! Check your profile to see all joined channels.`)
+
+        // Trigger a custom event to notify profile page to refresh
+        window.dispatchEvent(new CustomEvent('channelAdded', {
+          detail: { channelId: channel.id, userAddress: user.address }
+        }))
+
+      } catch (error) {
+        console.error('❌ Failed to add channel subscription to database:', error)
+        // Don't show error to user as the payment was successful, just log it
+        console.warn('Channel access granted but not recorded in profile. Manual sync may be needed.')
+      }
+    }
+
+    // Redirect to Telegram
     if (channel?.telegramUrl) {
       window.open(channel.telegramUrl, '_blank')
     }

@@ -13,6 +13,7 @@ import { RoleImage } from "@/components/ui/role-image"
 import { EnhancedAvatar } from "@/components/enhanced-avatar"
 import { EnhancedBanner } from "@/components/enhanced-banner"
 import { usePersistentProfile } from '@/hooks/use-persistent-profile'
+import { useChannelSubscriptions, getChannelTypeBadgeColor, formatSubscriptionStatus } from '@/hooks/use-channel-subscriptions'
 import { encryptedStorage } from '@/lib/encrypted-database-storage'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { useSubscription } from "@/contexts/subscription-context"
@@ -847,51 +848,11 @@ export function PersistentProfileSystem() {
 
               {/* Channels Joined Section */}
               <div className="w-full bg-[#1a2f51]/30 rounded-lg p-4 border border-[#C0E6FF]/10">
-                <h4 className="text-white font-semibold mb-4 text-center">Channels Joined</h4>
-                <div className="flex flex-wrap justify-center gap-3">
-                  {[
-                    { id: '1', name: 'Daily Market Updates', type: 'free', price: 0, subscribers: 8500, color: '#10b981' },
-                    { id: '2', name: 'Premium Trading Signals', type: 'premium', price: 5.0, subscribers: 2100, color: '#f59e0b' },
-                    { id: '3', name: 'DeFi Basics', type: 'free', price: 0, subscribers: 9200, color: '#3b82f6' },
-                    { id: '4', name: 'Advanced Bot Strategies', type: 'premium', price: 12.0, subscribers: 2100, color: '#f97316' },
-                  ].map((channel: any) => (
-                    <TooltipProvider key={channel.id}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div
-                            className="w-36 h-16 rounded-lg flex items-center cursor-pointer transition-all hover:scale-105 border-2 border-[#C0E6FF]/20 relative overflow-hidden"
-                            style={{ backgroundColor: channel.color }}
-                          >
-                            <div className="absolute left-2 top-1/2 transform -translate-y-1/2 w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                              <Hash className="w-6 h-6 text-white" />
-                            </div>
-                            <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent"></div>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-[#1a2f51] border border-[#C0E6FF]/20 text-white p-3 max-w-xs">
-                          <div className="space-y-2">
-                            <div className="font-semibold text-sm">{channel.name}</div>
-                            <div className="flex items-center gap-2 text-xs">
-                              <Badge className={`${
-                                channel.type === 'free'
-                                  ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                                  : 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-                              } text-xs`}>
-                                {channel.type.toUpperCase()}
-                              </Badge>
-                              {channel.type !== 'free' && (
-                                <span className="text-[#C0E6FF]">{channel.price} SUI</span>
-                              )}
-                            </div>
-                            <div className="text-xs text-[#C0E6FF]">
-                              {channel.subscribers.toLocaleString()} subscribers
-                            </div>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ))}
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-white font-semibold">Channels Joined</h4>
+                  <ChannelsRefreshButton />
                 </div>
+                <ChannelsJoinedSection />
 
                 {/* KYC Management and Transaction History Buttons */}
                 <div className="w-full grid grid-cols-2 gap-3 mt-6">
@@ -1587,6 +1548,161 @@ export function PersistentProfileSystem() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// Channels Refresh Button Component
+function ChannelsRefreshButton() {
+  const { refreshChannels, isLoading, channels } = useChannelSubscriptions()
+
+  const debugChannelAvatars = () => {
+    console.log('🔍 DEBUG: Channel avatars info:')
+    channels.forEach((channel, index) => {
+      console.log(`Channel ${index + 1}:`, {
+        name: channel.name,
+        avatarUrl: channel.avatarUrl,
+        avatarBlobId: channel.avatarBlobId,
+        creatorAddress: channel.creatorAddress
+      })
+    })
+  }
+
+  return (
+    <div className="flex gap-1">
+      <Button
+        onClick={refreshChannels}
+        size="sm"
+        variant="ghost"
+        className="text-[#C0E6FF] hover:text-white hover:bg-[#4DA2FF]/20 p-1"
+        disabled={isLoading}
+        title="Refresh channels"
+      >
+        <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+      </Button>
+      <Button
+        onClick={debugChannelAvatars}
+        size="sm"
+        variant="ghost"
+        className="text-[#C0E6FF] hover:text-white hover:bg-[#4DA2FF]/20 p-1"
+        title="Debug avatars"
+      >
+        🔍
+      </Button>
+    </div>
+  )
+}
+
+// Channels Joined Section Component
+function ChannelsJoinedSection() {
+  const { channels, isLoading, error, refreshChannels, addSampleChannels } = useChannelSubscriptions()
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <RefreshCw className="w-6 h-6 text-[#C0E6FF] animate-spin" />
+        <span className="ml-2 text-[#C0E6FF]">Loading channels...</span>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+        <p className="text-red-400 text-sm mb-4">Failed to load channels</p>
+        <Button
+          onClick={refreshChannels}
+          size="sm"
+          className="bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Retry
+        </Button>
+      </div>
+    )
+  }
+
+  if (channels.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <Hash className="w-8 h-8 text-[#C0E6FF]/50 mx-auto mb-2" />
+        <p className="text-[#C0E6FF]/70 text-sm mb-4">No channels joined yet</p>
+        <p className="text-[#C0E6FF]/50 text-xs mb-4">
+          Join channels from the AIO Creators page to see them here
+        </p>
+        <Button
+          onClick={addSampleChannels}
+          size="sm"
+          className="bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Hash className="w-4 h-4 mr-2" />
+          )}
+          Add Sample Channels
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-5 gap-3 justify-items-center">
+      {channels.map((channel) => (
+        <TooltipProvider key={channel.id}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="w-24 h-24 rounded-full cursor-pointer transition-all hover:scale-110 border-2 border-[#C0E6FF]/20 hover:border-[#C0E6FF]/40 overflow-hidden">
+                {channel.avatarUrl ? (
+                  <Image
+                    src={channel.avatarUrl}
+                    alt={channel.name}
+                    width={96}
+                    height={96}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="w-full h-full flex items-center justify-center"
+                    style={{ backgroundColor: channel.color }}
+                  >
+                    <Hash className="w-12 h-12 text-white" />
+                  </div>
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent className="bg-[#1a2f51] border border-[#C0E6FF]/20 text-white p-3 max-w-xs">
+              <div className="space-y-2">
+                <div className="font-semibold text-sm">{channel.name}</div>
+                {channel.description && (
+                  <div className="text-xs text-[#C0E6FF]/80">{channel.description}</div>
+                )}
+                <div className="flex items-center gap-2 text-xs">
+                  <Badge className={`${getChannelTypeBadgeColor(channel.type)} text-xs`}>
+                    {channel.type.toUpperCase()}
+                  </Badge>
+                  <span className="text-[#C0E6FF]">
+                    {formatSubscriptionStatus(channel)}
+                  </span>
+                </div>
+                <div className="text-xs text-[#C0E6FF]">
+                  {channel.subscribers.toLocaleString()} subscribers
+                </div>
+                <div className="text-xs text-[#C0E6FF]/60">
+                  Joined: {new Date(channel.joinedDate).toLocaleDateString()}
+                </div>
+                {channel.expiryDate && (
+                  <div className="text-xs text-[#C0E6FF]/60">
+                    Expires: {new Date(channel.expiryDate).toLocaleDateString()}
+                  </div>
+                )}
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ))}
     </div>
   )
 }

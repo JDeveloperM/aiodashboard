@@ -10,6 +10,8 @@ import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { useSubscription } from "@/contexts/subscription-context"
 import { Coins, Calendar, Shield, CheckCircle, AlertCircle, Wallet } from "lucide-react"
 import { toast } from "sonner"
+import { addUserChannelSubscription } from "@/lib/channel-subscriptions-storage"
+import { createClient } from '@supabase/supabase-js'
 import { TelegramAccessModal } from "./telegram-access-modal"
 import {
   generateTelegramAccessLink,
@@ -43,6 +45,45 @@ interface Creator {
     discord?: string
   }
   bannerColor: string
+}
+
+// Helper function to extract blob ID from creator avatar URL
+function extractBlobIdFromCreatorAvatar(avatarUrl: string): string | undefined {
+  if (!avatarUrl) return undefined
+
+  // Match Walrus URL pattern: https://aggregator.walrus-testnet.walrus.space/v1/blobs/{blobId}
+  const match = avatarUrl.match(/\/blobs\/([a-zA-Z0-9_-]+)/)
+  return match ? match[1] : undefined
+}
+
+// Helper function to get creator's profile image blob ID directly from database
+async function getCreatorProfileImageBlobIdDirect(creatorAddress: string): Promise<string | undefined> {
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    console.log('🔍 Fetching creator profile image blob ID directly for:', creatorAddress)
+
+    const { data, error } = await supabase
+      .from('creators')
+      .select('profile_image_blob_id')
+      .eq('creator_address', creatorAddress)
+      .single()
+
+    if (error) {
+      console.warn('⚠️ Failed to fetch creator profile image blob ID:', error)
+      return undefined
+    }
+
+    console.log('✅ Found creator profile image blob ID:', data?.profile_image_blob_id)
+    return data?.profile_image_blob_id || undefined
+
+  } catch (error) {
+    console.error('❌ Error fetching creator profile image blob ID:', error)
+    return undefined
+  }
 }
 
 interface Channel {
@@ -214,6 +255,44 @@ export function TipPaymentModal({
       // Store access in localStorage (in production, this would be on-chain or backend)
       const accessKey = `channel_access_${creator.id}_${channel.id}`
       localStorage.setItem(accessKey, accessExpiry.toISOString())
+
+      // Also add to database for profile page integration
+      try {
+        console.log('💾 Adding channel subscription to database from payment modal...')
+
+        // Get the actual profile image blob ID from the creator's database record
+        const avatarBlobId = await getCreatorProfileImageBlobIdDirect(creator.creatorAddress || creator.id)
+        console.log('🖼️ Retrieved creator profile image blob ID for payment modal:', avatarBlobId)
+
+        // If no blob ID found, try extracting from avatar URL as fallback
+        const fallbackBlobId = avatarBlobId || extractBlobIdFromCreatorAvatar(creator.avatar)
+        console.log('🔄 Final blob ID for payment modal (with fallback):', fallbackBlobId)
+
+        await addUserChannelSubscription(user.address, {
+          creatorAddress: creator.creatorAddress || creator.id,
+          channelId: channel.id,
+          channelName: channel.name,
+          channelType: channel.type,
+          channelDescription: channel.description,
+          pricePaid: currentPrice,
+          subscriptionTier: channel.type,
+          expiryDate: accessExpiry.toISOString(),
+          telegramChannelUrl: channel.telegramUrl,
+          // Use the actual blob ID from database (with fallback)
+          channelAvatarBlobId: fallbackBlobId
+        })
+
+        console.log('✅ Channel subscription added to database from payment modal')
+
+        // Trigger a custom event to notify profile page to refresh
+        window.dispatchEvent(new CustomEvent('channelAdded', {
+          detail: { channelId: channel.id, userAddress: user.address }
+        }))
+
+      } catch (error) {
+        console.error('❌ Failed to add channel subscription to database from payment modal:', error)
+        // Don't fail the payment process, just log the error
+      }
 
       toast.success(`Successfully purchased ${selectedDuration}-day access to ${channel.name}!`)
       onPaymentSuccess(creator.id, channel.id)
