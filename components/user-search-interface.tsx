@@ -65,7 +65,6 @@ export function UserSearchInterface() {
   const { users: communityUsers, isLoading, error, refreshUsers } = useCommunityUsers()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRole, setSelectedRole] = useState<'ALL' | 'NOMAD' | 'PRO' | 'ROYAL'>('ALL')
-  const [selectedStatus, setSelectedStatus] = useState<'ALL' | 'online' | 'idle' | 'dnd' | 'offline'>('ALL')
   const [sortBy, setSortBy] = useState<'name' | 'joinDate' | 'level' | 'points'>('name')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
@@ -77,9 +76,8 @@ export function UserSearchInterface() {
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesRole = selectedRole === 'ALL' || user.role === selectedRole
-    const matchesStatus = selectedStatus === 'ALL' || user.status === selectedStatus
 
-    return matchesSearch && matchesRole && matchesStatus
+    return matchesSearch && matchesRole
   }).sort((a, b) => {
     switch (sortBy) {
       case 'name':
@@ -223,10 +221,8 @@ export function UserSearchInterface() {
           {/* Filters */}
           <UserSearchFilters
             selectedRole={selectedRole}
-            selectedStatus={selectedStatus}
             sortBy={sortBy}
             onRoleChange={setSelectedRole}
-            onStatusChange={setSelectedStatus}
             onSortChange={setSortBy}
           />
 
@@ -239,9 +235,6 @@ export function UserSearchInterface() {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="border-green-400 text-green-400">
-                {filteredUsers.filter(u => u.status === 'online').length} Online
-              </Badge>
               <Badge variant="outline" className="border-[#4DA2FF] text-[#4DA2FF]">
                 {filteredUsers.filter(u => u.kycStatus === 'verified').length} Verified
               </Badge>

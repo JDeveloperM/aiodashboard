@@ -1,15 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
+
 import { Textarea } from "@/components/ui/textarea"
-import { RoleImage } from "@/components/ui/role-image"
-import { useSubscription } from "@/contexts/subscription-context"
+
+
 import { usePersistentProfile } from "@/hooks/use-persistent-profile"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { EnhancedAvatar } from "@/components/enhanced-avatar"
@@ -22,12 +22,9 @@ import {
   Camera,
   CheckCircle,
   AlertCircle,
-  Upload,
+
   MapPin,
-  FileText,
-  Crown,
-  Star,
-  Users
+  FileText
 } from "lucide-react"
 
 interface ProfileData {
@@ -42,17 +39,9 @@ interface ProfileData {
   notifications: boolean
 }
 
-interface NFTData {
-  id: string
-  name: string
-  type: 'NOMAD' | 'PRO' | 'ROYAL'
-  owned: boolean
-  benefits: string[]
-  mintDate?: string
-}
+
 
 export function DashboardProfiles() {
-  const { tier } = useSubscription()
   const { user } = useSuiAuth()
   const { profile, isLoading, updateProfile, updateKYCStatus } = usePersistentProfile()
 
@@ -98,33 +87,7 @@ export function DashboardProfiles() {
     }
   }, [profile, user?.address])
 
-  // NFT Data based on current tier
-  const nftData: NFTData[] = [
-    {
-      id: 'nomad',
-      name: 'MetadudesX NOMAD',
-      type: 'NOMAD',
-      owned: tier === 'NOMAD' || tier === 'PRO' || tier === 'ROYAL',
-      benefits: ['Copy Trading Access', 'Community Access', 'Basic Support'],
-      mintDate: tier !== 'NOMAD' ? undefined : '2024-01-01'
-    },
-    {
-      id: 'pro',
-      name: 'MetadudesX PRO',
-      type: 'PRO',
-      owned: tier === 'PRO' || tier === 'ROYAL',
-      benefits: ['Crypto Trading Bots', 'Community Access', 'AIO Creators'],
-      mintDate: tier === 'PRO' || tier === 'ROYAL' ? '2024-01-15' : undefined
-    },
-    {
-      id: 'royal',
-      name: 'MetadudesX ROYAL',
-      type: 'ROYAL',
-      owned: tier === 'ROYAL',
-      benefits: ['All PRO Benefits', 'Forex Trading Bots', 'VIP Support', 'Exclusive Events'],
-      mintDate: tier === 'ROYAL' ? '2024-02-20' : undefined
-    }
-  ]
+
 
   const handleSave = async () => {
     if (!user?.address) {
@@ -204,32 +167,7 @@ export function DashboardProfiles() {
     }
   }
 
-  // NFT Helper Functions
-  const getNFTIcon = (type: string) => {
-    switch (type) {
-      case 'NOMAD':
-        return <Users className="w-6 h-6" />
-      case 'PRO':
-        return <Star className="w-6 h-6" />
-      case 'ROYAL':
-        return <Crown className="w-6 h-6" />
-      default:
-        return <Star className="w-6 h-6" />
-    }
-  }
 
-  const getNFTColor = (type: string) => {
-    switch (type) {
-      case 'NOMAD':
-        return 'from-gray-500 to-gray-700'
-      case 'PRO':
-        return 'from-[#4DA2FF] to-[#011829]'
-      case 'ROYAL':
-        return 'from-[#FFD700] to-[#FFA500]'
-      default:
-        return 'from-[#4DA2FF] to-[#011829]'
-    }
-  }
 
   return (
     <div className="space-y-6">
@@ -476,78 +414,7 @@ export function DashboardProfiles() {
         </div>
       </div>
 
-      {/* MetadudesX NFTs Owned */}
-      <div className="enhanced-card">
-        <div className="enhanced-card-content">
-          <div className="flex items-center gap-2 text-white mb-4">
-            <Crown className="w-5 h-5 text-[#4DA2FF]" />
-            <h3 className="font-semibold">MetadudesX NFTs</h3>
-          </div>
-          <div className="space-y-4">
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-              {nftData.map((nft) => (
-                <div
-                  key={nft.id}
-                  className={`p-4 rounded-lg border transition-all duration-300 ${
-                    nft.owned
-                      ? 'bg-gradient-to-br from-[#4DA2FF]/20 to-[#011829]/20 border-[#4DA2FF]/50'
-                      : 'bg-[#030F1C] border-[#C0E6FF]/20 opacity-60'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`p-2 rounded-full bg-gradient-to-r ${getNFTColor(nft.type)}`}>
-                      {getNFTIcon(nft.type)}
-                    </div>
-                    <div>
-                      <h4 className="text-white font-medium">{nft.name}</h4>
-                      <div className="flex items-center gap-2">
-                        {nft.owned ? (
-                          <Badge className="bg-green-500 text-white text-xs">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Owned
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-gray-500 text-white text-xs">
-                            Not Owned
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
 
-                  {nft.owned && nft.mintDate && (
-                    <div className="mb-3">
-                      <span className="text-[#C0E6FF] text-sm">
-                        Minted: {new Date(nft.mintDate).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="space-y-1">
-                    <Label className="text-[#C0E6FF] text-sm">Benefits:</Label>
-                    <ul className="space-y-1">
-                      {nft.benefits.map((benefit, index) => (
-                        <li key={index} className="text-white text-sm flex items-center gap-2">
-                          <CheckCircle className="w-3 h-3 text-green-400" />
-                          {benefit}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {nftData.filter(nft => nft.owned).length === 0 && (
-              <div className="text-center py-6 text-[#C0E6FF]">
-                <Crown className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>No NFTs owned</p>
-                <p className="text-sm">Visit the subscriptions page to mint your NFT</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

@@ -17,12 +17,14 @@ interface EnhancedBannerProps {
   className?: string
   editable?: boolean
   showStorageInfo?: boolean
+  showDeleteButton?: boolean
 }
 
 export function EnhancedBanner({
   className,
   editable = true,
-  showStorageInfo = false
+  showStorageInfo = false,
+  showDeleteButton = true
 }: EnhancedBannerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -255,8 +257,8 @@ export function EnhancedBanner({
               </div>
             </div>
 
-            {/* Remove button (only show if banner exists) */}
-            {currentBannerUrl && (
+            {/* Remove button (only show if banner exists and showDeleteButton is true) */}
+            {currentBannerUrl && showDeleteButton && (
               <button
                 onClick={handleRemove}
                 className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm transition-colors duration-200"
@@ -266,8 +268,8 @@ export function EnhancedBanner({
               </button>
             )}
 
-            {/* Test Buttons (only in development) */}
-            {process.env.NODE_ENV === 'development' && (
+            {/* Test Buttons (disabled for production-ready interface) */}
+            {false && process.env.NODE_ENV === 'development' && (
               <>
                 <button
                   onClick={async () => {

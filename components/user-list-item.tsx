@@ -51,21 +51,6 @@ const getAchievementImage = (achievementName: string): string | null => {
 }
 
 export function UserListItem({ user }: UserListItemProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'online':
-        return 'bg-green-500'
-      case 'idle':
-        return 'bg-yellow-500'
-      case 'dnd':
-        return 'bg-red-500'
-      case 'offline':
-        return 'bg-gray-500'
-      default:
-        return 'bg-gray-500'
-    }
-  }
-
   const getKycStatusIcon = (status: string) => {
     switch (status) {
       case 'verified':
@@ -103,7 +88,7 @@ export function UserListItem({ user }: UserListItemProps) {
   return (
     <TooltipProvider>
       <div className="flex items-center gap-4 p-4 bg-[#1a2f51]/30 rounded-lg border border-[#C0E6FF]/10 hover:border-[#4DA2FF]/30 hover:bg-[#1a2f51]/50 transition-all duration-200">
-        {/* Avatar with Status */}
+        {/* Avatar */}
         <div className="relative flex-shrink-0">
           <Avatar className="h-12 w-12 bg-blue-100">
             <AvatarImage src={user.avatar} alt={user.name} />
@@ -111,13 +96,6 @@ export function UserListItem({ user }: UserListItemProps) {
               {user.name.charAt(0)}
             </AvatarFallback>
           </Avatar>
-          {/* Status Indicator */}
-          <div className={cn(
-            "absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-[#1a2f51] flex items-center justify-center",
-            getStatusColor(user.status)
-          )}>
-            <div className="w-2 h-2 rounded-full bg-white/90" />
-          </div>
         </div>
 
         {/* User Info */}
@@ -144,12 +122,6 @@ export function UserListItem({ user }: UserListItemProps) {
           
           <div className="flex items-center gap-4 text-sm text-[#C0E6FF]/70">
             <span>{user.username}</span>
-            {user.location && (
-              <div className="flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
-                <span>{user.location}</span>
-              </div>
-            )}
             <div className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               <span>Joined {formatDate(user.joinDate)}</span>

@@ -16,6 +16,7 @@ interface EnhancedAvatarProps {
   editable?: boolean
   className?: string
   showStorageInfo?: boolean
+  showDeleteButton?: boolean
 }
 
 const sizeClasses = {
@@ -30,7 +31,8 @@ export function EnhancedAvatar({
   size = 'xl',
   editable = true,
   className,
-  showStorageInfo = false
+  showStorageInfo = false,
+  showDeleteButton = true
 }: EnhancedAvatarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -156,8 +158,8 @@ export function EnhancedAvatar({
               <Camera className="w-6 h-6 text-white" />
             </div>
 
-            {/* Remove button (only show if image exists) */}
-            {currentImageUrl && (
+            {/* Remove button (only show if image exists and showDeleteButton is true) */}
+            {currentImageUrl && showDeleteButton && (
               <button
                 onClick={handleRemove}
                 className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs transition-colors duration-200"

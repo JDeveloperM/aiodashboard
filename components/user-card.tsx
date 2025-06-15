@@ -34,21 +34,6 @@ interface UserCardProps {
 }
 
 export function UserCard({ user }: UserCardProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'online':
-        return 'bg-green-500'
-      case 'idle':
-        return 'bg-yellow-500'
-      case 'dnd':
-        return 'bg-red-500'
-      case 'offline':
-        return 'bg-gray-500'
-      default:
-        return 'bg-gray-500'
-    }
-  }
-
   const getKycStatusIcon = (status: string) => {
     switch (status) {
       case 'verified':
@@ -120,7 +105,7 @@ export function UserCard({ user }: UserCardProps) {
             </Tooltip>
           </div>
 
-          {/* Avatar with Status */}
+          {/* Avatar */}
           <div className="flex flex-col items-center mb-4">
             <div className="relative mb-3">
               <Avatar className="h-20 w-20 bg-blue-100 ring-2 ring-[#4DA2FF]/20">
@@ -129,13 +114,6 @@ export function UserCard({ user }: UserCardProps) {
                   {user.name.charAt(0)}
                 </AvatarFallback>
               </Avatar>
-              {/* Status Indicator */}
-              <div className={cn(
-                "absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-[#030f1c] flex items-center justify-center",
-                getStatusColor(user.status)
-              )}>
-                <div className="w-3 h-3 rounded-full bg-white/90" />
-              </div>
             </div>
 
             {/* User Info */}
@@ -237,16 +215,9 @@ export function UserCard({ user }: UserCardProps) {
             </div>
           )}
 
-          {/* KYC and Status Info */}
+          {/* KYC Info */}
           <div className="mb-4 p-3 bg-[#1a2f51]/30 rounded-lg border border-[#C0E6FF]/10">
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
-                <span className="text-[#C0E6FF]/70">Status:</span>
-                <div className="flex items-center gap-1">
-                  <div className={cn("w-2 h-2 rounded-full", getStatusColor(user.status))} />
-                  <span className="text-white capitalize">{user.status}</span>
-                </div>
-              </div>
+            <div className="flex items-center justify-center text-xs">
               <div className="flex items-center gap-1">
                 {getKycStatusIcon(user.kycStatus)}
                 <span className={cn("font-medium", getKycStatusColor(user.kycStatus))}>
