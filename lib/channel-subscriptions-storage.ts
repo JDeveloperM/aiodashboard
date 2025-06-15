@@ -265,7 +265,7 @@ class ChannelSubscriptionsStorage {
 
       // Store new avatar in Walrus
       const imageData = new Uint8Array(await avatarFile.arrayBuffer())
-      const imageResult = await walrusService.storeBlob(imageData, 'channel-avatar', {
+      const imageResult = await walrusService.storeBlob(imageData, 'profile-image', {
         epochs: 365,
         deletable: true,
         originalName: avatarFile.name,
