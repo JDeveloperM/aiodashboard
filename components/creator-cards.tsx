@@ -42,7 +42,8 @@ import {
   shouldShowWarning,
   getWarningLevelColor,
   getWarningLevelBgColor,
-  getReportCountText
+  getReportCountText,
+  type ChannelWarningLevel
 } from "@/types/channel-reports"
 
 interface Channel {
@@ -873,7 +874,7 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
                             {(() => {
                               const channelKey = `${creator.id}_${channel.id}`
                               const channelHasWarning = hasWarning(channelKey)
-                              const warningLevel = getWarningLevel(channelKey)
+                              const warningLevel = getWarningLevel(channelKey) as ChannelWarningLevel
                               const reportCount = getReportCount(channelKey)
 
                               // Debug logging
