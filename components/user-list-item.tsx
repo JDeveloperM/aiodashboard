@@ -22,39 +22,39 @@ interface UserListItemProps {
   user: User
 }
 
-// Achievement image mapping function - Updated with new achievement names
+// Achievement image mapping function - Updated with new hexagonal achievement icons
 const getAchievementImage = (achievementName: string): string | null => {
   const imageMap: { [key: string]: string } = {
     // Profile/KYC Category
-    "Personalize Your Profile": "/images/achievements/profile.png",
-    "Unlock Full Access": "/images/achievements/kyc.png",
-    "Advanced User Status": "/images/achievements/level 5.png",
+    "Personalize Your Profile": "/images/achievements/Personalize Your Profile.png",
+    "Unlock Full Access": "/images/achievements/Unlock Full Access.png",
+    "Advanced User Status": "/images/achievements/Advanced User Status.png",
 
     // Social Connections Category
-    "Join the Community": "/images/achievements/dicord.png",
-    "Stay Informed": "/images/achievements/telegram.png",
-    "Follow the Conversation": "/images/achievements/x.png",
+    "Join the Community": "/images/achievements/Join the Community.png",
+    "Stay Informed": "/images/achievements/Stay Informed.png",
+    "Follow the Conversation": "/images/achievements/Follow the Conversation.png",
 
     // Crypto Bot Activities Category
-    "Automate Your Trades": "/images/achievements/bybit.png",
-    "APLN Trading Signals": "/images/achievements/apollon ai.png",
-    "HRMS Trading Insights": "/images/achievements/hermes.png",
-    "ATHN Trading Edge": "/images/achievements/athena.png",
-    "Master Trading Cycles": "/images/achievements/3 cyrcle.png",
+    "Automate Your Trades": "/images/achievements/Automate Your Trades.png",
+    "APLN Trading Signals": "/images/achievements/APLN Trading Signals.png",
+    "HRMS Trading Insights": "/images/achievements/HRMS Trading Insights.png",
+    "ATHN Trading Edge": "/images/achievements/ATHN Trading Edge.png",
+    "Master Trading Cycles": "/images/achievements/Master Trading Cycles.png",
 
     // User Upgrades Category
-    "Mint Royal NFT Status": "/images/achievements/upgrade to royal.png",
+    "Mint Royal NFT Status": "/images/achievements/Elite ROYAL Network.png", // Using Elite ROYAL Network icon
 
     // Referral Tiers Category
-    "Recruit PRO NFT Holders": "/images/achievements/refer pro.png",
-    "Royal NFT Ambassadors": "/images/achievements/refer royal.png",
-    "Build a NOMAD Network": "/images/achievements/refer nomad.png",
-    "Expand Your PRO Network": "/images/achievements/refer pro.png",
-    "Elite ROYAL Network": "/images/achievements/refer royal.png",
-    "Mentor Level 5 Users": "/images/achievements/mentor.png",
-    "Scale Level 5 Mentorship": "/images/achievements/mentor.png",
-    "Guide to Level 7": "/images/achievements/guide.png",
-    "Lead to Level 9": "/images/achievements/lead.png"
+    "Recruit PRO NFT Holders": "/images/achievements/Recruit PRO NFT Holders.png",
+    "Royal NFT Ambassadors": "/images/achievements/Royal NFT Ambassadors.png",
+    "Build a NOMAD Network": "/images/achievements/Build a NOMAD Network.png",
+    "Expand Your PRO Network": "/images/achievements/Expand Your PRO Network.png",
+    "Elite ROYAL Network": "/images/achievements/Elite ROYAL Network.png",
+    "Mentor Level 5 Users": "/images/achievements/Mentor Level 5 Users.png",
+    "Scale Level 5 Mentorship": "/images/achievements/Scale Level 5 Mentorship.png",
+    "Guide to Level 7": "/images/achievements/Guide to Level 7.png",
+    "Lead to Level 9": "/images/achievements/Lead to Level 9.png"
   }
   return imageMap[achievementName] || null
 }
