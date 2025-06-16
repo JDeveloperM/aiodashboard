@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Bell, X, Info, AlertTriangle, CreditCard, TrendingUp, Gift, Megaphone, FileText, Users, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -11,117 +11,141 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { useNotifications } from "@/hooks/use-notifications"
+import { useSuiAuth } from "@/contexts/sui-auth-context"
+import { DatabaseNotification, NotificationType, NotificationCategory } from "@/types/notifications"
 
-// Sample notification data - in a real app, this would come from an API or context
-type Notification = {
+// UI notification interface for display
+interface UINotification {
   id: string
   title: string
   message: string
   date: string
   read: boolean
-  type: "info" | "success" | "warning" | "error"
-  category: "platform" | "monthly" | "community"
+  type: NotificationType
+  category: NotificationCategory
   icon: any
+  actionUrl?: string
+  actionLabel?: string
 }
 
-const initialNotifications: Notification[] = [
-  // Platform Updates
-  {
-    id: "1",
-    title: "System Update v2.1.0",
-    message: "New features and performance improvements have been deployed",
-    date: "2 hours ago",
-    read: false,
-    type: "info",
-    category: "platform",
-    icon: Megaphone
-  },
-  {
-    id: "2",
-    title: "Maintenance Complete",
-    message: "Scheduled maintenance has been completed successfully",
-    date: "1 day ago",
-    read: false,
-    type: "success",
-    category: "platform",
-    icon: AlertTriangle
-  },
-  {
-    id: "3",
-    title: "New Trading Bot Available",
-    message: "Advanced crypto trading bot now available in marketplace",
-    date: "3 days ago",
-    read: true,
-    type: "info",
-    category: "platform",
-    icon: TrendingUp
-  },
-
-  // Monthly Reports
-  {
-    id: "4",
-    title: "November Trading Report",
-    message: "Your monthly trading performance report is ready",
-    date: "1 week ago",
-    read: false,
-    type: "info",
-    category: "monthly",
-    icon: FileText
-  },
-  {
-    id: "5",
-    title: "October Performance Summary",
-    message: "Review your October trading statistics and achievements",
-    date: "1 month ago",
-    read: true,
-    type: "success",
-    category: "monthly",
-    icon: FileText
-  },
-
-  // Community Updates
-  {
-    id: "6",
-    title: "New Community Event",
-    message: "Join our upcoming trading competition with $10K prizes",
-    date: "3 hours ago",
-    read: false,
-    type: "success",
-    category: "community",
-    icon: Users
-  },
-  {
-    id: "7",
-    title: "Community Milestone",
-    message: "We've reached 50,000 active traders! Thank you for being part of our community",
-    date: "2 days ago",
-    read: true,
-    type: "success",
-    category: "community",
-    icon: Gift
+/**
+ * Convert database notification to UI notification
+ */
+function convertToUINotification(dbNotification: DatabaseNotification): UINotification {
+  return {
+    id: dbNotification.id,
+    title: dbNotification.title,
+    message: dbNotification.message,
+    date: formatNotificationDate(dbNotification.created_at),
+    read: dbNotification.read,
+    type: dbNotification.type,
+    category: dbNotification.category,
+    icon: getNotificationIcon(dbNotification.type, dbNotification.category),
+    actionUrl: dbNotification.action_url,
+    actionLabel: dbNotification.action_label
   }
-]
+}
+
+/**
+ * Format notification date for display
+ */
+function formatNotificationDate(dateString: string): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+
+  if (diffInMinutes < 1) return 'Just now'
+  if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`
+
+  const diffInHours = Math.floor(diffInMinutes / 60)
+  if (diffInHours < 24) return `${diffInHours} hours ago`
+
+  const diffInDays = Math.floor(diffInHours / 24)
+  if (diffInDays < 7) return `${diffInDays} days ago`
+
+  return date.toLocaleDateString()
+}
+
+/**
+ * Get icon for notification type and category
+ */
+function getNotificationIcon(type: NotificationType, category: NotificationCategory) {
+  // Category-specific icons take precedence
+  switch (category) {
+    case 'platform':
+      return Megaphone
+    case 'monthly':
+      return FileText
+    case 'community':
+      return Users
+    case 'trade':
+      return TrendingUp
+    case 'system':
+      return Info
+    case 'promotion':
+      return Gift
+    default:
+      // Fallback to type-based icons
+      switch (type) {
+        case 'success':
+          return TrendingUp
+        case 'warning':
+          return AlertTriangle
+        case 'error':
+          return AlertTriangle
+        default:
+          return Info
+      }
+  }
+}
 
 export function Notifications() {
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications)
-  const [open, setOpen] = useState(false)
+  const { user } = useSuiAuth()
+  const {
+    notifications: dbNotifications,
+    unreadCount,
+    isLoading,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification
+  } = useNotifications(user?.address)
 
-  const unreadCount = notifications.filter(n => !n.read).length
+  const [open, setOpen] = useState(false)
+  const [uiNotifications, setUiNotifications] = useState<UINotification[]>([])
+
+  // Convert database notifications to UI notifications
+  useEffect(() => {
+    const converted = dbNotifications.map(convertToUINotification)
+    setUiNotifications(converted)
+  }, [dbNotifications])
 
   // Get notifications by category
-  const platformNotifications = notifications.filter(n => n.category === "platform")
-  const monthlyNotifications = notifications.filter(n => n.category === "monthly")
-  const communityNotifications = notifications.filter(n => n.category === "community")
+  const platformNotifications = uiNotifications.filter(n => n.category === "platform")
+  const monthlyNotifications = uiNotifications.filter(n => n.category === "monthly")
+  const communityNotifications = uiNotifications.filter(n => n.category === "community")
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })))
+  const handleMarkAllAsRead = async () => {
+    await markAllAsRead()
   }
 
-  const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter(n => n.id !== id))
+  const handleDeleteNotification = async (id: string) => {
+    await deleteNotification(id)
   }
 
-  const getTypeStyles = (type: Notification["type"]) => {
+  const handleNotificationClick = async (notification: UINotification) => {
+    // Mark as read if not already read
+    if (!notification.read) {
+      await markAsRead(notification.id)
+    }
+
+    // Navigate to action URL if available
+    if (notification.actionUrl) {
+      window.open(notification.actionUrl, '_blank')
+    }
+  }
+
+  const getTypeStyles = (type: NotificationType) => {
     switch (type) {
       case "success":
         return "text-green-500"
@@ -134,7 +158,7 @@ export function Notifications() {
     }
   }
 
-  const getCategoryIcon = (category: Notification["category"]) => {
+  const getCategoryIcon = (category: NotificationCategory) => {
     switch (category) {
       case "platform":
         return Megaphone
@@ -142,12 +166,18 @@ export function Notifications() {
         return FileText
       case "community":
         return Users
+      case "trade":
+        return TrendingUp
+      case "system":
+        return Info
+      case "promotion":
+        return Gift
       default:
         return Info
     }
   }
 
-  const getCategoryName = (category: Notification["category"]) => {
+  const getCategoryName = (category: NotificationCategory) => {
     switch (category) {
       case "platform":
         return "Platform Updates"
@@ -155,12 +185,26 @@ export function Notifications() {
         return "Monthly Reports"
       case "community":
         return "Community Updates"
+      case "trade":
+        return "Trade Alerts"
+      case "system":
+        return "System Notifications"
+      case "promotion":
+        return "Promotions"
       default:
         return "Other"
     }
   }
 
-  const renderNotificationList = (notificationList: Notification[]) => {
+  const renderNotificationList = (notificationList: UINotification[]) => {
+    if (isLoading) {
+      return (
+        <div className="p-8 text-center">
+          <p className="text-slate-400 text-sm">Loading notifications...</p>
+        </div>
+      )
+    }
+
     if (notificationList.length === 0) {
       return (
         <div className="p-8 text-center">
@@ -175,9 +219,10 @@ export function Notifications() {
           <div
             key={notification.id}
             className={cn(
-              "p-3 flex items-start gap-2 hover:bg-slate-800/50 transition-colors",
+              "p-3 flex items-start gap-2 hover:bg-slate-800/50 transition-colors cursor-pointer",
               !notification.read && "bg-slate-800"
             )}
+            onClick={() => handleNotificationClick(notification)}
           >
             <div className={cn("p-2 rounded-full flex-shrink-0",
               `${getTypeStyles(notification.type)} bg-opacity-10`
@@ -185,19 +230,31 @@ export function Notifications() {
               <notification.icon className={`h-4 w-4 ${getTypeStyles(notification.type)}`} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white">{notification.title}</p>
-              <p className="text-sm text-slate-300">{notification.message}</p>
-              <p className="text-xs text-slate-400 mt-1">{notification.date}</p>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-white">{notification.title}</p>
+                  <p className="text-sm text-slate-300">{notification.message}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-xs text-slate-400">{notification.date}</p>
+                    {notification.actionLabel && (
+                      <span className="text-xs text-[#4da2ff]">• {notification.actionLabel}</span>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-slate-400 hover:text-white h-6 w-6 p-0 rounded-full"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleDeleteNotification(notification.id)
+                  }}
+                >
+                  <span className="sr-only">Delete</span>
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-slate-400 hover:text-white h-6 w-6 p-0 rounded-full"
-              onClick={() => deleteNotification(notification.id)}
-            >
-              <span className="sr-only">Delete</span>
-              <X className="h-3.5 w-3.5" />
-            </Button>
           </div>
         ))}
       </div>
@@ -224,7 +281,8 @@ export function Notifications() {
               variant="ghost"
               size="sm"
               className="text-xs text-slate-400 hover:text-white"
-              onClick={markAllAsRead}
+              onClick={handleMarkAllAsRead}
+              disabled={isLoading}
             >
               Mark all as read
             </Button>

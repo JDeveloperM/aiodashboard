@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Search, Filter, Bell, Megaphone, FileText, Users, X, Info, AlertTriangle, TrendingUp, Gift } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,17 +8,91 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
+import { useNotifications } from "@/hooks/use-notifications"
+import { useSuiAuth } from "@/contexts/sui-auth-context"
+import { DatabaseNotification, NotificationType, NotificationCategory } from "@/types/notifications"
 
-// Same notification type and data as in the notifications component
-type Notification = {
+// UI notification interface for display
+interface UINotification {
   id: string
   title: string
   message: string
   date: string
   read: boolean
-  type: "info" | "success" | "warning" | "error"
-  category: "platform" | "monthly" | "community"
+  type: NotificationType
+  category: NotificationCategory
   icon: any
+  actionUrl?: string
+  actionLabel?: string
+}
+
+/**
+ * Convert database notification to UI notification
+ */
+function convertToUINotification(dbNotification: DatabaseNotification): UINotification {
+  return {
+    id: dbNotification.id,
+    title: dbNotification.title,
+    message: dbNotification.message,
+    date: formatNotificationDate(dbNotification.created_at),
+    read: dbNotification.read,
+    type: dbNotification.type,
+    category: dbNotification.category,
+    icon: getNotificationIcon(dbNotification.type, dbNotification.category),
+    actionUrl: dbNotification.action_url,
+    actionLabel: dbNotification.action_label
+  }
+}
+
+/**
+ * Format notification date for display
+ */
+function formatNotificationDate(dateString: string): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+
+  if (diffInMinutes < 1) return 'Just now'
+  if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`
+
+  const diffInHours = Math.floor(diffInMinutes / 60)
+  if (diffInHours < 24) return `${diffInHours} hours ago`
+
+  const diffInDays = Math.floor(diffInHours / 24)
+  if (diffInDays < 7) return `${diffInDays} days ago`
+
+  return date.toLocaleDateString()
+}
+
+/**
+ * Get icon for notification type and category
+ */
+function getNotificationIcon(type: NotificationType, category: NotificationCategory) {
+  switch (category) {
+    case 'platform':
+      return Megaphone
+    case 'monthly':
+      return FileText
+    case 'community':
+      return Users
+    case 'trade':
+      return TrendingUp
+    case 'system':
+      return Info
+    case 'promotion':
+      return Gift
+    default:
+      switch (type) {
+        case 'success':
+          return TrendingUp
+        case 'warning':
+          return AlertTriangle
+        case 'error':
+          return AlertTriangle
+        default:
+          return Info
+      }
+  }
 }
 
 const allNotifications: Notification[] = [
@@ -130,39 +204,69 @@ const allNotifications: Notification[] = [
 ]
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>(allNotifications)
+  const { user } = useSuiAuth()
+  const {
+    notifications: dbNotifications,
+    unreadCount,
+    isLoading,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification
+  } = useNotifications(user?.address)
+
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<"all" | "platform" | "monthly" | "community">("all")
+  const [selectedCategory, setSelectedCategory] = useState<"all" | "platform" | "monthly" | "community" | "trade" | "system" | "promotion">("all")
+  const [uiNotifications, setUiNotifications] = useState<UINotification[]>([])
+
+  // Convert database notifications to UI notifications
+  useEffect(() => {
+    const converted = dbNotifications.map(convertToUINotification)
+    setUiNotifications(converted)
+  }, [dbNotifications])
 
   // Filter notifications based on search and category
-  const filteredNotifications = notifications.filter(notification => {
-    const matchesSearch = notification.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         notification.message.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || notification.category === selectedCategory
-    return matchesSearch && matchesCategory
-  })
+  const filteredNotifications = useMemo(() => {
+    return uiNotifications.filter(notification => {
+      const matchesSearch = notification.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           notification.message.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesCategory = selectedCategory === "all" || notification.category === selectedCategory
+      return matchesSearch && matchesCategory
+    })
+  }, [uiNotifications, searchQuery, selectedCategory])
 
   // Get counts for each category
-  const platformCount = notifications.filter(n => n.category === "platform").length
-  const monthlyCount = notifications.filter(n => n.category === "monthly").length
-  const communityCount = notifications.filter(n => n.category === "community").length
-  const unreadCount = notifications.filter(n => !n.read).length
+  const platformCount = uiNotifications.filter(n => n.category === "platform").length
+  const monthlyCount = uiNotifications.filter(n => n.category === "monthly").length
+  const communityCount = uiNotifications.filter(n => n.category === "community").length
+  const tradeCount = uiNotifications.filter(n => n.category === "trade").length
+  const systemCount = uiNotifications.filter(n => n.category === "system").length
+  const promotionCount = uiNotifications.filter(n => n.category === "promotion").length
 
-  const markAsRead = (id: string) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ))
+  const handleMarkAsRead = async (id: string) => {
+    await markAsRead(id)
   }
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })))
+  const handleMarkAllAsRead = async () => {
+    await markAllAsRead()
   }
 
-  const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter(n => n.id !== id))
+  const handleDeleteNotification = async (id: string) => {
+    await deleteNotification(id)
   }
 
-  const getTypeStyles = (type: Notification["type"]) => {
+  const handleNotificationClick = async (notification: UINotification) => {
+    // Mark as read if not already read
+    if (!notification.read) {
+      await markAsRead(notification.id)
+    }
+
+    // Navigate to action URL if available
+    if (notification.actionUrl) {
+      window.open(notification.actionUrl, '_blank')
+    }
+  }
+
+  const getTypeStyles = (type: NotificationType) => {
     switch (type) {
       case "success":
         return "text-green-500"
@@ -175,7 +279,7 @@ export default function NotificationsPage() {
     }
   }
 
-  const getCategoryName = (category: Notification["category"]) => {
+  const getCategoryName = (category: NotificationCategory) => {
     switch (category) {
       case "platform":
         return "Platform Updates"
@@ -183,6 +287,12 @@ export default function NotificationsPage() {
         return "Monthly Reports"
       case "community":
         return "Community Updates"
+      case "trade":
+        return "Trade Alerts"
+      case "system":
+        return "System Notifications"
+      case "promotion":
+        return "Promotions"
       default:
         return "All"
     }
@@ -197,9 +307,10 @@ export default function NotificationsPage() {
         </div>
         {unreadCount > 0 && (
           <Button
-            onClick={markAllAsRead}
+            onClick={handleMarkAllAsRead}
             variant="outline"
             className="bg-transparent border-slate-700 text-white hover:bg-[#4da2ff]/10 hover:border-[#4da2ff]"
+            disabled={isLoading}
           >
             Mark all as read ({unreadCount})
           </Button>
@@ -224,12 +335,12 @@ export default function NotificationsPage() {
                 variant={selectedCategory === "all" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedCategory("all")}
-                className={selectedCategory === "all" 
-                  ? "bg-[#4da2ff] hover:bg-[#4da2ff]/80" 
+                className={selectedCategory === "all"
+                  ? "bg-[#4da2ff] hover:bg-[#4da2ff]/80"
                   : "bg-transparent border-slate-700 text-white hover:bg-[#4da2ff]/10 hover:border-[#4da2ff]"
                 }
               >
-                All ({notifications.length})
+                All ({uiNotifications.length})
               </Button>
               <Button
                 variant={selectedCategory === "platform" ? "default" : "outline"}
@@ -274,14 +385,22 @@ export default function NotificationsPage() {
 
       {/* Notifications List */}
       <div className="space-y-4">
-        {filteredNotifications.length > 0 ? (
+        {isLoading ? (
+          <Card className="bg-[#1a2f51] border-slate-700">
+            <CardContent className="p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4da2ff] mx-auto mb-4"></div>
+              <p className="text-slate-400 text-sm">Loading notifications...</p>
+            </CardContent>
+          </Card>
+        ) : filteredNotifications.length > 0 ? (
           filteredNotifications.map((notification) => (
             <Card
               key={notification.id}
               className={cn(
-                "bg-[#1a2f51] border-slate-700 transition-all hover:border-slate-600",
+                "bg-[#1a2f51] border-slate-700 transition-all hover:border-slate-600 cursor-pointer",
                 !notification.read && "border-l-4 border-l-[#4da2ff] bg-[#1a2f51]/80"
               )}
+              onClick={() => handleNotificationClick(notification)}
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
@@ -305,14 +424,22 @@ export default function NotificationsPage() {
                           </Badge>
                         </div>
                         <p className="text-slate-300 text-sm mb-2">{notification.message}</p>
-                        <p className="text-slate-400 text-xs">{notification.date}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-slate-400 text-xs">{notification.date}</p>
+                          {notification.actionLabel && (
+                            <span className="text-xs text-[#4da2ff]">• {notification.actionLabel}</span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-1">
                         {!notification.read && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => markAsRead(notification.id)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleMarkAsRead(notification.id)
+                            }}
                             className="text-[#4da2ff] hover:text-white hover:bg-[#4da2ff]/10 text-xs"
                           >
                             Mark as read
@@ -321,7 +448,10 @@ export default function NotificationsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => deleteNotification(notification.id)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteNotification(notification.id)
+                          }}
                           className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 h-8 w-8 p-0"
                         >
                           <X className="h-4 w-4" />

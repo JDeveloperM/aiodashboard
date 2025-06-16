@@ -16,6 +16,7 @@ import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { DashboardProfiles } from "@/components/dashboard-profiles"
 import { NewUserOnboarding } from "@/components/new-user-onboarding"
 import { KYCVerificationFlow } from "@/components/kyc-verification-flow"
+import { AdminNotifications } from "@/components/admin/admin-notifications"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -38,17 +39,21 @@ interface PaymentMethod {
   autoRenewal: boolean
 }
 export default function SettingsPage() {
+  // Use persistent profile system
+  const { user, isNewUser } = useSuiAuth()
+
+  // Check if user is admin
+  const isAdmin = user?.address === '0x311479200d45ef0243b92dbcf9849b8f6b931d27ae885197ea73066724f2bcf4'
+
   // Use our notification hook
   const {
     permission: notificationPermission,
     settings: notifications,
-    updateSettings: setNotifications,
+    updateSettings: updateNotificationSettings,
     requestPermission: requestNotificationPermission,
-    isSupported: isNotificationSupported
-  } = useNotifications()
-
-  // Use persistent profile system
-  const { user, isNewUser } = useSuiAuth()
+    isSupported: isNotificationSupported,
+    sendTestNotification
+  } = useNotifications(user?.address)
   const { profile, updateProfile, isLoading } = usePersistentProfile()
 
   // KYC flow state
@@ -185,12 +190,12 @@ export default function SettingsPage() {
         ...profile?.display_preferences,
         language,
         performance_mode: performanceMode,
-        email_notifications: notifications.email,
-        push_notifications: notifications.push,
-        browser_notifications: notifications.browser,
-        trade_notifications: notifications.trades,
-        news_notifications: notifications.news,
-        promo_notifications: notifications.promotions
+        email_notifications: notifications?.email_enabled,
+        push_notifications: notifications?.push_enabled,
+        browser_notifications: notifications?.browser_enabled,
+        trade_notifications: notifications?.trade_enabled,
+        news_notifications: notifications?.platform_enabled,
+        promo_notifications: notifications?.promotion_enabled
       }
 
       await updateProfile({
@@ -626,8 +631,8 @@ export default function SettingsPage() {
                     </div>
                   <Switch
                     id="email-notifications"
-                    checked={notifications.email}
-                    onCheckedChange={(checked) => setNotifications({ email: checked })}
+                    checked={notifications?.email_enabled ?? true}
+                    onCheckedChange={(checked) => updateNotificationSettings({ email_enabled: checked })}
                   />
                 </div>
 
@@ -638,48 +643,55 @@ export default function SettingsPage() {
                     </div>
                   <Switch
                     id="push-notifications"
-                    checked={notifications.push}
-                    onCheckedChange={(checked) => setNotifications({ push: checked })}
+                    checked={notifications?.push_enabled ?? true}
+                    onCheckedChange={(checked) => updateNotificationSettings({ push_enabled: checked })}
                   />
                 </div>
 
                   <div className="flex items-center justify-between">
                     <div>
                       <Label htmlFor="browser-notifications" className="text-white">Browser Notifications</Label>
-                      <p className="text-sm text-[#C0E6FF]">
-                        Receive notifications in this browser when the app is open.
-                        {notificationPermission === "denied" && (
-                          <span className="block text-red-500 mt-1">
-                            Notifications are blocked. Please update your browser settings.
-                          </span>
-                        )}
-                      </p>
+                      <p className="text-sm text-[#C0E6FF]">Receive notifications in your browser.</p>
+                      {notificationPermission === 'denied' && (
+                        <p className="text-xs text-red-400 mt-1">Browser notifications are blocked. Please enable them in your browser settings.</p>
+                      )}
                     </div>
-                  <div className="flex items-center gap-2">
-                    {notificationPermission !== "granted" && (
+                    <div className="flex items-center gap-2">
+                      {notificationPermission === 'default' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={requestNotificationPermission}
+                          className="text-xs bg-transparent border-slate-700 text-white hover:bg-[#4da2ff]/10 hover:border-[#4da2ff]"
+                        >
+                          Enable
+                        </Button>
+                      )}
+                      <Switch
+                        id="browser-notifications"
+                        checked={notifications?.browser_enabled ?? true}
+                        onCheckedChange={(checked) => updateNotificationSettings({ browser_enabled: checked })}
+                        disabled={notificationPermission === 'denied'}
+                      />
+                    </div>
+                  </div>
+
+                  {notificationPermission === 'granted' && notifications?.browser_enabled && (
+                    <div className="flex items-center justify-between bg-slate-800/50 p-3 rounded-lg">
+                      <div>
+                        <Label className="text-white">Test Browser Notifications</Label>
+                        <p className="text-sm text-[#C0E6FF]">Send a test notification to verify everything is working.</p>
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={requestNotificationPermission}
-                        disabled={notificationPermission === "denied"}
+                        onClick={sendTestNotification}
+                        className="bg-transparent border-slate-700 text-white hover:bg-[#4da2ff]/10 hover:border-[#4da2ff]"
                       >
-                        {notificationPermission === "denied" ? "Blocked" : "Enable"}
+                        Send Test
                       </Button>
-                    )}
-                    <Switch
-                      id="browser-notifications"
-                      checked={notifications.browser && notificationPermission === "granted"}
-                      onCheckedChange={(checked) => {
-                        if (notificationPermission !== "granted" && checked) {
-                          requestNotificationPermission();
-                        } else {
-                          setNotifications({ browser: checked });
-                        }
-                      }}
-                      disabled={notificationPermission !== "granted"}
-                    />
-                  </div>
-                </div>
+                    </div>
+                  )}
 
                   <div className="border-t border-[#C0E6FF]/20 pt-4">
                     <h3 className="text-lg font-medium mb-2 text-white">Notification Types</h3>
@@ -696,8 +708,8 @@ export default function SettingsPage() {
                         </div>
                       <Switch
                         id="trade-notifications"
-                        checked={notifications.trades}
-                        onCheckedChange={(checked) => setNotifications({ trades: checked })}
+                        checked={notifications?.trade_enabled ?? true}
+                        onCheckedChange={(checked) => updateNotificationSettings({ trade_enabled: checked })}
                       />
                     </div>
                       <div className="flex items-center justify-between">
@@ -709,8 +721,8 @@ export default function SettingsPage() {
                         </div>
                       <Switch
                         id="news-notifications"
-                        checked={notifications.news}
-                        onCheckedChange={(checked) => setNotifications({ news: checked })}
+                        checked={notifications?.platform_enabled ?? true}
+                        onCheckedChange={(checked) => updateNotificationSettings({ platform_enabled: checked })}
                       />
                     </div>
                       <div className="flex items-center justify-between">
@@ -722,8 +734,8 @@ export default function SettingsPage() {
                         </div>
                         <Switch
                           id="promo-notifications"
-                          checked={notifications.promotions}
-                          onCheckedChange={(checked) => setNotifications({ promotions: checked })}
+                          checked={notifications?.promotion_enabled ?? false}
+                          onCheckedChange={(checked) => updateNotificationSettings({ promotion_enabled: checked })}
                         />
                       </div>
                     </div>
@@ -741,6 +753,9 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
+
+          {/* Admin Notification Panel */}
+          <AdminNotifications isAdmin={isAdmin} />
         </TabsContent>
 
       </Tabs>
