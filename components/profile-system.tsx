@@ -62,30 +62,39 @@ const socialImages = {
   X: "/images/social/x.png"
 }
 
-// Achievement image mapping function
+// Achievement image mapping function - Updated with new achievement names
 const getAchievementImage = (achievementName: string): string | null => {
   const imageMap: { [key: string]: string } = {
-    "Profile Picture": "/images/achievements/profile.png",
-    "KYC Verification": "/images/achievements/kyc.png",
-    "Reach Level 5": "/images/achievements/level 5.png",
-    "Connect Discord": "/images/achievements/dicord.png",
-    "Connect Telegram": "/images/achievements/telegram.png",
-    "Connect X": "/images/achievements/x.png",
-    "Connect Bybit": "/images/achievements/bybit.png",
-    "Follow Apollon Bot": "/images/achievements/apollon ai.png",
-    "Follow Hermes Bot": "/images/achievements/hermes.png",
-    "Make 3 Cycles": "/images/achievements/3 cyrcle.png",
-    "Upgrade to PRO": "/images/achievements/upgrade to pro.png",
-    "Upgrade to ROYAL": "/images/achievements/upgrade to royal.png",
-    "Refer 10 NOMADs": "/images/achievements/refer nomad.png",
-    "Refer 50 NOMADs": "/images/achievements/refer nomad.png",
-    "Refer 100 NOMADs": "/images/achievements/refer nomad.png",
-    "Refer 1 PRO": "/images/achievements/refer pro.png",
-    "Refer 5 PRO": "/images/achievements/refer pro.png",
-    "Refer 10 PRO": "/images/achievements/refer pro.png",
-    "Refer 1 ROYAL": "/images/achievements/refer royal.png",
-    "Refer 3 ROYAL": "/images/achievements/refer royal.png",
-    "Refer 5 ROYAL": "/images/achievements/refer royal.png"
+    // Profile/KYC Category
+    "Personalize Your Profile": "/images/achievements/profile.png",
+    "Unlock Full Access": "/images/achievements/kyc.png",
+    "Advanced User Status": "/images/achievements/level 5.png",
+
+    // Social Connections Category
+    "Join the Community": "/images/achievements/dicord.png",
+    "Stay Informed": "/images/achievements/telegram.png",
+    "Follow the Conversation": "/images/achievements/x.png",
+
+    // Crypto Bot Activities Category
+    "Automate Your Trades": "/images/achievements/bybit.png",
+    "APLN Trading Signals": "/images/achievements/apollon ai.png",
+    "HRMS Trading Insights": "/images/achievements/hermes.png",
+    "ATHN Trading Edge": "/images/achievements/athena.png",
+    "Master Trading Cycles": "/images/achievements/3 cyrcle.png",
+
+    // User Upgrades Category
+    "Mint Royal NFT Status": "/images/achievements/upgrade to royal.png",
+
+    // Referral Tiers Category
+    "Recruit PRO NFT Holders": "/images/achievements/refer pro.png",
+    "Royal NFT Ambassadors": "/images/achievements/refer royal.png",
+    "Build a NOMAD Network": "/images/achievements/refer nomad.png",
+    "Expand Your PRO Network": "/images/achievements/refer pro.png",
+    "Elite ROYAL Network": "/images/achievements/refer royal.png",
+    "Mentor Level 5 Users": "/images/achievements/mentor.png",
+    "Scale Level 5 Mentorship": "/images/achievements/mentor.png",
+    "Guide to Level 7": "/images/achievements/guide.png",
+    "Lead to Level 9": "/images/achievements/lead.png"
   }
 
   return imageMap[achievementName] || null

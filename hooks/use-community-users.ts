@@ -69,12 +69,12 @@ const getLastActiveTime = (lastActive: string): string => {
 
 // Helper function to convert database achievements to UI format
 const convertAchievements = (achievementsData: any[], profile: DecryptedProfile): Achievement[] => {
-  // Base achievements that should always be available (same as profile system)
+  // Base achievements that should always be available (updated with new names and XP values)
   const baseAchievements = [
-    // Profile & Account Achievements
-    { name: "Profile Picture", color: "#4DA2FF", xp: 15, tooltip: "Upload a profile picture to personalize your account" },
-    { name: "KYC Verification", color: "#10B981", xp: 25, tooltip: "Complete KYC verification to unlock full platform features" },
-    { name: "Reach Level 5", color: "#FFD700", xp: 50, tooltip: "Reach profile level 5 to unlock advanced features" },
+    // Profile & KYC Category
+    { name: "Personalize Your Profile", color: "#4DA2FF", xp: 50, tooltip: "Upload a profile picture to your account" },
+    { name: "Unlock Full Access", color: "#10B981", xp: 100, tooltip: "Finish the KYC verification process" },
+    { name: "Advanced User Status", color: "#FFD700", xp: 200, tooltip: "Achieve profile level 5" },
 
     // Social Connection Achievements
     { name: "Connect Discord", color: "#5865F2", xp: 15, tooltip: "Connect your Discord account to join our community" },

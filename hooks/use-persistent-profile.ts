@@ -267,17 +267,17 @@ export function usePersistentProfile(): ProfileState & ProfileActions {
       const newTotalXP = profile.total_xp + xpReward
       const newPoints = (profile.points || 0) + pointsReward
 
-      // Calculate new level using the correct XP progression table
+      // Calculate new level using the updated XP progression table
       let newLevel = 1
-      if (newTotalXP >= 1000) newLevel = 10
-      else if (newTotalXP >= 940) newLevel = 9
-      else if (newTotalXP >= 830) newLevel = 8
-      else if (newTotalXP >= 660) newLevel = 7
-      else if (newTotalXP >= 480) newLevel = 6
-      else if (newTotalXP >= 330) newLevel = 5
-      else if (newTotalXP >= 210) newLevel = 4
-      else if (newTotalXP >= 120) newLevel = 3
-      else if (newTotalXP >= 50) newLevel = 2
+      if (newTotalXP >= 5000) newLevel = 10
+      else if (newTotalXP >= 3600) newLevel = 9
+      else if (newTotalXP >= 2600) newLevel = 8
+      else if (newTotalXP >= 1800) newLevel = 7
+      else if (newTotalXP >= 1200) newLevel = 6
+      else if (newTotalXP >= 800) newLevel = 5
+      else if (newTotalXP >= 500) newLevel = 4
+      else if (newTotalXP >= 250) newLevel = 3
+      else if (newTotalXP >= 100) newLevel = 2
 
       console.log('📈 New XP and Points calculation:', {
         newCurrentXP,
