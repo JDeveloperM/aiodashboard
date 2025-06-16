@@ -78,11 +78,6 @@ export function TopNav() {
           {/* Session restoration indicator */}
           <SessionRestorationBadge />
 
-          {/* Session Status for authenticated users */}
-          <SignedIn>
-            <SessionStatus className="hidden md:flex" />
-          </SignedIn>
-
           {/* Sui Wallet Connect with Social Login */}
           <SuiWalletWithSocial />
 

@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { RoleImage } from "@/components/ui/role-image"
 import { TipPaymentModal } from "./tip-payment-modal"
+import { ChannelReportModal } from "./channel-report-modal"
 import { useSubscription } from "@/contexts/subscription-context"
 import { usePremiumAccess } from "@/contexts/premium-access-context"
 import { useCreatorsDatabase } from "@/contexts/creators-database-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { useCurrentAccount } from "@mysten/dapp-kit"
+import { useChannelReports } from "@/hooks/use-channel-reports"
 import { Filter, FilterX } from "lucide-react"
 import { toast } from "sonner"
 import { addUserChannelSubscription, channelSubscriptionsStorage } from "@/lib/channel-subscriptions-storage"
@@ -30,9 +32,18 @@ import {
   UserX,
   Send,
   LogOut,
-  Trash2
+  Trash2,
+  Flag,
+  AlertTriangle,
+  Shield
 } from "lucide-react"
 import Image from "next/image"
+import {
+  shouldShowWarning,
+  getWarningLevelColor,
+  getWarningLevelBgColor,
+  getReportCountText
+} from "@/types/channel-reports"
 
 interface Channel {
   id: string
@@ -144,12 +155,32 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null)
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [reportChannelId, setReportChannelId] = useState<string>('')
+  const [reportChannelName, setReportChannelName] = useState<string>('')
+  const [reportCreatorAddress, setReportCreatorAddress] = useState<string>('')
+  const [reportCreatorName, setReportCreatorName] = useState<string>('')
   const [userAccess, setUserAccess] = useState<Record<string, string>>({})
   const [showOnlyJoined, setShowOnlyJoined] = useState(false)
   const { tier } = useSubscription()
   const { canAccessPremiumForFree, recordPremiumAccess, removePremiumAccess, getRemainingFreeAccess, premiumAccessRecords } = usePremiumAccess()
   const { deleteChannel } = useCreatorsDatabase()
   const currentAccount = useCurrentAccount()
+
+  // Get channel IDs for report statistics
+  const channelIds = creators.flatMap(creator =>
+    creator.channels.map(channel => `${creator.id}_${channel.id}`)
+  )
+
+  // Use channel reports hook to get warning indicators
+  const {
+    statistics,
+    isLoading: isLoadingReports,
+    hasWarning,
+    getWarningLevel,
+    getReportCount,
+    refreshStats
+  } = useChannelReports(channelIds)
 
   // Load user access from localStorage
   useEffect(() => {
@@ -422,6 +453,43 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       toast.error(`Failed to delete channel "${channelName}": ${errorMessage}`)
     }
+  }
+
+  const handleReportChannel = (creator: Creator, channel: Channel, event: React.MouseEvent) => {
+    event.stopPropagation() // Prevent triggering the access button
+
+    if (!user?.address) {
+      toast.error('Please connect your wallet to report a channel')
+      return
+    }
+
+    // Set report modal data
+    const channelId = `${creator.id}_${channel.id}`
+    setReportChannelId(channelId)
+    setReportChannelName(channel.name)
+    setReportCreatorAddress(creator.creatorAddress || creator.id)
+    setReportCreatorName(creator.name)
+    setShowReportModal(true)
+
+    console.log(`[CreatorCards] Opening report modal for channel: ${channel.name} by ${creator.name}`)
+    console.log('🔍 Report channel ID being set:', {
+      channelId,
+      creatorId: creator.id,
+      channelIdRaw: channel.id,
+      channelName: channel.name
+    })
+  }
+
+  const handleReportSubmitted = () => {
+    // Refresh report statistics after a report is submitted
+    refreshStats(channelIds)
+    setShowReportModal(false)
+
+    // Reset report modal data
+    setReportChannelId('')
+    setReportChannelName('')
+    setReportCreatorAddress('')
+    setReportCreatorName('')
   }
 
   // Check if the current user owns a specific creator profile
@@ -791,12 +859,65 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
                         key={channel.id}
                         className="bg-[#1a2f51] rounded p-2 space-y-1"
                       >
-                        <div className="flex items-center justify-center">
+                        <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1">
                             <span className="text-white text-xs font-medium">{channel.name}</span>
                             <Badge className={`text-xs ${getChannelTypeColor(channel.type)} px-1 py-0`}>
                               {channel.type[0].toUpperCase()}
                             </Badge>
+                          </div>
+
+                          {/* Warning indicator and report button */}
+                          <div className="flex items-center gap-1">
+                            {/* Warning indicator for reported channels */}
+                            {(() => {
+                              const channelKey = `${creator.id}_${channel.id}`
+                              const channelHasWarning = hasWarning(channelKey)
+                              const warningLevel = getWarningLevel(channelKey)
+                              const reportCount = getReportCount(channelKey)
+
+                              // Debug logging
+                              if (channelKey.includes('c7c133c0')) { // Debug for the reported channel
+                                const stats = statistics[channelKey]
+                                console.log('🔍 Channel warning check:', {
+                                  channelKey,
+                                  channelName: channel.name,
+                                  hasWarning: channelHasWarning,
+                                  warningLevel,
+                                  reportCount,
+                                  statistics: stats,
+                                  is_flagged: stats?.is_flagged,
+                                  warning_level: stats?.warning_level,
+                                  total_reports: stats?.total_reports
+                                })
+                              }
+
+                              if (channelHasWarning) {
+                                return (
+                                  <div
+                                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-xs ${getWarningLevelBgColor(warningLevel)}`}
+                                    title={`${getReportCountText(reportCount)} - Warning: ${warningLevel}`}
+                                  >
+                                    <AlertTriangle className={`w-3 h-3 ${getWarningLevelColor(warningLevel)}`} />
+                                    <span className={getWarningLevelColor(warningLevel)}>{reportCount}</span>
+                                  </div>
+                                )
+                              }
+                              return null
+                            })()}
+
+                            {/* Report button - only show for non-owners */}
+                            {!isOwner(creator) && (
+                              <Button
+                                onClick={(e) => handleReportChannel(creator, channel, e)}
+                                size="sm"
+                                variant="ghost"
+                                className="h-5 w-5 p-0 text-gray-400 hover:text-red-400 hover:bg-red-500/10"
+                                title={`Report "${channel.name}"`}
+                              >
+                                <Flag className="w-3 h-3" />
+                              </Button>
+                            )}
                           </div>
                         </div>
 
@@ -940,6 +1061,16 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
         creator={selectedCreator}
         channel={selectedChannel}
         onPaymentSuccess={handlePaymentSuccess}
+      />
+
+      <ChannelReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        channelId={reportChannelId}
+        channelName={reportChannelName}
+        creatorAddress={reportCreatorAddress}
+        creatorName={reportCreatorName}
+        onReportSubmitted={handleReportSubmitted}
       />
     </>
   )
