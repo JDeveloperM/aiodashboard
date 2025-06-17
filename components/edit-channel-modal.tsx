@@ -226,6 +226,7 @@ export function EditChannelModal({
                   onImageRemove={handleProfileImageRemove}
                   editable={true}
                   size="xl"
+                  fallbackText={channel?.name?.charAt(0) || "C"}
                 />
                 <p className="text-xs text-gray-400">Recommended: 400x400px, max 5MB</p>
               </div>
