@@ -8,33 +8,28 @@ import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RoleImage } from "@/components/ui/role-image"
-import { 
-  Users, 
-  CheckCircle, 
-  Star, 
-  Search, 
-  Filter, 
-  Award, 
-  Mail, 
-  Calendar, 
+import { affiliateService, AffiliateUser, AffiliateMetrics } from "@/lib/affiliate-service"
+import { useCurrentAccount } from "@mysten/dapp-kit"
+import { ContactSponsorModal } from "@/components/contact-sponsor-modal"
+import {
+  Users,
+  CheckCircle,
+  Star,
+  Search,
+  Filter,
+  Award,
+  Mail,
+  Calendar,
   MoreHorizontal,
   MessageCircle,
   Bell,
-  Gift
+  Gift,
+  Loader2
 } from "lucide-react"
 
-interface InvitedUser {
-  id: string
-  username: string
-  email: string
-  joinDate: string
-  status: 'NOMAD' | 'PRO' | 'ROYAL'
-  commission: number
-  kycStatus: 'verified' | 'pending' | 'not_verified'
-  level: number
-}
-
 export function AffiliateControls() {
+  const account = useCurrentAccount()
+
   // State for search and filters
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<'ALL' | 'NOMAD' | 'PRO' | 'ROYAL'>('ALL')
@@ -42,66 +37,87 @@ export function AffiliateControls() {
   const [showLatestOnly, setShowLatestOnly] = useState(false)
   const [displayedCount, setDisplayedCount] = useState(5)
 
-  // Metrics data
-  const metrics = {
-    totalInvites: 247,
-    newUsers: 168,
-    totalCommission: 12450
-  }
+  // State for real data
+  const [metrics, setMetrics] = useState<AffiliateMetrics>({
+    totalInvites: 0,
+    newUsers: 0,
+    totalCommission: 0,
+    conversionRate: 0
+  })
+  const [affiliateUsers, setAffiliateUsers] = useState<AffiliateUser[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [totalCount, setTotalCount] = useState(0)
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set())
+  const [hoveredUsers, setHoveredUsers] = useState<Set<string>>(new Set())
 
-  // Sample invited users data
-  const invitedUsers: InvitedUser[] = [
-    {
-      id: "1",
-      username: "crypto_trader_01",
-      email: "trader01@example.com",
-      joinDate: "2024-01-15",
-      status: "PRO",
-      commission: 125,
-      kycStatus: "verified",
-      level: 5
-    },
-    {
-      id: "2", 
-      username: "defi_enthusiast",
-      email: "defi@example.com",
-      joinDate: "2024-01-10",
-      status: "ROYAL",
-      commission: 375,
-      kycStatus: "verified",
-      level: 8
-    },
-    {
-      id: "3",
-      username: "blockchain_newbie",
-      email: "newbie@example.com", 
-      joinDate: "2024-01-20",
-      status: "NOMAD",
-      commission: 25,
-      kycStatus: "pending",
-      level: 2
-    },
-    {
-      id: "4",
-      username: "nft_collector",
-      email: "nft@example.com",
-      joinDate: "2024-01-08",
-      status: "PRO", 
-      commission: 150,
-      kycStatus: "verified",
-      level: 6
-    },
-    {
-      id: "5",
-      username: "yield_farmer",
-      email: "yield@example.com",
-      joinDate: "2024-01-25",
-      status: "ROYAL",
-      commission: 400,
-      kycStatus: "verified", 
-      level: 9
+  // Load data on component mount and when wallet changes
+  useEffect(() => {
+    if (account?.address) {
+      loadAffiliateData()
     }
-  ]
+  }, [account?.address, selectedRoleFilter, selectedLevelFilter])
+
+  // Load affiliate data from database
+  const loadAffiliateData = async () => {
+    if (!account?.address) {
+      setError('Wallet not connected')
+      setLoading(false)
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError(null)
+
+      console.log('🔄 Loading affiliate data for wallet:', account.address)
+      console.log('🔄 Account object:', account)
+
+      // Load metrics
+      const metricsData = await affiliateService.getAffiliateMetrics(account.address)
+      setMetrics(metricsData)
+
+      // Load affiliate users with current filters
+      const { users, totalCount: count } = await affiliateService.getAffiliateUsers(account.address, {
+        roleFilter: selectedRoleFilter,
+        levelFilter: selectedLevelFilter,
+        limit: 50 // Load more initially for filtering
+      })
+
+      setAffiliateUsers(users)
+      setTotalCount(count)
+
+      console.log('✅ Affiliate data loaded successfully')
+      console.log('📊 Final metrics:', metricsData)
+      console.log('👥 Final users count:', users.length)
+
+      // If no data found, try with admin address for testing
+      if (users.length === 0 && metricsData.totalInvites === 0) {
+        console.log('🧪 No data found for current wallet, trying admin address for testing...')
+        const adminAddress = '0x311479200d45ef0243b92dbcf9849b8f6b931d27ae885197ea73066724f2bcf4'
+
+        const adminMetrics = await affiliateService.getAffiliateMetrics(adminAddress)
+        const { users: adminUsers } = await affiliateService.getAffiliateUsers(adminAddress, {
+          roleFilter: selectedRoleFilter,
+          levelFilter: selectedLevelFilter,
+          limit: 50
+        })
+
+        if (adminUsers.length > 0) {
+          console.log('🧪 Using admin test data')
+          setMetrics(adminMetrics)
+          setAffiliateUsers(adminUsers)
+          setTotalCount(adminUsers.length)
+        }
+      }
+
+    } catch (error) {
+      console.error('❌ Failed to load affiliate data:', error)
+      setError('Failed to load affiliate data')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Helper functions
   const getStatusColor = (status: string) => {
@@ -131,38 +147,68 @@ export function AffiliateControls() {
     }
   }
 
-  // Filter users based on search term and filters
-  const filteredUsers = invitedUsers.filter(user => {
-    const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesRole = selectedRoleFilter === 'ALL' || user.status === selectedRoleFilter
-    
-    const matchesLevel = selectedLevelFilter === 'ALL' || 
-                        (selectedLevelFilter === '1-3' && user.level >= 1 && user.level <= 3) ||
-                        (selectedLevelFilter === '4-6' && user.level >= 4 && user.level <= 6) ||
-                        (selectedLevelFilter === '7-10' && user.level >= 7 && user.level <= 10)
-    
-    return matchesSearch && matchesRole && matchesLevel
+  // Filter users based on search term (database filtering is already applied for role/level)
+  const filteredUsers = affiliateUsers.filter(user => {
+    if (!searchTerm) return true
+    const searchLower = searchTerm.toLowerCase()
+    return user.username.toLowerCase().includes(searchLower) ||
+           user.email.toLowerCase().includes(searchLower)
   })
 
   // Sort by join date (newest first) and get latest 5 or paginated results
   const sortedUsers = [...filteredUsers].sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
 
-  // Get latest 5 referrals for the "Latest Referrals" section
-  const latestReferrals = sortedUsers.slice(0, 5)
+  // Get latest 5 affiliates for the "Latest Affiliates" section
+  const latestAffiliates = sortedUsers.slice(0, 5)
 
   // Get displayed users based on pagination
-  const displayedUsers = showLatestOnly ? latestReferrals : sortedUsers.slice(0, displayedCount)
+  const displayedUsers = showLatestOnly ? latestAffiliates : sortedUsers.slice(0, displayedCount)
 
   // Show more functionality
   const handleShowMore = () => {
     setDisplayedCount(prev => prev + 5)
   }
 
+  // Handle user expansion
+  const toggleUserExpansion = (userId: string) => {
+    setExpandedUsers(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(userId)) {
+        newSet.delete(userId)
+      } else {
+        newSet.add(userId)
+      }
+      return newSet
+    })
+  }
+
+  // Handle user hover
+  const handleUserHover = (userId: string, isHovering: boolean) => {
+    setHoveredUsers(prev => {
+      const newSet = new Set(prev)
+      if (isHovering) {
+        newSet.add(userId)
+      } else {
+        newSet.delete(userId)
+      }
+      return newSet
+    })
+  }
+
   const handleToggleLatest = () => {
     setShowLatestOnly(!showLatestOnly)
     setDisplayedCount(5) // Reset pagination when switching views
+  }
+
+  // Handle filter changes
+  const handleRoleFilterChange = (value: 'ALL' | 'NOMAD' | 'PRO' | 'ROYAL') => {
+    setSelectedRoleFilter(value)
+    setDisplayedCount(5) // Reset pagination
+  }
+
+  const handleLevelFilterChange = (value: 'ALL' | '1-3' | '4-6' | '7-10') => {
+    setSelectedLevelFilter(value)
+    setDisplayedCount(5) // Reset pagination
   }
 
   // Action handlers
@@ -180,6 +226,61 @@ export function AffiliateControls() {
 
   const handleSpecialBonusOffer = (user: InvitedUser) => {
     console.log('Send special bonus offer to:', user.username)
+  }
+
+  // Show wallet connection requirement
+  if (!account?.address) {
+    return (
+      <div className="space-y-6">
+        <div className="enhanced-card">
+          <div className="enhanced-card-content text-center py-12">
+            <Users className="w-16 h-16 text-[#4DA2FF] mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">Connect Your Wallet</h3>
+            <p className="text-[#C0E6FF] mb-4">
+              Please connect your wallet to view your affiliate dashboard and manage your affiliates.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="enhanced-card">
+          <div className="enhanced-card-content text-center py-12">
+            <Loader2 className="w-16 h-16 text-[#4DA2FF] mx-auto mb-4 animate-spin" />
+            <h3 className="text-xl font-semibold text-white mb-2">Loading Affiliate Data</h3>
+            <p className="text-[#C0E6FF]">
+              Fetching your affiliate metrics and user data...
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="enhanced-card">
+          <div className="enhanced-card-content text-center py-12">
+            <Users className="w-16 h-16 text-red-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">Error Loading Data</h3>
+            <p className="text-[#C0E6FF] mb-4">{error}</p>
+            <Button
+              onClick={loadAffiliateData}
+              className="bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -249,7 +350,7 @@ export function AffiliateControls() {
         </div>
       </div>
 
-      {/* Invited Users Table */}
+      {/* Affiliate Users Table */}
       <div className="enhanced-card">
         <div className="enhanced-card-content">
           {/* Header with Search and Filter Controls */}
@@ -258,7 +359,7 @@ export function AffiliateControls() {
             <div className="flex items-center gap-4 text-[#FFFFFF]">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-[#4DA2FF]" />
-                <h3 className="text-xl font-semibold">Referrals</h3>
+                <h3 className="text-xl font-semibold">Affiliates</h3>
               </div>
 
               {/* View Toggle Buttons */}
@@ -283,7 +384,7 @@ export function AffiliateControls() {
                     : "border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 text-xs h-7 px-3"
                   }
                 >
-                  All Referrals
+                  All Affiliates
                 </Button>
               </div>
             </div>
@@ -303,7 +404,7 @@ export function AffiliateControls() {
 
               {/* Role Filter */}
               <div className="w-full sm:w-48">
-                <Select value={selectedRoleFilter} onValueChange={(value: 'ALL' | 'NOMAD' | 'PRO' | 'ROYAL') => setSelectedRoleFilter(value)}>
+                <Select value={selectedRoleFilter} onValueChange={handleRoleFilterChange}>
                   <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF]">
                     <div className="flex items-center gap-2">
                       <Filter className="w-4 h-4 text-[#C0E6FF]" />
@@ -336,7 +437,7 @@ export function AffiliateControls() {
 
               {/* Level Filter */}
               <div className="w-full sm:w-48">
-                <Select value={selectedLevelFilter} onValueChange={(value: 'ALL' | '1-3' | '4-6' | '7-10') => setSelectedLevelFilter(value)}>
+                <Select value={selectedLevelFilter} onValueChange={handleLevelFilterChange}>
                   <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF]">
                     <div className="flex items-center gap-2">
                       <Award className="w-4 h-4 text-[#C0E6FF]" />
@@ -373,14 +474,14 @@ export function AffiliateControls() {
           <div className="md:hidden space-y-3">
             {displayedUsers.length > 0 ? (
               displayedUsers.map((user) => {
-                const [isExpanded, setIsExpanded] = React.useState(false)
+                const isExpanded = expandedUsers.has(user.id)
 
                 return (
                   <div key={user.id} className="bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg overflow-hidden">
                     {/* Main User Info */}
                     <div
                       className="p-4 cursor-pointer"
-                      onClick={() => setIsExpanded(!isExpanded)}
+                      onClick={() => toggleUserExpansion(user.id)}
                     >
                       {/* Header Row */}
                       <div className="flex items-center justify-between mb-3">
@@ -490,7 +591,7 @@ export function AffiliateControls() {
             ) : (
               <div className="bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg p-8 text-center">
                 <Search className="w-8 h-8 text-[#C0E6FF]/50 mx-auto mb-2" />
-                <p className="text-sm text-[#C0E6FF]">No referrals found matching your criteria</p>
+                <p className="text-sm text-[#C0E6FF]">No affiliates found matching your criteria</p>
                 <p className="text-xs text-[#C0E6FF]/70">Try adjusting your search or filter settings</p>
               </div>
             )}
@@ -512,14 +613,14 @@ export function AffiliateControls() {
               <tbody>
                 {displayedUsers.length > 0 ? (
                   displayedUsers.map((user) => {
-                    const [isHovered, setIsHovered] = React.useState(false)
+                    const isHovered = hoveredUsers.has(user.id)
 
                     return (
                       <tr
                         key={user.id}
                         className="border-b border-[#C0E6FF]/10 hover:bg-[#4DA2FF]/5 transition-colors cursor-pointer"
-                        onMouseEnter={() => setIsHovered(true)}
-                        onMouseLeave={() => setIsHovered(false)}
+                        onMouseEnter={() => handleUserHover(user.id, true)}
+                        onMouseLeave={() => handleUserHover(user.id, false)}
                       >
                         {!isHovered ? (
                           // Normal row content
@@ -642,7 +743,7 @@ export function AffiliateControls() {
                     <td colSpan={6} className="py-8 text-center text-[#C0E6FF]">
                       <div className="flex flex-col items-center gap-2">
                         <Search className="w-8 h-8 text-[#C0E6FF]/50" />
-                        <p className="text-sm">No referrals found matching your criteria</p>
+                        <p className="text-sm">No affiliates found matching your criteria</p>
                         <p className="text-xs text-[#C0E6FF]/70">Try adjusting your search or filter settings</p>
                       </div>
                     </td>
@@ -672,9 +773,9 @@ export function AffiliateControls() {
             <div className="text-center">
               <p className="text-[#C0E6FF] text-sm">
                 {showLatestOnly ? (
-                  <>Showing latest {displayedUsers.length} of {filteredUsers.length} referrals</>
+                  <>Showing latest {displayedUsers.length} of {filteredUsers.length} affiliates</>
                 ) : (
-                  <>Showing {displayedUsers.length} of {filteredUsers.length} referrals</>
+                  <>Showing {displayedUsers.length} of {filteredUsers.length} affiliates</>
                 )}
                 {searchTerm && ` matching "${searchTerm}"`}
                 {selectedRoleFilter !== 'ALL' && ` with ${selectedRoleFilter} role`}
