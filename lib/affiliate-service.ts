@@ -99,7 +99,7 @@ class AffiliateService {
       // Get total invites (relationships)
       const { data: relationships, error: relationshipsError } = await supabase
         .from('affiliate_relationships')
-        .select('id, created_at')
+        .select('id, created_at, referee_address')
         .eq('referrer_address', referrerAddress)
         .eq('relationship_status', 'active')
 

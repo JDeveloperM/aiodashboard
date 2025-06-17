@@ -212,19 +212,19 @@ export function AffiliateControls() {
   }
 
   // Action handlers
-  const handleDirectMessage = (user: InvitedUser) => {
+  const handleDirectMessage = (user: AffiliateUser) => {
     console.log('Direct message to:', user.username)
   }
 
-  const handleSendEmail = (user: InvitedUser) => {
+  const handleSendEmail = (user: AffiliateUser) => {
     console.log('Send email to:', user.email)
   }
 
-  const handleSubscriptionReminder = (user: InvitedUser) => {
+  const handleSubscriptionReminder = (user: AffiliateUser) => {
     console.log('Send subscription reminder to:', user.username)
   }
 
-  const handleSpecialBonusOffer = (user: InvitedUser) => {
+  const handleSpecialBonusOffer = (user: AffiliateUser) => {
     console.log('Send special bonus offer to:', user.username)
   }
 
