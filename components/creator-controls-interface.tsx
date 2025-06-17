@@ -54,6 +54,7 @@ import {
   Lock
 } from "lucide-react"
 import { toast } from "sonner"
+import { EditChannelModal } from "./edit-channel-modal"
 
 // Form validation schema
 const creatorFormSchema = z.object({
@@ -108,7 +109,7 @@ const SUBSCRIPTION_DURATIONS = [
 ]
 
 export function CreatorControlsInterface() {
-  const { addCreator, updateCreator, creators, refreshCreators, getUserCreators } = useCreatorsDatabase()
+  const { addCreator, updateCreator, updateChannel, creators, refreshCreators, getUserCreators, deleteChannel } = useCreatorsDatabase()
   const { tier } = useSubscription()
   const router = useRouter()
   const currentAccount = useCurrentAccount()
@@ -120,6 +121,11 @@ export function CreatorControlsInterface() {
   const [profileImageBlobId, setProfileImageBlobId] = useState<string>("")
   const [coverImageBlobId, setCoverImageBlobId] = useState<string>("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Edit modal states
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingChannel, setEditingChannel] = useState<any>(null)
+  const [editingCreatorId, setEditingCreatorId] = useState<string>("")
 
   const form = useForm<CreatorFormData>({
     resolver: zodResolver(creatorFormSchema),
@@ -169,6 +175,30 @@ export function CreatorControlsInterface() {
     console.log('🖼️ Cover image removed')
     setCoverImage("")
     setCoverImageBlobId("")
+  }
+
+  // Edit modal handlers
+  const handleEditChannel = (channel: any, creatorId: string) => {
+    console.log('✏️ Opening edit modal for channel:', channel.name)
+    setEditingChannel(channel)
+    setEditingCreatorId(creatorId)
+    setIsEditModalOpen(true)
+  }
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false)
+    setEditingChannel(null)
+    setEditingCreatorId("")
+  }
+
+  const handleSaveChannel = async (channelId: string, updatedData: any) => {
+    try {
+      await updateChannel(editingCreatorId, channelId, updatedData)
+      handleCloseEditModal()
+    } catch (error) {
+      console.error('Failed to update channel:', error)
+      throw error // Let the modal handle the error display
+    }
   }
 
   const onSubmit = async (data: CreatorFormData) => {
@@ -439,8 +469,117 @@ export function CreatorControlsInterface() {
     ]
   }
 
+  // Get user's existing channels
+  const userCreator = creators.find(creator =>
+    creator.creatorAddress &&
+    creator.creatorAddress.toLowerCase() === currentAccount?.address?.toLowerCase()
+  )
+  const userChannels = userCreator?.channels || []
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* Existing Channels Section */}
+      {userChannels.length > 0 && (
+        <Card className="enhanced-card">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <MessageCircle className="w-5 h-5" />
+              Your Channels ({userChannels.length}/{tier === 'ROYAL' ? 3 : 2})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {userChannels.map((channel) => (
+                <div key={channel.id} className="enhanced-card overflow-hidden">
+                  {/* Banner with Avatar */}
+                  <div
+                    className="relative h-20 flex items-center p-3 rounded-t-lg overflow-hidden"
+                    style={{
+                      background: userCreator?.coverImage
+                        ? `url(${userCreator.coverImage})`
+                        : `linear-gradient(135deg, ${userCreator?.bannerColor || '#4DA2FF'}40, ${userCreator?.bannerColor || '#4DA2FF'}20)`,
+                      backgroundSize: userCreator?.coverImage ? 'cover' : 'auto',
+                      backgroundPosition: userCreator?.coverImage ? 'center' : 'auto',
+                      borderBottom: `2px solid ${userCreator?.bannerColor || '#4DA2FF'}60`
+                    }}
+                  >
+                    {/* Cover Image Overlay for better text readability */}
+                    {userCreator?.coverImage && (
+                      <div className="absolute inset-0 bg-black bg-opacity-40 rounded-t-lg"></div>
+                    )}
+
+                    {/* Main Banner Content */}
+                    <div className="banner-main-content flex items-center gap-2 w-full relative z-10">
+                      <Avatar className="h-12 w-12 border-2 border-white/20">
+                        <AvatarImage src={userCreator?.avatar} alt={channel.name} />
+                        <AvatarFallback className="bg-[#4DA2FF] text-white text-sm">
+                          {channel.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-white font-semibold text-sm truncate">{channel.name}</h3>
+                            <p className="text-white/80 text-xs">@{channel.telegramUrl?.replace('https://t.me/', '') || 'N/A'}</p>
+                          </div>
+                          <Badge className={`ml-2 ${
+                            channel.type === 'premium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
+                          }`}>
+                            {channel.type}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Content */}
+                  <div className="p-4 space-y-3">
+
+                    <div className="space-y-2">
+                      <p className="text-gray-400 text-sm line-clamp-2">{channel.description}</p>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-[#C0E6FF]">{channel.subscribers} subscribers</span>
+                        {channel.type === 'premium' && (
+                          <span className="text-yellow-400">{channel.price} SUI</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleEditChannel(channel, userCreator!.id)}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <FileText className="w-4 h-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={async () => {
+                          if (window.confirm(`Are you sure you want to delete "${channel.name}"?`)) {
+                            try {
+                              await deleteChannel(userCreator!.id, channel.id)
+                              toast.success('Channel deleted successfully')
+                            } catch (error) {
+                              console.error('Failed to delete channel:', error)
+                              toast.error('Failed to delete channel')
+                            }
+                          }
+                        }}
+                        className="bg-red-600 hover:bg-red-700 text-white px-3"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Form Section */}
         <div className="space-y-6">
@@ -1240,6 +1379,15 @@ export function CreatorControlsInterface() {
           </Card>
         </div>
       </div>
+
+      {/* Edit Channel Modal */}
+      <EditChannelModal
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        channel={editingChannel}
+        creatorId={editingCreatorId}
+        onSave={handleSaveChannel}
+      />
     </div>
   )
 }

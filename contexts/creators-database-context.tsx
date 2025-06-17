@@ -73,6 +73,7 @@ interface CreatorsContextType {
   creators: Creator[]
   addCreator: (creator: Creator, profileImageBlobId?: string, coverImageBlobId?: string) => Promise<void>
   updateCreator: (id: string, creator: Partial<Creator>, profileImageBlobId?: string, coverImageBlobId?: string) => Promise<void>
+  updateChannel: (creatorId: string, channelId: string, updatedChannel: Partial<Channel>) => Promise<void>
   removeCreator: (id: string) => Promise<void>
   deleteChannel: (creatorId: string, channelId: string) => Promise<void>
   refreshCreators: () => Promise<void>
@@ -443,6 +444,112 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
     toast.info('Creator removal not available')
   }
 
+  const updateChannel = async (creatorId: string, channelId: string, updatedChannel: Partial<Channel>) => {
+    console.log('✏️ updateChannel called with:', { creatorId, channelId, updatedChannel })
+
+    if (!currentAccount?.address) {
+      throw new Error('No wallet connected')
+    }
+
+    try {
+      console.log('🔍 Finding creator and channel to update...')
+
+      // Find the creator using the same smart logic as deleteChannel
+      let actualCreator: Creator | undefined
+      let actualCreatorId = creatorId
+
+      // First, try to find creator directly
+      actualCreator = creators.find(c => c.id === creatorId)
+
+      // If not found and creatorId looks like a channel ID, extract the creator ID
+      if (!actualCreator && creatorId.includes('_channel_')) {
+        console.log('🔧 CreatorId looks like channel ID, extracting actual creator ID...')
+        actualCreatorId = creatorId.split('_channel_')[0]
+        actualCreator = creators.find(c => c.id === actualCreatorId)
+        console.log('🔍 Extracted creator ID:', actualCreatorId)
+      }
+
+      // If still not found, try to find creator by searching through all channels
+      if (!actualCreator) {
+        console.log('🔍 Creator not found by ID, searching through all channels...')
+        for (const creator of creators) {
+          if (creator.channels.some(ch => ch.id === channelId)) {
+            actualCreator = creator
+            actualCreatorId = creator.id
+            console.log('✅ Found creator by channel search:', creator.name)
+            break
+          }
+        }
+      }
+
+      if (!actualCreator) {
+        throw new Error('Creator not found')
+      }
+
+      console.log('👤 Found creator:', actualCreator.name)
+
+      // Verify ownership
+      if (actualCreator.creatorAddress?.toLowerCase() !== currentAccount.address.toLowerCase()) {
+        throw new Error('You can only update your own channels')
+      }
+
+      // Find the channel to update
+      const channelIndex = actualCreator.channels.findIndex(ch => ch.id === channelId)
+      if (channelIndex === -1) {
+        throw new Error('Channel not found')
+      }
+
+      console.log('📺 Found channel to update:', actualCreator.channels[channelIndex].name)
+
+      // Update the channel with new data
+      const updatedChannels = [...actualCreator.channels]
+      updatedChannels[channelIndex] = {
+        ...updatedChannels[channelIndex],
+        ...updatedChannel
+      }
+
+      console.log('📊 Channel updated with new data')
+
+      // Prepare the updated creator data for database using the same format as deleteChannel
+      const decryptedCreatorData: Partial<DecryptedCreator> = {
+        creator_address: currentAccount.address,
+        channel_name: actualCreator.name,
+        channel_description: updatedChannels[0]?.description || actualCreator.channels[0]?.description || '',
+        telegram_username: actualCreator.username,
+        creator_role: actualCreator.role,
+        channel_language: actualCreator.languages?.[0] || 'English',
+        channel_categories: actualCreator.categories,
+        primary_category: actualCreator.category,
+        tier: actualCreator.tier,
+        max_subscribers: actualCreator.availability?.maxSlots || 0,
+        is_premium: updatedChannels.some(ch => ch.type === 'premium'),
+        subscription_packages: updatedChannels[0]?.subscriptionPackages || [],
+        tip_pricing: updatedChannels[0]?.pricing || {},
+        subscribers_count: actualCreator.subscribers,
+        verified: actualCreator.verified,
+        banner_color: actualCreator.bannerColor,
+        social_links: actualCreator.socialLinks,
+        channels_data: updatedChannels // This is the key update
+      }
+
+      console.log('📝 Updating creator in database with updated channel data...')
+
+      await createOrUpdateCreator(currentAccount.address, decryptedCreatorData)
+
+      console.log('✅ Channel updated in database')
+
+      // Refresh the creators list
+      await refreshCreators()
+
+      console.log('✅ Creators list refreshed after channel update')
+      toast.success('Channel updated successfully!')
+    } catch (err) {
+      console.error('❌ Failed to update channel:', err)
+      toast.error('Failed to update channel')
+      throw err
+    }
+  }
+
   const deleteChannel = async (creatorId: string, channelId: string) => {
     console.log('🗑️ deleteChannel called with:', { creatorId, channelId })
     console.log('🔍 Available creators:', creators.map(c => ({ id: c.id, name: c.name, channelsCount: c.channels.length })))
@@ -568,6 +675,7 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
     creators,
     addCreator,
     updateCreator,
+    updateChannel,
     removeCreator,
     deleteChannel,
     refreshCreators,

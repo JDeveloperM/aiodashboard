@@ -24,20 +24,8 @@ const SubscriptionContext = createContext<SubscriptionContextType | undefined>(u
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const { user } = useSuiAuth()
 
-  // Initialize with a function to check localStorage immediately
-  const [tier, setTierState] = useState<SubscriptionTier>(() => {
-    // Only access localStorage on client side
-    if (typeof window !== 'undefined') {
-      const savedTier = localStorage.getItem("subscriptionTier") as SubscriptionTier | null
-      console.log(`[SubscriptionContext] Initializing with saved tier: ${savedTier}`)
-      if (savedTier && ["NOMAD", "PRO", "ROYAL"].includes(savedTier)) {
-        console.log(`[SubscriptionContext] Using saved tier: ${savedTier}`)
-        return savedTier
-      }
-    }
-    console.log(`[SubscriptionContext] No saved tier found, defaulting to NOMAD`)
-    return "NOMAD"
-  })
+  // Initialize with NOMAD as default tier
+  const [tier, setTierState] = useState<SubscriptionTier>("NOMAD")
 
   const [isLoaded, setIsLoaded] = useState(false)
   const [isUpdatingTier, setIsUpdatingTier] = useState(false)
@@ -47,7 +35,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const canAccessCryptoBots = tier === "PRO" || tier === "ROYAL"
   const canAccessForexBots = tier === "ROYAL"  // VIP-only (ROYAL tier)
 
-  // Enhanced setTier function with database and Walrus persistence
+  // Enhanced setTier function with database and Walrus persistence only
   const setTier = async (newTier: SubscriptionTier) => {
     console.log(`[SubscriptionContext] Setting tier from ${tier} to ${newTier}`)
     setIsUpdatingTier(true)
@@ -56,12 +44,6 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       // Update local state immediately for better UX
       setTierState(newTier)
 
-      // Save to localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem("subscriptionTier", newTier)
-        console.log(`[SubscriptionContext] Saved tier ${newTier} to localStorage`)
-      }
-
       // Save to database and Walrus if user is connected
       if (user?.address) {
         console.log(`[SubscriptionContext] Updating tier in database for ${user.address}`)
@@ -69,12 +51,17 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         console.log(`[SubscriptionContext] ✅ Tier ${newTier} saved to database and Walrus`)
         toast.success(`🎉 Subscription upgraded to ${newTier}! Your tier is now saved permanently.`)
       } else {
-        console.log(`[SubscriptionContext] ⚠️ User not connected, tier saved only to localStorage`)
-        toast.success(`🎉 Subscription upgraded to ${newTier}! Connect your wallet to save permanently.`)
+        console.log(`[SubscriptionContext] ⚠️ User not connected, cannot save tier`)
+        toast.error(`Please connect your wallet to upgrade your tier.`)
+        // Revert the state change if user is not connected
+        setTierState(tier)
+        return
       }
     } catch (error) {
       console.error(`[SubscriptionContext] ❌ Failed to update tier in database:`, error)
-      toast.error(`Failed to save tier to database. Your upgrade is saved locally.`)
+      toast.error(`Failed to save tier to database. Please try again.`)
+      // Revert the state change on error
+      setTierState(tier)
     } finally {
       setIsUpdatingTier(false)
     }
@@ -89,7 +76,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     await setTier("ROYAL")
   }
 
-  // Load tier from database when user connects, fallback to localStorage
+  // Load tier from database when user connects
   useEffect(() => {
     const loadTierFromDatabase = async () => {
       if (user?.address) {
@@ -105,36 +92,20 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
             if (dbTier !== tier) {
               console.log(`[SubscriptionContext] Updating tier from database: ${tier} -> ${dbTier}`)
               setTierState(dbTier)
-
-              // Also update localStorage to stay in sync
-              if (typeof window !== 'undefined') {
-                localStorage.setItem("subscriptionTier", dbTier)
-              }
             }
           } else {
-            console.log(`[SubscriptionContext] No tier found in database, keeping current: ${tier}`)
+            console.log(`[SubscriptionContext] No tier found in database, defaulting to NOMAD`)
+            setTierState("NOMAD")
           }
         } catch (error) {
           console.error(`[SubscriptionContext] Failed to load tier from database:`, error)
-          // Fallback to localStorage if database fails
-          if (typeof window !== 'undefined') {
-            const savedTier = localStorage.getItem("subscriptionTier") as SubscriptionTier | null
-            if (savedTier && ["NOMAD", "PRO", "ROYAL"].includes(savedTier) && savedTier !== tier) {
-              console.log(`[SubscriptionContext] Fallback to localStorage tier: ${savedTier}`)
-              setTierState(savedTier)
-            }
-          }
+          console.log(`[SubscriptionContext] Defaulting to NOMAD tier`)
+          setTierState("NOMAD")
         }
       } else {
-        // User not connected, load from localStorage
-        if (typeof window !== 'undefined') {
-          const savedTier = localStorage.getItem("subscriptionTier") as SubscriptionTier | null
-          console.log(`[SubscriptionContext] User not connected, checking localStorage: ${savedTier}`)
-          if (savedTier && ["NOMAD", "PRO", "ROYAL"].includes(savedTier) && savedTier !== tier) {
-            console.log(`[SubscriptionContext] Restoring tier from localStorage: ${savedTier}`)
-            setTierState(savedTier)
-          }
-        }
+        // User not connected, reset to NOMAD
+        console.log(`[SubscriptionContext] User not connected, resetting to NOMAD`)
+        setTierState("NOMAD")
       }
       setIsLoaded(true)
     }
@@ -142,12 +113,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     loadTierFromDatabase()
   }, [user?.address]) // Re-run when user connects/disconnects
 
-  // Save tier to localStorage when it changes (backup persistence)
-  useEffect(() => {
-    if (isLoaded && typeof window !== 'undefined') {
-      localStorage.setItem("subscriptionTier", tier)
-    }
-  }, [tier, isLoaded])
+
 
   return (
     <SubscriptionContext.Provider

@@ -4,7 +4,6 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import {
   CheckCircle,
   ArrowRight
@@ -33,11 +32,12 @@ const nftTiers: NFTTier[] = [
     price: 0,
     currency: 'FREE',
     features: [
-      'Bybit Copy Trading Access',
+      'Bybit Copy Trading (Crypto) Access',
       '$25 per 10% profit cycle',
-      'Discord Community Access',
-      'Monthly Reports',
-      'Basic Support'
+      'Entry to the Official Discord Community',
+      'Affiliate Dashboard & Control Access',
+      'AIO Creators Channels Access',
+      'MetaGo Academy Crypto Basic Level'
     ],
     icon: <RoleImage role="NOMAD" size="2xl" />,
     color: '#6B7280',
@@ -45,9 +45,9 @@ const nftTiers: NFTTier[] = [
     maxSupply: 0,
     currentSupply: 0,
     benefits: [
-      'Access to copy trading platform',
+      'Access to crypto copy trading platform',
       'Basic community features',
-      'Standard customer support'
+      'Standard affiliate access'
     ]
   },
   {
@@ -56,24 +56,27 @@ const nftTiers: NFTTier[] = [
     price: 400,
     currency: 'EUR',
     features: [
+      'Bybit Copy Trading (Crypto) Access',
       'No Cycle Payments',
-      'Discord PRO Role',
-      'AIO Creators Access',
-      'Affiliate Program',
+      'PRO Role within the Discord Community',
+      'Affiliate Dashboard & Control Access',
       'MetaGo Academy Premium',
-      'Priority Support'
+      'Access to RaffleCraft Decentralized Application',
+      'Access to DEWhale Decentralized Application',
+      'Comprehensive access to AIO Creator tools',
+      'Free Access to 3 Premium AIO Creators channels'
     ],
     icon: <RoleImage role="PRO" size="2xl" />,
     color: '#4DA2FF',
     gradient: 'from-[#4DA2FF] to-[#011829]',
-    maxSupply: 1100,
-    currentSupply: 163,
+    maxSupply: 0,
+    currentSupply: 0,
     benefits: [
       'Exempt from $25 cycle payments',
-      'Access to advanced educational content',
+      'Access to premium educational content',
       'Priority customer support',
       'Exclusive community channels',
-      'Advanced portfolio analytics'
+      'Advanced creator tools access'
     ]
   },
   {
@@ -83,20 +86,21 @@ const nftTiers: NFTTier[] = [
     currency: 'EUR',
     features: [
       'All PRO Features',
-      'Stock Trading Bots (VIP)',
-      'Forex Trading Bots (VIP)',
-      'Discord ROYAL Role',
-      'Royalty Distribution (25%)',
-      'DEWhale Early Access'
+      'Bybit Copy Trading (FOREX) Access',
+      'Bybit Copy Trading (STOCKS) Access',
+      'Exclusive ROYAL Role in the Discord Community',
+      'Priority early access to DEWhale DApp updates and features',
+      'Free Access to 9 Premium AIO Creators channels',
+      'Participation in Royalty Distribution: 10% from all new NFT mints'
     ],
     icon: <RoleImage role="ROYAL" size="2xl" />,
     color: '#FFD700',
     gradient: 'from-yellow-400 to-yellow-600',
-    maxSupply: 500,
-    currentSupply: 120,
+    maxSupply: 0,
+    currentSupply: 0,
     benefits: [
       'All PRO tier benefits included',
-      'Access to VIP trading strategies',
+      'Access to FOREX and STOCKS trading',
       'Personal trading consultation',
       'Early access to new DApps',
       'Highest tier community status'
@@ -131,16 +135,14 @@ export function DashboardSubscriptions() {
     }
   }
 
-  const getSupplyPercentage = (current: number, max: number) => {
-    return max > 0 ? (current / max) * 100 : 0
-  }
+
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-white">AIONET NFT Tiers</h2>
-          <p className="text-[#C0E6FF] mt-1">Mint your NFT on Sui Network to unlock exclusive features</p>
+          <p className="text-[#C0E6FF] mt-1">Mint your NFT on Sui Network to unlock exclusive features. PRO and ROYAL are unlimited NFT-based roles.</p>
         </div>
         <Badge className={`bg-gradient-to-r ${currentTierData.gradient} text-white px-4 py-2`}>
           Current: {currentTierData.name}
@@ -162,7 +164,7 @@ export function DashboardSubscriptions() {
                   : 'hover:border-[#4DA2FF]/50'
               }`}
             >
-              <div className="enhanced-card-content">
+              <div className="enhanced-card-content flex flex-col h-full">
                 <div className="mb-6">
                 <div className="flex items-center justify-between">
                   {tierData.icon}
@@ -182,23 +184,9 @@ export function DashboardSubscriptions() {
                 </div>
                 </div>
 
-                <div className="space-y-4">
-                {/* Supply Information for NFTs */}
-                {tierData.maxSupply > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#C0E6FF]">Supply</span>
-                      <span className="text-white">{tierData.currentSupply}/{tierData.maxSupply}</span>
-                    </div>
-                    <Progress
-                      value={getSupplyPercentage(tierData.currentSupply, tierData.maxSupply)}
-                      className="h-2"
-                    />
-                  </div>
-                )}
-
+                <div className="flex-1 flex flex-col">
                 {/* Features */}
-                <div className="space-y-2">
+                <div className="space-y-2 flex-1">
                   <h4 className="text-sm font-medium text-[#C0E6FF]">Features:</h4>
                   <ul className="space-y-1">
                     {tierData.features.map((feature, index) => (
@@ -211,7 +199,7 @@ export function DashboardSubscriptions() {
                 </div>
 
                 {/* Action Button */}
-                <div className="pt-2">
+                <div className="pt-4 mt-auto">
                   {isCurrentTier ? (
                     <Button
                       disabled
@@ -275,7 +263,7 @@ export function DashboardSubscriptions() {
               </thead>
               <tbody className="text-sm">
                 <tr className="border-b border-[#C0E6FF]/10">
-                  <td className="py-3 text-white">Copy Trading Access</td>
+                  <td className="py-3 text-white">Crypto Copy Trading</td>
                   <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
                   <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
                   <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
@@ -287,16 +275,40 @@ export function DashboardSubscriptions() {
                   <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
                 </tr>
                 <tr className="border-b border-[#C0E6FF]/10">
-                  <td className="py-3 text-white">Advanced Courses</td>
+                  <td className="py-3 text-white">Discord Community Role</td>
+                  <td className="py-3 text-center text-white">Basic</td>
+                  <td className="py-3 text-center text-blue-400">PRO</td>
+                  <td className="py-3 text-center text-yellow-400">ROYAL</td>
+                </tr>
+                <tr className="border-b border-[#C0E6FF]/10">
+                  <td className="py-3 text-white">MetaGo Academy Access</td>
+                  <td className="py-3 text-center text-white">Basic</td>
+                  <td className="py-3 text-center text-blue-400">Premium</td>
+                  <td className="py-3 text-center text-yellow-400">Premium</td>
+                </tr>
+                <tr className="border-b border-[#C0E6FF]/10">
+                  <td className="py-3 text-white">DApps Access (RaffleCraft & DEWhale)</td>
                   <td className="py-3 text-center text-red-400">✗</td>
                   <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
                   <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
                 </tr>
                 <tr className="border-b border-[#C0E6FF]/10">
-                  <td className="py-3 text-white">VIP Trading Bots</td>
+                  <td className="py-3 text-white">Premium Creator Channels</td>
+                  <td className="py-3 text-center text-red-400">✗</td>
+                  <td className="py-3 text-center text-blue-400">3 Free</td>
+                  <td className="py-3 text-center text-yellow-400">9 Free</td>
+                </tr>
+                <tr className="border-b border-[#C0E6FF]/10">
+                  <td className="py-3 text-white">FOREX & STOCKS Trading</td>
                   <td className="py-3 text-center text-red-400">✗</td>
                   <td className="py-3 text-center text-red-400">✗</td>
                   <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-[#C0E6FF]/10">
+                  <td className="py-3 text-white">Royalty Distribution</td>
+                  <td className="py-3 text-center text-red-400">✗</td>
+                  <td className="py-3 text-center text-red-400">✗</td>
+                  <td className="py-3 text-center text-yellow-400">10%</td>
                 </tr>
 
               </tbody>
