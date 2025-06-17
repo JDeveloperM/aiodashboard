@@ -123,14 +123,14 @@ export function EditChannelModal({
     }
   }, [channel, isOpen, form])
 
-  const handleProfileImageUpdate = (imageUrl: string, blobId: string) => {
+  const handleProfileImageUpdate = (imageUrl: string, blobId?: string) => {
     setProfileImage(imageUrl)
-    setProfileImageBlobId(blobId)
+    setProfileImageBlobId(blobId || "")
   }
 
-  const handleCoverImageUpdate = (imageUrl: string, blobId: string) => {
+  const handleCoverImageUpdate = (imageUrl: string, blobId?: string) => {
     setCoverImage(imageUrl)
-    setCoverImageBlobId(blobId)
+    setCoverImageBlobId(blobId || "")
   }
 
   const handleProfileImageRemove = () => {
