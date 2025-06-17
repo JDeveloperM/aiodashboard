@@ -225,7 +225,7 @@ export function EditChannelModal({
                   onImageUpdate={handleProfileImageUpdate}
                   onImageRemove={handleProfileImageRemove}
                   editable={true}
-                  size="w-24 h-24"
+                  size="xl"
                 />
                 <p className="text-xs text-gray-400">Recommended: 400x400px, max 5MB</p>
               </div>
@@ -239,7 +239,6 @@ export function EditChannelModal({
                   onImageUpdate={handleCoverImageUpdate}
                   onImageRemove={handleCoverImageRemove}
                   editable={true}
-                  height="h-24"
                 />
                 <p className="text-xs text-gray-400">Recommended: 1200x400px, max 5MB</p>
               </div>
