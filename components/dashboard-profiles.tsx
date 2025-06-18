@@ -104,7 +104,7 @@ export function DashboardProfiles() {
           if (referralData?.referral_code) {
             setProfileData(prev => ({
               ...prev,
-              referralCode: referralData.referral_code
+              referralCode: referralData.referral_code || ""
             }))
           }
         }
