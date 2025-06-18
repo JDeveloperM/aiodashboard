@@ -12,7 +12,8 @@ interface SponsorInfo {
   email: string
   address: string
   status: 'NOMAD' | 'PRO' | 'ROYAL'
-  level: number
+  profileLevel: number
+  affiliateLevel: number
   kycStatus: 'verified' | 'pending' | 'not_verified'
   joinDate: string
 }
@@ -92,7 +93,9 @@ export function ContactSponsorModal({ isOpen, onClose, sponsor, loading }: Conta
                   <Badge className="bg-[#4DA2FF]/20 text-[#4DA2FF] border-[#4DA2FF]/30 text-xs">
                     {sponsor.status}
                   </Badge>
-                  <span>Level {sponsor.level}</span>
+                  <span>Profile Lv. {sponsor.profileLevel}</span>
+                  <span>•</span>
+                  <span>Affiliate Lv. {sponsor.affiliateLevel}</span>
                 </div>
               </div>
             </div>
