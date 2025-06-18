@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -18,356 +18,145 @@ import {
   Palette,
   Droplets,
   GraduationCap,
-  X
+  X,
+  Plus,
+  Edit,
+  Trash2,
+  Settings,
+  Loader2
 } from "lucide-react"
 import { useSubscription } from "@/contexts/subscription-context"
+import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { CoursePaymentModal } from "@/components/course-payment-modal"
+import { AddCourseModal, EditCourseModal, DeleteCourseModal } from "@/components/admin/course-management-modals"
+import { LessonManagement } from "@/components/admin/lesson-management"
+import { Course, Lesson, courseService, isUserAdmin } from "@/lib/course-service"
+import { toast } from "sonner"
 
-interface Lesson {
-  id: string
-  title: string
-  description: string
-  duration: string
-  videoUrl: string
-  isCompleted: boolean
+// Icon mapping for database icon names
+const ICON_MAP: Record<string, React.ReactNode> = {
+  'TrendingUp': <TrendingUp className="w-6 h-6 text-[#4DA2FF]" />,
+  'Palette': <Palette className="w-6 h-6 text-[#4DA2FF]" />,
+  'Droplets': <Droplets className="w-6 h-6 text-[#4DA2FF]" />,
+  'Coins': <Coins className="w-6 h-6 text-[#4DA2FF]" />,
+  'GraduationCap': <GraduationCap className="w-6 h-6 text-[#4DA2FF]" />,
 }
 
-interface Course {
-  id: string
-  title: string
-  description: string
+// Extended interface for UI-specific properties
+interface UICourse extends Course {
   icon: React.ReactNode
-  duration: string
-  lessons: Lesson[]
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced'
   progress: number
-  isLocked: boolean
-  requiredTier?: 'PRO' | 'ROYAL'
-  price?: number // Price in SUI for locked courses
-  students: number
-  rating: number
+  lessons: UILesson[]
 }
 
-const courses: Course[] = [
-  {
-    id: "cex-basics",
-    title: "CEX Basics",
-    description: "Learn the fundamentals of centralized exchanges, how to trade safely, and understand market mechanics.",
-    icon: <TrendingUp className="w-6 h-6 text-[#4DA2FF]" />,
-    duration: "2h 30m",
-    lessons: [
-      {
-        id: "cex-1",
-        title: "Introduction to Centralized Exchanges",
-        description: "Understanding what CEX platforms are and how they work",
-        duration: "8 min",
-        videoUrl: "https://vimeo.com/example-cex-1",
-        isCompleted: false
-      },
-      {
-        id: "cex-2",
-        title: "Account Setup and Security",
-        description: "How to create accounts and secure them properly",
-        duration: "12 min",
-        videoUrl: "https://vimeo.com/example-cex-2",
-        isCompleted: false
-      },
-      {
-        id: "cex-3",
-        title: "Understanding Order Types",
-        description: "Market orders, limit orders, and stop-loss explained",
-        duration: "15 min",
-        videoUrl: "https://vimeo.com/example-cex-3",
-        isCompleted: false
-      },
-      {
-        id: "cex-4",
-        title: "Reading Charts and Indicators",
-        description: "Basic technical analysis for beginners",
-        duration: "18 min",
-        videoUrl: "https://vimeo.com/example-cex-4",
-        isCompleted: false
-      },
-      {
-        id: "cex-5",
-        title: "Risk Management Basics",
-        description: "How to manage risk and protect your capital",
-        duration: "14 min",
-        videoUrl: "https://vimeo.com/example-cex-5",
-        isCompleted: false
-      },
-      {
-        id: "cex-6",
-        title: "Fees and Trading Costs",
-        description: "Understanding different types of fees on exchanges",
-        duration: "10 min",
-        videoUrl: "https://vimeo.com/example-cex-6",
-        isCompleted: false
-      },
-      {
-        id: "cex-7",
-        title: "Withdrawal and Deposits",
-        description: "How to safely move funds in and out of exchanges",
-        duration: "12 min",
-        videoUrl: "https://vimeo.com/example-cex-7",
-        isCompleted: false
-      },
-      {
-        id: "cex-8",
-        title: "Common Mistakes to Avoid",
-        description: "Learn from common trading mistakes and how to avoid them",
-        duration: "11 min",
-        videoUrl: "https://vimeo.com/example-cex-8",
-        isCompleted: false
-      }
-    ],
-    difficulty: "Beginner",
-    progress: 0,
-    isLocked: false,
-    students: 1247,
-    rating: 4.8
-  },
-  {
-    id: "dex-basics",
-    title: "DEX Basics",
-    description: "Understand decentralized exchanges, liquidity pools, and how to trade on platforms like Uniswap and SushiSwap.",
-    icon: <Droplets className="w-6 h-6 text-[#4DA2FF]" />,
-    duration: "3h 15m",
-    lessons: [
-      {
-        id: "dex-1",
-        title: "What are Decentralized Exchanges?",
-        description: "Introduction to DEX platforms and how they differ from CEX",
-        duration: "10 min",
-        videoUrl: "https://vimeo.com/example-dex-1",
-        isCompleted: false
-      },
-      {
-        id: "dex-2",
-        title: "Setting Up a Crypto Wallet",
-        description: "How to set up MetaMask and other wallets for DEX trading",
-        duration: "15 min",
-        videoUrl: "https://vimeo.com/example-dex-2",
-        isCompleted: false
-      },
-      {
-        id: "dex-3",
-        title: "Understanding Liquidity Pools",
-        description: "How liquidity pools work and their importance in DEX",
-        duration: "18 min",
-        videoUrl: "https://vimeo.com/example-dex-3",
-        isCompleted: false
-      },
-      {
-        id: "dex-4",
-        title: "Making Your First DEX Trade",
-        description: "Step-by-step guide to trading on Uniswap",
-        duration: "20 min",
-        videoUrl: "https://vimeo.com/example-dex-4",
-        isCompleted: false
-      },
-      {
-        id: "dex-5",
-        title: "Understanding Slippage and MEV",
-        description: "What is slippage and how to protect against MEV attacks",
-        duration: "16 min",
-        videoUrl: "https://vimeo.com/example-dex-5",
-        isCompleted: false
-      },
-      {
-        id: "dex-6",
-        title: "Gas Fees and Optimization",
-        description: "Understanding gas fees and how to optimize transactions",
-        duration: "14 min",
-        videoUrl: "https://vimeo.com/example-dex-6",
-        isCompleted: false
-      }
-    ],
-    difficulty: "Intermediate",
-    progress: 0,
-    isLocked: false,
-    students: 892,
-    rating: 4.7
-  },
-  {
-    id: "defi-basics",
-    title: "DeFi Basics",
-    description: "Explore decentralized finance protocols, yield farming, lending, and borrowing in the DeFi ecosystem.",
-    icon: <Coins className="w-6 h-6 text-[#4DA2FF]" />,
-    duration: "4h 45m",
-    lessons: [
-      {
-        id: "defi-1",
-        title: "Introduction to DeFi",
-        description: "What is decentralized finance and how it works",
-        duration: "12 min",
-        videoUrl: "https://vimeo.com/example-defi-1",
-        isCompleted: false
-      },
-      {
-        id: "defi-2",
-        title: "Lending and Borrowing Protocols",
-        description: "Understanding Aave, Compound, and other lending platforms",
-        duration: "20 min",
-        videoUrl: "https://vimeo.com/example-defi-2",
-        isCompleted: false
-      },
-      {
-        id: "defi-3",
-        title: "Yield Farming Basics",
-        description: "How to earn yield through farming strategies",
-        duration: "18 min",
-        videoUrl: "https://vimeo.com/example-defi-3",
-        isCompleted: false
-      },
-      {
-        id: "defi-4",
-        title: "Liquidity Mining",
-        description: "Providing liquidity and earning rewards",
-        duration: "22 min",
-        videoUrl: "https://vimeo.com/example-defi-4",
-        isCompleted: false
-      },
-      {
-        id: "defi-5",
-        title: "Impermanent Loss Explained",
-        description: "Understanding and mitigating impermanent loss",
-        duration: "16 min",
-        videoUrl: "https://vimeo.com/example-defi-5",
-        isCompleted: false
-      }
-    ],
-    difficulty: "Intermediate",
-    progress: 0,
-    isLocked: true,
-    requiredTier: "PRO",
-    price: 5.0, // 5 SUI
-    students: 634,
-    rating: 4.9
-  },
-  {
-    id: "nft-basics",
-    title: "NFT Basics",
-    description: "Learn about non-fungible tokens, how to mint, buy, sell, and understand the NFT marketplace ecosystem.",
-    icon: <Palette className="w-6 h-6 text-purple-400" />,
-    duration: "2h 45m",
-    lessons: [
-      {
-        id: "nft-1",
-        title: "What are NFTs?",
-        description: "Introduction to non-fungible tokens and their use cases",
-        duration: "10 min",
-        videoUrl: "https://vimeo.com/example-nft-1",
-        isCompleted: false
-      },
-      {
-        id: "nft-2",
-        title: "NFT Marketplaces",
-        description: "Overview of OpenSea, Blur, and other NFT platforms",
-        duration: "15 min",
-        videoUrl: "https://vimeo.com/example-nft-2",
-        isCompleted: false
-      },
-      {
-        id: "nft-3",
-        title: "Buying Your First NFT",
-        description: "Step-by-step guide to purchasing NFTs",
-        duration: "18 min",
-        videoUrl: "https://vimeo.com/example-nft-3",
-        isCompleted: false
-      },
-      {
-        id: "nft-4",
-        title: "Creating and Minting NFTs",
-        description: "How to create and mint your own NFTs",
-        duration: "20 min",
-        videoUrl: "https://vimeo.com/example-nft-4",
-        isCompleted: false
-      },
-      {
-        id: "nft-5",
-        title: "NFT Trading Strategies",
-        description: "Advanced strategies for NFT trading and flipping",
-        duration: "22 min",
-        videoUrl: "https://vimeo.com/example-nft-5",
-        isCompleted: false
-      }
-    ],
-    difficulty: "Beginner",
-    progress: 0,
-    isLocked: false,
-    students: 1156,
-    rating: 4.6
-  },
-  {
-    id: "liquidity-staking",
-    title: "Liquidity & Staking",
-    description: "Master advanced concepts of providing liquidity, staking mechanisms, and earning passive income in DeFi.",
-    icon: <GraduationCap className="w-6 h-6 text-orange-400" />,
-    duration: "5h 20m",
-    lessons: [
-      {
-        id: "staking-1",
-        title: "Introduction to Staking",
-        description: "Understanding proof-of-stake and staking mechanisms",
-        duration: "15 min",
-        videoUrl: "https://vimeo.com/example-staking-1",
-        isCompleted: false
-      },
-      {
-        id: "staking-2",
-        title: "Liquid Staking Protocols",
-        description: "Lido, Rocket Pool, and other liquid staking solutions",
-        duration: "20 min",
-        videoUrl: "https://vimeo.com/example-staking-2",
-        isCompleted: false
-      },
-      {
-        id: "staking-3",
-        title: "Advanced Liquidity Strategies",
-        description: "Complex strategies for maximizing liquidity rewards",
-        duration: "25 min",
-        videoUrl: "https://vimeo.com/example-staking-3",
-        isCompleted: false
-      },
-      {
-        id: "staking-4",
-        title: "Risk Management in DeFi",
-        description: "Managing risks in advanced DeFi strategies",
-        duration: "18 min",
-        videoUrl: "https://vimeo.com/example-staking-4",
-        isCompleted: false
-      }
-    ],
-    difficulty: "Advanced",
-    progress: 0,
-    isLocked: true,
-    requiredTier: "ROYAL",
-    price: 10.0, // 10 SUI
-    students: 423,
-    rating: 4.9
-  }
-]
+interface UILesson extends Lesson {
+  videoUrl: string // Map video_url to videoUrl for compatibility
+  isCompleted: boolean // Will be populated from user progress
+}
 
 export function MetaGoAcademy() {
   const { tier } = useSubscription()
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
-  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null)
+  const { user } = useSuiAuth()
+  const [courses, setCourses] = useState<UICourse[]>([])
+  const [selectedCourse, setSelectedCourse] = useState<UICourse | null>(null)
+  const [selectedLesson, setSelectedLesson] = useState<UILesson | null>(null)
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
-  const [courseForPurchase, setCourseForPurchase] = useState<Course | null>(null)
+  const [courseForPurchase, setCourseForPurchase] = useState<UICourse | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const canAccessCourse = (course: Course) => {
-    if (!course.isLocked) return true
+  // Admin modal states
+  const [addCourseModalOpen, setAddCourseModalOpen] = useState(false)
+  const [editCourseModalOpen, setEditCourseModalOpen] = useState(false)
+  const [deleteCourseModalOpen, setDeleteCourseModalOpen] = useState(false)
+  const [selectedCourseForEdit, setSelectedCourseForEdit] = useState<UICourse | null>(null)
+
+  const isAdmin = user?.address ? isUserAdmin(user.address) : false
+
+  // Load courses from database
+  const loadCourses = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      const dbCourses = await courseService.getAllCourses()
+      
+      // Transform database courses to UI courses
+      const uiCourses: UICourse[] = await Promise.all(
+        dbCourses.map(async (course) => {
+          // Get user progress for this course if user is logged in
+          let userProgress: any[] = []
+          if (user?.address) {
+            try {
+              userProgress = await courseService.getUserCourseProgress(user.address, course.id)
+            } catch (error) {
+              console.warn('Failed to load user progress:', error)
+            }
+          }
+
+          // Transform lessons with user progress
+          const uiLessons: UILesson[] = course.lessons?.map((lesson) => {
+            const lessonProgress = userProgress.find(p => p.lesson_id === lesson.id)
+            return {
+              ...lesson,
+              videoUrl: lesson.video_url, // Map database field to UI field
+              isCompleted: lessonProgress?.is_completed || false
+            }
+          }) || []
+
+          // Calculate progress percentage
+          const completedLessons = uiLessons.filter(l => l.isCompleted).length
+          const progress = uiLessons.length > 0 ? Math.round((completedLessons / uiLessons.length) * 100) : 0
+
+          return {
+            ...course,
+            icon: ICON_MAP[course.icon_name] || ICON_MAP['TrendingUp'],
+            lessons: uiLessons,
+            progress,
+            students_count: course.students_count, // Keep database field name
+            is_locked: course.is_locked, // Keep database field name
+            required_tier: course.required_tier // Keep database field name
+          }
+        })
+      )
+
+      setCourses(uiCourses)
+    } catch (error) {
+      console.error('Failed to load courses:', error)
+      setError('Failed to load courses. Please try again.')
+      toast.error('Failed to load courses')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Load courses on component mount and when user changes
+  useEffect(() => {
+    loadCourses()
+  }, [user?.address])
+
+  const canAccessCourse = async (course: UICourse) => {
+    if (!course.is_locked) return true
 
     // Check if course was purchased with SUI
+    if (user?.address) {
+      try {
+        const hasPurchased = await courseService.hasUserPurchasedCourse(user.address, course.id)
+        if (hasPurchased) return true
+      } catch (error) {
+        console.warn('Failed to check course purchase status:', error)
+      }
+    }
+
+    // Check localStorage for backward compatibility
     const accessKey = `course_access_${course.id}`
     const isPurchased = localStorage.getItem(accessKey) === 'purchased'
     if (isPurchased) return true
 
     // Check tier-based access
-    if (course.requiredTier === "PRO" && (tier === "PRO" || tier === "ROYAL")) return true
-    if (course.requiredTier === "ROYAL" && tier === "ROYAL") return true
+    if (course.required_tier === "PRO" && (tier === "PRO" || tier === "ROYAL")) return true
+    if (course.required_tier === "ROYAL" && tier === "ROYAL") return true
     return false
   }
 
@@ -384,11 +173,22 @@ export function MetaGoAcademy() {
     }
   }
 
-  const handleLessonClick = (lesson: Lesson) => {
+  const handleLessonClick = async (lesson: UILesson) => {
     setSelectedLesson(lesson)
     setIsVideoPlaying(true)
-    // Mark lesson as completed
-    lesson.isCompleted = true
+    
+    // Mark lesson as completed in database
+    if (user?.address && selectedCourse) {
+      try {
+        await courseService.markLessonCompleted(user.address, selectedCourse.id, lesson.id)
+        // Update local state
+        lesson.isCompleted = true
+        // Refresh courses to update progress
+        loadCourses()
+      } catch (error) {
+        console.error('Failed to mark lesson as completed:', error)
+      }
+    }
   }
 
   const handleCloseVideo = () => {
@@ -396,7 +196,7 @@ export function MetaGoAcademy() {
     setIsVideoPlaying(false)
   }
 
-  const handleBuyCourse = (course: Course) => {
+  const handleBuyCourse = (course: UICourse) => {
     setCourseForPurchase(course)
     setPaymentModalOpen(true)
   }
@@ -404,9 +204,51 @@ export function MetaGoAcademy() {
   const handlePaymentSuccess = (courseId: string) => {
     setPaymentModalOpen(false)
     setCourseForPurchase(null)
-    // The course access is already updated in localStorage by the modal
-    // Force a re-render by updating a state that doesn't affect the UI
-    setSelectedCourse(null)
+    // Refresh courses to update access
+    loadCourses()
+  }
+
+  // Admin handlers
+  const handleEditCourse = (course: UICourse) => {
+    setSelectedCourseForEdit(course)
+    setEditCourseModalOpen(true)
+  }
+
+  const handleDeleteCourse = (course: UICourse) => {
+    setSelectedCourseForEdit(course)
+    setDeleteCourseModalOpen(true)
+  }
+
+  const handleCourseUpdated = () => {
+    loadCourses() // Refresh courses list
+  }
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[#4DA2FF] mx-auto mb-4" />
+          <p className="text-gray-400">Loading courses...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-red-400 mb-4">
+          <X className="w-12 h-12 mx-auto mb-2" />
+          <p className="text-lg font-semibold">Error Loading Courses</p>
+          <p className="text-sm">{error}</p>
+        </div>
+        <Button onClick={loadCourses} className="bg-[#4DA2FF] hover:bg-[#4DA2FF]/80">
+          Try Again
+        </Button>
+      </div>
+    )
   }
 
   // Video Player Modal
@@ -478,33 +320,60 @@ export function MetaGoAcademy() {
     )
   }
 
+  // Course Detail View with Admin Controls
   if (selectedCourse) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            onClick={() => setSelectedCourse(null)}
-            variant="outline"
-            size="sm"
-            className="border-[#C0E6FF] text-[#C0E6FF]"
-          >
-            ← Back to Courses
-          </Button>
-          <div>
-            <h2 className="text-2xl font-bold text-[#FFFFFF]">{selectedCourse.title}</h2>
-            <p className="text-[#C0E6FF]">Course Overview</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={() => setSelectedCourse(null)}
+              variant="outline"
+              size="sm"
+              className="border-[#C0E6FF] text-[#C0E6FF]"
+            >
+              ← Back to Courses
+            </Button>
+            <div>
+              <h2 className="text-2xl font-bold text-[#FFFFFF]">{selectedCourse.title}</h2>
+              <p className="text-[#C0E6FF]">Course Overview</p>
+            </div>
           </div>
+
+          {/* Admin Controls */}
+          {isAdmin && (
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => handleEditCourse(selectedCourse)}
+                variant="outline"
+                size="sm"
+                className="border-[#4DA2FF] text-[#4DA2FF] hover:bg-[#4DA2FF]/10"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Course
+              </Button>
+              <Button
+                onClick={() => handleDeleteCourse(selectedCourse)}
+                variant="outline"
+                size="sm"
+                className="border-red-400 text-red-400 hover:bg-red-400/10"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
+            {/* Course Content */}
             <div className="enhanced-card">
               <div className="enhanced-card-content">
                 <div className="flex items-center gap-2 text-white mb-4">
                   <BookOpen className="w-5 h-5 text-[#4DA2FF]" />
                   <h3 className="font-semibold">Course Content</h3>
                 </div>
-                <div>
                 <div className="space-y-4">
                   {selectedCourse.lessons.map((lesson, i) => (
                     <div
@@ -530,12 +399,22 @@ export function MetaGoAcademy() {
                     </div>
                   ))}
                 </div>
-                </div>
               </div>
             </div>
+
+            {/* Admin Lesson Management */}
+            {isAdmin && (
+              <LessonManagement
+                courseId={selectedCourse.id}
+                userAddress={user?.address || ''}
+                lessons={selectedCourse.lessons}
+                onLessonsUpdate={handleCourseUpdated}
+              />
+            )}
           </div>
 
           <div className="space-y-6">
+            {/* Course Info */}
             <div className="enhanced-card">
               <div className="enhanced-card-content">
                 <div className="space-y-4">
@@ -557,7 +436,7 @@ export function MetaGoAcademy() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-[#C0E6FF] text-sm">Students</span>
-                      <span className="text-[#FFFFFF] text-sm">{selectedCourse.students.toLocaleString()}</span>
+                      <span className="text-[#FFFFFF] text-sm">{selectedCourse.students_count.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-[#C0E6FF] text-sm">Rating</span>
@@ -581,19 +460,53 @@ export function MetaGoAcademy() {
     )
   }
 
+  // Main Course Grid View
   return (
     <div className="space-y-6">
+      {/* Admin Controls */}
+      {isAdmin && (
+        <div className="enhanced-card">
+          <div className="enhanced-card-content">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-[#4DA2FF]" />
+                <h3 className="text-white font-semibold">Admin Controls</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setAddCourseModalOpen(true)}
+                  className="bg-[#4DA2FF] hover:bg-[#4DA2FF]/80"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Course
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Course Grid */}
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {courses.map((course) => {
-          const hasAccess = canAccessCourse(course)
+          // Note: canAccessCourse is async, but we'll handle this in the click handler
+          // For display purposes, we'll use a synchronous check first
+          const hasBasicAccess = !course.is_locked ||
+            (course.required_tier === "PRO" && (tier === "PRO" || tier === "ROYAL")) ||
+            (course.required_tier === "ROYAL" && tier === "ROYAL") ||
+            localStorage.getItem(`course_access_${course.id}`) === 'purchased'
 
           return (
             <div
               key={course.id}
               className={`enhanced-card transition-all duration-300 ${
-                hasAccess ? 'hover:border-[#4DA2FF]/50 cursor-pointer' : course.price ? '' : 'opacity-60'
+                hasBasicAccess ? 'hover:border-[#4DA2FF]/50 cursor-pointer' : course.price ? '' : 'opacity-60'
               }`}
-              onClick={() => hasAccess && setSelectedCourse(course)}
+              onClick={async () => {
+                if (await canAccessCourse(course)) {
+                  setSelectedCourse(course)
+                }
+              }}
             >
               <div className="enhanced-card-content">
                 <div className="flex items-center justify-between mb-4">
@@ -608,86 +521,119 @@ export function MetaGoAcademy() {
                       </Badge>
                     </div>
                   </div>
-                  {!hasAccess && (
-                    <Lock className="w-5 h-5 text-[#C0E6FF]" />
-                  )}
+                  <div className="flex items-center gap-2">
+                    {!hasBasicAccess && (
+                      <Lock className="w-5 h-5 text-[#C0E6FF]" />
+                    )}
+                    {/* Admin Controls */}
+                    {isAdmin && (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleEditCourse(course)
+                          }}
+                          className="text-[#4DA2FF] hover:text-[#4DA2FF]/80 h-8 w-8 p-0"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteCourse(course)
+                          }}
+                          className="text-red-400 hover:text-red-300 h-8 w-8 p-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
+
                 <div className="space-y-4">
-                <p className="text-[#C0E6FF] text-sm leading-relaxed">
-                  {course.description}
-                </p>
+                  <p className="text-[#C0E6FF] text-sm leading-relaxed">
+                    {course.description}
+                  </p>
 
-                <div className="grid gap-2 grid-cols-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-[#C0E6FF]" />
-                    <span className="text-[#C0E6FF]">{course.duration}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-[#C0E6FF]" />
-                    <span className="text-[#C0E6FF]">{course.lessons.length} lessons</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#C0E6FF]" />
-                    <span className="text-[#C0E6FF]">{course.students.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                    <span className="text-[#C0E6FF]">{course.rating}</span>
-                  </div>
-                </div>
-
-                {course.progress > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#C0E6FF]">Progress</span>
-                      <span className="text-[#FFFFFF]">{course.progress}%</span>
+                  <div className="grid gap-2 grid-cols-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-[#C0E6FF]" />
+                      <span className="text-[#C0E6FF]">{course.duration}</span>
                     </div>
-                    <Progress value={course.progress} className="h-2" />
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-[#C0E6FF]" />
+                      <span className="text-[#C0E6FF]">{course.lessons.length} lessons</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-[#C0E6FF]" />
+                      <span className="text-[#C0E6FF]">{course.students_count.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                      <span className="text-[#C0E6FF]">{course.rating}</span>
+                    </div>
                   </div>
-                )}
 
-                {!hasAccess && course.requiredTier && (
-                  <div className="p-3 bg-orange-500/10 rounded-lg border border-orange-500/30">
-                    <p className="text-sm text-orange-400 text-center">
-                      Requires {course.requiredTier} NFT {course.price ? `or ${course.price} SUI` : ''}
-                    </p>
-                  </div>
-                )}
-
-                <div className="pt-2">
-                  {hasAccess ? (
-                    <Button className="w-full bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-[#FFFFFF]">
-                      {course.progress > 0 ? (
-                        <>
-                          <Play className="w-4 h-4 mr-2" />
-                          Continue
-                        </>
-                      ) : (
-                        <>
-                          <BookOpen className="w-4 h-4 mr-2" />
-                          Start Course
-                        </>
-                      )}
-                    </Button>
-                  ) : course.price ? (
-                    <Button
-                      onClick={() => handleBuyCourse(course)}
-                      className="w-full bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-[#FFFFFF]"
-                    >
-                      <Coins className="w-4 h-4 mr-2" />
-                      Buy for {course.price} SUI
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      className="w-full border-[#C0E6FF] text-[#C0E6FF]"
-                      disabled
-                    >
-                      <Lock className="w-4 h-4 mr-2" />
-                      Locked
-                    </Button>
+                  {course.progress > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-[#C0E6FF]">Progress</span>
+                        <span className="text-[#FFFFFF]">{course.progress}%</span>
+                      </div>
+                      <Progress value={course.progress} className="h-2" />
+                    </div>
                   )}
-                </div>
+
+                  {!hasBasicAccess && course.required_tier && (
+                    <div className="p-3 bg-orange-500/10 rounded-lg border border-orange-500/30">
+                      <p className="text-sm text-orange-400 text-center">
+                        Requires {course.required_tier} NFT {course.price ? `or ${course.price} SUI` : ''}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="pt-2">
+                    {hasBasicAccess ? (
+                      <Button className="w-full bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-[#FFFFFF]">
+                        {course.progress > 0 ? (
+                          <>
+                            <Play className="w-4 h-4 mr-2" />
+                            Continue
+                          </>
+                        ) : (
+                          <>
+                            <BookOpen className="w-4 h-4 mr-2" />
+                            Start Course
+                          </>
+                        )}
+                      </Button>
+                    ) : course.price ? (
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleBuyCourse(course)
+                        }}
+                        className="w-full bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-[#FFFFFF]"
+                      >
+                        <Coins className="w-4 h-4 mr-2" />
+                        Buy for {course.price} SUI
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        className="w-full border-[#C0E6FF] text-[#C0E6FF]"
+                        disabled
+                      >
+                        <Lock className="w-4 h-4 mr-2" />
+                        Locked
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -702,7 +648,6 @@ export function MetaGoAcademy() {
             <GraduationCap className="w-6 h-6 text-[#4DA2FF]" />
             <h3 className="text-xl font-semibold">Recommended Learning Path</h3>
           </div>
-          <div>
           <div className="flex items-center justify-center space-x-4 overflow-x-auto pb-4">
             {['CEX Basics', 'NFT Basics', 'DEX Basics', 'DeFi Basics', 'Liquidity & Staking'].map((step, index) => (
               <div key={step} className="flex items-center">
@@ -718,7 +663,6 @@ export function MetaGoAcademy() {
               </div>
             ))}
           </div>
-          </div>
         </div>
       </div>
 
@@ -729,6 +673,40 @@ export function MetaGoAcademy() {
         course={courseForPurchase}
         onPaymentSuccess={handlePaymentSuccess}
       />
+
+      {/* Admin Modals */}
+      {isAdmin && user?.address && (
+        <>
+          <AddCourseModal
+            isOpen={addCourseModalOpen}
+            onClose={() => setAddCourseModalOpen(false)}
+            onSuccess={handleCourseUpdated}
+            userAddress={user.address}
+          />
+
+          <EditCourseModal
+            isOpen={editCourseModalOpen}
+            onClose={() => {
+              setEditCourseModalOpen(false)
+              setSelectedCourseForEdit(null)
+            }}
+            onSuccess={handleCourseUpdated}
+            userAddress={user.address}
+            course={selectedCourseForEdit}
+          />
+
+          <DeleteCourseModal
+            isOpen={deleteCourseModalOpen}
+            onClose={() => {
+              setDeleteCourseModalOpen(false)
+              setSelectedCourseForEdit(null)
+            }}
+            onSuccess={handleCourseUpdated}
+            userAddress={user.address}
+            course={selectedCourseForEdit}
+          />
+        </>
+      )}
     </div>
   )
 }

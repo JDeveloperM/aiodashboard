@@ -8,16 +8,19 @@ import { useCurrentAccount, useSuiClientQuery } from '@mysten/dapp-kit'
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { Coins, Clock, BookOpen, CheckCircle, AlertCircle, Wallet, Users, Star, GraduationCap } from "lucide-react"
 import { toast } from "sonner"
+import { courseService, Course as DatabaseCourse } from "@/lib/course-service"
 
-interface Course {
+// Extended interface for UI compatibility
+interface Course extends Partial<DatabaseCourse> {
   id: string
   title: string
   description: string
-  icon: React.ReactNode
+  icon?: React.ReactNode
   duration: string
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced'
   price?: number
-  students: number
+  students?: number // Legacy field for backward compatibility
+  students_count?: number // Database field
   rating: number
 }
 
@@ -71,8 +74,22 @@ export function CoursePaymentModal({
       // 5. Grant permanent access to the course
 
       setPaymentStep('success')
-      
-      // Grant permanent access to the course
+
+      // Record purchase in database
+      if (account?.address) {
+        try {
+          await courseService.recordCoursePurchase(
+            account.address,
+            course.id,
+            course.price,
+            'simulated-transaction-hash' // In real implementation, use actual transaction hash
+          )
+        } catch (error) {
+          console.error('Failed to record purchase in database:', error)
+        }
+      }
+
+      // Grant permanent access to the course (backward compatibility)
       const accessKey = `course_access_${course.id}`
       localStorage.setItem(accessKey, 'purchased')
 
@@ -157,7 +174,7 @@ export function CoursePaymentModal({
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-[#C0E6FF]" />
-                    <span className="text-[#C0E6FF]">{course.students.toLocaleString()}</span>
+                    <span className="text-[#C0E6FF]">{course.students_count?.toLocaleString() || course.students?.toLocaleString() || 0}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Star className="w-4 h-4 text-yellow-400 fill-current" />
