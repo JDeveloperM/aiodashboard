@@ -130,10 +130,9 @@ export function EnhancedAvatar({
     <>
       <div className={cn("relative group", className)}>
         <Avatar className={cn(
-          className?.includes('!w-full') || className?.includes('!h-full')
-            ? "w-full h-full"
-            : sizeClasses[size],
-          "bg-blue-100"
+          sizeClasses[size],
+          "bg-blue-100",
+          className
         )}>
           <AvatarImage src={currentImageUrl} alt="Profile" className="object-cover" />
           <AvatarFallback className="bg-[#4DA2FF] text-white text-lg font-semibold">

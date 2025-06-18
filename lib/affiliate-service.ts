@@ -518,6 +518,134 @@ class AffiliateService {
   }
 
   /**
+   * Check if user already has a referral relationship (as referee)
+   */
+  async checkExistingReferralRelationship(userAddress: string): Promise<boolean> {
+    try {
+      const { data: relationship, error } = await supabase
+        .from('affiliate_relationships')
+        .select('id')
+        .eq('referee_address', userAddress)
+        .eq('relationship_status', 'active')
+        .single()
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking referral relationship:', error)
+        return false
+      }
+
+      return !!relationship
+    } catch (error) {
+      console.error('Failed to check referral relationship:', error)
+      return false
+    }
+  }
+
+  /**
+   * Get referral relationship data for a user
+   */
+  async getReferralRelationshipData(userAddress: string): Promise<{ referral_code?: string } | null> {
+    try {
+      const { data: relationship, error } = await supabase
+        .from('affiliate_relationships')
+        .select('referral_code')
+        .eq('referee_address', userAddress)
+        .eq('relationship_status', 'active')
+        .single()
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error getting referral relationship data:', error)
+        return null
+      }
+
+      return relationship
+    } catch (error) {
+      console.error('Failed to get referral relationship data:', error)
+      return null
+    }
+  }
+
+  /**
+   * Process and validate a referral code, creating the relationship if valid
+   */
+  async processReferralCode(referralCode: string, userAddress: string): Promise<boolean> {
+    try {
+      console.log('🔍 Processing referral code:', referralCode, 'for user:', userAddress)
+
+      // Step 1: Check if user already has a referral relationship
+      const hasExisting = await this.checkExistingReferralRelationship(userAddress)
+      if (hasExisting) {
+        console.log('❌ User already has a referral relationship')
+        return false
+      }
+
+      // Step 2: Validate the referral code exists and is active
+      const { data: codeData, error: codeError } = await supabase
+        .from('affiliate_codes')
+        .select('owner_address, usage_limit, usage_count, is_active, expires_at')
+        .eq('code', referralCode)
+        .eq('is_active', true)
+        .single()
+
+      if (codeError || !codeData) {
+        console.log('❌ Invalid or inactive referral code')
+        return false
+      }
+
+      // Step 3: Check if code has expired
+      if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
+        console.log('❌ Referral code has expired')
+        return false
+      }
+
+      // Step 4: Check usage limit
+      if (codeData.usage_limit && codeData.usage_count >= codeData.usage_limit) {
+        console.log('❌ Referral code usage limit reached')
+        return false
+      }
+
+      // Step 5: Prevent self-referral
+      if (codeData.owner_address === userAddress) {
+        console.log('❌ Cannot use your own referral code')
+        return false
+      }
+
+      // Step 6: Create the affiliate relationship
+      const relationshipSuccess = await this.createAffiliateRelationship(
+        codeData.owner_address,
+        userAddress,
+        referralCode
+      )
+
+      if (!relationshipSuccess) {
+        console.log('❌ Failed to create affiliate relationship')
+        return false
+      }
+
+      // Step 7: Update code usage count
+      const { error: updateError } = await supabase
+        .from('affiliate_codes')
+        .update({
+          usage_count: codeData.usage_count + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('code', referralCode)
+
+      if (updateError) {
+        console.error('⚠️ Failed to update code usage count:', updateError)
+        // Don't fail the whole process for this
+      }
+
+      console.log('✅ Referral code processed successfully')
+      return true
+
+    } catch (error) {
+      console.error('Failed to process referral code:', error)
+      return false
+    }
+  }
+
+  /**
    * Get sponsor information for a user (the person who referred them)
    */
   async getSponsorInfo(userAddress: string): Promise<AffiliateUser | null> {

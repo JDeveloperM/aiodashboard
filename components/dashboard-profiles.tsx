@@ -14,17 +14,17 @@ import { usePersistentProfile } from "@/hooks/use-persistent-profile"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { EnhancedAvatar } from "@/components/enhanced-avatar"
 import { toast } from "sonner"
+import { affiliateService } from "@/lib/affiliate-service"
 import {
   User,
-  Mail,
   Wallet,
   Shield,
   Camera,
   CheckCircle,
   AlertCircle,
-
   MapPin,
-  FileText
+  FileText,
+  Users
 } from "lucide-react"
 
 interface ProfileData {
@@ -36,7 +36,7 @@ interface ProfileData {
   location: string
   walletAddress: string
   kycStatus: 'pending' | 'verified' | 'rejected' | 'not-started'
-  notifications: boolean
+  referralCode: string
 }
 
 
@@ -54,11 +54,12 @@ export function DashboardProfiles() {
     location: "",
     walletAddress: "",
     kycStatus: 'not-started',
-    notifications: true
+    referralCode: ""
   })
 
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [hasExistingReferralCode, setHasExistingReferralCode] = useState(false)
 
   // Load profile data from persistent profile
   useEffect(() => {
@@ -76,7 +77,7 @@ export function DashboardProfiles() {
         walletAddress: user?.address || "",
         kycStatus: profile.kyc_status === 'verified' ? 'verified' :
                   profile.kyc_status === 'pending' ? 'pending' : 'not-started',
-        notifications: profile.display_preferences?.email_notifications !== false
+        referralCode: ""
       })
     } else if (user?.address) {
       // Set wallet address if user is connected but no profile exists
@@ -86,6 +87,34 @@ export function DashboardProfiles() {
       }))
     }
   }, [profile, user?.address])
+
+  // Check for existing referral relationship
+  useEffect(() => {
+    const checkExistingReferralCode = async () => {
+      if (!user?.address) return
+
+      try {
+        // Check if user already has a referral relationship (as referee)
+        const hasReferral = await affiliateService.checkExistingReferralRelationship(user.address)
+        setHasExistingReferralCode(hasReferral)
+
+        if (hasReferral) {
+          // Get the referral code used for this relationship
+          const referralData = await affiliateService.getReferralRelationshipData(user.address)
+          if (referralData?.referral_code) {
+            setProfileData(prev => ({
+              ...prev,
+              referralCode: referralData.referral_code
+            }))
+          }
+        }
+      } catch (error) {
+        console.error('Error checking referral relationship:', error)
+      }
+    }
+
+    checkExistingReferralCode()
+  }, [user?.address])
 
 
 
@@ -100,6 +129,27 @@ export function DashboardProfiles() {
     try {
       console.log('💾 Saving profile data to database and Walrus...')
 
+      // Handle referral code if provided and user doesn't have existing referral
+      if (profileData.referralCode.trim() && !hasExistingReferralCode) {
+        console.log('🔗 Processing referral code:', profileData.referralCode)
+
+        // Validate and process referral code
+        const referralSuccess = await affiliateService.processReferralCode(
+          profileData.referralCode.trim(),
+          user.address
+        )
+
+        if (!referralSuccess) {
+          toast.error('❌ Invalid or expired referral code')
+          setIsSaving(false)
+          return
+        }
+
+        // Mark that user now has a referral code
+        setHasExistingReferralCode(true)
+        toast.success('✅ Referral code applied successfully!')
+      }
+
       // Prepare profile data for database
       const profileUpdateData = {
         username: profileData.username,
@@ -108,8 +158,7 @@ export function DashboardProfiles() {
         real_name: `${profileData.firstName} ${profileData.lastName}`.trim(),
         location: profileData.location,
         display_preferences: {
-          ...profile?.display_preferences,
-          email_notifications: profileData.notifications
+          ...profile?.display_preferences
         }
       }
 
@@ -206,30 +255,80 @@ export function DashboardProfiles() {
       </div>
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-        {/* Profile Picture */}
-        <div className="enhanced-card relative overflow-hidden">
-          <div className="enhanced-card-content p-0 relative">
-            <div className="absolute top-4 left-4 z-10 flex items-center gap-2 text-white bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2">
-              <Camera className="w-5 h-5 text-[#4DA2FF]" />
-              <h3 className="font-semibold">Profile Picture</h3>
-            </div>
-            <div className="relative w-full h-full min-h-[300px] flex items-center justify-center">
-              <EnhancedAvatar
-                size="2xl"
-                editable={isEditing}
-                showStorageInfo={true}
-                className="!w-full !h-full !min-h-[300px] rounded-lg"
-              />
+        {/* Profile Picture, KYC & Wallet */}
+        <div className="enhanced-card">
+          <div className="enhanced-card-content space-y-6">
+            {/* Profile Picture Section */}
+            <div className="text-center">
+              <div className="flex items-center gap-2 text-white mb-4 justify-center">
+                <Camera className="w-5 h-5 text-[#4DA2FF]" />
+                <h3 className="font-semibold">Profile Picture</h3>
+              </div>
+              <div className="relative flex items-center justify-center">
+                <EnhancedAvatar
+                  size="xl"
+                  editable={isEditing}
+                  showStorageInfo={false}
+                  className="!w-56 !h-56 rounded-full"
+                />
+              </div>
               {isEditing && (
-                <div className="absolute bottom-4 left-4 right-4 text-center bg-black/50 backdrop-blur-sm rounded-lg p-3">
+                <div className="mt-3 text-center">
                   <p className="text-xs text-[#C0E6FF]/70">
                     Click avatar to upload new image
                   </p>
                   <p className="text-xs text-[#C0E6FF]/50">
-                    Images are stored on Walrus for decentralized access
+                    Images stored on Walrus
                   </p>
                 </div>
               )}
+            </div>
+
+            {/* KYC Section */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-white">
+                <Shield className="w-4 h-4 text-[#4DA2FF]" />
+                <h4 className="font-semibold text-sm">KYC Verification</h4>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-center">
+                  <Badge className={getKycStatusColor(profileData.kycStatus)}>
+                    {getKycStatusIcon(profileData.kycStatus)}
+                    <span className="ml-2 capitalize text-xs">{profileData.kycStatus.replace('-', ' ')}</span>
+                  </Badge>
+                </div>
+                <p className="text-[#C0E6FF] text-xs text-center">
+                  {profileData.kycStatus === 'verified'
+                    ? 'Identity verified for AIONET security'
+                    : 'Complete KYC for enhanced security'
+                  }
+                </p>
+                {profileData.kycStatus !== 'verified' && (
+                  <Button
+                    size="sm"
+                    className="w-full bg-gradient-to-r from-[#4DA2FF] to-[#011829] text-white text-xs"
+                  >
+                    {profileData.kycStatus === 'not-started' ? 'Start KYC' : 'Continue KYC'}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Wallet Section */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-white">
+                <Wallet className="w-4 h-4 text-[#4DA2FF]" />
+                <h4 className="font-semibold text-sm">Wallet Address</h4>
+              </div>
+              <div className="space-y-2">
+                <Input
+                  value={profileData.walletAddress}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, walletAddress: e.target.value }))}
+                  disabled={!isEditing}
+                  className="bg-[#030F1C] border-[#C0E6FF]/30 text-white font-mono text-xs"
+                  placeholder="Sui wallet address"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -292,6 +391,35 @@ export function DashboardProfiles() {
                 />
               </div>
 
+              {/* Referral Code Section */}
+              <div className="space-y-2">
+                <Label htmlFor="referralCode" className="text-[#C0E6FF]">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Referral Code {hasExistingReferralCode ? "(Applied)" : "(Optional)"}
+                  </div>
+                </Label>
+                <Input
+                  id="referralCode"
+                  value={profileData.referralCode}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, referralCode: e.target.value }))}
+                  disabled={!isEditing || hasExistingReferralCode}
+                  className="bg-[#030F1C] border-[#C0E6FF]/30 text-white"
+                  placeholder={hasExistingReferralCode ? "Referral code already applied" : "Enter referral code (optional)"}
+                />
+                {hasExistingReferralCode && (
+                  <div className="flex items-center gap-2 text-green-400 text-sm">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>You have successfully applied a referral code</span>
+                  </div>
+                )}
+                {!hasExistingReferralCode && profileData.referralCode.trim() && (
+                  <p className="text-[#C0E6FF]/70 text-sm">
+                    💡 Referral codes can only be applied once and cannot be changed later
+                  </p>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="location" className="text-[#C0E6FF]">
                   <div className="flex items-center gap-2">
@@ -337,83 +465,6 @@ export function DashboardProfiles() {
           </div>
         </div>
       </div>
-
-      {/* KYC Section */}
-      <div className="enhanced-card">
-        <div className="enhanced-card-content">
-          <div className="flex items-center gap-2 text-white mb-4">
-            <Shield className="w-5 h-5 text-[#4DA2FF]" />
-            <h3 className="font-semibold">KYC Verification</h3>
-          </div>
-          <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Badge className={getKycStatusColor(profileData.kycStatus)}>
-                {getKycStatusIcon(profileData.kycStatus)}
-                <span className="ml-2 capitalize">{profileData.kycStatus.replace('-', ' ')}</span>
-              </Badge>
-              <span className="text-[#C0E6FF]">
-                {profileData.kycStatus === 'verified'
-                  ? 'Your identity has been verified for DEWhale security'
-                  : 'Complete KYC verification for enhanced security'
-                }
-              </span>
-            </div>
-
-            {profileData.kycStatus !== 'verified' && (
-              <Button
-                className="bg-gradient-to-r from-[#4DA2FF] to-[#011829] text-white"
-              >
-                {profileData.kycStatus === 'not-started' ? 'Start KYC' : 'Continue KYC'}
-              </Button>
-            )}
-          </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Wallet Information */}
-      <div className="enhanced-card">
-        <div className="enhanced-card-content">
-          <div className="flex items-center gap-2 text-white mb-4">
-            <Wallet className="w-5 h-5 text-[#4DA2FF]" />
-            <h3 className="font-semibold">Wallet & Preferences</h3>
-          </div>
-          <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="walletAddress" className="text-[#C0E6FF]">Sui Wallet Address</Label>
-            <Input
-              id="walletAddress"
-              value={profileData.walletAddress}
-              onChange={(e) => setProfileData(prev => ({ ...prev, walletAddress: e.target.value }))}
-              disabled={!isEditing}
-              className="bg-[#030F1C] border-[#C0E6FF]/30 text-white font-mono"
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-[#4DA2FF]" />
-              <span className="text-[#C0E6FF]">Email Notifications</span>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setProfileData(prev => ({ ...prev, notifications: !prev.notifications }))}
-              disabled={!isEditing}
-              className={`border-[#C0E6FF] ${
-                profileData.notifications
-                  ? 'bg-[#4DA2FF] text-white'
-                  : 'text-[#C0E6FF]'
-              }`}
-            >
-              {profileData.notifications ? 'Enabled' : 'Disabled'}
-            </Button>
-          </div>
-          </div>
-        </div>
-      </div>
-
 
     </div>
   )
