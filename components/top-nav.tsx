@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import React from "react"
 import { SignedIn, SignedOut, useSuiAuth } from "@/contexts/sui-auth-context"
-import { Coins, User, LogOut, CreditCard } from "lucide-react"
+import { Coins, User, LogOut, CreditCard, Wallet, Copy } from "lucide-react"
 import {
   Sheet,
   SheetContent,
@@ -23,7 +23,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Separator } from "@/components/ui/separator"
 import { useAvatar } from "@/contexts/avatar-context"
+import { useCurrentAccount, useSuiClientQuery } from '@mysten/dapp-kit'
+import { toast } from 'sonner'
+import { useState } from 'react'
+import { useChannelSubscriptions } from '@/hooks/use-channel-subscriptions'
+import { useCreatorsDatabase } from '@/contexts/creators-database-context'
 
 export function TopNav() {
   const pathname = usePathname()
@@ -33,6 +39,49 @@ export function TopNav() {
   const { profile } = usePersistentProfile()
   const { getRemainingFreeAccess, premiumAccessLimit, premiumAccessCount } = usePremiumAccess()
   const { getAvatarUrl, getFallbackText } = useAvatar()
+  const account = useCurrentAccount()
+  const { channels: joinedChannels } = useChannelSubscriptions()
+  const { getUserCreators } = useCreatorsDatabase()
+
+  // Query for SUI balance
+  const { data: balance } = useSuiClientQuery(
+    'getBalance',
+    {
+      owner: account?.address || '',
+      coinType: '0x2::sui::SUI',
+    },
+    {
+      enabled: !!account?.address,
+    }
+  )
+
+  const suiBalance = balance ? parseInt(balance.totalBalance) / 1000000000 : 0 // Convert from MIST to SUI
+  const suiPriceUSD = 2.1 // You can replace this with a real-time price API later
+  const suiBalanceUSD = suiBalance * suiPriceUSD
+
+  // Get the correct username from profile or user context
+  const displayUsername = profile?.username || user?.username || "Anonymous User"
+
+  // Get user's created channels
+  const userCreators = user?.address ? getUserCreators(user.address) : []
+  const createdChannels = userCreators.reduce((acc, creator) => [...acc, ...creator.channels], [] as any[])
+
+  // State for copy functionality
+  const [copiedAddress, setCopiedAddress] = useState(false)
+
+  // Copy address to clipboard
+  const copyAddress = async () => {
+    if (user?.address) {
+      try {
+        await navigator.clipboard.writeText(user.address)
+        setCopiedAddress(true)
+        toast.success('Address copied to clipboard!')
+        setTimeout(() => setCopiedAddress(false), 2000)
+      } catch (error) {
+        toast.error('Failed to copy address')
+      }
+    }
+  }
 
   const getTierColor = () => {
     switch (tier) {
@@ -111,11 +160,23 @@ export function TopNav() {
                         </Avatar>
                         <div className="flex-1">
                           <SheetTitle className="text-white text-lg font-semibold">
-                            {user?.username}
+                            {displayUsername}
                           </SheetTitle>
-                          <p className="text-xs text-[#C0E6FF] mt-1">
-                            {user?.address && formatAddress(user.address)}
-                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <p className="text-xs text-[#C0E6FF]">
+                              {user?.address && formatAddress(user.address)}
+                            </p>
+                            {user?.address && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={copyAddress}
+                                className="h-6 w-6 p-0 hover:bg-[#1e3a8a] transition-colors"
+                              >
+                                <Copy className={`h-3 w-3 ${copiedAddress ? 'text-green-400' : 'text-[#C0E6FF]'}`} />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -133,11 +194,18 @@ export function TopNav() {
                         </Badge>
                       </div>
 
-                      {/* Premium Access Status */}
-                      {(tier === 'PRO' || tier === 'ROYAL') && (
+                      {/* Channels Joined Status */}
+                      <div className="bg-[#1a2f51]/50 rounded-lg p-3">
+                        <div className="text-sm text-[#C0E6FF]">
+                          Channels Joined: {joinedChannels.length}
+                        </div>
+                      </div>
+
+                      {/* Channels Created Status */}
+                      {createdChannels.length > 0 && (
                         <div className="bg-[#1a2f51]/50 rounded-lg p-3">
                           <div className="text-sm text-[#C0E6FF]">
-                            Premium Channels: {premiumAccessCount}/{premiumAccessLimit} used
+                            Channels Created: {createdChannels.length}
                           </div>
                         </div>
                       )}
@@ -170,15 +238,50 @@ export function TopNav() {
                         <User className="h-5 w-5" />
                         <span className="font-medium">Settings</span>
                       </Link>
+
+                      <Separator className="my-4 bg-[#1e3a8a]" />
+
+                      {/* SUI Balance Section */}
+                      <div className="bg-[#1a2f51]/50 rounded-lg p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="p-2 bg-[#4DA2FF]/20 rounded-lg">
+                            <Wallet className="w-5 h-5 text-[#4DA2FF]" />
+                          </div>
+                          <div>
+                            <h4 className="text-white font-medium">Wallet Balance</h4>
+                            <p className="text-[#C0E6FF] text-sm">Available SUI</p>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[#C0E6FF] text-sm">SUI Balance:</span>
+                            <div className="flex items-center gap-2">
+                              <img
+                                src="/images/logo-sui.png"
+                                alt="SUI"
+                                className="w-4 h-4"
+                              />
+                              <span className="text-white font-medium">{suiBalance.toFixed(4)}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[#C0E6FF] text-sm">USD Value:</span>
+                            <span className="text-green-400 font-medium">${suiBalanceUSD.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
                     </nav>
                   </div>
 
+                  {/* Spacer to push sign out to bottom */}
+                  <div className="flex-1" />
+
                   {/* Footer with Sign Out */}
-                  <div className="p-6 pt-0 border-t border-[#1e3a8a]">
+                  <div className="p-6 pt-4 border-t border-[#1e3a8a] mt-auto">
                     <Button
                       onClick={() => signOut()}
-                      variant="ghost"
-                      className="w-full justify-start gap-3 p-3 text-[#C0E6FF] hover:bg-[#1e3a8a] hover:text-white"
+                      variant="outline"
+                      className="w-full justify-start gap-3 p-3 text-red-400 border-red-500/50 hover:bg-red-500/10 hover:text-red-300 hover:border-red-400 transition-colors shadow-[0_0_10px_rgba(239,68,68,0.3)] hover:shadow-[0_0_15px_rgba(239,68,68,0.5)]"
                     >
                       <LogOut className="h-5 w-5" />
                       <span className="font-medium">Sign out</span>
