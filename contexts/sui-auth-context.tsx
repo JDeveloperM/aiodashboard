@@ -102,10 +102,14 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
           // Check if this is a new user by looking for existing profile
           try {
             const existingProfile = await encryptedStorage.getDecryptedProfile(suiAccount.address)
-            // User is new ONLY if no profile exists in database at all
-            userIsNew = !existingProfile
+            // User is new if no profile exists OR onboarding is not completed
+            const profileExists = !!existingProfile
+            const onboardingCompleted = existingProfile?.onboarding_completed === true
+            userIsNew = !profileExists || !onboardingCompleted
+
             console.log(`🔍 User ${suiAccount.address} is ${userIsNew ? 'NEW' : 'EXISTING'}`, {
-              profileExists: !!existingProfile,
+              profileExists,
+              onboardingCompleted,
               profileId: existingProfile?.id,
               username: existingProfile?.username
             })
@@ -131,10 +135,14 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
           // Check if this is a new user by looking for existing profile
           try {
             const existingProfile = await encryptedStorage.getDecryptedProfile(zkLoginUserAddress)
-            // User is new ONLY if no profile exists in database at all
-            userIsNew = !existingProfile
+            // User is new if no profile exists OR onboarding is not completed
+            const profileExists = !!existingProfile
+            const onboardingCompleted = existingProfile?.onboarding_completed === true
+            userIsNew = !profileExists || !onboardingCompleted
+
             console.log(`🔍 zkLogin User ${zkLoginUserAddress} is ${userIsNew ? 'NEW' : 'EXISTING'}`, {
-              profileExists: !!existingProfile,
+              profileExists,
+              onboardingCompleted,
               profileId: existingProfile?.id,
               username: existingProfile?.username
             })
@@ -352,25 +360,27 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
       console.log('🔄 Refreshing user state...')
       try {
         const existingProfile = await encryptedStorage.getDecryptedProfile(user.address)
-        // User is new ONLY if no profile exists in database at all
+        // User is new if no profile exists OR onboarding is not completed
         const profileExists = !!existingProfile
+        const onboardingCompleted = existingProfile?.onboarding_completed === true
 
         const updatedUser = {
           ...user,
-          isNewUser: !profileExists,
-          onboardingCompleted: profileExists,
+          isNewUser: !profileExists || !onboardingCompleted,
+          onboardingCompleted: onboardingCompleted,
           profileSetupCompleted: profileExists
         }
 
         setUser(updatedUser)
-        setIsNewUser(!profileExists)
+        setIsNewUser(!profileExists || !onboardingCompleted)
 
         // Update localStorage
         localStorage.setItem(`sui_user_${user.address}`, JSON.stringify(updatedUser))
 
         console.log('✅ User state refreshed:', {
           profileExists,
-          isNewUser: !profileExists,
+          onboardingCompleted,
+          isNewUser: !profileExists || !onboardingCompleted,
           profileId: existingProfile?.id,
           username: existingProfile?.username
         })

@@ -52,6 +52,10 @@ interface EncryptedProfile {
   join_date: string
   last_active: string
 
+  // Onboarding tracking
+  onboarding_completed?: boolean
+  onboarding_completed_at?: string
+
   // JSON data
   achievements_data: Achievement[]
   referral_data: Record<string, any>
@@ -87,6 +91,10 @@ interface DecryptedProfile {
   kyc_status: 'verified' | 'pending' | 'not_verified'
   join_date: string
   last_active: string
+
+  // Onboarding tracking
+  onboarding_completed?: boolean
+  onboarding_completed_at?: string
 
   // JSON data
   achievements_data: Achievement[]
@@ -232,7 +240,11 @@ class EncryptedDatabaseStorage {
         current_xp: profileData.current_xp ?? 0,
         total_xp: profileData.total_xp ?? 0,
         points: profileData.points ?? 0,
-        kyc_status: profileData.kyc_status || 'not_verified'
+        kyc_status: profileData.kyc_status || 'not_verified',
+
+        // Onboarding tracking
+        onboarding_completed: profileData.onboarding_completed ?? false,
+        onboarding_completed_at: profileData.onboarding_completed_at || null
       }
 
       // Only add optional fields if they exist in the data
@@ -403,6 +415,10 @@ class EncryptedDatabaseStorage {
       kyc_status: encryptedProfile.kyc_status || 'not_verified',
       join_date: encryptedProfile.join_date || encryptedProfile.created_at,
       last_active: encryptedProfile.last_active || encryptedProfile.updated_at,
+
+      // Onboarding tracking
+      onboarding_completed: encryptedProfile.onboarding_completed || false,
+      onboarding_completed_at: encryptedProfile.onboarding_completed_at,
 
       // JSON data fields
       achievements_data: encryptedProfile.achievements_data || [],
@@ -709,6 +725,8 @@ class EncryptedDatabaseStorage {
               points: 100, // Give new users some starting points
               role_tier: 'NOMAD',
               kyc_status: 'not_verified',
+              onboarding_completed: false, // New users haven't completed onboarding
+              onboarding_completed_at: null,
               achievements_data: [],
               referral_data: {},
               display_preferences: {

@@ -7,16 +7,18 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { 
-  User, 
-  Mail, 
-  Shield, 
-  CheckCircle, 
-  ArrowRight, 
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  User,
+  Mail,
+  Shield,
+  CheckCircle,
+  ArrowRight,
   Wallet,
   Star,
   Gift,
-  Trophy
+  Trophy,
+  Users
 } from 'lucide-react'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { usePersistentProfile } from '@/hooks/use-persistent-profile'
@@ -34,7 +36,7 @@ interface OnboardingStep {
 export function NewUserOnboarding() {
   const { user, isNewUser, completeOnboarding, completeProfileSetup, completeKYC, refreshUserState } = useSuiAuth()
   const { profile, updateProfile, updateKYCStatus } = usePersistentProfile()
-  
+
   const [currentStep, setCurrentStep] = useState(0)
   const [isCompleting, setIsCompleting] = useState(false)
 
@@ -42,17 +44,22 @@ export function NewUserOnboarding() {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
-    bio: ''
+    bio: '',
+    referralCode: ''
   })
 
+  // Referral options
+  const [skipReferral, setSkipReferral] = useState(false)
+
   // Form validation
-  const isFormValid = formData.username.trim().length >= 3
+  const isFormValid = formData.username.trim().length >= 3 &&
+    (formData.referralCode.trim().length > 0 || skipReferral)
 
   const steps: OnboardingStep[] = [
     {
       id: 'welcome',
       title: 'Welcome to AIONET',
-      description: 'Let\'s get your account set up with everything you need',
+      description: 'Your wallet is connected and ready to get started',
       icon: Star,
       completed: currentStep > 0,
       required: true
@@ -60,9 +67,9 @@ export function NewUserOnboarding() {
     {
       id: 'profile',
       title: 'Complete Your Profile',
-      description: 'Add your basic information to personalize your experience',
+      description: 'Add your basic information and referral code',
       icon: User,
-      completed: currentStep > 1 && !!profile?.username && profile.username !== `User ${user?.address.slice(0, 6)}`,
+      completed: currentStep > 1,
       required: true
     },
     {
@@ -70,7 +77,7 @@ export function NewUserOnboarding() {
       title: 'Verify Your Identity',
       description: 'Complete KYC verification for enhanced security and features',
       icon: Shield,
-      completed: currentStep > 2 && profile?.kyc_status === 'verified',
+      completed: currentStep > 2,
       required: false
     },
     {
@@ -93,7 +100,8 @@ export function NewUserOnboarding() {
       setFormData({
         username: profile.username || '',
         email: profile.email || '',
-        bio: profile.bio || ''
+        bio: profile.bio || '',
+        referralCode: ''
       })
     } else if (user?.address) {
       // Initialize with default username if no profile exists
@@ -101,7 +109,8 @@ export function NewUserOnboarding() {
       setFormData({
         username: `User ${user.address.slice(0, 6)}`,
         email: '',
-        bio: ''
+        bio: '',
+        referralCode: ''
       })
     }
   }, [profile, user?.address])
@@ -115,8 +124,8 @@ export function NewUserOnboarding() {
   }, [profile?.username, user?.address, refreshUserState])
 
   const handleProfileSubmit = async () => {
-    if (!formData.username.trim()) {
-      toast.error('Please enter a username')
+    if (!isFormValid) {
+      toast.error('Please fill in all required fields')
       return
     }
 
@@ -124,8 +133,8 @@ export function NewUserOnboarding() {
     try {
       console.log('🔄 Submitting profile data:', formData)
 
-      // Update profile with form data
-      const success = await updateProfile({
+      // Prepare profile data with referral code
+      const profileData: any = {
         username: formData.username.trim(),
         email: formData.email.trim() || undefined,
         bio: formData.bio.trim() || undefined,
@@ -136,32 +145,27 @@ export function NewUserOnboarding() {
         total_xp: profile?.total_xp || 0,
         points: profile?.points || 100,
         kyc_status: profile?.kyc_status || 'not_verified'
-      })
+      }
+
+      // Add referral code to referral_data if provided
+      if (formData.referralCode.trim() && !skipReferral) {
+        profileData.referral_data = {
+          ...profile?.referral_data,
+          referral_code: formData.referralCode.trim(),
+          referred_by: formData.referralCode.trim(),
+          referral_date: new Date().toISOString()
+        }
+      }
+
+      // Update profile with form data
+      const success = await updateProfile(profileData)
 
       if (success) {
         console.log('✅ Profile updated successfully')
         await completeProfileSetup()
 
-        // Set localStorage flag to prevent onboarding from showing again
-        if (user?.address) {
-          localStorage.setItem(`onboarding_completed_${user.address}`, 'true')
-          console.log('🏁 Onboarding completion flag set in localStorage')
-        }
-
         // Refresh user state to update isNewUser status
         await refreshUserState()
-
-        // If this is the last required step, complete onboarding
-        if (currentStep === 1) { // Profile step
-          setTimeout(async () => {
-            await completeOnboarding()
-            await refreshUserState()
-            toast.success('Profile setup complete! Welcome to AIONET!')
-
-            // Force component re-render by updating a state
-            window.location.reload()
-          }, 1500)
-        }
 
         toast.success('Profile completed successfully!')
         setCurrentStep(currentStep + 1)
@@ -216,20 +220,26 @@ export function NewUserOnboarding() {
   const handleCompleteOnboarding = async () => {
     setIsCompleting(true)
     try {
-      await completeOnboarding()
+      // Mark onboarding as completed in the database
+      const success = await updateProfile({
+        ...profile,
+        onboarding_completed: true,
+        onboarding_completed_at: new Date().toISOString()
+      })
 
-      // Set localStorage flag to prevent onboarding from showing again
-      if (user?.address) {
-        localStorage.setItem(`onboarding_completed_${user.address}`, 'true')
-        console.log('🏁 Final onboarding completion flag set')
+      if (success) {
+        await completeOnboarding()
+        await refreshUserState()
+
+        toast.success('Welcome to AIONET! Your account is now fully set up.')
+
+        // Force a page refresh to ensure the onboarding doesn't show again
+        setTimeout(() => {
+          window.location.reload()
+        }, 2000)
+      } else {
+        toast.error('Failed to complete onboarding')
       }
-
-      toast.success('Welcome to AIONET! Your account is now fully set up.')
-
-      // Force a page refresh to ensure the onboarding doesn't show again
-      setTimeout(() => {
-        window.location.reload()
-      }, 2000)
     } catch (error) {
       console.error('Onboarding completion error:', error)
       toast.error('Failed to complete onboarding')
@@ -293,7 +303,7 @@ export function NewUserOnboarding() {
                   <p className="text-red-400 text-sm mt-1">Username is required</p>
                 )}
               </div>
-              
+
               <div>
                 <Label htmlFor="email" className="text-white">Email (Optional)</Label>
                 <Input
@@ -305,7 +315,7 @@ export function NewUserOnboarding() {
                   className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="bio" className="text-white">Bio (Optional)</Label>
                 <Textarea
@@ -316,6 +326,41 @@ export function NewUserOnboarding() {
                   className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white"
                   rows={3}
                 />
+              </div>
+
+              <div>
+                <Label htmlFor="referralCode" className="text-white flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Referral Code
+                </Label>
+                <Input
+                  id="referralCode"
+                  value={formData.referralCode}
+                  onChange={(e) => setFormData({ ...formData, referralCode: e.target.value })}
+                  placeholder="Enter referral code (if you have one)"
+                  className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white"
+                  disabled={skipReferral}
+                />
+                <div className="flex items-center space-x-2 mt-2">
+                  <Checkbox
+                    id="skipReferral"
+                    checked={skipReferral}
+                    onCheckedChange={(checked) => {
+                      setSkipReferral(checked as boolean)
+                      if (checked) {
+                        setFormData({ ...formData, referralCode: '' })
+                      }
+                    }}
+                  />
+                  <Label htmlFor="skipReferral" className="text-sm text-[#C0E6FF]">
+                    Continue without referral code
+                  </Label>
+                </div>
+                {!formData.referralCode.trim() && !skipReferral && (
+                  <p className="text-yellow-400 text-sm mt-1">
+                    Enter a referral code or check the box to continue
+                  </p>
+                )}
               </div>
             </div>
             
@@ -329,7 +374,7 @@ export function NewUserOnboarding() {
               </Button>
               <Button
                 onClick={handleProfileSubmit}
-                disabled={isCompleting || !formData.username.trim()}
+                disabled={isCompleting || !isFormValid}
                 className="flex-1 bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white"
               >
                 {isCompleting ? 'Saving Profile...' : 'Save & Continue'}
@@ -441,20 +486,24 @@ export function NewUserOnboarding() {
     userAddress: user?.address
   })
 
-  // Simple check: if profile exists in database, don't show onboarding
-  const hasProfileInDatabase = !!profile
+  // Check if onboarding is completed in database
+  const isOnboardingCompleted = profile?.onboarding_completed === true
 
   console.log('🔍 Onboarding visibility check:', {
-    hasProfileInDatabase,
     profileExists: !!profile,
+    isOnboardingCompleted,
     profileId: profile?.id,
     userAddress: user?.address,
-    shouldShowOnboarding: !hasProfileInDatabase
+    shouldShowOnboarding: !!profile && !isOnboardingCompleted
   })
 
-  // Don't show onboarding if user already has a profile record in database
-  if (hasProfileInDatabase) {
-    console.log('⏭️ Skipping onboarding - user has database record')
+  // Don't show onboarding if user has completed onboarding or has no profile yet
+  if (!profile || isOnboardingCompleted) {
+    if (isOnboardingCompleted) {
+      console.log('⏭️ Skipping onboarding - already completed')
+    } else {
+      console.log('⏭️ Skipping onboarding - no profile exists yet')
+    }
     return null
   }
 
