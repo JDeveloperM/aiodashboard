@@ -50,6 +50,32 @@ export interface AffiliateMetrics {
   level10Users: number
 }
 
+export interface NetworkMetrics {
+  // Personal (direct referrals)
+  personalNomadUsers: number
+  personalProUsers: number
+  personalRoyalUsers: number
+
+  // Network (second-level referrals)
+  networkNomadUsers: number
+  networkProUsers: number
+  networkRoyalUsers: number
+
+  // Profile levels across entire network
+  networkLevel5Users: number
+  networkLevel6Users: number
+  networkLevel7Users: number
+  networkLevel8Users: number
+  networkLevel9Users: number
+  networkLevel10Users: number
+}
+
+export interface UserProfileLevel {
+  profileLevel: number
+  roleTier: string
+  totalXP: number
+}
+
 export interface AffiliateFilters {
   searchTerm?: string
   roleFilter?: 'ALL' | 'NOMAD' | 'PRO' | 'ROYAL'
@@ -712,6 +738,336 @@ class AffiliateService {
     } catch (error) {
       console.error('Failed to get sponsor info:', error)
       return null
+    }
+  }
+
+  /**
+   * Get user's own profile level and tier information
+   */
+  async getUserProfileLevel(userAddress: string): Promise<UserProfileLevel | null> {
+    try {
+      console.log('🔍 Fetching user profile level for:', userAddress)
+
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('profile_level, role_tier, total_xp')
+        .eq('address', userAddress)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.log('No profile found for user')
+          return null
+        }
+        console.error('Error fetching user profile:', error)
+        throw error
+      }
+
+      return {
+        profileLevel: profile.profile_level || 1,
+        roleTier: profile.role_tier || 'NOMAD',
+        totalXP: profile.total_xp || 0
+      }
+    } catch (error) {
+      console.error('Failed to get user profile level:', error)
+      return null
+    }
+  }
+
+  /**
+   * Get network-level affiliate metrics including second-level referrals
+   */
+  async getNetworkMetrics(referrerAddress: string): Promise<NetworkMetrics> {
+    try {
+      console.log('🔍 Fetching network metrics for:', referrerAddress)
+
+      // Step 1: Get direct referrals (first level)
+      const { data: directRelationships, error: directError } = await supabase
+        .from('affiliate_relationships')
+        .select('referee_address')
+        .eq('referrer_address', referrerAddress)
+        .eq('relationship_status', 'active')
+
+      if (directError) {
+        console.error('Error fetching direct relationships:', directError)
+        throw directError
+      }
+
+      const directRefereeAddresses = directRelationships?.map(rel => rel.referee_address) || []
+      console.log(`Found ${directRefereeAddresses.length} direct referrals`)
+
+      // Step 2: Get second-level referrals (network)
+      let networkRefereeAddresses: string[] = []
+      if (directRefereeAddresses.length > 0) {
+        const { data: networkRelationships, error: networkError } = await supabase
+          .from('affiliate_relationships')
+          .select('referee_address')
+          .in('referrer_address', directRefereeAddresses)
+          .eq('relationship_status', 'active')
+
+        if (networkError) {
+          console.error('Error fetching network relationships:', networkError)
+          throw networkError
+        }
+
+        networkRefereeAddresses = networkRelationships?.map(rel => rel.referee_address) || []
+        console.log(`Found ${networkRefereeAddresses.length} network referrals`)
+      }
+
+      // Step 3: Get profiles for direct referrals
+      let directProfiles: any[] = []
+      if (directRefereeAddresses.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from('user_profiles')
+          .select('address, role_tier, profile_level')
+          .in('address', directRefereeAddresses)
+
+        if (profilesError) {
+          console.error('Error fetching direct profiles:', profilesError)
+          throw profilesError
+        }
+
+        directProfiles = profiles || []
+      }
+
+      // Step 4: Get profiles for network referrals
+      let networkProfiles: any[] = []
+      if (networkRefereeAddresses.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from('user_profiles')
+          .select('address, role_tier, profile_level')
+          .in('address', networkRefereeAddresses)
+
+        if (profilesError) {
+          console.error('Error fetching network profiles:', profilesError)
+          throw profilesError
+        }
+
+        networkProfiles = profiles || []
+      }
+
+      // Step 5: Calculate metrics
+      const personalNomadUsers = directProfiles.filter(user => user.role_tier === 'NOMAD').length
+      const personalProUsers = directProfiles.filter(user => user.role_tier === 'PRO').length
+      const personalRoyalUsers = directProfiles.filter(user => user.role_tier === 'ROYAL').length
+
+      const networkNomadUsers = networkProfiles.filter(user => user.role_tier === 'NOMAD').length
+      const networkProUsers = networkProfiles.filter(user => user.role_tier === 'PRO').length
+      const networkRoyalUsers = networkProfiles.filter(user => user.role_tier === 'ROYAL').length
+
+      // Combine all profiles for level counting (entire network)
+      const allNetworkProfiles = [...directProfiles, ...networkProfiles]
+      const networkLevel5Users = allNetworkProfiles.filter(user => user.profile_level === 5).length
+      const networkLevel6Users = allNetworkProfiles.filter(user => user.profile_level === 6).length
+      const networkLevel7Users = allNetworkProfiles.filter(user => user.profile_level === 7).length
+      const networkLevel8Users = allNetworkProfiles.filter(user => user.profile_level === 8).length
+      const networkLevel9Users = allNetworkProfiles.filter(user => user.profile_level === 9).length
+      const networkLevel10Users = allNetworkProfiles.filter(user => user.profile_level === 10).length
+
+      const networkMetrics: NetworkMetrics = {
+        personalNomadUsers,
+        personalProUsers,
+        personalRoyalUsers,
+        networkNomadUsers,
+        networkProUsers,
+        networkRoyalUsers,
+        networkLevel5Users,
+        networkLevel6Users,
+        networkLevel7Users,
+        networkLevel8Users,
+        networkLevel9Users,
+        networkLevel10Users
+      }
+
+      console.log('📊 Network metrics:', networkMetrics)
+      return networkMetrics
+
+    } catch (error) {
+      console.error('Failed to get network metrics:', error)
+      return {
+        personalNomadUsers: 0,
+        personalProUsers: 0,
+        personalRoyalUsers: 0,
+        networkNomadUsers: 0,
+        networkProUsers: 0,
+        networkRoyalUsers: 0,
+        networkLevel5Users: 0,
+        networkLevel6Users: 0,
+        networkLevel7Users: 0,
+        networkLevel8Users: 0,
+        networkLevel9Users: 0,
+        networkLevel10Users: 0
+      }
+    }
+  }
+
+  /**
+   * Get user's own profile level and tier information
+   */
+  async getUserProfileLevel(userAddress: string): Promise<UserProfileLevel | null> {
+    try {
+      console.log('🔍 Fetching user profile level for:', userAddress)
+
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('profile_level, role_tier, total_xp')
+        .eq('address', userAddress)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.log('No profile found for user')
+          return null
+        }
+        console.error('Error fetching user profile:', error)
+        throw error
+      }
+
+      return {
+        profileLevel: profile.profile_level || 1,
+        roleTier: profile.role_tier || 'NOMAD',
+        totalXP: profile.total_xp || 0
+      }
+    } catch (error) {
+      console.error('Failed to get user profile level:', error)
+      return null
+    }
+  }
+
+  /**
+   * Get network-level affiliate metrics including second-level referrals
+   */
+  async getNetworkMetrics(referrerAddress: string): Promise<NetworkMetrics> {
+    try {
+      console.log('🔍 Fetching network metrics for:', referrerAddress)
+
+      // Step 1: Get direct referrals (first level)
+      const { data: directRelationships, error: directError } = await supabase
+        .from('affiliate_relationships')
+        .select('referee_address')
+        .eq('referrer_address', referrerAddress)
+        .eq('relationship_status', 'active')
+
+      if (directError) {
+        console.error('Error fetching direct relationships:', directError)
+        throw directError
+      }
+
+      const directRefereeAddresses = directRelationships?.map(rel => rel.referee_address) || []
+      console.log(`Found ${directRefereeAddresses.length} direct referrals`)
+
+      // Step 2: Get network referrals from all 5 levels (excluding direct referrals)
+      let allNetworkRefereeAddresses: string[] = []
+      let currentLevelAddresses = directRefereeAddresses
+
+      // Traverse up to 5 levels deep
+      for (let level = 2; level <= 5; level++) {
+        if (currentLevelAddresses.length === 0) break
+
+        const { data: levelRelationships, error: levelError } = await supabase
+          .from('affiliate_relationships')
+          .select('referee_address')
+          .in('referrer_address', currentLevelAddresses)
+          .eq('relationship_status', 'active')
+
+        if (levelError) {
+          console.error(`Error fetching level ${level} relationships:`, levelError)
+          throw levelError
+        }
+
+        const levelAddresses = levelRelationships?.map(rel => rel.referee_address) || []
+        allNetworkRefereeAddresses.push(...levelAddresses)
+        currentLevelAddresses = levelAddresses
+
+        console.log(`Found ${levelAddresses.length} referrals at level ${level}`)
+      }
+
+      console.log(`Total network referrals across all levels: ${allNetworkRefereeAddresses.length}`)
+
+      // Step 3: Get profiles for direct referrals
+      let directProfiles: any[] = []
+      if (directRefereeAddresses.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from('user_profiles')
+          .select('address, role_tier, profile_level')
+          .in('address', directRefereeAddresses)
+
+        if (profilesError) {
+          console.error('Error fetching direct profiles:', profilesError)
+          throw profilesError
+        }
+
+        directProfiles = profiles || []
+      }
+
+      // Step 4: Get profiles for network referrals (all levels)
+      let networkProfiles: any[] = []
+      if (allNetworkRefereeAddresses.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from('user_profiles')
+          .select('address, role_tier, profile_level')
+          .in('address', allNetworkRefereeAddresses)
+
+        if (profilesError) {
+          console.error('Error fetching network profiles:', profilesError)
+          throw profilesError
+        }
+
+        networkProfiles = profiles || []
+      }
+
+      // Step 5: Calculate metrics
+      const personalNomadUsers = directProfiles.filter(user => user.role_tier === 'NOMAD').length
+      const personalProUsers = directProfiles.filter(user => user.role_tier === 'PRO').length
+      const personalRoyalUsers = directProfiles.filter(user => user.role_tier === 'ROYAL').length
+
+      const networkNomadUsers = networkProfiles.filter(user => user.role_tier === 'NOMAD').length
+      const networkProUsers = networkProfiles.filter(user => user.role_tier === 'PRO').length
+      const networkRoyalUsers = networkProfiles.filter(user => user.role_tier === 'ROYAL').length
+
+      // Combine all profiles for level counting (entire network)
+      const allNetworkProfiles = [...directProfiles, ...networkProfiles]
+      const networkLevel5Users = allNetworkProfiles.filter(user => user.profile_level === 5).length
+      const networkLevel6Users = allNetworkProfiles.filter(user => user.profile_level === 6).length
+      const networkLevel7Users = allNetworkProfiles.filter(user => user.profile_level === 7).length
+      const networkLevel8Users = allNetworkProfiles.filter(user => user.profile_level === 8).length
+      const networkLevel9Users = allNetworkProfiles.filter(user => user.profile_level === 9).length
+      const networkLevel10Users = allNetworkProfiles.filter(user => user.profile_level === 10).length
+
+      const networkMetrics: NetworkMetrics = {
+        personalNomadUsers,
+        personalProUsers,
+        personalRoyalUsers,
+        networkNomadUsers,
+        networkProUsers,
+        networkRoyalUsers,
+        networkLevel5Users,
+        networkLevel6Users,
+        networkLevel7Users,
+        networkLevel8Users,
+        networkLevel9Users,
+        networkLevel10Users
+      }
+
+      console.log('📊 Network metrics:', networkMetrics)
+      return networkMetrics
+
+    } catch (error) {
+      console.error('Failed to get network metrics:', error)
+      return {
+        personalNomadUsers: 0,
+        personalProUsers: 0,
+        personalRoyalUsers: 0,
+        networkNomadUsers: 0,
+        networkProUsers: 0,
+        networkRoyalUsers: 0,
+        networkLevel5Users: 0,
+        networkLevel6Users: 0,
+        networkLevel7Users: 0,
+        networkLevel8Users: 0,
+        networkLevel9Users: 0,
+        networkLevel10Users: 0
+      }
     }
   }
 

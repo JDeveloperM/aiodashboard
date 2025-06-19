@@ -8,22 +8,21 @@ import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RoleImage } from "@/components/ui/role-image"
-import { affiliateService, AffiliateUser, AffiliateMetrics, CommissionData } from "@/lib/affiliate-service"
+import { affiliateService, AffiliateUser, AffiliateMetrics, CommissionData, NetworkMetrics, UserProfileLevel } from "@/lib/affiliate-service"
 import { useCurrentAccount } from "@mysten/dapp-kit"
 import { CommissionTracking } from "@/components/commission-tracking"
 import { ContactSponsorModal } from "@/components/contact-sponsor-modal"
 import {
   Users,
-  CheckCircle,
-  Star,
   Search,
   Filter,
   Award,
-  Mail,
   Calendar,
-  MoreHorizontal,
+  Mail,
   MessageCircle,
   Bell,
+  MoreHorizontal,
+  DollarSign,
   Gift,
   Loader2
 } from "lucide-react"
@@ -38,25 +37,31 @@ export function AffiliateControls() {
   const [showLatestOnly, setShowLatestOnly] = useState(false)
   const [displayedCount, setDisplayedCount] = useState(5)
 
-  // State for real data
-  const [metrics, setMetrics] = useState<AffiliateMetrics>({
-    totalUsers: 0,
-    nomadUsers: 0,
-    proUsers: 0,
-    royalUsers: 0,
-    level5Users: 0,
-    level6Users: 0,
-    level7Users: 0,
-    level8Users: 0,
-    level9Users: 0,
-    level10Users: 0
+  // State for new redesigned data
+  const [userProfileLevel, setUserProfileLevel] = useState<UserProfileLevel | null>(null)
+  const [networkMetrics, setNetworkMetrics] = useState<NetworkMetrics>({
+    personalNomadUsers: 0,
+    personalProUsers: 0,
+    personalRoyalUsers: 0,
+    networkNomadUsers: 0,
+    networkProUsers: 0,
+    networkRoyalUsers: 0,
+    networkLevel5Users: 0,
+    networkLevel6Users: 0,
+    networkLevel7Users: 0,
+    networkLevel8Users: 0,
+    networkLevel9Users: 0,
+    networkLevel10Users: 0
   })
+  const [totalDirectUsers, setTotalDirectUsers] = useState(0)
+
+  // State for affiliate users list
   const [affiliateUsers, setAffiliateUsers] = useState<AffiliateUser[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [totalCount, setTotalCount] = useState(0)
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set())
   const [hoveredUsers, setHoveredUsers] = useState<Set<string>>(new Set())
+
+  // Commission tracking state (keeping this at the bottom)
   const [commissionData, setCommissionData] = useState<CommissionData>({
     totalCommissions: 0,
     tierBreakdown: {
@@ -73,7 +78,10 @@ export function AffiliateControls() {
     },
     recentTransactions: []
   })
+
+  const [loading, setLoading] = useState(true)
   const [commissionLoading, setCommissionLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   // Load data on component mount and when wallet changes
   useEffect(() => {
@@ -96,11 +104,18 @@ export function AffiliateControls() {
       setError(null)
 
       console.log('🔄 Loading affiliate data for wallet:', account.address)
-      console.log('🔄 Account object:', account)
 
-      // Load metrics
-      const metricsData = await affiliateService.getAffiliateMetrics(account.address)
-      setMetrics(metricsData)
+      // Load user's own profile level
+      const profileLevel = await affiliateService.getUserProfileLevel(account.address)
+      setUserProfileLevel(profileLevel)
+
+      // Load network metrics (personal + network breakdown)
+      const networkData = await affiliateService.getNetworkMetrics(account.address)
+      setNetworkMetrics(networkData)
+
+      // Calculate total direct users
+      const totalDirect = networkData.personalNomadUsers + networkData.personalProUsers + networkData.personalRoyalUsers
+      setTotalDirectUsers(totalDirect)
 
       // Load affiliate users with current filters
       const { users, totalCount: count } = await affiliateService.getAffiliateUsers(account.address, {
@@ -118,30 +133,31 @@ export function AffiliateControls() {
       setCommissionLoading(false)
 
       console.log('✅ Affiliate data loaded successfully')
-      console.log('📊 Final metrics:', metricsData)
-      console.log('👥 Final users count:', users.length)
+      console.log('👤 User profile level:', profileLevel)
+      console.log('📊 Network metrics:', networkData)
       console.log('💰 Commission data:', commissionInfo)
 
       // If no data found, try with admin address for testing
-      if (users.length === 0 && metricsData.totalUsers === 0) {
+      if (totalDirect === 0 && !profileLevel) {
         console.log('🧪 No data found for current wallet, trying admin address for testing...')
         const adminAddress = '0x311479200d45ef0243b92dbcf9849b8f6b931d27ae885197ea73066724f2bcf4'
 
-        const adminMetrics = await affiliateService.getAffiliateMetrics(adminAddress)
+        const adminProfileLevel = await affiliateService.getUserProfileLevel(adminAddress)
+        const adminNetworkData = await affiliateService.getNetworkMetrics(adminAddress)
         const { users: adminUsers } = await affiliateService.getAffiliateUsers(adminAddress, {
           roleFilter: selectedRoleFilter,
           levelFilter: selectedLevelFilter,
           limit: 50
         })
+        const adminCommissionData = await affiliateService.getCommissionData(adminAddress)
 
-        if (adminUsers.length > 0) {
+        if (adminProfileLevel || adminNetworkData.personalNomadUsers > 0) {
           console.log('🧪 Using admin test data')
-          setMetrics(adminMetrics)
+          setUserProfileLevel(adminProfileLevel)
+          setNetworkMetrics(adminNetworkData)
+          setTotalDirectUsers(adminNetworkData.personalNomadUsers + adminNetworkData.personalProUsers + adminNetworkData.personalRoyalUsers)
           setAffiliateUsers(adminUsers)
           setTotalCount(adminUsers.length)
-
-          // Also load admin commission data for testing
-          const adminCommissionData = await affiliateService.getCommissionData(adminAddress)
           setCommissionData(adminCommissionData)
         }
       }
@@ -179,6 +195,16 @@ export function AffiliateControls() {
       case 'pending': return '⏳'
       case 'not_verified': return '✗'
       default: return '?'
+    }
+  }
+
+  // Helper function to format SUI amounts with USD conversion
+  const formatSuiAmount = (amount: number) => {
+    const suiPrice = 3.45 // Mock SUI price in USD - in production, fetch from API
+    const usdValue = amount * suiPrice
+    return {
+      sui: amount.toLocaleString(),
+      usd: usdValue.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
     }
   }
 
@@ -331,16 +357,15 @@ export function AffiliateControls() {
 
   return (
     <div className="space-y-6">
-      {/* Metrics Overview */}
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+      {/* Top Section - Summary Cards (3 cards in a row) */}
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
         {/* Total Users Card */}
         <div className="enhanced-card">
           <div className="enhanced-card-content">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-[#C0E6FF]">TOTAL USERS</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">{metrics.totalUsers}</p>
-                <p className="text-xs text-[#C0E6FF] mt-1">All users in your network</p>
+                <p className="text-2xl font-bold text-[#FFFFFF]">{totalDirectUsers}</p>
               </div>
               <div className="bg-[#4DA2FF]/20 p-3 rounded-full">
                 <Users className="w-6 h-6 text-white" />
@@ -349,65 +374,13 @@ export function AffiliateControls() {
           </div>
         </div>
 
-        {/* NOMAD Users Card */}
+        {/* My Profile Level Card */}
         <div className="enhanced-card">
           <div className="enhanced-card-content">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[#C0E6FF]">NOMAD USERS</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">{metrics.nomadUsers}</p>
-                <p className="text-xs text-[#C0E6FF] mt-1">Basic tier members</p>
-              </div>
-              <div className="bg-gray-600/20 p-3 rounded-full">
-                <RoleImage role="NOMAD" size="lg" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* PRO Users Card */}
-        <div className="enhanced-card">
-          <div className="enhanced-card-content">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-[#C0E6FF]">PRO USERS</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">{metrics.proUsers}</p>
-                <p className="text-xs text-[#C0E6FF] mt-1">Professional tier members</p>
-              </div>
-              <div className="bg-blue-600/20 p-3 rounded-full">
-                <RoleImage role="PRO" size="lg" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ROYAL Users Card */}
-        <div className="enhanced-card">
-          <div className="enhanced-card-content">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-[#C0E6FF]">ROYAL USERS</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">{metrics.royalUsers}</p>
-                <p className="text-xs text-[#C0E6FF] mt-1">Premium tier members</p>
-              </div>
-              <div className="bg-yellow-600/20 p-3 rounded-full">
-                <RoleImage role="ROYAL" size="lg" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Level-specific Metrics */}
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        {/* Level 5 Users Card */}
-        <div className="enhanced-card">
-          <div className="enhanced-card-content">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-[#C0E6FF]">NETWORK USERS</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">{metrics.level5Users}</p>
-                <p className="text-xs text-[#C0E6FF] mt-1">Lv. 5</p>
+                <p className="text-sm font-medium text-[#C0E6FF]">MY PROFILE LEVEL</p>
+                <p className="text-2xl font-bold text-[#FFFFFF]">Level {userProfileLevel?.profileLevel || 1}</p>
               </div>
               <div className="bg-purple-600/20 p-3 rounded-full">
                 <Award className="w-6 h-6 text-purple-400" />
@@ -416,81 +389,150 @@ export function AffiliateControls() {
           </div>
         </div>
 
-        {/* Level 6 Users Card */}
+        {/* Total Commissions Card */}
         <div className="enhanced-card">
           <div className="enhanced-card-content">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[#C0E6FF]">NETWORK USERS</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">{metrics.level6Users}</p>
-                <p className="text-xs text-[#C0E6FF] mt-1">Lv. 6</p>
+                <p className="text-sm font-medium text-[#C0E6FF]">TOTAL COMMISSIONS</p>
+                <p className="text-2xl font-bold text-[#FFFFFF]">{formatSuiAmount(commissionData.totalCommissions).sui}</p>
               </div>
-              <div className="bg-indigo-600/20 p-3 rounded-full">
-                <Award className="w-6 h-6 text-indigo-400" />
+              <img src="/images/logo-sui.png" alt="SUI" className="w-12 h-12 object-contain" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Middle Section - Two-Column Table Layout */}
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+        {/* Left Column - Affiliate Overview Table */}
+        <div className="enhanced-card">
+          <div className="enhanced-card-content">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5 text-[#4DA2FF]" />
+              Affiliate Overview
+            </h3>
+            <div className="space-y-3">
+              {/* Personal Members */}
+              <div className="border-b border-[#C0E6FF]/10 pb-3">
+                <h4 className="text-sm font-medium text-[#C0E6FF] mb-2">Personal Members</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <RoleImage role="NOMAD" size="sm" />
+                      <span className="text-white text-sm">Personal Nomad Members</span>
+                    </div>
+                    <span className="text-white font-semibold">{networkMetrics.personalNomadUsers}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <RoleImage role="PRO" size="sm" />
+                      <span className="text-white text-sm">Personal Pro Members</span>
+                    </div>
+                    <span className="text-white font-semibold">{networkMetrics.personalProUsers}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <RoleImage role="ROYAL" size="sm" />
+                      <span className="text-white text-sm">Personal Royal Members</span>
+                    </div>
+                    <span className="text-white font-semibold">{networkMetrics.personalRoyalUsers}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Network Members */}
+              <div>
+                <h4 className="text-sm font-medium text-[#C0E6FF] mb-2">Total Network Members</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <RoleImage role="NOMAD" size="sm" />
+                      <span className="text-white text-sm">Network Nomad Members</span>
+                    </div>
+                    <span className="text-white font-semibold">{networkMetrics.networkNomadUsers}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <RoleImage role="PRO" size="sm" />
+                      <span className="text-white text-sm">Network Pro Members</span>
+                    </div>
+                    <span className="text-white font-semibold">{networkMetrics.networkProUsers}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <RoleImage role="ROYAL" size="sm" />
+                      <span className="text-white text-sm">Network Royal Members</span>
+                    </div>
+                    <span className="text-white font-semibold">{networkMetrics.networkRoyalUsers}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Level 7 Users Card */}
+        {/* Right Column - Network Overview Table (Profile Levels) */}
         <div className="enhanced-card">
           <div className="enhanced-card-content">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-[#C0E6FF]">NETWORK USERS</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">{metrics.level7Users}</p>
-                <p className="text-xs text-[#C0E6FF] mt-1">Lv. 7</p>
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Award className="w-5 h-5 text-[#4DA2FF]" />
+              Network Overview (Profile Levels)
+            </h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="bg-purple-600/20 p-2 rounded-full">
+                    <Award className="w-4 h-4 text-purple-400" />
+                  </div>
+                  <span className="text-white text-sm">Level 5 Users</span>
+                </div>
+                <span className="text-white font-semibold">{networkMetrics.networkLevel5Users}</span>
               </div>
-              <div className="bg-pink-600/20 p-3 rounded-full">
-                <Award className="w-6 h-6 text-pink-400" />
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="bg-indigo-600/20 p-2 rounded-full">
+                    <Award className="w-4 h-4 text-indigo-400" />
+                  </div>
+                  <span className="text-white text-sm">Level 6 Users</span>
+                </div>
+                <span className="text-white font-semibold">{networkMetrics.networkLevel6Users}</span>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Level 8 Users Card */}
-        <div className="enhanced-card">
-          <div className="enhanced-card-content">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-[#C0E6FF]">NETWORK USERS</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">{metrics.level8Users}</p>
-                <p className="text-xs text-[#C0E6FF] mt-1">Lv. 8</p>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="bg-pink-600/20 p-2 rounded-full">
+                    <Award className="w-4 h-4 text-pink-400" />
+                  </div>
+                  <span className="text-white text-sm">Level 7 Users</span>
+                </div>
+                <span className="text-white font-semibold">{networkMetrics.networkLevel7Users}</span>
               </div>
-              <div className="bg-emerald-600/20 p-3 rounded-full">
-                <Award className="w-6 h-6 text-emerald-400" />
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="bg-emerald-600/20 p-2 rounded-full">
+                    <Award className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <span className="text-white text-sm">Level 8 Users</span>
+                </div>
+                <span className="text-white font-semibold">{networkMetrics.networkLevel8Users}</span>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Level 9 Users Card */}
-        <div className="enhanced-card">
-          <div className="enhanced-card-content">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-[#C0E6FF]">NETWORK USERS</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">{metrics.level9Users}</p>
-                <p className="text-xs text-[#C0E6FF] mt-1">Lv. 9</p>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="bg-orange-600/20 p-2 rounded-full">
+                    <Award className="w-4 h-4 text-orange-400" />
+                  </div>
+                  <span className="text-white text-sm">Level 9 Users</span>
+                </div>
+                <span className="text-white font-semibold">{networkMetrics.networkLevel9Users}</span>
               </div>
-              <div className="bg-orange-600/20 p-3 rounded-full">
-                <Award className="w-6 h-6 text-orange-400" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Level 10 Users Card */}
-        <div className="enhanced-card">
-          <div className="enhanced-card-content">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-[#C0E6FF]">NETWORK USERS</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">{metrics.level10Users}</p>
-                <p className="text-xs text-[#C0E6FF] mt-1">Lv. 10</p>
-              </div>
-              <div className="bg-red-600/20 p-3 rounded-full">
-                <Award className="w-6 h-6 text-red-400" />
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="bg-red-600/20 p-2 rounded-full">
+                    <Award className="w-4 h-4 text-red-400" />
+                  </div>
+                  <span className="text-white text-sm">Level 10 Users</span>
+                </div>
+                <span className="text-white font-semibold">{networkMetrics.networkLevel10Users}</span>
               </div>
             </div>
           </div>
@@ -594,45 +636,45 @@ export function AffiliateControls() {
                   <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF]">
                     <div className="flex items-center gap-2">
                       <Award className="w-4 h-4 text-[#C0E6FF]" />
-                      <SelectValue placeholder="Filter by affiliate level" />
+                      <SelectValue placeholder="Affiliate Levels" />
                     </div>
                   </SelectTrigger>
                   <SelectContent className="bg-[#1a2f51] border-[#C0E6FF]/30">
-                    <SelectItem value="ALL" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">All Levels</SelectItem>
+                    <SelectItem value="ALL" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">Affiliate Levels</SelectItem>
                     <SelectItem value="Lv. 5" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
                       <div className="flex items-center gap-2">
                         <Award className="w-3 h-3 text-purple-400" />
-                        Network Users Lv. 5
+                        Level 5 Users
                       </div>
                     </SelectItem>
                     <SelectItem value="Lv. 6" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
                       <div className="flex items-center gap-2">
                         <Award className="w-3 h-3 text-indigo-400" />
-                        Network Users Lv. 6
+                        Level 6 Users
                       </div>
                     </SelectItem>
                     <SelectItem value="Lv. 7" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
                       <div className="flex items-center gap-2">
                         <Award className="w-3 h-3 text-pink-400" />
-                        Network Users Lv. 7
+                        Level 7 Users
                       </div>
                     </SelectItem>
                     <SelectItem value="Lv. 8" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
                       <div className="flex items-center gap-2">
                         <Award className="w-3 h-3 text-emerald-400" />
-                        Network Users Lv. 8
+                        Level 8 Users
                       </div>
                     </SelectItem>
                     <SelectItem value="Lv. 9" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
                       <div className="flex items-center gap-2">
                         <Award className="w-3 h-3 text-orange-400" />
-                        Network Users Lv. 9
+                        Level 9 Users
                       </div>
                     </SelectItem>
                     <SelectItem value="Lv. 10" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
                       <div className="flex items-center gap-2">
                         <Award className="w-3 h-3 text-red-400" />
-                        Network Users Lv. 10
+                        Level 10 Users
                       </div>
                     </SelectItem>
                   </SelectContent>
