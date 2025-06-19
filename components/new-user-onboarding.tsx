@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -44,7 +43,6 @@ export function NewUserOnboarding() {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
-    bio: '',
     referralCode: ''
   })
 
@@ -100,7 +98,6 @@ export function NewUserOnboarding() {
       setFormData({
         username: profile.username || '',
         email: profile.email || '',
-        bio: profile.bio || '',
         referralCode: ''
       })
     } else if (user?.address) {
@@ -109,7 +106,6 @@ export function NewUserOnboarding() {
       setFormData({
         username: `User ${user.address.slice(0, 6)}`,
         email: '',
-        bio: '',
         referralCode: ''
       })
     }
@@ -137,13 +133,12 @@ export function NewUserOnboarding() {
       const profileData: any = {
         username: formData.username.trim(),
         email: formData.email.trim() || undefined,
-        bio: formData.bio.trim() || undefined,
         // Ensure we don't lose existing data
         role_tier: profile?.role_tier || 'NOMAD',
         profile_level: profile?.profile_level || 1,
         current_xp: profile?.current_xp || 0,
         total_xp: profile?.total_xp || 0,
-        points: profile?.points || 100,
+        points: profile?.points || 0,
         kyc_status: profile?.kyc_status || 'not_verified'
       }
 
@@ -313,18 +308,6 @@ export function NewUserOnboarding() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="Enter your email"
                   className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="bio" className="text-white">Bio (Optional)</Label>
-                <Textarea
-                  id="bio"
-                  value={formData.bio}
-                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                  placeholder="Tell us about yourself"
-                  className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white"
-                  rows={3}
                 />
               </div>
 

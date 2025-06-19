@@ -79,7 +79,7 @@ export interface UserProfileLevel {
 export interface AffiliateFilters {
   searchTerm?: string
   roleFilter?: 'ALL' | 'NOMAD' | 'PRO' | 'ROYAL'
-  levelFilter?: 'ALL' | 'Lv. 5' | 'Lv. 6' | 'Lv. 7' | 'Lv. 8' | 'Lv. 9' | 'Lv. 10'
+  levelFilter?: 'ALL' | 'Lv. 1' | 'Lv. 2' | 'Lv. 3' | 'Lv. 4' | 'Lv. 5'
   limit?: number
   offset?: number
 }
@@ -113,21 +113,21 @@ export interface CommissionTransaction {
 
 class AffiliateService {
   /**
-   * Calculate affiliate level based on user criteria
-   * This can be customized based on your business logic
+   * Calculate affiliate level based on profile level only
+   * Separate system from profile levels with 5 maximum levels
+   * Direct 1:1 mapping for Profile Levels 1-5, then capped at 5
    */
   private calculateAffiliateLevel(totalXp: number, profileLevel: number, roleTier: string): number {
-    // Example logic - you can customize this based on your requirements
-    if (roleTier === 'ROYAL' && profileLevel >= 8) return 10
-    if (roleTier === 'ROYAL' && profileLevel >= 6) return 9
-    if (roleTier === 'PRO' && profileLevel >= 7) return 8
-    if (roleTier === 'PRO' && profileLevel >= 5) return 7
-    if (profileLevel >= 6) return 6
-    if (profileLevel >= 4) return 5
-    if (profileLevel >= 3) return 4
-    if (profileLevel >= 2) return 3
-    if (profileLevel >= 1) return 2
-    return 1
+    // Direct 1:1 mapping with Profile Levels 1-5
+    // Profile Levels 6-10 remain at Affiliate Level 5 (no further increase)
+    // Role tiers (NOMAD, PRO, ROYAL) have NO impact on affiliate level
+
+    if (profileLevel >= 5) return 5  // Profile Level 5+ → Affiliate Level 5 (max)
+    if (profileLevel >= 4) return 4  // Profile Level 4 → Affiliate Level 4
+    if (profileLevel >= 3) return 3  // Profile Level 3 → Affiliate Level 3
+    if (profileLevel >= 2) return 2  // Profile Level 2 → Affiliate Level 2
+    if (profileLevel >= 1) return 1  // Profile Level 1 → Affiliate Level 1
+    return 1  // Default/fallback (new users start at Affiliate Level 1)
   }
 
   /**
@@ -439,12 +439,8 @@ class AffiliateService {
         query = query.eq('user_profiles.role_tier', filters.roleFilter)
       }
 
-      // Apply level filter  
-      if (filters.levelFilter && filters.levelFilter !== 'ALL') {
-        const [minLevel, maxLevel] = filters.levelFilter.split('-').map(Number)
-        query = query.gte('user_profiles.profile_level', minLevel)
-        query = query.lte('user_profiles.profile_level', maxLevel)
-      }
+      // Note: Affiliate level filtering is done client-side since affiliate levels are calculated dynamically
+      // No database filtering needed for affiliate levels
 
       const { count, error } = await query
 

@@ -17,6 +17,7 @@ import {
   Search,
   Filter,
   Award,
+  Trophy,
   Calendar,
   Mail,
   MessageCircle,
@@ -33,7 +34,8 @@ export function AffiliateControls() {
   // State for search and filters
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<'ALL' | 'NOMAD' | 'PRO' | 'ROYAL'>('ALL')
-  const [selectedLevelFilter, setSelectedLevelFilter] = useState<'ALL' | 'Lv. 5' | 'Lv. 6' | 'Lv. 7' | 'Lv. 8' | 'Lv. 9' | 'Lv. 10'>('ALL')
+  const [selectedLevelFilter, setSelectedLevelFilter] = useState<'ALL' | 'Lv. 1' | 'Lv. 2' | 'Lv. 3' | 'Lv. 4' | 'Lv. 5'>('ALL')
+  const [selectedProfileLevelFilter, setSelectedProfileLevelFilter] = useState<'ALL' | 'PL. 1' | 'PL. 2' | 'PL. 3' | 'PL. 4' | 'PL. 5' | 'PL. 6' | 'PL. 7' | 'PL. 8' | 'PL. 9' | 'PL. 10'>('ALL')
   const [showLatestOnly, setShowLatestOnly] = useState(false)
   const [displayedCount, setDisplayedCount] = useState(5)
 
@@ -88,7 +90,7 @@ export function AffiliateControls() {
     if (account?.address) {
       loadAffiliateData()
     }
-  }, [account?.address, selectedRoleFilter, selectedLevelFilter])
+  }, [account?.address, selectedRoleFilter, selectedLevelFilter, selectedProfileLevelFilter])
 
   // Load affiliate data from database
   const loadAffiliateData = async () => {
@@ -224,6 +226,12 @@ export function AffiliateControls() {
       if (user.affiliateLevel !== targetLevel) return false
     }
 
+    // Profile level filter
+    if (selectedProfileLevelFilter !== 'ALL') {
+      const targetProfileLevel = parseInt(selectedProfileLevelFilter.replace('PL. ', ''))
+      if (user.profileLevel !== targetProfileLevel) return false
+    }
+
     return true
   })
 
@@ -278,8 +286,13 @@ export function AffiliateControls() {
     setDisplayedCount(5) // Reset pagination
   }
 
-  const handleLevelFilterChange = (value: 'ALL' | 'Lv. 5' | 'Lv. 6' | 'Lv. 7' | 'Lv. 8' | 'Lv. 9' | 'Lv. 10') => {
+  const handleLevelFilterChange = (value: 'ALL' | 'Lv. 1' | 'Lv. 2' | 'Lv. 3' | 'Lv. 4' | 'Lv. 5') => {
     setSelectedLevelFilter(value)
+    setDisplayedCount(5) // Reset pagination
+  }
+
+  const handleProfileLevelFilterChange = (value: 'ALL' | 'PL. 1' | 'PL. 2' | 'PL. 3' | 'PL. 4' | 'PL. 5' | 'PL. 6' | 'PL. 7' | 'PL. 8' | 'PL. 9' | 'PL. 10') => {
+    setSelectedProfileLevelFilter(value)
     setDisplayedCount(5) // Reset pagination
   }
 
@@ -485,7 +498,7 @@ export function AffiliateControls() {
                   <div className="bg-purple-600/20 p-2 rounded-full">
                     <Award className="w-4 h-4 text-purple-400" />
                   </div>
-                  <span className="text-white text-sm">Level 5 Users</span>
+                  <span className="text-white text-sm">Profile Level 5+</span>
                 </div>
                 <span className="text-white font-semibold">{networkMetrics.networkLevel5Users}</span>
               </div>
@@ -494,7 +507,7 @@ export function AffiliateControls() {
                   <div className="bg-indigo-600/20 p-2 rounded-full">
                     <Award className="w-4 h-4 text-indigo-400" />
                   </div>
-                  <span className="text-white text-sm">Level 6 Users</span>
+                  <span className="text-white text-sm">Profile Level 6+</span>
                 </div>
                 <span className="text-white font-semibold">{networkMetrics.networkLevel6Users}</span>
               </div>
@@ -503,7 +516,7 @@ export function AffiliateControls() {
                   <div className="bg-pink-600/20 p-2 rounded-full">
                     <Award className="w-4 h-4 text-pink-400" />
                   </div>
-                  <span className="text-white text-sm">Level 7 Users</span>
+                  <span className="text-white text-sm">Profile Level 7+</span>
                 </div>
                 <span className="text-white font-semibold">{networkMetrics.networkLevel7Users}</span>
               </div>
@@ -512,7 +525,7 @@ export function AffiliateControls() {
                   <div className="bg-emerald-600/20 p-2 rounded-full">
                     <Award className="w-4 h-4 text-emerald-400" />
                   </div>
-                  <span className="text-white text-sm">Level 8 Users</span>
+                  <span className="text-white text-sm">Profile Level 8+</span>
                 </div>
                 <span className="text-white font-semibold">{networkMetrics.networkLevel8Users}</span>
               </div>
@@ -521,7 +534,7 @@ export function AffiliateControls() {
                   <div className="bg-orange-600/20 p-2 rounded-full">
                     <Award className="w-4 h-4 text-orange-400" />
                   </div>
-                  <span className="text-white text-sm">Level 9 Users</span>
+                  <span className="text-white text-sm">Profile Level 9+</span>
                 </div>
                 <span className="text-white font-semibold">{networkMetrics.networkLevel9Users}</span>
               </div>
@@ -530,7 +543,7 @@ export function AffiliateControls() {
                   <div className="bg-red-600/20 p-2 rounded-full">
                     <Award className="w-4 h-4 text-red-400" />
                   </div>
-                  <span className="text-white text-sm">Level 10 Users</span>
+                  <span className="text-white text-sm">Profile Level 10</span>
                 </div>
                 <span className="text-white font-semibold">{networkMetrics.networkLevel10Users}</span>
               </div>
@@ -640,41 +653,110 @@ export function AffiliateControls() {
                     </div>
                   </SelectTrigger>
                   <SelectContent className="bg-[#1a2f51] border-[#C0E6FF]/30">
-                    <SelectItem value="ALL" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">Affiliate Levels</SelectItem>
+                    <SelectItem value="ALL" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">All Affiliate Levels</SelectItem>
+                    <SelectItem value="Lv. 1" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                      <div className="flex items-center gap-2">
+                        <Award className="w-3 h-3 text-gray-400" />
+                        Affiliate Level 1
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Lv. 2" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                      <div className="flex items-center gap-2">
+                        <Award className="w-3 h-3 text-blue-400" />
+                        Affiliate Level 2
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Lv. 3" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                      <div className="flex items-center gap-2">
+                        <Award className="w-3 h-3 text-green-400" />
+                        Affiliate Level 3
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Lv. 4" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                      <div className="flex items-center gap-2">
+                        <Award className="w-3 h-3 text-yellow-400" />
+                        Affiliate Level 4
+                      </div>
+                    </SelectItem>
                     <SelectItem value="Lv. 5" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
                       <div className="flex items-center gap-2">
                         <Award className="w-3 h-3 text-purple-400" />
-                        Level 5 Users
+                        Affiliate Level 5 (Max)
                       </div>
                     </SelectItem>
-                    <SelectItem value="Lv. 6" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Profile Level Filter */}
+              <div className="w-full sm:w-48">
+                <Select value={selectedProfileLevelFilter} onValueChange={handleProfileLevelFilterChange}>
+                  <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF]">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="w-4 h-4 text-[#C0E6FF]" />
+                      <SelectValue placeholder="Profile Levels" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#1a2f51] border-[#C0E6FF]/30">
+                    <SelectItem value="ALL" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">All Profile Levels</SelectItem>
+                    <SelectItem value="PL. 1" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
                       <div className="flex items-center gap-2">
-                        <Award className="w-3 h-3 text-indigo-400" />
-                        Level 6 Users
+                        <Trophy className="w-3 h-3 text-gray-400" />
+                        Profile Level 1
                       </div>
                     </SelectItem>
-                    <SelectItem value="Lv. 7" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                    <SelectItem value="PL. 2" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
                       <div className="flex items-center gap-2">
-                        <Award className="w-3 h-3 text-pink-400" />
-                        Level 7 Users
+                        <Trophy className="w-3 h-3 text-blue-400" />
+                        Profile Level 2
                       </div>
                     </SelectItem>
-                    <SelectItem value="Lv. 8" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                    <SelectItem value="PL. 3" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
                       <div className="flex items-center gap-2">
-                        <Award className="w-3 h-3 text-emerald-400" />
-                        Level 8 Users
+                        <Trophy className="w-3 h-3 text-green-400" />
+                        Profile Level 3
                       </div>
                     </SelectItem>
-                    <SelectItem value="Lv. 9" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                    <SelectItem value="PL. 4" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
                       <div className="flex items-center gap-2">
-                        <Award className="w-3 h-3 text-orange-400" />
-                        Level 9 Users
+                        <Trophy className="w-3 h-3 text-yellow-400" />
+                        Profile Level 4
                       </div>
                     </SelectItem>
-                    <SelectItem value="Lv. 10" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                    <SelectItem value="PL. 5" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
                       <div className="flex items-center gap-2">
-                        <Award className="w-3 h-3 text-red-400" />
-                        Level 10 Users
+                        <Trophy className="w-3 h-3 text-orange-400" />
+                        Profile Level 5
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="PL. 6" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-3 h-3 text-red-400" />
+                        Profile Level 6
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="PL. 7" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-3 h-3 text-purple-400" />
+                        Profile Level 7
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="PL. 8" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-3 h-3 text-pink-400" />
+                        Profile Level 8
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="PL. 9" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-3 h-3 text-indigo-400" />
+                        Profile Level 9
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="PL. 10" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-3 h-3 text-emerald-400" />
+                        Profile Level 10
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -1004,6 +1086,7 @@ export function AffiliateControls() {
                 {searchTerm && ` matching "${searchTerm}"`}
                 {selectedRoleFilter !== 'ALL' && ` with ${selectedRoleFilter} role`}
                 {selectedLevelFilter !== 'ALL' && ` at affiliate ${selectedLevelFilter}`}
+                {selectedProfileLevelFilter !== 'ALL' && ` at profile ${selectedProfileLevelFilter}`}
               </p>
             </div>
           </div>

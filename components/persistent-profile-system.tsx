@@ -126,10 +126,10 @@ export function PersistentProfileSystem() {
 
   // Level rewards state - Updated according to new progression system
   const [levelRewards, setLevelRewards] = useState([
-    { level: 2, points: 0, available: false, claimed: false, description: "No reward" },
-    { level: 3, points: 0, available: false, claimed: false, description: "No reward" },
+    { level: 2, points: 0, available: false, claimed: false, description: "Unlock 2nd Affiliate Level" },
+    { level: 3, points: 0, available: false, claimed: false, description: "Unlock 3rd Affiliate Level" },
     { level: 4, points: 0, available: false, claimed: false, description: "Unlock 4th Affiliate Level" },
-    { level: 5, points: 0, available: false, claimed: false, description: "Unlock 5th Affiliate Level" },
+    { level: 5, points: 0, available: false, claimed: false, description: "Unlock 5th Affiliate Level (Max)" },
     { level: 6, points: 500, available: false, claimed: false, description: "Earn 500 Points" },
     { level: 7, points: 2000, available: false, claimed: false, description: "Earn 2,000 Points" },
     { level: 8, points: 6000, available: false, claimed: false, description: "Earn 6,000 Points + Bybit Partner" },
@@ -1350,11 +1350,11 @@ export function PersistentProfileSystem() {
                   </thead>
                   <tbody>
                     {[
-                      { level: 1, xpRequired: 0, xpFromPrevious: 0, pointsUnlocked: 0, totalPoints: 0, description: "Starting level" },
-                      { level: 2, xpRequired: 100, xpFromPrevious: 100, pointsUnlocked: 0, totalPoints: 0, description: "No reward" },
-                      { level: 3, xpRequired: 250, xpFromPrevious: 150, pointsUnlocked: 0, totalPoints: 0, description: "No reward" },
+                      { level: 1, xpRequired: 0, xpFromPrevious: 0, pointsUnlocked: 0, totalPoints: 0, description: "Starting level - Affiliate Level 1" },
+                      { level: 2, xpRequired: 100, xpFromPrevious: 100, pointsUnlocked: 0, totalPoints: 0, description: "Unlock 2nd Affiliate Level" },
+                      { level: 3, xpRequired: 250, xpFromPrevious: 150, pointsUnlocked: 0, totalPoints: 0, description: "Unlock 3rd Affiliate Level" },
                       { level: 4, xpRequired: 500, xpFromPrevious: 250, pointsUnlocked: 0, totalPoints: 0, description: "Unlock 4th Affiliate Level" },
-                      { level: 5, xpRequired: 800, xpFromPrevious: 300, pointsUnlocked: 0, totalPoints: 0, description: "Unlock 5th Affiliate Level" },
+                      { level: 5, xpRequired: 800, xpFromPrevious: 300, pointsUnlocked: 0, totalPoints: 0, description: "Unlock 5th Affiliate Level (Max)" },
                       { level: 6, xpRequired: 1200, xpFromPrevious: 400, pointsUnlocked: 500, totalPoints: 500, description: "Earn 500 Points" },
                       { level: 7, xpRequired: 1800, xpFromPrevious: 600, pointsUnlocked: 2000, totalPoints: 2500, description: "Earn 2,000 Points" },
                       { level: 8, xpRequired: 2600, xpFromPrevious: 800, pointsUnlocked: 6000, totalPoints: 8500, description: "Earn 6,000 Points + Bybit Partner" },

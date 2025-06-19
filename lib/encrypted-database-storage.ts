@@ -715,7 +715,7 @@ class EncryptedDatabaseStorage {
               current_xp: 0,
               total_xp: 0,
               profile_level: 1,
-              points: 100, // Give new users some starting points
+              points: 0, // New users start with 0 points
               role_tier: 'NOMAD',
               kyc_status: 'not_verified',
               onboarding_completed: false, // New users haven't completed onboarding

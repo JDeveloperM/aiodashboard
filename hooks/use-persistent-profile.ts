@@ -72,7 +72,7 @@ export function usePersistentProfile(): ProfileState & ProfileActions {
           profile_level: 1,
           current_xp: 0,
           total_xp: 0,
-          points: 100, // Give new users starting points
+          points: 0, // New users start with 0 points
           kyc_status: 'not_verified',
           join_date: new Date().toISOString(),
           achievements_data: [],

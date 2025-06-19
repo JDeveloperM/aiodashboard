@@ -203,9 +203,9 @@ const convertProfileToUser = async (profile: DecryptedProfile): Promise<User> =>
     kycStatus: profile.kyc_status || 'not_verified',
     totalPoints: profile.points || 0,
     level: profile.profile_level || 1,
-    activity: profile.bio || 'AIONET member',
+    activity: 'AIONET member',
     location: profile.location || 'Unknown',
-    bio: profile.bio || 'AIONET community member',
+    bio: 'AIONET community member',
     achievements: convertAchievements(profile.achievements_data || [], profile),
     socialMedia: convertSocialMedia(profile.social_links || [])
   }
