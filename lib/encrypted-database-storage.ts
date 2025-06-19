@@ -14,7 +14,6 @@ CREATE TABLE user_profiles (
   address TEXT UNIQUE NOT NULL, -- Public (wallet address)
   username_encrypted TEXT,      -- Encrypted
   email_encrypted TEXT,         -- Encrypted
-  bio_encrypted TEXT,           -- Encrypted
   profile_image_blob_id TEXT,   -- Public (Walrus blob ID)
   banner_image_blob_id TEXT,    -- Public (Walrus blob ID)
   social_links_encrypted TEXT,  -- Encrypted JSON
@@ -33,7 +32,6 @@ interface EncryptedProfile {
   // Encrypted sensitive fields
   username_encrypted?: string
   email_encrypted?: string
-  bio_encrypted?: string
   real_name_encrypted?: string
   location_encrypted?: string
   social_links_encrypted?: string
@@ -75,7 +73,6 @@ interface DecryptedProfile {
   // Decrypted sensitive fields
   username?: string
   email?: string
-  bio?: string
   real_name?: string
   location?: string
   social_links: SocialLink[]
@@ -286,9 +283,7 @@ class EncryptedDatabaseStorage {
       if (profileData.email) {
         encryptedData.email_encrypted = this.encrypt(profileData.email, encryptionKey)
       }
-      if (profileData.bio) {
-        encryptedData.bio_encrypted = this.encrypt(profileData.bio, encryptionKey)
-      }
+
       // Skip fields that don't exist in current schema
       // if (profileData.real_name) {
       //   encryptedData.real_name_encrypted = this.encrypt(profileData.real_name, encryptionKey)
@@ -443,9 +438,7 @@ class EncryptedDatabaseStorage {
       if (encryptedProfile.email_encrypted) {
         decrypted.email = this.decrypt(encryptedProfile.email_encrypted, key)
       }
-      if (encryptedProfile.bio_encrypted) {
-        decrypted.bio = this.decrypt(encryptedProfile.bio_encrypted, key)
-      }
+
       // Skip fields that don't exist in current schema
       // if (encryptedProfile.real_name_encrypted) {
       //   decrypted.real_name = this.decrypt(encryptedProfile.real_name_encrypted, key)

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 
-import { Textarea } from "@/components/ui/textarea"
+
 
 
 import { usePersistentProfile } from "@/hooks/use-persistent-profile"
@@ -23,7 +23,6 @@ import {
   CheckCircle,
   AlertCircle,
   MapPin,
-  FileText,
   Users
 } from "lucide-react"
 
@@ -32,7 +31,6 @@ interface ProfileData {
   lastName: string
   username: string
   email: string
-  bio: string
   location: string
   walletAddress: string
   kycStatus: 'pending' | 'verified' | 'rejected' | 'not-started'
@@ -50,7 +48,6 @@ export function DashboardProfiles() {
     lastName: "",
     username: "",
     email: "",
-    bio: "",
     location: "",
     walletAddress: "",
     kycStatus: 'not-started',
@@ -72,7 +69,6 @@ export function DashboardProfiles() {
         lastName: lastName || "",
         username: profile.username || "",
         email: profile.email || "",
-        bio: profile.bio || "",
         location: profile.location || "",
         walletAddress: user?.address || "",
         kycStatus: profile.kyc_status === 'verified' ? 'verified' :
@@ -154,7 +150,6 @@ export function DashboardProfiles() {
       const profileUpdateData = {
         username: profileData.username,
         email: profileData.email,
-        bio: profileData.bio,
         real_name: `${profileData.firstName} ${profileData.lastName}`.trim(),
         location: profileData.location,
         display_preferences: {
@@ -286,7 +281,7 @@ export function DashboardProfiles() {
 
             {/* KYC Section */}
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-white">
+              <div className="flex items-center gap-2 text-white justify-center">
                 <Shield className="w-4 h-4 text-[#4DA2FF]" />
                 <h4 className="font-semibold text-sm">KYC Verification</h4>
               </div>
@@ -314,22 +309,7 @@ export function DashboardProfiles() {
               </div>
             </div>
 
-            {/* Wallet Section */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-white">
-                <Wallet className="w-4 h-4 text-[#4DA2FF]" />
-                <h4 className="font-semibold text-sm">Wallet Address</h4>
-              </div>
-              <div className="space-y-2">
-                <Input
-                  value={profileData.walletAddress}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, walletAddress: e.target.value }))}
-                  disabled={!isEditing}
-                  className="bg-[#030F1C] border-[#C0E6FF]/30 text-white font-mono text-xs"
-                  placeholder="Sui wallet address"
-                />
-              </div>
-            </div>
+
           </div>
         </div>
 
@@ -438,28 +418,22 @@ export function DashboardProfiles() {
               </div>
             </div>
 
-            {/* Bio Section */}
-            <div className="space-y-2">
-              <Label htmlFor="bio" className="text-[#C0E6FF]">
+            {/* Wallet Address Section */}
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="walletAddress" className="text-[#C0E6FF]">
                 <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Bio
+                  <Wallet className="w-4 h-4" />
+                  Wallet Address
                 </div>
               </Label>
-              <Textarea
-                id="bio"
-                value={profileData.bio}
-                onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
+              <Input
+                id="walletAddress"
+                value={profileData.walletAddress}
+                onChange={(e) => setProfileData(prev => ({ ...prev, walletAddress: e.target.value }))}
                 disabled={!isEditing}
-                className="bg-[#030F1C] border-[#C0E6FF]/30 text-white min-h-[100px]"
-                placeholder="Tell us about yourself..."
-                maxLength={500}
+                className="bg-[#030F1C] border-[#C0E6FF]/30 text-white font-mono text-sm"
+                placeholder="Sui wallet address"
               />
-              <div className="text-right">
-                <span className="text-xs text-[#C0E6FF]/70">
-                  {profileData.bio.length}/500 characters
-                </span>
-              </div>
             </div>
             </div>
           </div>

@@ -19,7 +19,6 @@ interface ProfileActions {
   
   // Specific field updates
   updateUsername: (username: string) => Promise<boolean>
-  updateBio: (bio: string) => Promise<boolean>
   updateSocialLinks: (links: any[]) => Promise<boolean>
   updateKYCStatus: (status: 'verified' | 'pending' | 'not_verified') => Promise<boolean>
   updateTier: (tier: 'NOMAD' | 'PRO' | 'ROYAL') => Promise<boolean>
@@ -158,9 +157,7 @@ export function usePersistentProfile(): ProfileState & ProfileActions {
     return updateProfile({ username })
   }, [updateProfile])
 
-  const updateBio = useCallback(async (bio: string): Promise<boolean> => {
-    return updateProfile({ bio })
-  }, [updateProfile])
+
 
   const updateSocialLinks = useCallback(async (links: any[]): Promise<boolean> => {
     return updateProfile({ social_links: links })
@@ -368,7 +365,6 @@ export function usePersistentProfile(): ProfileState & ProfileActions {
     loadProfile,
     updateProfile,
     updateUsername,
-    updateBio,
     updateSocialLinks,
     updateKYCStatus,
     updateTier,
