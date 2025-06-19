@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { usePersistentProfile } from "@/hooks/use-persistent-profile"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { EnhancedAvatar } from "@/components/enhanced-avatar"
+import { ReferralCodeManagement } from "@/components/referral-code-management"
 import { toast } from "sonner"
 import { affiliateService } from "@/lib/affiliate-service"
 import {
@@ -439,6 +440,9 @@ export function DashboardProfiles() {
           </div>
         </div>
       </div>
+
+      {/* Referral Code Management Section */}
+      <ReferralCodeManagement />
 
     </div>
   )

@@ -21,6 +21,8 @@ import {
 } from 'lucide-react'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { usePersistentProfile } from '@/hooks/use-persistent-profile'
+import { useReferralTracking } from '@/hooks/use-referral-tracking'
+import { useReferralCodes } from '@/hooks/use-referral-codes'
 import { toast } from 'sonner'
 
 interface OnboardingStep {
@@ -35,6 +37,8 @@ interface OnboardingStep {
 export function NewUserOnboarding() {
   const { user, isNewUser, completeOnboarding, completeProfileSetup, completeKYC, refreshUserState } = useSuiAuth()
   const { profile, updateProfile, updateKYCStatus } = usePersistentProfile()
+  const { referralCode: trackedReferralCode, processReferralOnSignup } = useReferralTracking()
+  const { createDefaultCode } = useReferralCodes()
 
   const [currentStep, setCurrentStep] = useState(0)
   const [isCompleting, setIsCompleting] = useState(false)
@@ -91,14 +95,14 @@ export function NewUserOnboarding() {
   // Calculate progress based on current step, not completed steps
   const progress = ((currentStep + 1) / steps.length) * 100
 
-  // Load existing profile data
+  // Load existing profile data and auto-populate referral code
   useEffect(() => {
     if (profile) {
       console.log('📋 Loading existing profile data:', profile)
       setFormData({
         username: profile.username || '',
         email: profile.email || '',
-        referralCode: ''
+        referralCode: trackedReferralCode || ''
       })
     } else if (user?.address) {
       // Initialize with default username if no profile exists
@@ -106,10 +110,17 @@ export function NewUserOnboarding() {
       setFormData({
         username: `User ${user.address.slice(0, 6)}`,
         email: '',
-        referralCode: ''
+        referralCode: trackedReferralCode || ''
       })
     }
-  }, [profile, user?.address])
+
+    // Auto-populate referral code if user came from referral link
+    if (trackedReferralCode && !formData.referralCode) {
+      console.log('🔗 Auto-populating referral code from URL:', trackedReferralCode)
+      setFormData(prev => ({ ...prev, referralCode: trackedReferralCode }))
+      setSkipReferral(false) // Ensure referral is not skipped if we have a code
+    }
+  }, [profile, user?.address, trackedReferralCode])
 
   // Auto-refresh user state when profile changes
   useEffect(() => {
@@ -157,6 +168,25 @@ export function NewUserOnboarding() {
 
       if (success) {
         console.log('✅ Profile updated successfully')
+
+        // Process referral if user came from referral link
+        if (trackedReferralCode && user?.address) {
+          console.log('🔗 Processing referral from session...')
+          const referralSuccess = await processReferralOnSignup(user.address)
+          if (referralSuccess) {
+            toast.success('✅ Referral processed successfully!')
+          }
+        }
+
+        // Create default referral code for the user
+        if (formData.username.trim() && user?.address) {
+          console.log('🆕 Creating default referral code...')
+          const codeSuccess = await createDefaultCode(formData.username.trim())
+          if (codeSuccess) {
+            console.log('✅ Default referral code created')
+          }
+        }
+
         await completeProfileSetup()
 
         // Refresh user state to update isNewUser status
@@ -315,15 +345,26 @@ export function NewUserOnboarding() {
                 <Label htmlFor="referralCode" className="text-white flex items-center gap-2">
                   <Users className="w-4 h-4" />
                   Referral Code
+                  {trackedReferralCode && (
+                    <Badge className="bg-green-500/20 text-green-400 text-xs">
+                      Auto-filled
+                    </Badge>
+                  )}
                 </Label>
                 <Input
                   id="referralCode"
                   value={formData.referralCode}
                   onChange={(e) => setFormData({ ...formData, referralCode: e.target.value })}
-                  placeholder="Enter referral code (if you have one)"
+                  placeholder={trackedReferralCode ? "Referral code from link" : "Enter referral code (if you have one)"}
                   className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white"
                   disabled={skipReferral}
                 />
+                {trackedReferralCode && (
+                  <p className="text-green-400 text-sm mt-1 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    Referral code automatically applied from your link
+                  </p>
+                )}
                 <div className="flex items-center space-x-2 mt-2">
                   <Checkbox
                     id="skipReferral"
@@ -334,12 +375,13 @@ export function NewUserOnboarding() {
                         setFormData({ ...formData, referralCode: '' })
                       }
                     }}
+                    disabled={!!trackedReferralCode} // Disable if we have a tracked referral
                   />
                   <Label htmlFor="skipReferral" className="text-sm text-[#C0E6FF]">
                     Continue without referral code
                   </Label>
                 </div>
-                {!formData.referralCode.trim() && !skipReferral && (
+                {!formData.referralCode.trim() && !skipReferral && !trackedReferralCode && (
                   <p className="text-yellow-400 text-sm mt-1">
                     Enter a referral code or check the box to continue
                   </p>

@@ -94,8 +94,6 @@ export function ContactSponsorModal({ isOpen, onClose, sponsor, loading }: Conta
                     {sponsor.status}
                   </Badge>
                   <span>Profile Lv. {sponsor.profileLevel}</span>
-                  <span>•</span>
-                  <span>Affiliate Lv. {sponsor.affiliateLevel}</span>
                 </div>
               </div>
             </div>

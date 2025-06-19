@@ -14,6 +14,7 @@ import { EnhancedAvatar } from "@/components/enhanced-avatar"
 import { EnhancedBanner } from "@/components/enhanced-banner"
 import { usePersistentProfile } from '@/hooks/use-persistent-profile'
 import { useChannelSubscriptions, getChannelTypeBadgeColor, formatSubscriptionStatus } from '@/hooks/use-channel-subscriptions'
+import { useReferralCodes } from '@/hooks/use-referral-codes'
 import { encryptedStorage } from '@/lib/encrypted-database-storage'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { useSubscription } from "@/contexts/subscription-context"
@@ -99,6 +100,7 @@ export function PersistentProfileSystem() {
   const router = useRouter()
   const { user } = useSuiAuth()
   const { tier, setTier } = useSubscription()
+  const { getDefaultCode, getReferralLink } = useReferralCodes()
   const {
     profile,
     isLoading,
@@ -137,8 +139,11 @@ export function PersistentProfileSystem() {
     { level: 10, points: 35000, available: false, claimed: false, description: "Earn 35,000 Points" }
   ])
 
-  // Affiliate link
-  const affiliateLink = `https://aionet.com/ref/${user?.address?.slice(0, 8) || 'user'}`
+  // Affiliate link - use referral code if available, fallback to wallet address
+  const defaultCode = getDefaultCode()
+  const affiliateLink = defaultCode
+    ? getReferralLink(defaultCode.code)
+    : `https://aionet.com/ref/${user?.address?.slice(0, 8) || 'user'}`
 
   // Function to determine if achievement should be unlocked based on user activity
   const checkAchievementUnlocked = (achievementName: string): boolean => {

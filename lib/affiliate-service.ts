@@ -111,6 +111,33 @@ export interface CommissionTransaction {
   status: 'pending' | 'confirmed' | 'paid' | 'cancelled'
 }
 
+export interface ReferralCode {
+  id: string
+  code: string
+  isActive: boolean
+  isDefault: boolean
+  usageLimit?: number
+  usageCount: number
+  successfulConversions: number
+  totalClicks: number
+  conversionRate: number
+  description?: string
+  createdAt: string
+  updatedAt: string
+  expiresAt?: string
+}
+
+export interface ReferralSession {
+  id: string
+  sessionId: string
+  referralCode: string
+  referrerAddress: string
+  visitedAt: string
+  converted: boolean
+  convertedAt?: string
+  convertedUserAddress?: string
+}
+
 class AffiliateService {
   /**
    * Calculate affiliate level based on profile level only
@@ -588,6 +615,108 @@ class AffiliateService {
   }
 
   /**
+   * Process referral from session (when user came from referral link)
+   */
+  async processReferralFromSession(sessionId: string, userAddress: string): Promise<boolean> {
+    try {
+      console.log('🔗 Processing referral from session:', sessionId, 'for user:', userAddress)
+
+      // Find the referral session
+      const { data: session, error: sessionError } = await supabase
+        .from('referral_sessions')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('converted', false)
+        .single()
+
+      if (sessionError || !session) {
+        console.log('❌ No valid referral session found')
+        return false
+      }
+
+      // Check if user already has a referral relationship
+      const hasExisting = await this.checkExistingReferralRelationship(userAddress)
+      if (hasExisting) {
+        console.log('❌ User already has a referral relationship')
+        return false
+      }
+
+      // Create the affiliate relationship
+      const relationshipSuccess = await this.createAffiliateRelationship(
+        session.referrer_address,
+        userAddress,
+        session.referral_code
+      )
+
+      if (!relationshipSuccess) {
+        console.log('❌ Failed to create affiliate relationship from session')
+        return false
+      }
+
+      // Mark session as converted
+      const { error: updateError } = await supabase
+        .from('referral_sessions')
+        .update({
+          converted: true,
+          converted_at: new Date().toISOString(),
+          converted_user_address: userAddress
+        })
+        .eq('id', session.id)
+
+      if (updateError) {
+        console.error('⚠️ Failed to update session conversion status:', updateError)
+      }
+
+      // Update successful conversions count
+      const { error: conversionError } = await supabase
+        .rpc('increment_referral_conversions', {
+          referral_code: session.referral_code
+        })
+
+      if (conversionError) {
+        console.error('⚠️ Failed to update conversion count:', conversionError)
+      }
+
+      console.log('✅ Referral processed successfully from session')
+      return true
+    } catch (error) {
+      console.error('Failed to process referral from session:', error)
+      return false
+    }
+  }
+
+  /**
+   * Get referral session data for a session ID
+   */
+  async getReferralSession(sessionId: string): Promise<ReferralSession | null> {
+    try {
+      const { data, error } = await supabase
+        .from('referral_sessions')
+        .select('*')
+        .eq('session_id', sessionId)
+        .single()
+
+      if (error || !data) {
+        return null
+      }
+
+      return {
+        id: data.id,
+        sessionId: data.session_id,
+        referralCode: data.referral_code,
+        referrerAddress: data.referrer_address,
+        visitedAt: data.visited_at,
+        converted: data.converted,
+        convertedAt: data.converted_at,
+        convertedUserAddress: data.converted_user_address
+      }
+    } catch (error) {
+      console.error('Failed to get referral session:', error)
+      return null
+    }
+  }
+
+  /**
    * Process and validate a referral code, creating the relationship if valid
    */
   async processReferralCode(referralCode: string, userAddress: string): Promise<boolean> {
@@ -602,14 +731,37 @@ class AffiliateService {
       }
 
       // Step 2: Validate the referral code exists and is active
-      const { data: codeData, error: codeError } = await supabase
-        .from('affiliate_codes')
+      // First try referral_codes table (personal codes), then affiliate_codes (admin codes)
+      let codeData: any = null
+      let codeError: any = null
+
+      // Try personal referral codes first
+      const { data: personalCode, error: personalError } = await supabase
+        .from('referral_codes')
         .select('owner_address, usage_limit, usage_count, is_active, expires_at')
         .eq('code', referralCode)
         .eq('is_active', true)
         .single()
 
-      if (codeError || !codeData) {
+      if (personalCode) {
+        codeData = personalCode
+      } else {
+        // Try admin affiliate codes
+        const { data: adminCode, error: adminError } = await supabase
+          .from('affiliate_codes')
+          .select('owner_address, usage_limit, usage_count, is_active, expires_at')
+          .eq('code', referralCode)
+          .eq('is_active', true)
+          .single()
+
+        if (adminCode) {
+          codeData = adminCode
+        } else {
+          codeError = adminError
+        }
+      }
+
+      if (!codeData) {
         console.log('❌ Invalid or inactive referral code')
         return false
       }
@@ -644,18 +796,31 @@ class AffiliateService {
         return false
       }
 
-      // Step 7: Update code usage count
-      const { error: updateError } = await supabase
-        .from('affiliate_codes')
-        .update({
-          usage_count: codeData.usage_count + 1,
-          updated_at: new Date().toISOString()
-        })
-        .eq('code', referralCode)
+      // Step 7: Update code usage count in the appropriate table
+      if (personalCode) {
+        // Update personal referral code
+        const { error: updateError } = await supabase
+          .rpc('increment_referral_usage', {
+            referral_code: referralCode,
+            increment_conversions: true
+          })
 
-      if (updateError) {
-        console.error('⚠️ Failed to update code usage count:', updateError)
-        // Don't fail the whole process for this
+        if (updateError) {
+          console.error('⚠️ Failed to update referral code usage count:', updateError)
+        }
+      } else {
+        // Update admin affiliate code
+        const { error: updateError } = await supabase
+          .from('affiliate_codes')
+          .update({
+            usage_count: codeData.usage_count + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq('code', referralCode)
+
+        if (updateError) {
+          console.error('⚠️ Failed to update affiliate code usage count:', updateError)
+        }
       }
 
       console.log('✅ Referral code processed successfully')
@@ -663,6 +828,164 @@ class AffiliateService {
 
     } catch (error) {
       console.error('Failed to process referral code:', error)
+      return false
+    }
+  }
+
+  /**
+   * Generate a unique referral code for a user based on their username
+   */
+  async generateReferralCode(userAddress: string, username: string): Promise<string | null> {
+    try {
+      console.log('🔧 Generating referral code for:', username, userAddress)
+
+      // Call the database function to generate unique code
+      const { data, error } = await supabase
+        .rpc('generate_referral_code', {
+          p_username: username,
+          p_owner_address: userAddress
+        })
+
+      if (error) {
+        console.error('Error generating referral code:', error)
+        return null
+      }
+
+      return data as string
+    } catch (error) {
+      console.error('Failed to generate referral code:', error)
+      return null
+    }
+  }
+
+  /**
+   * Create a default referral code for a user
+   */
+  async createDefaultReferralCode(userAddress: string, username: string): Promise<boolean> {
+    try {
+      console.log('🆕 Creating default referral code for:', username)
+
+      // Generate unique code
+      const code = await this.generateReferralCode(userAddress, username)
+      if (!code) {
+        console.error('Failed to generate referral code')
+        return false
+      }
+
+      // Insert the referral code
+      const { error } = await supabase
+        .from('referral_codes')
+        .insert({
+          owner_address: userAddress,
+          code: code,
+          is_active: true,
+          is_default: true,
+          description: `Default referral code for ${username}`
+        })
+
+      if (error) {
+        console.error('Error creating default referral code:', error)
+        return false
+      }
+
+      console.log('✅ Default referral code created:', code)
+      return true
+    } catch (error) {
+      console.error('Failed to create default referral code:', error)
+      return false
+    }
+  }
+
+  /**
+   * Get all referral codes for a user
+   */
+  async getUserReferralCodes(userAddress: string): Promise<ReferralCode[]> {
+    try {
+      const { data, error } = await supabase
+        .from('referral_codes')
+        .select('*')
+        .eq('owner_address', userAddress)
+        .order('is_default', { ascending: false })
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching user referral codes:', error)
+        return []
+      }
+
+      return (data || []).map(code => ({
+        id: code.id,
+        code: code.code,
+        isActive: code.is_active,
+        isDefault: code.is_default,
+        usageLimit: code.usage_limit,
+        usageCount: code.usage_count,
+        successfulConversions: code.successful_conversions,
+        totalClicks: code.total_clicks,
+        conversionRate: code.conversion_rate,
+        description: code.description,
+        createdAt: code.created_at,
+        updatedAt: code.updated_at,
+        expiresAt: code.expires_at
+      }))
+    } catch (error) {
+      console.error('Failed to get user referral codes:', error)
+      return []
+    }
+  }
+
+  /**
+   * Track a referral link click
+   */
+  async trackReferralClick(referralCode: string, sessionId: string, ipAddress?: string, userAgent?: string, referrerUrl?: string): Promise<boolean> {
+    try {
+      console.log('📊 Tracking referral click for code:', referralCode)
+
+      // First, get the referrer address from the referral code
+      const { data: codeData, error: codeError } = await supabase
+        .from('referral_codes')
+        .select('owner_address')
+        .eq('code', referralCode)
+        .eq('is_active', true)
+        .single()
+
+      if (codeError || !codeData) {
+        console.log('❌ Invalid referral code for tracking:', referralCode)
+        return false
+      }
+
+      // Create referral session
+      const { error: sessionError } = await supabase
+        .from('referral_sessions')
+        .insert({
+          session_id: sessionId,
+          referral_code: referralCode,
+          referrer_address: codeData.owner_address,
+          ip_address: ipAddress,
+          user_agent: userAgent,
+          referrer_url: referrerUrl
+        })
+
+      if (sessionError) {
+        console.error('Error creating referral session:', sessionError)
+        return false
+      }
+
+      // Update click count
+      const { error: updateError } = await supabase
+        .rpc('increment_referral_clicks', {
+          referral_code: referralCode
+        })
+
+      if (updateError) {
+        console.error('Error updating click count:', updateError)
+        // Don't fail the whole process for this
+      }
+
+      console.log('✅ Referral click tracked successfully')
+      return true
+    } catch (error) {
+      console.error('Failed to track referral click:', error)
       return false
     }
   }

@@ -46,7 +46,30 @@ function isProtectedRoute(pathname: string): boolean {
 }
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+  const { pathname, searchParams } = request.nextUrl
+
+  // Handle referral links
+  const refParam = searchParams.get('ref')
+  const refPathMatch = pathname.match(/^\/ref\/([^\/]+)$/)
+
+  if (refParam || refPathMatch) {
+    const referralCode = refParam || refPathMatch?.[1]
+
+    if (referralCode) {
+      // Create response that redirects to home page
+      const response = NextResponse.redirect(new URL('/', request.url))
+
+      // Set referral code in cookie for client-side processing
+      response.cookies.set('aionet_referral_code', referralCode, {
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        httpOnly: false, // Allow client-side access
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      })
+
+      return response
+    }
+  }
 
   // Allow public routes
   if (isPublicRoute(pathname)) {
