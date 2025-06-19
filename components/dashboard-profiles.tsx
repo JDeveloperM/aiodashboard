@@ -85,6 +85,38 @@ export function DashboardProfiles() {
     }
   }, [profile, user?.address])
 
+  // Check if username needs to be synced with referral code
+  useEffect(() => {
+    const syncUsernameWithReferralCode = async () => {
+      if (!user?.address || !profile) return
+
+      try {
+        // Get user's default referral code
+        const defaultCode = await affiliateService.getUserDefaultReferralCode(user.address)
+
+        if (defaultCode && profile.username && profile.username.startsWith('User ')) {
+          // If profile has a fallback username but user has a proper referral code,
+          // update the username to match the referral code
+          console.log('🔄 Syncing username with referral code:', defaultCode)
+
+          const success = await updateProfile({ username: defaultCode })
+          if (success) {
+            console.log('✅ Username synced with referral code')
+            // Update local state to reflect the change
+            setProfileData(prev => ({
+              ...prev,
+              username: defaultCode
+            }))
+          }
+        }
+      } catch (error) {
+        console.error('Failed to sync username with referral code:', error)
+      }
+    }
+
+    syncUsernameWithReferralCode()
+  }, [profile, user?.address, updateProfile])
+
   // Check for existing referral relationship
   useEffect(() => {
     const checkExistingReferralCode = async () => {
@@ -129,6 +161,14 @@ export function DashboardProfiles() {
       // Handle referral code if provided and user doesn't have existing referral
       if (profileData.referralCode.trim() && !hasExistingReferralCode) {
         console.log('🔗 Processing referral code:', profileData.referralCode)
+
+        // Validate referral code immutability
+        const validation = await affiliateService.validateReferralCodeImmutability(user.address, 'create')
+        if (!validation.valid) {
+          toast.error(`❌ ${validation.message}`)
+          setIsSaving(false)
+          return
+        }
 
         // Validate and process referral code
         const referralSuccess = await affiliateService.processReferralCode(
@@ -348,15 +388,22 @@ export function DashboardProfiles() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-[#C0E6FF]">Username</Label>
+                <Label htmlFor="username" className="text-[#C0E6FF]">
+                  Username {profileData.username && "(Cannot be changed)"}
+                </Label>
                 <Input
                   id="username"
                   value={profileData.username}
                   onChange={(e) => setProfileData(prev => ({ ...prev, username: e.target.value }))}
-                  disabled={!isEditing}
+                  disabled={!isEditing || !!profileData.username}
                   className="bg-[#030F1C] border-[#C0E6FF]/30 text-white"
-                  placeholder="Enter your username"
+                  placeholder={profileData.username ? "Username is set and cannot be changed" : "Enter your username"}
                 />
+                {profileData.username && (
+                  <p className="text-[#C0E6FF]/70 text-sm">
+                    🔒 Username cannot be changed once set to maintain referral code consistency
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">

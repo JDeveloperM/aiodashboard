@@ -33,8 +33,12 @@ export interface AffiliateUser {
   commission: number
   kycStatus: 'verified' | 'pending' | 'not_verified'
   profileLevel: number // Profile/Account level based on XP
-  affiliateLevel: number // Affiliate level in the system
+  affiliateLevel: number // Affiliate level in the system (1-5)
   address: string
+  sponsorAddress?: string // Address of the person who invited them
+  sponsorUsername?: string // Username of the person who invited them
+  referralCode?: string // The referral code used to join
+  isDirect: boolean // True if this is a direct referral (Level 1)
 }
 
 export interface AffiliateMetrics {
@@ -82,6 +86,7 @@ export interface AffiliateFilters {
   levelFilter?: 'ALL' | 'Lv. 1' | 'Lv. 2' | 'Lv. 3' | 'Lv. 4' | 'Lv. 5'
   limit?: number
   offset?: number
+  includeNetwork?: boolean // New option to include multi-level referrals
 }
 
 export interface CommissionData {
@@ -316,33 +321,119 @@ class AffiliateService {
     try {
       console.log('🔍 Fetching affiliate users for:', referrerAddress, 'with filters:', filters)
 
-      // Step 1: Get affiliate relationships
-      const { data: relationships, error: relError } = await supabase
-        .from('affiliate_relationships')
-        .select('id, referee_address, created_at')
-        .eq('referrer_address', referrerAddress)
-        .eq('relationship_status', 'active')
-        .order('created_at', { ascending: false })
+      let allRefereeAddresses: string[] = []
+      let relationshipData: {
+        referee_address: string,
+        created_at: string,
+        level: number,
+        referrer_address: string,
+        referral_code?: string
+      }[] = []
 
-      if (relError) {
-        console.error('Error fetching relationships:', relError)
-        throw relError
+      if (filters.includeNetwork) {
+        // Get multi-level network (up to 5 levels)
+        console.log('📊 Fetching multi-level network...')
+
+        // Start with direct referrals (Level 1)
+        const { data: directRelationships, error: directError } = await supabase
+          .from('affiliate_relationships')
+          .select('referee_address, created_at, referrer_address, referral_code')
+          .eq('referrer_address', referrerAddress)
+          .eq('relationship_status', 'active')
+
+        if (directError) {
+          console.error('Error fetching direct relationships:', directError)
+          throw directError
+        }
+
+        if (directRelationships) {
+          directRelationships.forEach(rel => {
+            allRefereeAddresses.push(rel.referee_address)
+            relationshipData.push({
+              referee_address: rel.referee_address,
+              created_at: rel.created_at,
+              level: 1,
+              referrer_address: rel.referrer_address,
+              referral_code: rel.referral_code
+            })
+          })
+
+          // Get network referrals (Levels 2-5)
+          let currentLevelAddresses = directRelationships.map(rel => rel.referee_address)
+
+          for (let level = 2; level <= 5; level++) {
+            if (currentLevelAddresses.length === 0) break
+
+            const { data: levelRelationships, error: levelError } = await supabase
+              .from('affiliate_relationships')
+              .select('referee_address, created_at, referrer_address, referral_code')
+              .in('referrer_address', currentLevelAddresses)
+              .eq('relationship_status', 'active')
+
+            if (levelError) {
+              console.error(`Error fetching level ${level} relationships:`, levelError)
+              break
+            }
+
+            if (levelRelationships) {
+              levelRelationships.forEach(rel => {
+                allRefereeAddresses.push(rel.referee_address)
+                relationshipData.push({
+                  referee_address: rel.referee_address,
+                  created_at: rel.created_at,
+                  level: level,
+                  referrer_address: rel.referrer_address,
+                  referral_code: rel.referral_code
+                })
+              })
+              currentLevelAddresses = levelRelationships.map(rel => rel.referee_address)
+              console.log(`Found ${levelRelationships.length} referrals at level ${level}`)
+            }
+          }
+        }
+      } else {
+        // Get only direct relationships (original behavior)
+        const { data: relationships, error: relError } = await supabase
+          .from('affiliate_relationships')
+          .select('id, referee_address, created_at, referrer_address, referral_code')
+          .eq('referrer_address', referrerAddress)
+          .eq('relationship_status', 'active')
+          .order('created_at', { ascending: false })
+
+        if (relError) {
+          console.error('Error fetching relationships:', relError)
+          throw relError
+        }
+
+        if (relationships) {
+          relationships.forEach(rel => {
+            allRefereeAddresses.push(rel.referee_address)
+            relationshipData.push({
+              referee_address: rel.referee_address,
+              created_at: rel.created_at,
+              level: 1,
+              referrer_address: rel.referrer_address,
+              referral_code: rel.referral_code
+            })
+          })
+        }
       }
 
-      if (!relationships || relationships.length === 0) {
+      if (allRefereeAddresses.length === 0) {
         console.log('No affiliate relationships found')
         return { users: [], totalCount: 0 }
       }
 
-      console.log(`Found ${relationships.length} affiliate relationships`)
+      console.log(`Found ${allRefereeAddresses.length} total affiliate relationships`)
 
-      // Step 2: Get user profiles for these addresses
-      const refereeAddresses = relationships.map(rel => rel.referee_address)
+      // Step 2: Get user profiles for these addresses AND their sponsors
+      const allSponsorAddresses = relationshipData.map(rel => rel.referrer_address)
+      const allAddresses = [...allRefereeAddresses, ...allSponsorAddresses]
 
       let profileQuery = supabase
         .from('user_profiles')
         .select('address, username_encrypted, email_encrypted, role_tier, profile_level, kyc_status, join_date, total_xp')
-        .in('address', refereeAddresses)
+        .in('address', allAddresses)
 
       // Apply role filter
       if (filters.roleFilter && filters.roleFilter !== 'ALL') {
@@ -365,17 +456,24 @@ class AffiliateService {
         return { users: [], totalCount: 0 }
       }
 
-      // Step 3: Get commissions for these relationships
-      const relationshipIds = relationships.map(rel => rel.id)
-      const { data: commissions, error: commError } = await supabase
-        .from('affiliate_commissions')
-        .select('affiliate_relationship_id, commission_amount')
-        .in('affiliate_relationship_id', relationshipIds)
-        .in('status', ['confirmed', 'paid'])
+      // Step 3: Get commissions for these relationships (only for direct relationships)
+      let commissions: any[] = []
+      if (!filters.includeNetwork) {
+        // Only get commissions for direct relationships when not including network
+        const relationshipIds = relationshipData.filter(rel => rel.level === 1).map(rel => rel.referee_address)
+        if (relationshipIds.length > 0) {
+          const { data: commissionData, error: commError } = await supabase
+            .from('affiliate_commissions')
+            .select('referrer_address, referee_address, commission_amount')
+            .in('referee_address', relationshipIds)
+            .in('status', ['confirmed', 'paid'])
 
-      if (commError) {
-        console.error('Error fetching commissions:', commError)
-        // Don't throw error, just continue without commission data
+          if (commError) {
+            console.error('Error fetching commissions:', commError)
+          } else {
+            commissions = commissionData || []
+          }
+        }
       }
 
       console.log(`Found ${commissions?.length || 0} commissions`)
@@ -383,12 +481,18 @@ class AffiliateService {
       // Step 4: Combine the data
       const users: AffiliateUser[] = []
 
-      for (const relationship of relationships) {
-        const profile = profiles.find(p => p.address === relationship.referee_address)
+      for (const relationshipInfo of relationshipData) {
+        const profile = profiles.find(p => p.address === relationshipInfo.referee_address)
         if (!profile) continue // Skip if profile not found or filtered out
 
+        // Get sponsor information
+        const sponsorProfile = profiles.find(p => p.address === relationshipInfo.referrer_address)
+        const sponsorUsername = sponsorProfile
+          ? (this.decrypt(sponsorProfile.username_encrypted, sponsorProfile.address) || `User_${sponsorProfile.address.slice(0, 8)}`)
+          : `User_${relationshipInfo.referrer_address.slice(0, 8)}`
+
         // Calculate total commission for this relationship
-        const relationshipCommissions = commissions?.filter(c => c.affiliate_relationship_id === relationship.id) || []
+        const relationshipCommissions = commissions?.filter(c => c.referee_address === relationshipInfo.referee_address) || []
         const totalCommission = relationshipCommissions.reduce((sum, comm) =>
           sum + parseFloat(comm.commission_amount.toString()), 0
         )
@@ -396,27 +500,28 @@ class AffiliateService {
         const username = this.decrypt(profile.username_encrypted, profile.address) || `User_${profile.address.slice(0, 8)}`
         const email = this.decrypt(profile.email_encrypted, profile.address) || `${profile.address.slice(0, 8)}@example.com`
 
-        // Calculate affiliate level based on user criteria
+        // Use the relationship level as affiliate level (1-5)
         const profileLevel = profile.profile_level || 1
-        const affiliateLevel = this.calculateAffiliateLevel(
-          profile.total_xp || 0,
-          profileLevel,
-          profile.role_tier
-        )
+        const affiliateLevel = relationshipInfo.level
+        const isDirect = relationshipInfo.level === 1
 
-        console.log(`Processing user ${profile.address}: username="${username}", email="${email}", profileLevel=${profileLevel}, affiliateLevel=${affiliateLevel}`)
+        console.log(`Processing user ${profile.address}: username="${username}", email="${email}", profileLevel=${profileLevel}, affiliateLevel=${affiliateLevel}, sponsor="${sponsorUsername}", isDirect=${isDirect}`)
 
         users.push({
-          id: relationship.id,
+          id: `${relationshipInfo.referee_address}_${relationshipInfo.level}`,
           address: profile.address,
           username,
           email,
-          joinDate: profile.join_date || relationship.created_at,
+          joinDate: profile.join_date || relationshipInfo.created_at,
           status: profile.role_tier as 'NOMAD' | 'PRO' | 'ROYAL',
           commission: Math.round(totalCommission),
           kycStatus: profile.kyc_status as 'verified' | 'pending' | 'not_verified',
           profileLevel,
-          affiliateLevel
+          affiliateLevel,
+          sponsorAddress: relationshipInfo.referrer_address,
+          sponsorUsername,
+          referralCode: relationshipInfo.referral_code,
+          isDirect
         })
       }
 
@@ -859,28 +964,69 @@ class AffiliateService {
   }
 
   /**
-   * Create a default referral code for a user
+   * Check if user already has referral codes
    */
-  async createDefaultReferralCode(userAddress: string, username: string): Promise<boolean> {
+  async userHasReferralCodes(userAddress: string): Promise<boolean> {
     try {
-      console.log('🆕 Creating default referral code for:', username)
+      const { data, error } = await supabase
+        .rpc('user_has_referral_codes', {
+          p_owner_address: userAddress
+        })
 
-      // Generate unique code
-      const code = await this.generateReferralCode(userAddress, username)
-      if (!code) {
-        console.error('Failed to generate referral code')
+      if (error) {
+        console.error('Error checking user referral codes:', error)
         return false
       }
 
-      // Insert the referral code
-      const { error } = await supabase
-        .from('referral_codes')
-        .insert({
-          owner_address: userAddress,
-          code: code,
-          is_active: true,
-          is_default: true,
-          description: `Default referral code for ${username}`
+      return data as boolean
+    } catch (error) {
+      console.error('Failed to check user referral codes:', error)
+      return false
+    }
+  }
+
+  /**
+   * Get user's default referral code
+   */
+  async getUserDefaultReferralCode(userAddress: string): Promise<string | null> {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_user_default_referral_code', {
+          p_owner_address: userAddress
+        })
+
+      if (error) {
+        console.error('Error getting user default referral code:', error)
+        return null
+      }
+
+      return data as string | null
+    } catch (error) {
+      console.error('Failed to get user default referral code:', error)
+      return null
+    }
+  }
+
+  /**
+   * Create a default referral code for a user (duplicate-safe)
+   */
+  async createDefaultReferralCode(userAddress: string, username: string): Promise<boolean> {
+    try {
+      console.log('🆕 Creating default referral code for:', username, userAddress)
+
+      // Check if user already has a referral code
+      const existingCode = await this.getUserDefaultReferralCode(userAddress)
+      if (existingCode) {
+        console.log('✅ User already has referral code:', existingCode)
+        return true // Return success since user has a code
+      }
+
+      // Use the safe creation function from database
+      const { data: code, error } = await supabase
+        .rpc('create_referral_code_safe', {
+          p_username: username,
+          p_owner_address: userAddress,
+          p_force_create: false
         })
 
       if (error) {
@@ -888,7 +1034,12 @@ class AffiliateService {
         return false
       }
 
-      console.log('✅ Default referral code created:', code)
+      if (!code) {
+        console.error('No referral code returned from safe creation function')
+        return false
+      }
+
+      console.log('✅ Default referral code created/retrieved:', code)
       return true
     } catch (error) {
       console.error('Failed to create default referral code:', error)
@@ -897,10 +1048,101 @@ class AffiliateService {
   }
 
   /**
-   * Get all referral codes for a user
+   * Validate that referral code operations maintain immutability rules
+   */
+  async validateReferralCodeImmutability(userAddress: string, operation: 'create' | 'update' | 'delete'): Promise<{ valid: boolean; message?: string }> {
+    try {
+      const hasExistingCodes = await this.userHasReferralCodes(userAddress)
+
+      switch (operation) {
+        case 'create':
+          if (hasExistingCodes) {
+            return {
+              valid: false,
+              message: 'User already has a referral code. Each user can only have one referral code.'
+            }
+          }
+          break
+
+        case 'update':
+          return {
+            valid: false,
+            message: 'Referral codes cannot be modified once created to maintain system integrity.'
+          }
+
+        case 'delete':
+          return {
+            valid: false,
+            message: 'Referral codes cannot be deleted once created to maintain referral relationships.'
+          }
+      }
+
+      return { valid: true }
+    } catch (error) {
+      console.error('Failed to validate referral code immutability:', error)
+      return {
+        valid: false,
+        message: 'Failed to validate referral code operation'
+      }
+    }
+  }
+
+  /**
+   * Sync referral code statistics with actual affiliate data using database function
+   */
+  async syncReferralCodeStatistics(userAddress: string, referralCode: string): Promise<void> {
+    try {
+      console.log('🔄 Syncing referral code statistics for:', referralCode)
+
+      // Use the database function to sync statistics
+      const { error } = await supabase
+        .rpc('sync_referral_code_statistics', {
+          p_owner_address: userAddress,
+          p_referral_code: referralCode
+        })
+
+      if (error) {
+        console.error('Error syncing referral code statistics:', error)
+      } else {
+        console.log('✅ Referral code statistics synced successfully')
+      }
+    } catch (error) {
+      console.error('Failed to sync referral code statistics:', error)
+    }
+  }
+
+  /**
+   * Sync all referral code statistics for a user
+   */
+  async syncAllUserReferralStatistics(userAddress: string): Promise<void> {
+    try {
+      console.log('🔄 Syncing all referral code statistics for user:', userAddress)
+
+      // Use the database function to sync all user's referral codes
+      const { error } = await supabase
+        .rpc('sync_all_user_referral_statistics', {
+          p_owner_address: userAddress
+        })
+
+      if (error) {
+        console.error('Error syncing all user referral statistics:', error)
+      } else {
+        console.log('✅ All referral code statistics synced successfully')
+      }
+    } catch (error) {
+      console.error('Failed to sync all user referral statistics:', error)
+    }
+  }
+
+  /**
+   * Get all referral codes for a user with synced statistics
    */
   async getUserReferralCodes(userAddress: string): Promise<ReferralCode[]> {
     try {
+      // First sync all statistics for this user
+      await this.syncAllUserReferralStatistics(userAddress)
+
+      // Then fetch the updated data
       const { data, error } = await supabase
         .from('referral_codes')
         .select('*')
@@ -1048,7 +1290,11 @@ class AffiliateService {
         commission: 0, // Not relevant for sponsor info
         kycStatus: sponsorProfile.kyc_status as 'verified' | 'pending' | 'not_verified',
         profileLevel,
-        affiliateLevel
+        affiliateLevel,
+        sponsorAddress: undefined, // Sponsor doesn't have a sponsor in this context
+        sponsorUsername: undefined,
+        referralCode: undefined,
+        isDirect: false // This is not a direct referral context
       }
 
       console.log('✅ Sponsor info retrieved successfully:', sponsorInfo)

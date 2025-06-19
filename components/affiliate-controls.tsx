@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RoleImage } from "@/components/ui/role-image"
 import { affiliateService, AffiliateUser, AffiliateMetrics, CommissionData, NetworkMetrics, UserProfileLevel } from "@/lib/affiliate-service"
 import { useCurrentAccount } from "@mysten/dapp-kit"
+
 import { CommissionTracking } from "@/components/commission-tracking"
 import { ContactSponsorModal } from "@/components/contact-sponsor-modal"
 import {
@@ -119,11 +120,12 @@ export function AffiliateControls() {
       const totalDirect = networkData.personalNomadUsers + networkData.personalProUsers + networkData.personalRoyalUsers
       setTotalDirectUsers(totalDirect)
 
-      // Load affiliate users with current filters
+      // Load affiliate users with current filters (including network)
       const { users, totalCount: count } = await affiliateService.getAffiliateUsers(account.address, {
         roleFilter: selectedRoleFilter,
         levelFilter: selectedLevelFilter,
-        limit: 50 // Load more initially for filtering
+        limit: 50, // Load more initially for filtering
+        includeNetwork: true // Include multi-level referrals
       })
 
       setAffiliateUsers(users)
@@ -149,7 +151,8 @@ export function AffiliateControls() {
         const { users: adminUsers } = await affiliateService.getAffiliateUsers(adminAddress, {
           roleFilter: selectedRoleFilter,
           levelFilter: selectedLevelFilter,
-          limit: 50
+          limit: 50,
+          includeNetwork: true // Include multi-level referrals for admin test data
         })
         const adminCommissionData = await affiliateService.getCommissionData(adminAddress)
 
@@ -795,6 +798,20 @@ export function AffiliateControls() {
                         <span className="text-[#C0E6FF] text-sm">{user.email}</span>
                       </div>
 
+                      {/* Sponsor Info */}
+                      <div className="flex items-center gap-2 mb-3">
+                        {user.isDirect ? (
+                          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                            Direct Referral
+                          </Badge>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Users className="w-3 h-3 text-[#C0E6FF]" />
+                            <span className="text-[#C0E6FF] text-sm">Invited by: {user.sponsorUsername}</span>
+                          </div>
+                        )}
+                      </div>
+
                       {/* Stats Row */}
                       <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -902,6 +919,7 @@ export function AffiliateControls() {
               <thead>
                 <tr className="border-b border-[#C0E6FF]/20">
                   <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[140px]">Username</th>
+                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[120px]">Sponsor</th>
                   <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[180px]">Email</th>
                   <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[100px]">Join Date</th>
                   <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[80px]">Profile Lv.</th>
@@ -936,6 +954,20 @@ export function AffiliateControls() {
                             </td>
                             <td className="py-3 px-2 text-left text-[#C0E6FF] text-sm">
                               <div className="flex items-center gap-2">
+                                {user.isDirect ? (
+                                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                                    Direct
+                                  </Badge>
+                                ) : (
+                                  <div className="flex items-center gap-1">
+                                    <Users className="w-3 h-3 flex-shrink-0" />
+                                    <span className="truncate text-xs">{user.sponsorUsername}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3 px-2 text-left text-[#C0E6FF] text-sm">
+                              <div className="flex items-center gap-2">
                                 <Mail className="w-3 h-3 flex-shrink-0" />
                                 <span className="truncate">{user.email}</span>
                               </div>
@@ -954,8 +986,9 @@ export function AffiliateControls() {
                             </td>
                             <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm">
                               <div className="flex items-center gap-2">
-                                <Award className="w-3 h-3 flex-shrink-0 text-[#C0E6FF]" />
-                                <span className="font-semibold">{user.affiliateLevel}</span>
+                                <Badge className={user.isDirect ? "bg-blue-500/20 text-blue-400 border-blue-500/30" : "bg-orange-500/20 text-orange-400 border-orange-500/30"}>
+                                  L{user.affiliateLevel}
+                                </Badge>
                               </div>
                             </td>
                             <td className="py-3 px-2 text-left">
@@ -972,7 +1005,7 @@ export function AffiliateControls() {
                           </>
                         ) : (
                           // Action buttons row spanning all columns
-                          <td colSpan={7} className="py-3 px-4 bg-[#0a1628] border border-[#C0E6FF]/30">
+                          <td colSpan={8} className="py-3 px-4 bg-[#0a1628] border border-[#C0E6FF]/30">
                             <div className="flex items-center justify-between flex-wrap gap-3">
                               <div className="flex items-center gap-3">
                                 <div className="text-left">
@@ -1046,7 +1079,7 @@ export function AffiliateControls() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-[#C0E6FF]">
+                    <td colSpan={8} className="py-8 text-center text-[#C0E6FF]">
                       <div className="flex flex-col items-center gap-2">
                         <Search className="w-8 h-8 text-[#C0E6FF]/50" />
                         <p className="text-sm">No affiliates found matching your criteria</p>
@@ -1092,6 +1125,7 @@ export function AffiliateControls() {
           </div>
         </div>
       </div>
+
     </div>
   )
 }

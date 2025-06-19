@@ -122,6 +122,14 @@ export function usePersistentProfile(): ProfileState & ProfileActions {
       console.log('🔄 Updating profile:', data)
       console.log('👤 User address:', user.address)
 
+      // Enforce username immutability - once set, it cannot be changed
+      if (data.username && profile?.username && profile.username !== data.username) {
+        console.error('❌ Username cannot be changed once set')
+        toast.error('Username cannot be changed once set to maintain referral code consistency')
+        setIsLoading(false)
+        return false
+      }
+
       const updatedProfile = await encryptedStorage.upsertEncryptedProfile(
         user.address,
         data
@@ -154,8 +162,15 @@ export function usePersistentProfile(): ProfileState & ProfileActions {
 
   // Specific field updates
   const updateUsername = useCallback(async (username: string): Promise<boolean> => {
+    // Enforce username immutability - once set, it cannot be changed
+    if (profile?.username && profile.username !== username) {
+      console.error('❌ Username cannot be changed once set')
+      toast.error('Username cannot be changed once set to maintain referral code consistency')
+      return false
+    }
+
     return updateProfile({ username })
-  }, [updateProfile])
+  }, [updateProfile, profile?.username])
 
 
 

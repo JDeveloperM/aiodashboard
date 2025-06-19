@@ -23,6 +23,7 @@ import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { usePersistentProfile } from '@/hooks/use-persistent-profile'
 import { useReferralTracking } from '@/hooks/use-referral-tracking'
 import { useReferralCodes } from '@/hooks/use-referral-codes'
+import { affiliateService } from '@/lib/affiliate-service'
 import { toast } from 'sonner'
 
 interface OnboardingStep {
@@ -178,12 +179,23 @@ export function NewUserOnboarding() {
           }
         }
 
-        // Create default referral code for the user
+        // Create default referral code for the user (only if they don't have one)
         if (formData.username.trim() && user?.address) {
-          console.log('🆕 Creating default referral code...')
-          const codeSuccess = await createDefaultCode(formData.username.trim())
-          if (codeSuccess) {
-            console.log('✅ Default referral code created')
+          console.log('🔍 Checking if user needs a referral code...')
+
+          // Check if user already has referral codes to prevent duplicates
+          const hasExistingCodes = await affiliateService.userHasReferralCodes(user.address)
+
+          if (!hasExistingCodes) {
+            console.log('🆕 Creating default referral code...')
+            const codeSuccess = await createDefaultCode(formData.username.trim())
+            if (codeSuccess) {
+              console.log('✅ Default referral code created')
+            } else {
+              console.warn('⚠️ Failed to create referral code, but continuing onboarding')
+            }
+          } else {
+            console.log('✅ User already has referral code, skipping creation')
           }
         }
 
