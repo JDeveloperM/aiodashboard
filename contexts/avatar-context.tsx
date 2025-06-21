@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { useSuiAuth } from './sui-auth-context'
 import { useCurrentAccount } from '@mysten/dapp-kit'
+import { useZkLogin } from '@/components/zklogin-provider'
 import { useWalrus } from '@/hooks/use-walrus'
 import { toast } from 'sonner'
 import { encryptedStorage } from '@/lib/encrypted-database-storage'
@@ -33,6 +34,7 @@ const AvatarContext = createContext<AvatarContextType | undefined>(undefined)
 export function AvatarProvider({ children }: { children: React.ReactNode }) {
   const { user, updateProfile } = useSuiAuth()
   const currentAccount = useCurrentAccount()
+  const { zkLoginUserAddress } = useZkLogin()
   const {
     storeImage,
     retrieveImage,
@@ -44,17 +46,16 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [cachedImageUrl, setCachedImageUrl] = useState<string | undefined>()
 
-  // Get user address with fallback to wallet address
-  const getUserAddress = () => user?.address || currentAccount?.address
+  // Get user address with fallback to wallet address or zkLogin address
+  const getUserAddress = () => user?.address || currentAccount?.address || zkLoginUserAddress
 
   // Load avatar data on mount and when user changes
   useEffect(() => {
     const address = getUserAddress()
-    console.log('🔄 Avatar context useEffect triggered', { address, currentAccount: currentAccount?.address })
     if (address) {
       loadAvatarFromDatabase(address)
     }
-  }, [currentAccount?.address])
+  }, [currentAccount?.address, zkLoginUserAddress, user?.address])
 
   // Also trigger loading when walrus is initialized (in case wallet connects after walrus)
   useEffect(() => {
@@ -70,6 +71,9 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
   // Load avatar from database (primary) or fallback to cookies
   const loadAvatarFromDatabase = async (address: string) => {
     console.log('🔍 Loading avatar for address:', address)
+    setIsLoading(true)
+    setError(null)
+
     try {
       // Try to get avatar URL from database first
       console.log('🔄 Checking database for avatar...')
@@ -83,6 +87,7 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
           setAvatarData({ blobId, lastUpdated: new Date().toISOString() })
           setCachedImageUrl(avatarUrl)
           console.log('✅ Avatar loaded from database:', blobId)
+          setIsLoading(false)
           return
         }
       }
@@ -92,8 +97,9 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
       const blobId = user?.profileImageBlobId
       if (blobId) {
         setAvatarData({ blobId, lastUpdated: new Date().toISOString() })
-        // Load image from Walrus
-        loadImageFromWalrus(blobId)
+        // Construct Walrus URL directly
+        const walrusUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${blobId}`
+        setCachedImageUrl(walrusUrl)
         console.log('✅ Avatar loaded from cookies (fallback):', blobId)
       } else {
         console.log('❌ No avatar found in database or cookies')
@@ -102,12 +108,16 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('❌ Failed to load avatar from database:', error)
+      setError('Failed to load avatar')
       // Fallback to cookies
       const blobId = user?.profileImageBlobId
       if (blobId) {
         setAvatarData({ blobId, lastUpdated: new Date().toISOString() })
-        loadImageFromWalrus(blobId)
+        const walrusUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${blobId}`
+        setCachedImageUrl(walrusUrl)
       }
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -141,7 +151,7 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
   ): Promise<boolean> => {
     const address = getUserAddress()
     if (!address) {
-      setError('No wallet connected - please connect your wallet first')
+      setError('No wallet connected - please connect your wallet or sign in with zkLogin')
       return false
     }
 
@@ -150,10 +160,19 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
 
     try {
       // Store on Walrus (exactly like the demo)
+      // Use Walrus for both wallet and zkLogin users (if zkLogin session is valid)
+      const useWalrusStorage = true // Try Walrus first, fallback will handle failures
+      console.log('🔍 Avatar storage method:', {
+        hasCurrentAccount: !!currentAccount,
+        hasZkLoginAddress: !!zkLoginUserAddress,
+        useWalrusStorage,
+        storageMethod: 'Walrus (with fallback)'
+      })
+
       const result = await storeImage(file, 'profile-image', {
         epochs: options.epochs || 90, // 3 months default
         deletable: options.deletable ?? true,
-        useWalrus: true
+        useWalrus: useWalrusStorage
       })
 
       if (result.success && result.blobId) {
@@ -165,22 +184,11 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
 
         setAvatarData(newAvatarData)
 
-        // Save to database (primary storage)
+        // Save to database (primary storage) - ONLY UPDATE AVATAR BLOB ID
         console.log('🔄 Attempting to save avatar to database...', { address, blobId: result.blobId })
         try {
-          // Create or update profile with avatar blob ID
-          await encryptedStorage.upsertEncryptedProfile(
-            address,
-            {
-              username: user?.username,
-              email: user?.email,
-              profile_image_blob_id: result.blobId,
-              role_tier: 'NOMAD',
-              walrus_metadata: {
-                last_avatar_update: new Date().toISOString()
-              }
-            }
-          )
+          // Use updateAvatarBlobId to ONLY update the avatar, not overwrite the entire profile
+          await encryptedStorage.updateAvatarBlobId(address, result.blobId)
           console.log('✅ Avatar blob ID saved to database successfully')
         } catch (dbError) {
           console.error('❌ Failed to save to database, using cookies fallback:', dbError)
@@ -195,6 +203,11 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
         // Set the avatar URL directly (no need to load from Walrus again)
         const avatarUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${result.blobId}`
         setCachedImageUrl(avatarUrl)
+
+        // Refresh avatar from database to ensure consistency
+        setTimeout(() => {
+          loadAvatarFromDatabase(address)
+        }, 1000)
 
         toast.success(
           result.fallback
@@ -250,7 +263,15 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
 
   // Get current avatar URL
   const getAvatarUrl = (): string | undefined => {
-    return cachedImageUrl
+    if (cachedImageUrl) {
+      return cachedImageUrl
+    }
+
+    if (avatarData.blobId) {
+      return `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${avatarData.blobId}`
+    }
+
+    return undefined
   }
 
   // Get fallback text for avatar

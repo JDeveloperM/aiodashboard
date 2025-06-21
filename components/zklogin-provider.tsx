@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import { SuiClient } from '@mysten/sui/client'
+import { Transaction } from '@mysten/sui/transactions'
 import {
   generateNonce,
   generateRandomness,
@@ -17,6 +18,11 @@ import {
   clearZkLoginSession,
   type ZkLoginSession
 } from '@/lib/auth-cookies'
+import {
+  zkTransactionService,
+  executeZkLoginTransaction,
+  type ZkLoginTransactionResult
+} from '@/lib/zklogin-transaction-service'
 
 interface ZkLoginContextType {
   currentEpoch: number | null
@@ -32,6 +38,11 @@ interface ZkLoginContextType {
   initiateZkLogin: () => Promise<void>
   handleCallback: (jwt: string) => Promise<void>
   reset: () => void
+  // Transaction methods
+  signAndExecuteTransaction: (transaction: Transaction) => Promise<ZkLoginTransactionResult>
+  signTransaction: (transaction: Transaction) => Promise<string>
+  isSessionValid: () => boolean
+  canSignTransactions: () => boolean
 }
 
 const ZkLoginContext = createContext<ZkLoginContextType | null>(null)
@@ -61,7 +72,7 @@ export function ZkLoginProvider({ children, suiClient }: ZkLoginProviderProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Initialize epoch data
+  // Initialize epoch data and refresh periodically
   useEffect(() => {
     const initializeEpoch = async () => {
       try {
@@ -69,11 +80,17 @@ export function ZkLoginProvider({ children, suiClient }: ZkLoginProviderProps) {
         setCurrentEpoch(Number(epoch))
       } catch (err) {
         console.error('Failed to get epoch:', err)
-        setError('Failed to initialize epoch data')
+        // Fallback to a reasonable default for devnet
+        setCurrentEpoch(100)
       }
     }
 
     initializeEpoch()
+
+    // Refresh epoch every 5 minutes
+    const interval = setInterval(initializeEpoch, 5 * 60 * 1000)
+
+    return () => clearInterval(interval)
   }, [suiClient])
 
   const initiateZkLogin = async () => {
@@ -115,13 +132,27 @@ export function ZkLoginProvider({ children, suiClient }: ZkLoginProviderProps) {
   }
 
   const handleCallback = async (jwtToken: string) => {
+    // Prevent multiple simultaneous calls
+    if (isLoading) {
+      console.log('zkLogin callback already in progress, skipping...')
+      return
+    }
+
+    // Prevent processing the same JWT multiple times
+    if (jwt === jwtToken) {
+      console.log('JWT already processed, skipping...')
+      return
+    }
+
     try {
+      console.log('zkLogin handleCallback called with JWT:', jwtToken.substring(0, 50) + '...')
       setIsLoading(true)
       setError(null)
       setJwt(jwtToken)
 
-      // Get user salt from Mysten Labs salt server
-      const saltResponse = await fetch('https://salt.api.mystenlabs.com/get_salt', {
+      // Get user salt via our API route (to avoid CORS issues)
+      console.log('Fetching user salt via API route...')
+      const saltResponse = await fetch('/api/zklogin/salt', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -130,15 +161,28 @@ export function ZkLoginProvider({ children, suiClient }: ZkLoginProviderProps) {
       })
 
       if (!saltResponse.ok) {
-        throw new Error('Failed to get user salt')
+        const errorData = await saltResponse.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('Salt fetch failed:', saltResponse.status, errorData)
+        throw new Error(`Failed to get user salt: ${errorData.error || 'Unknown error'}`)
       }
 
       const saltData = await saltResponse.json()
       const salt = saltData.salt
+      console.log('Got user salt:', salt)
+
+      // Log salt source information
+      if (saltData.source) {
+        console.log('Salt source:', saltData.source)
+        if (saltData.note) {
+          console.log('Note:', saltData.note)
+        }
+      }
+
       setUserSalt(salt)
 
       // Generate zkLogin address
       const address = jwtToAddress(jwtToken, salt)
+      console.log('Generated zkLogin address:', address)
       setZkLoginUserAddress(address)
 
       // Store in cookies and localStorage
@@ -158,6 +202,8 @@ export function ZkLoginProvider({ children, suiClient }: ZkLoginProviderProps) {
       localStorage.setItem('zklogin_jwt', jwtToken)
       localStorage.setItem('zklogin_user_salt', salt)
       localStorage.setItem('zklogin_address', address)
+
+      console.log('zkLogin callback completed successfully!')
 
     } catch (err) {
       console.error('Failed to handle callback:', err)
@@ -258,6 +304,59 @@ export function ZkLoginProvider({ children, suiClient }: ZkLoginProviderProps) {
     }
   }, [])
 
+  // Transaction signing methods
+  const signAndExecuteTransaction = async (transaction: Transaction): Promise<ZkLoginTransactionResult> => {
+    if (!canSignTransactions()) {
+      throw new Error('zkLogin session is not valid for signing transactions')
+    }
+
+    return await zkTransactionService.signAndExecuteTransaction({
+      transaction,
+      jwt: jwt!,
+      ephemeralKeyPair: ephemeralKeyPair!,
+      userSalt: userSalt!,
+      maxEpoch: maxEpoch!,
+      randomness: randomness!,
+      suiClient,
+    })
+  }
+
+  const signTransaction = async (transaction: Transaction): Promise<string> => {
+    if (!canSignTransactions()) {
+      throw new Error('zkLogin session is not valid for signing transactions')
+    }
+
+    return await zkTransactionService.signTransaction({
+      transaction,
+      jwt: jwt!,
+      ephemeralKeyPair: ephemeralKeyPair!,
+      userSalt: userSalt!,
+      maxEpoch: maxEpoch!,
+      randomness: randomness!,
+    })
+  }
+
+  const isSessionValid = (): boolean => {
+    if (!jwt || !maxEpoch || !currentEpoch) {
+      return false
+    }
+
+    const validation = zkTransactionService.validateZkLoginSession(jwt, maxEpoch, currentEpoch)
+    return validation.isValid
+  }
+
+  const canSignTransactions = (): boolean => {
+    return !!(
+      jwt &&
+      ephemeralKeyPair &&
+      userSalt &&
+      maxEpoch &&
+      randomness &&
+      zkLoginUserAddress &&
+      isSessionValid()
+    )
+  }
+
   const value: ZkLoginContextType = {
     currentEpoch,
     nonce,
@@ -272,6 +371,10 @@ export function ZkLoginProvider({ children, suiClient }: ZkLoginProviderProps) {
     initiateZkLogin,
     handleCallback,
     reset,
+    signAndExecuteTransaction,
+    signTransaction,
+    isSessionValid,
+    canSignTransactions,
   }
 
   return (

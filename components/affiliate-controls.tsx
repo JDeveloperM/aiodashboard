@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RoleImage } from "@/components/ui/role-image"
 import { affiliateService, AffiliateUser, AffiliateMetrics, CommissionData, NetworkMetrics, UserProfileLevel } from "@/lib/affiliate-service"
 import { useCurrentAccount } from "@mysten/dapp-kit"
+import { useSuiAuth } from "@/contexts/sui-auth-context"
 
 import { CommissionTracking } from "@/components/commission-tracking"
 import { ContactSponsorModal } from "@/components/contact-sponsor-modal"
@@ -31,6 +32,7 @@ import {
 
 export function AffiliateControls() {
   const account = useCurrentAccount()
+  const { user, isSignedIn } = useSuiAuth()
 
   // State for search and filters
   const [searchTerm, setSearchTerm] = useState("")
@@ -86,17 +88,20 @@ export function AffiliateControls() {
   const [commissionLoading, setCommissionLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Load data on component mount and when wallet changes
+  // Get the current user address from either traditional wallet or zkLogin
+  const userAddress = user?.address || account?.address
+
+  // Load data on component mount and when user changes
   useEffect(() => {
-    if (account?.address) {
+    if (userAddress) {
       loadAffiliateData()
     }
-  }, [account?.address, selectedRoleFilter, selectedLevelFilter, selectedProfileLevelFilter])
+  }, [userAddress, selectedRoleFilter, selectedLevelFilter, selectedProfileLevelFilter])
 
   // Load affiliate data from database
   const loadAffiliateData = async () => {
-    if (!account?.address) {
-      setError('Wallet not connected')
+    if (!userAddress) {
+      setError('Please connect your wallet or sign in')
       setLoading(false)
       return
     }
@@ -106,14 +111,14 @@ export function AffiliateControls() {
       setCommissionLoading(true)
       setError(null)
 
-      console.log('🔄 Loading affiliate data for wallet:', account.address)
+      console.log('🔄 Loading affiliate data for address:', userAddress)
 
       // Load user's own profile level
-      const profileLevel = await affiliateService.getUserProfileLevel(account.address)
+      const profileLevel = await affiliateService.getUserProfileLevel(userAddress)
       setUserProfileLevel(profileLevel)
 
       // Load network metrics (personal + network breakdown)
-      const networkData = await affiliateService.getNetworkMetrics(account.address)
+      const networkData = await affiliateService.getNetworkMetrics(userAddress)
       setNetworkMetrics(networkData)
 
       // Calculate total direct users
@@ -121,7 +126,7 @@ export function AffiliateControls() {
       setTotalDirectUsers(totalDirect)
 
       // Load affiliate users with current filters (including network)
-      const { users, totalCount: count } = await affiliateService.getAffiliateUsers(account.address, {
+      const { users, totalCount: count } = await affiliateService.getAffiliateUsers(userAddress, {
         roleFilter: selectedRoleFilter,
         levelFilter: selectedLevelFilter,
         limit: 50, // Load more initially for filtering
@@ -132,7 +137,7 @@ export function AffiliateControls() {
       setTotalCount(count)
 
       // Load commission data
-      const commissionInfo = await affiliateService.getCommissionData(account.address)
+      const commissionInfo = await affiliateService.getCommissionData(userAddress)
       setCommissionData(commissionInfo)
       setCommissionLoading(false)
 
@@ -316,16 +321,16 @@ export function AffiliateControls() {
     console.log('Send special bonus offer to:', user.username)
   }
 
-  // Show wallet connection requirement
-  if (!account?.address) {
+  // Show authentication requirement
+  if (!isSignedIn || !userAddress) {
     return (
       <div className="space-y-6">
         <div className="enhanced-card">
           <div className="enhanced-card-content text-center py-12">
             <Users className="w-16 h-16 text-[#4DA2FF] mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">Connect Your Wallet</h3>
+            <h3 className="text-xl font-semibold text-white mb-2">Authentication Required</h3>
             <p className="text-[#C0E6FF] mb-4">
-              Please connect your wallet to view your affiliate dashboard and manage your affiliates.
+              Please connect your wallet or sign in to view your affiliate dashboard and manage your affiliates.
             </p>
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useZkLogin } from '@/components/zklogin-provider'
+import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loader2, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react'
@@ -10,6 +11,7 @@ import { Loader2, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react'
 export default function ZkLoginCallbackPage() {
   const router = useRouter()
   const { handleCallback, zkLoginUserAddress, isLoading, error } = useZkLogin()
+  const { isSignedIn, user, isNewUser, isLoaded } = useSuiAuth()
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing')
   const [errorMessage, setErrorMessage] = useState<string>('')
 
@@ -25,58 +27,56 @@ export default function ZkLoginCallbackPage() {
           throw new Error('No ID token found in callback')
         }
 
+        console.log('Processing callback with ID token...')
+
         // Process the JWT with zkLogin
         await handleCallback(idToken)
-        
-        // Notify parent window if in popup
-        if (window.opener) {
-          window.opener.postMessage({
-            type: 'ZKLOGIN_SUCCESS',
-            jwt: idToken
-          }, window.location.origin)
-          window.close()
-          return
-        }
 
-        setStatus('success')
+        console.log('✅ Callback processing completed, waiting for auth integration...')
       } catch (err) {
         console.error('Callback processing failed:', err)
         const message = err instanceof Error ? err.message : 'Authentication failed'
         setErrorMessage(message)
         setStatus('error')
-
-        // Notify parent window if in popup
-        if (window.opener) {
-          window.opener.postMessage({
-            type: 'ZKLOGIN_ERROR',
-            error: message
-          }, window.location.origin)
-          window.close()
-          return
-        }
       }
     }
 
-    processCallback()
-  }, [handleCallback])
-
-  // Update status based on zkLogin state
-  useEffect(() => {
-    if (zkLoginUserAddress && status === 'processing') {
-      setStatus('success')
+    // Only run once when component mounts
+    if (status === 'processing') {
+      processCallback()
     }
+  }, []) // Remove handleCallback from dependencies to prevent re-runs
+
+  // Update status based on zkLogin state - auth system integration is automatic
+  useEffect(() => {
+    if (zkLoginUserAddress && isSignedIn && user && isLoaded && status === 'processing') {
+      console.log('✅ User signed in with zkLogin and integrated with auth system')
+      console.log('🔍 User status:', { isNewUser, hasProfile: !!user, isLoaded })
+
+      // For existing users, redirect directly to profile
+      if (!isNewUser) {
+        console.log('🔄 Existing user detected, redirecting to profile...')
+        router.push('/profile')
+        return
+      }
+
+      // For new users, show the success dialog
+      setStatus('success')
+      console.log('🆕 New user detected, showing success dialog')
+    }
+
     if (error && status === 'processing') {
       setStatus('error')
       setErrorMessage(error)
     }
-  }, [zkLoginUserAddress, error, status])
+  }, [zkLoginUserAddress, isSignedIn, user, isLoaded, error, status, isNewUser, router])
 
-  const handleGoBack = () => {
-    router.push('/dashboard')
+  const handleGoToProfile = () => {
+    router.push('/profile')
   }
 
   const handleRetry = () => {
-    router.push('/dashboard')
+    router.push('/zklogin')
   }
 
   if (status === 'processing' || isLoading) {
@@ -116,7 +116,7 @@ export default function ZkLoginCallbackPage() {
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-400" />
-              Authentication Successful!
+              Welcome to AIONET!
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -124,7 +124,7 @@ export default function ZkLoginCallbackPage() {
               <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/30 mb-4">
                 <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
                 <p className="text-green-400 font-medium">
-                  Your Sui wallet has been created!
+                  Your Sui wallet has been created successfully!
                 </p>
               </div>
               
@@ -138,15 +138,15 @@ export default function ZkLoginCallbackPage() {
               </div>
 
               <p className="text-[#C0E6FF] text-sm mb-4">
-                You can now use this wallet to interact with Sui dApps and make transactions.
+                You can now use this wallet to interact with Sui dApps and make transactions. Let's set up your profile to get started!
               </p>
 
               <Button
-                onClick={handleGoBack}
+                onClick={handleGoToProfile}
                 className="w-full bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Return to Dashboard
+                Set Up Profile
               </Button>
             </div>
           </CardContent>
@@ -189,12 +189,12 @@ export default function ZkLoginCallbackPage() {
                   Try Again
                 </Button>
                 <Button
-                  onClick={handleGoBack}
+                  onClick={() => router.push('/zklogin')}
                   variant="outline"
                   className="w-full border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Return to Dashboard
+                  Return to zkLogin
                 </Button>
               </div>
             </div>

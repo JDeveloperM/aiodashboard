@@ -58,52 +58,84 @@ export function EnhancedAvatar({
   } = useWalrus()
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('📁 Avatar file selection triggered')
     const file = event.target.files?.[0]
-    if (!file) return
+    if (!file) {
+      console.log('❌ No file selected')
+      return
+    }
+
+    console.log('✅ Avatar file selected:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    })
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
+      console.log('❌ Invalid file type:', file.type)
       toast.error('Please select an image file')
       return
     }
 
     // Validate file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
+      console.log('❌ File too large:', file.size)
       toast.error('Image size should be less than 5MB')
       return
     }
 
+    console.log('✅ File validation passed')
     setSelectedFile(file)
-    
+
     // Create preview URL
     const reader = new FileReader()
     reader.onload = (e) => {
       setPreviewUrl(e.target?.result as string)
+      console.log('✅ Avatar preview URL created')
     }
     reader.readAsDataURL(file)
-    
+
     setIsDialogOpen(true)
+    console.log('✅ Avatar upload dialog opened')
   }
 
   const handleUpload = async () => {
-    if (!selectedFile) return
+    if (!selectedFile) {
+      console.log('❌ No file selected for avatar upload')
+      return
+    }
+
+    console.log('🚀 Starting avatar upload process...', {
+      fileName: selectedFile.name,
+      fileSize: selectedFile.size,
+      fileType: selectedFile.type,
+      useWalrusStorage,
+      storageEpochs
+    })
 
     clearError()
 
     try {
+      console.log('📤 Calling updateAvatar function...')
       const success = await updateAvatar(selectedFile, {
         epochs: useWalrusStorage ? storageEpochs : undefined,
         deletable: true
       })
 
+      console.log('📊 Avatar upload result:', { success })
+
       if (success) {
+        console.log('✅ Avatar upload successful, resetting dialog state')
         // Reset state
         setSelectedFile(null)
         setPreviewUrl('')
         setIsDialogOpen(false)
+      } else {
+        console.log('❌ Avatar upload failed')
       }
     } catch (error) {
-      console.error('Upload failed:', error)
+      console.error('❌ Avatar upload failed with error:', error)
       toast.error('Failed to upload avatar')
     }
   }
@@ -134,7 +166,11 @@ export function EnhancedAvatar({
           "bg-blue-100",
           className
         )}>
-          <AvatarImage src={currentImageUrl} alt="Profile" className="object-cover" />
+          <AvatarImage
+            src={currentImageUrl}
+            alt="Profile"
+            className="object-cover"
+          />
           <AvatarFallback className="bg-[#4DA2FF] text-white text-lg font-semibold">
             {fallbackText}
           </AvatarFallback>

@@ -364,10 +364,21 @@ export function usePersistentProfile(): ProfileState & ProfileActions {
 
   // Load profile when user changes
   useEffect(() => {
-    if (user?.address && !isInitialized) {
+    if (user?.address) {
       loadProfile()
     }
-  }, [user?.address, isInitialized, loadProfile])
+  }, [user?.address, loadProfile])
+
+  // Also load profile when user state changes (for zkLogin users)
+  useEffect(() => {
+    if (user?.address && isInitialized) {
+      // Refresh profile data when user state changes
+      const timeoutId = setTimeout(() => {
+        loadProfile()
+      }, 500)
+      return () => clearTimeout(timeoutId)
+    }
+  }, [user?.profileImageBlobId, user?.username, user?.email])
 
   return {
     // State

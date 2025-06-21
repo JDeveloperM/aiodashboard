@@ -110,38 +110,10 @@ export function ZkLoginSocialLogin({
         }
 
         const authUrl = `${providerConfig.authUrl}?${params.toString()}`
-        
-        // Open OAuth flow in popup or redirect
-        const popup = window.open(
-          authUrl,
-          'zklogin-auth',
-          'width=500,height=600,scrollbars=yes,resizable=yes'
-        )
 
-        // Listen for popup messages
-        const handleMessage = (event: MessageEvent) => {
-          if (event.origin !== window.location.origin) return
-          
-          if (event.data.type === 'ZKLOGIN_SUCCESS' && event.data.jwt) {
-            window.removeEventListener('message', handleMessage)
-            popup?.close()
-            // The zkLogin provider will handle the JWT
-          } else if (event.data.type === 'ZKLOGIN_ERROR') {
-            window.removeEventListener('message', handleMessage)
-            popup?.close()
-            toast.error('Authentication failed')
-          }
-        }
-
-        window.addEventListener('message', handleMessage)
-
-        // Check if popup was closed manually
-        const checkClosed = setInterval(() => {
-          if (popup?.closed) {
-            clearInterval(checkClosed)
-            window.removeEventListener('message', handleMessage)
-          }
-        }, 1000)
+        // Use direct redirect instead of popup for better reliability
+        console.log('Redirecting to OAuth provider:', authUrl)
+        window.location.href = authUrl
 
       }, 100)
 

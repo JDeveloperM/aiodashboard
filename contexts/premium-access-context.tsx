@@ -142,7 +142,6 @@ export function PremiumAccessProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       (window as any).resetPremiumAccess = resetPremiumAccess
-      console.log(`[PremiumAccess] Global reset function available: window.resetPremiumAccess()`)
     }
   }, [resetPremiumAccess])
 

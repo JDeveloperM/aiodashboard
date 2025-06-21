@@ -20,6 +20,10 @@ button[data-dapp-kit="connectButton"],
   font-size: 0.875rem !important;
   transition: all 0.2s ease !important;
   box-shadow: 0 2px 4px rgba(77, 162, 255, 0.2) !important;
+  width: 100% !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .sui-connect-button-wrapper button:hover,
@@ -30,6 +34,27 @@ button[data-dapp-kit="connectButton"]:hover,
   background-color: rgba(77, 162, 255, 0.8) !important;
   transform: translateY(-1px) !important;
   box-shadow: 0 4px 8px rgba(77, 162, 255, 0.3) !important;
+}
+
+/* Ensure ConnectButton dropdown/menu is visible */
+.sui-connect-button-wrapper [data-dapp-kit="connectButton"] > div,
+.sui-connect-button-wrapper [data-dapp-kit="connectButton"] > ul,
+.sui-connect-button-wrapper [data-dapp-kit="connectButton"] [role="menu"] {
+  background: #0A1628 !important;
+  border: 1px solid #C0E6FF !important;
+  border-radius: 0.5rem !important;
+  color: white !important;
+  z-index: 9999 !important;
+}
+
+/* Style disconnect option in ConnectButton dropdown */
+.sui-connect-button-wrapper [data-dapp-kit="connectButton"] [role="menuitem"] {
+  color: #ff4444 !important;
+  padding: 0.5rem 1rem !important;
+}
+
+.sui-connect-button-wrapper [data-dapp-kit="connectButton"] [role="menuitem"]:hover {
+  background: rgba(255, 68, 68, 0.1) !important;
 }
 
 

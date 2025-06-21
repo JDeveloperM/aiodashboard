@@ -126,7 +126,6 @@ export function NewUserOnboarding() {
   // Auto-refresh user state when profile changes
   useEffect(() => {
     if (profile?.username && profile.username !== `User ${user?.address.slice(0, 6)}`) {
-      console.log('🔄 Profile has custom username, refreshing user state...')
       refreshUserState()
     }
   }, [profile?.username, user?.address, refreshUserState])
@@ -514,33 +513,11 @@ export function NewUserOnboarding() {
     }
   }
 
-  // Debug logging
-  console.log('🔍 Onboarding component state:', {
-    isNewUser,
-    userOnboardingCompleted: user?.onboardingCompleted,
-    currentStep,
-    profileExists: !!profile,
-    userAddress: user?.address
-  })
-
   // Check if onboarding is completed in database
   const isOnboardingCompleted = profile?.onboarding_completed === true
 
-  console.log('🔍 Onboarding visibility check:', {
-    profileExists: !!profile,
-    isOnboardingCompleted,
-    profileId: profile?.id,
-    userAddress: user?.address,
-    shouldShowOnboarding: !!profile && !isOnboardingCompleted
-  })
-
   // Don't show onboarding if user has completed onboarding or has no profile yet
   if (!profile || isOnboardingCompleted) {
-    if (isOnboardingCompleted) {
-      console.log('⏭️ Skipping onboarding - already completed')
-    } else {
-      console.log('⏭️ Skipping onboarding - no profile exists yet')
-    }
     return null
   }
 

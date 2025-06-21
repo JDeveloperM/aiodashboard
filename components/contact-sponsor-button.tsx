@@ -5,16 +5,21 @@ import { Button } from "@/components/ui/button"
 import { ContactSponsorModal } from "@/components/contact-sponsor-modal"
 import { affiliateService, AffiliateUser } from "@/lib/affiliate-service"
 import { useCurrentAccount } from "@mysten/dapp-kit"
+import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { MessageCircle, HelpCircle } from "lucide-react"
 
 export function ContactSponsorButton() {
   const account = useCurrentAccount()
+  const { user, isSignedIn } = useSuiAuth()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [sponsorInfo, setSponsorInfo] = useState<AffiliateUser | null>(null)
   const [loading, setLoading] = useState(false)
 
+  // Get the current user address from either traditional wallet or zkLogin
+  const userAddress = user?.address || account?.address
+
   const handleOpenModal = async () => {
-    if (!account?.address) {
+    if (!userAddress) {
       return
     }
 
@@ -23,8 +28,8 @@ export function ContactSponsorButton() {
     setSponsorInfo(null)
 
     try {
-      console.log('🔍 Fetching sponsor info for:', account.address)
-      const sponsor = await affiliateService.getSponsorInfo(account.address)
+      console.log('🔍 Fetching sponsor info for:', userAddress)
+      const sponsor = await affiliateService.getSponsorInfo(userAddress)
       setSponsorInfo(sponsor)
     } catch (error) {
       console.error('Failed to fetch sponsor info:', error)
@@ -38,8 +43,8 @@ export function ContactSponsorButton() {
     setSponsorInfo(null)
   }
 
-  // Don't show button if wallet not connected
-  if (!account?.address) {
+  // Don't show button if user not authenticated
+  if (!isSignedIn || !userAddress) {
     return null
   }
 

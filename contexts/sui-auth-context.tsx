@@ -357,7 +357,6 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
   // Refresh user state (useful after profile updates)
   const refreshUserState = useCallback(async () => {
     if (user?.address) {
-      console.log('🔄 Refreshing user state...')
       try {
         const existingProfile = await encryptedStorage.getDecryptedProfile(user.address)
         // User is new if no profile exists OR onboarding is not completed
@@ -377,13 +376,7 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
         // Update localStorage
         localStorage.setItem(`sui_user_${user.address}`, JSON.stringify(updatedUser))
 
-        console.log('✅ User state refreshed:', {
-          profileExists,
-          onboardingCompleted,
-          isNewUser: !profileExists || !onboardingCompleted,
-          profileId: existingProfile?.id,
-          username: existingProfile?.username
-        })
+        // User state refreshed successfully
       } catch (error) {
         console.error('❌ Failed to refresh user state:', error)
       }

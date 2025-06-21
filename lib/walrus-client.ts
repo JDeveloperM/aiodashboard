@@ -281,6 +281,30 @@ class WalrusService {
   }
 
   /**
+   * Store a File object on Walrus
+   */
+  async storeFile(file: File, epochs: number = 90, deletable: boolean = true): Promise<WalrusBlobReference> {
+    try {
+      console.log(`📁 Storing file: ${file.name} (${file.size} bytes)`)
+
+      // Convert File to Uint8Array
+      const arrayBuffer = await file.arrayBuffer()
+      const data = new Uint8Array(arrayBuffer)
+
+      // Store using the existing storeBlob method with correct parameters
+      return await this.storeBlob(data, 'profile-image', {
+        epochs,
+        deletable,
+        originalName: file.name,
+        mimeType: file.type
+      })
+    } catch (error) {
+      console.error('Failed to store file on Walrus:', error)
+      throw error
+    }
+  }
+
+  /**
    * Check if the service is available
    */
   isAvailable(): boolean {

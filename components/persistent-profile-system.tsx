@@ -816,16 +816,7 @@ export function PersistentProfileSystem() {
                       const xpNeededForLevel = nextLevelXP - currentLevelStartXP;
                       const progressPercent = Math.min(100, Math.max(0, (xpInCurrentLevel / xpNeededForLevel) * 100));
 
-                      // Debug log to see what's happening
-                      console.log('🔍 Progress Calculation:', {
-                        currentXP,
-                        nextLevelXP,
-                        currentLevel,
-                        currentLevelStartXP,
-                        xpInCurrentLevel,
-                        xpNeededForLevel,
-                        progressPercent: progressPercent.toFixed(1)
-                      });
+                      // Progress calculation complete
 
                       // Calculate the angle for the progress arc
                       const startAngle = -90; // Start at top
@@ -1002,15 +993,7 @@ export function PersistentProfileSystem() {
                 )
                 const isClaimedInDB = persistentAchievement?.claimed || false
 
-                // Debug logging for first few achievements
-                if (index < 3) {
-                  console.log(`🔍 Achievement "${achievement.name}":`, {
-                    local_claimed: achievement.claimed,
-                    db_claimed: isClaimedInDB,
-                    persistent_achievement: persistentAchievement,
-                    total_db_achievements: profile?.achievements_data?.length || 0
-                  })
-                }
+                // Achievement state determined
 
                 // Override the achievement claimed status with database data
                 const updatedAchievement = {

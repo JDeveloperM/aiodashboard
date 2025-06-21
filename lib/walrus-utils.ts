@@ -336,7 +336,11 @@ export async function storeWithFallback<T>(
 
     let blobReference: WalrusBlobReference
 
-    if (typeof data === 'string' && data.startsWith('data:')) {
+    if (data instanceof File) {
+      // File object (image upload)
+      console.log('📁 Storing File object:', { name: data.name, size: data.size, type: data.type })
+      blobReference = await walrusService.storeFile(data, options?.epochs || 90, options?.deletable ?? true)
+    } else if (typeof data === 'string' && data.startsWith('data:')) {
       // Image data URL
       blobReference = await storeImage(data, contentType, signer, options)
     } else if (typeof data === 'object' || typeof data === 'string') {

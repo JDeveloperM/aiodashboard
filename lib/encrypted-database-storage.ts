@@ -466,11 +466,17 @@ class EncryptedDatabaseStorage {
       console.log('🔍 Database: Getting avatar URL for address:', address)
       const { data, error } = await this.supabase
         .from('user_profiles')
-        .select('profile_image_blob_id')
+        .select('profile_image_blob_id, banner_image_blob_id')
         .eq('address', address)
         .single()
 
-      console.log('📡 Database response:', { data, error })
+      console.log('📡 Database response (avatar + banner check):', {
+        data,
+        error,
+        avatar_blob: data?.profile_image_blob_id,
+        banner_blob: data?.banner_image_blob_id,
+        same_blob: data?.profile_image_blob_id === data?.banner_image_blob_id
+      })
 
       if (error) {
         if (error.code === 'PGRST116') {
@@ -520,10 +526,43 @@ class EncryptedDatabaseStorage {
   }
 
   /**
+   * Debug method to check both avatar and banner blob IDs
+   */
+  async debugImageBlobIds(address: string): Promise<void> {
+    try {
+      console.log('🔍 DEBUG: Checking both image blob IDs for address:', address)
+      const { data, error } = await this.supabase
+        .from('user_profiles')
+        .select('profile_image_blob_id, banner_image_blob_id, address')
+        .eq('address', address)
+        .single()
+
+      if (error) {
+        console.error('❌ DEBUG: Database error:', error)
+        return
+      }
+
+      console.log('🔍 DEBUG: Current database state:', {
+        address: data.address,
+        avatar_blob_id: data.profile_image_blob_id,
+        banner_blob_id: data.banner_image_blob_id,
+        are_same: data.profile_image_blob_id === data.banner_image_blob_id,
+        avatar_url: data.profile_image_blob_id ? `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${data.profile_image_blob_id}` : null,
+        banner_url: data.banner_image_blob_id ? `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${data.banner_image_blob_id}` : null
+      })
+    } catch (error) {
+      console.error('❌ DEBUG: Failed to check blob IDs:', error)
+    }
+  }
+
+  /**
    * Update only avatar blob ID (no encryption needed)
    */
   async updateAvatarBlobId(address: string, blobId: string): Promise<void> {
     try {
+      console.log(`🔄 BEFORE avatar update - checking current state...`)
+      await this.debugImageBlobIds(address)
+
       const { error } = await this.supabase
         .from('user_profiles')
         .update({
@@ -535,6 +574,9 @@ class EncryptedDatabaseStorage {
 
       if (error) throw error
       console.log(`🔒 Avatar blob ID updated for ${address}: ${blobId}`)
+
+      console.log(`🔄 AFTER avatar update - checking new state...`)
+      await this.debugImageBlobIds(address)
     } catch (error) {
       console.error('Failed to update avatar blob ID:', error)
       throw error
@@ -547,6 +589,9 @@ class EncryptedDatabaseStorage {
   async updateBannerBlobId(address: string, blobId: string | null): Promise<void> {
     try {
       console.log(`🖼️ Updating banner blob ID for ${address}: ${blobId}`)
+
+      console.log(`🔄 BEFORE banner update - checking current state...`)
+      await this.debugImageBlobIds(address)
 
       // First check if profile exists
       const { data: existingProfile, error: selectError } = await this.supabase
@@ -607,6 +652,9 @@ class EncryptedDatabaseStorage {
       }
 
       console.log(`✅ Banner blob ID updated for ${address}: ${blobId}`)
+
+      console.log(`🔄 AFTER banner update - checking new state...`)
+      await this.debugImageBlobIds(address)
     } catch (error) {
       console.error('❌ Failed to update banner blob ID:', error)
       throw error
@@ -1081,6 +1129,13 @@ class EncryptedDatabaseStorage {
 
 // Export singleton
 export const encryptedStorage = new EncryptedDatabaseStorage()
+
+// Global debug function for browser console
+if (typeof window !== 'undefined') {
+  (window as any).debugImageBlobs = async (address: string) => {
+    await encryptedStorage.debugImageBlobIds(address)
+  }
+}
 
 // Export types
 export type { DecryptedProfile, Achievement, SocialLink }

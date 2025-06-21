@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { SuiWalletWithSocial } from "@/components/sui-wallet-with-social";
+import { UnifiedWalletConnect } from "@/components/unified-wallet-connect";
 import { SignedIn, SignedOut, useSuiAuth } from "@/contexts/sui-auth-context";
 
 export function Header() {
@@ -76,7 +76,7 @@ export function Header() {
         {/* Auth Buttons */}
         <div className="hidden md:flex items-center space-x-4">
           <SignedOut>
-            <SuiWalletWithSocial />
+            <UnifiedWalletConnect />
           </SignedOut>
           <SignedIn>
             <Link href="/profile">
@@ -139,7 +139,7 @@ export function Header() {
             </Link>
             <div className="flex flex-col space-y-3 pt-4 border-t border-white/10">
               <SignedOut>
-                <SuiWalletWithSocial />
+                <UnifiedWalletConnect />
               </SignedOut>
               <SignedIn>
                 <Link href="/profile">

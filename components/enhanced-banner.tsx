@@ -9,6 +9,7 @@ import { useWalrus } from '@/hooks/use-walrus'
 import { usePersistentProfile } from '@/hooks/use-persistent-profile'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { useCurrentAccount } from '@mysten/dapp-kit'
+import { useZkLogin } from '@/components/zklogin-provider'
 import { encryptedStorage } from '@/lib/encrypted-database-storage'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -43,6 +44,7 @@ export function EnhancedBanner({
 
   const { user } = useSuiAuth()
   const currentAccount = useCurrentAccount()
+  const { zkLoginUserAddress } = useZkLogin()
 
   const {
     storeImage,
@@ -50,9 +52,9 @@ export function EnhancedBanner({
     isInitialized: walrusInitialized
   } = useWalrus()
 
-  // Get user address (same logic as avatar)
+  // Get user address (same logic as avatar) - include zkLogin support
   const getUserAddress = () => {
-    return currentAccount?.address || user?.address
+    return currentAccount?.address || user?.address || zkLoginUserAddress
   }
 
   const clearError = () => setError(null)
@@ -90,7 +92,7 @@ export function EnhancedBanner({
 
     const address = getUserAddress()
     if (!address) {
-      setError('No wallet connected - please connect your wallet first')
+      setError('No wallet connected - please connect your wallet or sign in with zkLogin')
       return
     }
 
@@ -98,20 +100,7 @@ export function EnhancedBanner({
     setIsUploading(true)
 
     try {
-      console.log('🖼️ Starting banner upload process...')
-      console.log('📁 File details:', {
-        name: selectedFile.name,
-        size: selectedFile.size,
-        type: selectedFile.type
-      })
-      console.log('⚙️ Upload settings:', {
-        useWalrusStorage,
-        storageEpochs,
-        address
-      })
-
       // Store on Walrus (exactly like avatar)
-      console.log('☁️ Calling storeImage...')
       const result = await storeImage(
         selectedFile,
         'channel-banner',
@@ -122,37 +111,23 @@ export function EnhancedBanner({
         }
       )
 
-      console.log('📸 Walrus storage result:', result)
-
       if (result.success && result.blobId) {
-        console.log('✅ Banner image stored on Walrus, updating database...')
-
         // Save to database (exactly like avatar)
         try {
-          console.log('💾 Saving banner to database...', {
-            address,
-            blobId: result.blobId,
-            resultDetails: result
-          })
-
           // Update banner blob ID directly (simpler approach)
           await encryptedStorage.updateBannerBlobId(address, result.blobId)
-
-          console.log('✅ Banner blob ID saved to database successfully')
         } catch (dbError) {
-          console.error('❌ Failed to save banner to database:', dbError)
-          console.error('Database error details:', {
-            error: dbError,
-            address,
-            blobId: result.blobId,
-            dbErrorType: typeof dbError,
-            dbErrorMessage: dbError instanceof Error ? dbError.message : 'Unknown error'
-          })
+          console.error('Failed to save banner to database:', dbError)
           throw new Error(`Failed to save banner to database: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`)
         }
 
         // Refresh profile to get updated data
         await refreshProfile()
+
+        // Force a second refresh after a short delay to ensure data is loaded
+        setTimeout(async () => {
+          await refreshProfile()
+        }, 1000)
 
         toast.success(
           result.fallback
@@ -165,7 +140,6 @@ export function EnhancedBanner({
         setPreviewUrl('')
         setIsDialogOpen(false)
       } else {
-        console.error('❌ Walrus storage failed:', result)
         throw new Error('Walrus storage failed: Unknown error')
       }
     } catch (error) {
@@ -180,13 +154,12 @@ export function EnhancedBanner({
   const handleRemove = async () => {
     const address = getUserAddress()
     if (!address) {
-      setError('No wallet connected')
+      setError('No wallet connected - please connect your wallet or sign in with zkLogin')
       return
     }
 
     try {
       setIsUploading(true)
-      console.log('🗑️ Removing banner image...')
 
       // Remove from database (exactly like avatar)
       await encryptedStorage.updateBannerBlobId(address, null)
@@ -216,6 +189,8 @@ export function EnhancedBanner({
     ? `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${profile.banner_image_blob_id}`
     : null
 
+  // Component state ready
+
   const isLoading = profileLoading || isUploading
 
   return (
@@ -227,6 +202,8 @@ export function EnhancedBanner({
             src={currentBannerUrl}
             alt="Profile Banner"
             className="w-full h-full object-cover"
+            onLoad={() => {}}
+            onError={() => {}}
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-r from-[#1a2f51] to-[#0a1628] flex items-center justify-center">

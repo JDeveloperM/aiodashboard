@@ -22,8 +22,15 @@ export default function AppLayout({
   // Check if we're on the dashboard page
   const isDashboardPage = pathname === '/dashboard' || pathname === '/aio-dashboard'
 
+  // Pages that don't require authentication
+  const publicPages = ['/zklogin-test', '/zklogin/callback', '/zklogin']
+  const isPublicPage = publicPages.some(page => pathname.startsWith(page))
+
   // Redirect if not signed in (only after initial load is complete)
   useEffect(() => {
+    // Skip redirect for public pages
+    if (isPublicPage) return
+
     // Only redirect if we're sure the user is not signed in
     // and we've had enough time for the wallet to connect
     if (isLoaded && !isSignedIn) {
@@ -36,7 +43,7 @@ export default function AppLayout({
 
       return () => clearTimeout(timer)
     }
-  }, [isLoaded, isSignedIn, router])
+  }, [isLoaded, isSignedIn, router, isPublicPage])
 
   if (!isLoaded) {
     return (

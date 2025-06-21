@@ -14,6 +14,8 @@ import {
 import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { createWalrusSigner } from '@/lib/walrus-signer-adapter'
 import { useWalrusContext } from '@/components/walrus-provider'
+import { useZkLogin } from '@/components/zklogin-provider'
+import { useZkLoginWallet } from '@/hooks/use-zklogin-wallet'
 
 interface WalrusHookState {
   isInitialized: boolean
@@ -40,11 +42,17 @@ export function useWalrus() {
   const currentAccount = useCurrentAccount()
   const { mutate: signAndExecute } = useSignAndExecuteTransaction()
   const { user } = useSuiAuth()
+  const { zkLoginUserAddress } = useZkLogin()
+  const { wallet: zkWallet, signAndExecuteTransaction: zkSignAndExecute } = useZkLoginWallet()
 
   // Use WalrusProvider state instead of managing our own
   const { isInitialized, isLoading, error, network } = useWalrusContext()
 
   const [localLoading, setLocalLoading] = useState(false)
+
+  // Check if we have any wallet connection (traditional or zkLogin)
+  const isConnected = !!(currentAccount || zkLoginUserAddress)
+  const userAddress = user?.address || currentAccount?.address || zkLoginUserAddress
 
   // Calculate storage cost
   const calculateCost = useCallback((sizeInBytes: number, epochs?: number) => {
@@ -67,15 +75,19 @@ export function useWalrus() {
     contentType: WalrusContentType,
     options: StorageOptions = {}
   ): Promise<StorageResult> => {
-    if (!currentAccount) {
-      throw new Error('No wallet connected')
+    if (!isConnected) {
+      throw new Error('No wallet connected - please connect your wallet or sign in with zkLogin')
     }
 
     if (!isInitialized || !options.useWalrus) {
       // Fallback mode - store in localStorage only
-      const identifier = user?.address || 'anonymous'
-      const walrusSigner = createWalrusSigner(currentAccount, signAndExecute)
+      console.log('🔄 Using fallback storage mode (Walrus disabled or not initialized)')
+      const identifier = userAddress || 'anonymous'
+      const walrusSigner = currentAccount
+        ? createWalrusSigner(currentAccount, signAndExecute)
+        : null // zkLogin users don't need signer for fallback storage
       const result = await storeWithFallback(image, contentType, identifier, walrusSigner, options)
+      console.log('✅ Fallback storage completed:', result)
       return {
         blobId: result.blobId,
         success: true,
@@ -97,8 +109,34 @@ export function useWalrus() {
 
       const cost = calculateCost(sizeInBytes, options.epochs)
 
-      // Create Walrus-compatible signer
-      const walrusSigner = createWalrusSigner(currentAccount, signAndExecute)
+      // Create Walrus-compatible signer (use zkLogin wallet if available)
+      console.log('🔍 Wallet signer debug:', {
+        currentAccount: !!currentAccount,
+        zkWallet: !!zkWallet,
+        zkSignAndExecute: !!zkSignAndExecute,
+        userAddress
+      })
+
+      let walrusSigner = null
+
+      if (currentAccount) {
+        walrusSigner = createWalrusSigner(currentAccount, signAndExecute)
+      } else if (zkWallet && zkSignAndExecute) {
+        // For zkLogin, create a compatible account object
+        const zkAccount = {
+          address: userAddress, // Use the known user address
+          publicKey: null, // zkLogin doesn't expose publicKey directly
+          chains: [] // zkLogin doesn't expose chains directly
+        }
+        console.log('🔧 Creating zkLogin account object:', zkAccount)
+        walrusSigner = createWalrusSigner(zkAccount, zkSignAndExecute)
+      }
+
+      if (!walrusSigner) {
+        console.log('❌ Failed to create wallet signer, falling back to local storage')
+        throw new Error('Unable to create wallet signer')
+      }
+
       const blobReference = await storeImageUtil(image, contentType, walrusSigner, options)
       
       setLocalLoading(false)
@@ -111,21 +149,34 @@ export function useWalrus() {
       }
     } catch (error) {
       console.error('Failed to store image:', error)
-      
+      console.log('🔄 Attempting fallback storage for zkLogin user...')
+
       // Try fallback storage
-      const identifier = user?.address || 'anonymous'
-      const walrusSigner = createWalrusSigner(currentAccount, signAndExecute)
+      const identifier = userAddress || 'anonymous'
+      const walrusSigner = currentAccount
+        ? createWalrusSigner(currentAccount, signAndExecute)
+        : null // zkLogin users don't need signer for fallback storage
+
+      console.log('📦 Fallback storage params:', {
+        identifier,
+        hasWalrusSigner: !!walrusSigner,
+        contentType,
+        isZkLoginUser: !currentAccount && !!zkLoginUserAddress
+      })
+
       const result = await storeWithFallback(image, contentType, identifier, walrusSigner, options)
-      
+
+      console.log('✅ Fallback storage result:', result)
+
       setLocalLoading(false)
-      
+
       return {
         blobId: result.blobId,
         success: true,
         fallback: result.fallback
       }
     }
-  }, [currentAccount, signAndExecute, isInitialized, user?.address, calculateCost])
+  }, [currentAccount, signAndExecute, zkWallet, zkSignAndExecute, isInitialized, userAddress, calculateCost, isConnected])
 
   // Store JSON data
   const storeData = useCallback(async (
@@ -133,14 +184,16 @@ export function useWalrus() {
     contentType: WalrusContentType,
     options: StorageOptions = {}
   ): Promise<StorageResult> => {
-    if (!currentAccount) {
-      throw new Error('No wallet connected')
+    if (!isConnected) {
+      throw new Error('No wallet connected - please connect your wallet or sign in with zkLogin')
     }
 
     if (!isInitialized || !options.useWalrus) {
       // Fallback mode
-      const identifier = user?.address || 'anonymous'
-      const walrusSigner = createWalrusSigner(currentAccount, signAndExecute)
+      const identifier = userAddress || 'anonymous'
+      const walrusSigner = currentAccount
+        ? createWalrusSigner(currentAccount, signAndExecute)
+        : null // zkLogin users don't need signer for fallback storage
       const result = await storeWithFallback(data, contentType, identifier, walrusSigner, options)
       return {
         blobId: result.blobId,
@@ -156,8 +209,17 @@ export function useWalrus() {
       const sizeInBytes = new TextEncoder().encode(jsonString).length
       const cost = calculateCost(sizeInBytes, options.epochs)
 
-      // Create Walrus-compatible signer
-      const walrusSigner = createWalrusSigner(currentAccount, signAndExecute)
+      // Create Walrus-compatible signer (use zkLogin wallet if available)
+      const walrusSigner = currentAccount
+        ? createWalrusSigner(currentAccount, signAndExecute)
+        : zkWallet && zkSignAndExecute
+        ? createWalrusSigner(zkWallet, zkSignAndExecute)
+        : null
+
+      if (!walrusSigner) {
+        throw new Error('Unable to create wallet signer')
+      }
+
       const blobReference = await storeJsonDataUtil(data, contentType, walrusSigner, options)
       
       setLocalLoading(false)
@@ -172,8 +234,10 @@ export function useWalrus() {
       console.error('Failed to store data:', error)
       
       // Try fallback storage
-      const identifier = user?.address || 'anonymous'
-      const walrusSigner = createWalrusSigner(currentAccount, signAndExecute)
+      const identifier = userAddress || 'anonymous'
+      const walrusSigner = currentAccount
+        ? createWalrusSigner(currentAccount, signAndExecute)
+        : null // zkLogin users don't need signer for fallback storage
       const result = await storeWithFallback(data, contentType, identifier, walrusSigner, options)
       
       setLocalLoading(false)
@@ -184,7 +248,7 @@ export function useWalrus() {
         fallback: result.fallback
       }
     }
-  }, [currentAccount, signAndExecute, isInitialized, user?.address, calculateCost])
+  }, [currentAccount, signAndExecute, zkWallet, zkSignAndExecute, isInitialized, userAddress, calculateCost, isConnected])
 
   // Retrieve image as data URL
   const retrieveImage = useCallback(async (
@@ -194,7 +258,7 @@ export function useWalrus() {
   ): Promise<string | null> => {
     if (!blobId) {
       // Try fallback retrieval
-      const identifier = user?.address || 'anonymous'
+      const identifier = userAddress || 'anonymous'
       return await retrieveWithFallback<string>(null, contentType, identifier)
     }
 
@@ -208,14 +272,14 @@ export function useWalrus() {
       console.error('Failed to retrieve image:', error)
       
       // Try fallback retrieval
-      const identifier = user?.address || 'anonymous'
+      const identifier = userAddress || 'anonymous'
       const fallbackData = await retrieveWithFallback<string>(null, contentType, identifier)
       
       setLocalLoading(false)
       
       return fallbackData
     }
-  }, [user?.address])
+  }, [userAddress])
 
   // Retrieve JSON data
   const retrieveData = useCallback(async <T = any>(
@@ -224,7 +288,7 @@ export function useWalrus() {
   ): Promise<T | null> => {
     if (!blobId) {
       // Try fallback retrieval
-      const identifier = user?.address || 'anonymous'
+      const identifier = userAddress || 'anonymous'
       return await retrieveWithFallback<T>(null, contentType, identifier)
     }
 
@@ -238,14 +302,14 @@ export function useWalrus() {
       console.error('Failed to retrieve data:', error)
       
       // Try fallback retrieval
-      const identifier = user?.address || 'anonymous'
+      const identifier = userAddress || 'anonymous'
       const fallbackData = await retrieveWithFallback<T>(null, contentType, identifier)
       
       setLocalLoading(false)
       
       return fallbackData
     }
-  }, [user?.address])
+  }, [userAddress])
 
   // Clear error (handled by WalrusProvider)
   const clearError = useCallback(() => {
@@ -265,7 +329,7 @@ export function useWalrus() {
     isLoading: isLoading || localLoading,
     error,
     network,
-    isConnected: !!currentAccount,
+    isConnected,
 
     // Methods
     storeImage,
