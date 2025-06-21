@@ -836,7 +836,7 @@ class AffiliateService {
       }
 
       // Step 2: Validate the referral code exists and is active
-      // First try referral_codes table (personal codes), then affiliate_codes (admin codes)
+      // First try referral_codes table (personal codes), then extra_codes (admin codes)
       let codeData: any = null
       let codeError: any = null
 
@@ -851,9 +851,9 @@ class AffiliateService {
       if (personalCode) {
         codeData = personalCode
       } else {
-        // Try admin affiliate codes
+        // Try admin extra codes (renamed from affiliate_codes)
         const { data: adminCode, error: adminError } = await supabase
-          .from('affiliate_codes')
+          .from('extra_codes')
           .select('owner_address, usage_limit, usage_count, is_active, expires_at')
           .eq('code', referralCode)
           .eq('is_active', true)
@@ -914,9 +914,9 @@ class AffiliateService {
           console.error('⚠️ Failed to update referral code usage count:', updateError)
         }
       } else {
-        // Update admin affiliate code
+        // Update admin extra code (renamed from affiliate_codes)
         const { error: updateError } = await supabase
-          .from('affiliate_codes')
+          .from('extra_codes')
           .update({
             usage_count: codeData.usage_count + 1,
             updated_at: new Date().toISOString()
@@ -924,7 +924,7 @@ class AffiliateService {
           .eq('code', referralCode)
 
         if (updateError) {
-          console.error('⚠️ Failed to update affiliate code usage count:', updateError)
+          console.error('⚠️ Failed to update extra code usage count:', updateError)
         }
       }
 
