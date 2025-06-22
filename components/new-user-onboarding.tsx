@@ -51,6 +51,34 @@ export function NewUserOnboarding() {
     referralCode: ''
   })
 
+  // Check if user is zkLogin and extract email
+  const [isZkLoginUser, setIsZkLoginUser] = useState(false)
+  const [zkLoginEmail, setZkLoginEmail] = useState("")
+
+  useEffect(() => {
+    if (user?.connectionType === 'zklogin') {
+      setIsZkLoginUser(true)
+
+      // Extract email from JWT if available
+      const jwt = localStorage.getItem('zklogin_jwt')
+      if (jwt) {
+        try {
+          const payload = jwt.split('.')[1]
+          const decodedPayload = JSON.parse(atob(payload))
+          if (decodedPayload.email) {
+            setZkLoginEmail(decodedPayload.email)
+            setFormData(prev => ({ ...prev, email: decodedPayload.email }))
+          }
+        } catch (error) {
+          console.error('Failed to decode JWT for email:', error)
+        }
+      }
+    } else {
+      setIsZkLoginUser(false)
+      setZkLoginEmail("")
+    }
+  }, [user?.connectionType])
+
   // Referral options
   const [skipReferral, setSkipReferral] = useState(false)
 
@@ -143,7 +171,8 @@ export function NewUserOnboarding() {
       // Prepare profile data with referral code
       const profileData: any = {
         username: formData.username.trim(),
-        email: formData.email.trim() || undefined,
+        // Handle email based on authentication method
+        email: isZkLoginUser ? zkLoginEmail : (formData.email.trim() || undefined),
         // Ensure we don't lose existing data
         role_tier: profile?.role_tier || 'NOMAD',
         profile_level: profile?.profile_level || 1,
@@ -341,15 +370,28 @@ export function NewUserOnboarding() {
               </div>
 
               <div>
-                <Label htmlFor="email" className="text-white">Email (Optional)</Label>
+                <Label htmlFor="email" className="text-white">
+                  Email {isZkLoginUser ? "(From Google)" : "(Optional - Can only be set once)"}
+                </Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="Enter your email"
+                  placeholder={isZkLoginUser ? "Email from Google account" : "Enter your email (can only be set once)"}
                   className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white"
+                  disabled={isZkLoginUser}
                 />
+                {isZkLoginUser && (
+                  <p className="text-[#C0E6FF]/70 text-sm mt-1">
+                    🔒 Email is automatically bound from your Google account
+                  </p>
+                )}
+                {!isZkLoginUser && (
+                  <p className="text-[#C0E6FF]/70 text-sm mt-1">
+                    ⚠️ Email can only be set once and cannot be changed later
+                  </p>
+                )}
               </div>
 
               <div>

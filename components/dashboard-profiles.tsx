@@ -63,6 +63,34 @@ export function DashboardProfiles() {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [hasExistingReferralCode, setHasExistingReferralCode] = useState(false)
+  const [isZkLoginUser, setIsZkLoginUser] = useState(false)
+  const [zkLoginEmail, setZkLoginEmail] = useState("")
+  const [emailSetOnce, setEmailSetOnce] = useState(false)
+  const [appliedReferralCode, setAppliedReferralCode] = useState("")
+
+  // Check if user is zkLogin and extract email from JWT
+  useEffect(() => {
+    if (user?.connectionType === 'zklogin') {
+      setIsZkLoginUser(true)
+
+      // Extract email from JWT if available
+      const jwt = localStorage.getItem('zklogin_jwt')
+      if (jwt) {
+        try {
+          const payload = jwt.split('.')[1]
+          const decodedPayload = JSON.parse(atob(payload))
+          if (decodedPayload.email) {
+            setZkLoginEmail(decodedPayload.email)
+          }
+        } catch (error) {
+          console.error('Failed to decode JWT for email:', error)
+        }
+      }
+    } else {
+      setIsZkLoginUser(false)
+      setZkLoginEmail("")
+    }
+  }, [user?.connectionType])
 
   // Load profile data from persistent profile
   useEffect(() => {
@@ -70,11 +98,15 @@ export function DashboardProfiles() {
       const fullName = profile.real_name || ""
       const [firstName = "", lastName = ""] = fullName.split(" ")
 
+      // Check if email was set once for traditional wallet users
+      const hasEmailSet = !isZkLoginUser && profile.email && profile.email.trim() !== ""
+      setEmailSetOnce(hasEmailSet)
+
       setProfileData({
         firstName,
         lastName: lastName || "",
         username: profile.username || "",
-        email: profile.email || "",
+        email: isZkLoginUser ? zkLoginEmail : (profile.email || ""),
         location: profile.location || "",
         walletAddress: user?.address || "",
         kycStatus: profile.kyc_status === 'verified' ? 'verified' :
@@ -85,10 +117,11 @@ export function DashboardProfiles() {
       // Set wallet address if user is connected but no profile exists
       setProfileData(prev => ({
         ...prev,
-        walletAddress: user.address
+        walletAddress: user.address,
+        email: isZkLoginUser ? zkLoginEmail : prev.email
       }))
     }
-  }, [profile, user?.address])
+  }, [profile, user?.address, isZkLoginUser, zkLoginEmail])
 
   // Check if username needs to be synced with referral code
   useEffect(() => {
@@ -135,11 +168,16 @@ export function DashboardProfiles() {
         if (hasReferral) {
           // Get the referral code used for this relationship
           const referralData = await affiliateService.getReferralRelationshipData(user.address)
+
           if (referralData?.referral_code) {
+            setAppliedReferralCode(referralData.referral_code)
             setProfileData(prev => ({
               ...prev,
               referralCode: referralData.referral_code || ""
             }))
+          } else {
+            // Even if no referral code, we know there's a relationship
+            setAppliedReferralCode("UNKNOWN")
           }
         }
       } catch (error) {
@@ -193,13 +231,31 @@ export function DashboardProfiles() {
       }
 
       // Prepare profile data for database
-      const profileUpdateData = {
+      const profileUpdateData: any = {
         username: profileData.username,
-        email: profileData.email,
         real_name: `${profileData.firstName} ${profileData.lastName}`.trim(),
         location: profileData.location,
         display_preferences: {
           ...profile?.display_preferences
+        }
+      }
+
+      // Handle email based on authentication method and immutability rules
+      if (isZkLoginUser) {
+        // zkLogin users: email is always from JWT, cannot be changed
+        profileUpdateData.email = zkLoginEmail
+      } else {
+        // Traditional wallet users: email can only be set once
+        if (!emailSetOnce && profileData.email.trim()) {
+          // First time setting email
+          profileUpdateData.email = profileData.email.trim()
+          setEmailSetOnce(true)
+        } else if (emailSetOnce) {
+          // Email already set, keep existing value
+          profileUpdateData.email = profile?.email
+        } else {
+          // No email provided, keep existing or empty
+          profileUpdateData.email = profile?.email || ""
         }
       }
 
@@ -412,16 +468,39 @@ export function DashboardProfiles() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-[#C0E6FF]">Email</Label>
+                <Label htmlFor="email" className="text-[#C0E6FF]">
+                  Email {isZkLoginUser ? "(From Google - Cannot be changed)" : emailSetOnce ? "(Set once - Cannot be changed)" : "(Can be set once)"}
+                </Label>
                 <Input
                   id="email"
                   type="email"
                   value={profileData.email}
                   onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
-                  disabled={!isEditing}
+                  disabled={!isEditing || isZkLoginUser || emailSetOnce}
                   className="bg-[#030F1C] border-[#C0E6FF]/30 text-white"
-                  placeholder="Enter your email address"
+                  placeholder={
+                    isZkLoginUser
+                      ? "Email from Google account"
+                      : emailSetOnce
+                        ? "Email is set and cannot be changed"
+                        : "Enter your email address (can only be set once)"
+                  }
                 />
+                {isZkLoginUser && (
+                  <p className="text-[#C0E6FF]/70 text-sm">
+                    🔒 Email is automatically bound from your Google account and cannot be changed
+                  </p>
+                )}
+                {!isZkLoginUser && emailSetOnce && (
+                  <p className="text-[#C0E6FF]/70 text-sm">
+                    🔒 Email can only be set once and cannot be changed for security
+                  </p>
+                )}
+                {!isZkLoginUser && !emailSetOnce && (
+                  <p className="text-[#C0E6FF]/70 text-sm">
+                    ⚠️ Email can only be set once. Choose carefully as it cannot be changed later
+                  </p>
+                )}
               </div>
 
               {/* Referral Code Section */}
@@ -432,24 +511,53 @@ export function DashboardProfiles() {
                     Referral Code {hasExistingReferralCode ? "(Applied)" : "(Optional)"}
                   </div>
                 </Label>
-                <Input
-                  id="referralCode"
-                  value={profileData.referralCode}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, referralCode: e.target.value }))}
-                  disabled={!isEditing || hasExistingReferralCode}
-                  className="bg-[#030F1C] border-[#C0E6FF]/30 text-white"
-                  placeholder={hasExistingReferralCode ? "Referral code already applied" : "Enter referral code (optional)"}
-                />
-                {hasExistingReferralCode && (
-                  <div className="flex items-center gap-2 text-green-400 text-sm">
-                    <CheckCircle className="w-4 h-4" />
-                    <span>You have successfully applied a referral code</span>
+
+
+
+                {/* Show applied referral code when not editing */}
+                {!isEditing && hasExistingReferralCode ? (
+                  <div className="bg-[#1a2f51]/30 rounded-lg p-3 border border-[#C0E6FF]/10">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-white font-semibold">
+                          {appliedReferralCode === "UNKNOWN"
+                            ? "Applied (Code not found)"
+                            : appliedReferralCode || profileData.referralCode || "Loading..."}
+                        </span>
+                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                          Applied
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 text-green-400 text-sm">
+                        <CheckCircle className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <p className="text-[#C0E6FF]/70 text-sm mt-2">
+                      This referral code was used during your signup and cannot be changed
+                    </p>
                   </div>
-                )}
-                {!hasExistingReferralCode && profileData.referralCode.trim() && (
-                  <p className="text-[#C0E6FF]/70 text-sm">
-                    💡 Referral codes can only be applied once and cannot be changed later
-                  </p>
+                ) : (
+                  <>
+                    <Input
+                      id="referralCode"
+                      value={profileData.referralCode}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, referralCode: e.target.value }))}
+                      disabled={!isEditing || hasExistingReferralCode}
+                      className="bg-[#030F1C] border-[#C0E6FF]/30 text-white"
+                      placeholder={hasExistingReferralCode ? "Referral code already applied" : "Enter referral code (optional)"}
+                    />
+                    {hasExistingReferralCode && (
+                      <div className="flex items-center gap-2 text-green-400 text-sm">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>You have successfully applied a referral code</span>
+                      </div>
+                    )}
+                    {!hasExistingReferralCode && profileData.referralCode.trim() && (
+                      <p className="text-[#C0E6FF]/70 text-sm">
+                        💡 Referral codes can only be applied once and cannot be changed later
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -476,17 +584,20 @@ export function DashboardProfiles() {
               <Label htmlFor="walletAddress" className="text-[#C0E6FF]">
                 <div className="flex items-center gap-2">
                   <Wallet className="w-4 h-4" />
-                  Wallet Address
+                  Wallet Address (Cannot be changed)
                 </div>
               </Label>
               <Input
                 id="walletAddress"
                 value={profileData.walletAddress}
                 onChange={(e) => setProfileData(prev => ({ ...prev, walletAddress: e.target.value }))}
-                disabled={!isEditing}
+                disabled={true}
                 className="bg-[#030F1C] border-[#C0E6FF]/30 text-white font-mono text-sm"
                 placeholder="Sui wallet address"
               />
+              <p className="text-[#C0E6FF]/70 text-sm">
+                🔒 Wallet address is bound to your account and cannot be changed for security
+              </p>
             </div>
             </div>
           </div>
