@@ -137,8 +137,8 @@ export function usePersistentProfile(): ProfileState & ProfileActions {
       setProfile(updatedProfile)
       console.log('✅ Profile updated successfully')
 
-      // Refresh user state to update isNewUser status
-      await refreshUserState()
+      // Note: Removed refreshUserState() call to prevent cascading re-renders
+      // The profile state update is sufficient for most use cases
 
       toast.success('Profile updated')
       return true
@@ -175,8 +175,26 @@ export function usePersistentProfile(): ProfileState & ProfileActions {
 
 
   const updateSocialLinks = useCallback(async (links: any[]): Promise<boolean> => {
-    return updateProfile({ social_links: links })
-  }, [updateProfile])
+    if (!user?.address) return false
+
+    try {
+      console.log('🔗 Updating social links:', links)
+      await encryptedStorage.updateSocialLinks(user.address, links)
+      setProfile(prev => prev ? { ...prev, social_links: links } : null)
+
+      // Refresh profile to ensure achievements are recalculated
+      setTimeout(() => {
+        loadProfile()
+      }, 500)
+
+      toast.success('Social links updated')
+      return true
+    } catch (error) {
+      console.error('Failed to update social links:', error)
+      toast.error('Failed to update social links')
+      return false
+    }
+  }, [user?.address, loadProfile])
 
   const updateKYCStatus = useCallback(async (status: 'verified' | 'pending' | 'not_verified'): Promise<boolean> => {
     if (!user?.address) return false
@@ -367,18 +385,10 @@ export function usePersistentProfile(): ProfileState & ProfileActions {
     if (user?.address) {
       loadProfile()
     }
-  }, [user?.address, loadProfile])
+  }, [user?.address]) // Removed loadProfile dependency to prevent infinite loops
 
-  // Also load profile when user state changes (for zkLogin users)
-  useEffect(() => {
-    if (user?.address && isInitialized) {
-      // Refresh profile data when user state changes
-      const timeoutId = setTimeout(() => {
-        loadProfile()
-      }, 500)
-      return () => clearTimeout(timeoutId)
-    }
-  }, [user?.profileImageBlobId, user?.username, user?.email])
+  // Removed the second useEffect that was causing excessive re-renders
+  // Profile will be loaded when user.address changes, which is sufficient
 
   return {
     // State

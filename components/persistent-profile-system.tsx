@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -147,6 +147,14 @@ export function PersistentProfileSystem() {
 
   // Function to determine if achievement should be unlocked based on user activity
   const checkAchievementUnlocked = (achievementName: string): boolean => {
+    // Debug social links for achievement unlocking
+    if (achievementName.includes("Community") || achievementName.includes("Informed") || achievementName.includes("Conversation")) {
+      console.log(`🔍 Checking achievement "${achievementName}":`, {
+        social_links: profile?.social_links,
+        platforms: profile?.social_links?.map((link: any) => link.platform)
+      })
+    }
+
     switch (achievementName) {
       case "Personalize Your Profile":
         // Unlocked if user has uploaded a profile image
@@ -162,15 +170,21 @@ export function PersistentProfileSystem() {
 
       case "Join the Community":
         // Unlocked if user has connected Discord
-        return profile?.social_links?.some((link: any) => link.platform === 'Discord') || false
+        return profile?.social_links?.some((link: any) =>
+          link.platform === 'Discord' || link.platform === 'discord'
+        ) || false
 
       case "Stay Informed":
         // Unlocked if user has connected Telegram
-        return profile?.social_links?.some((link: any) => link.platform === 'Telegram') || false
+        return profile?.social_links?.some((link: any) =>
+          link.platform === 'Telegram' || link.platform === 'telegram'
+        ) || false
 
       case "Follow the Conversation":
         // Unlocked if user has connected X
-        return profile?.social_links?.some((link: any) => link.platform === 'X') || false
+        return profile?.social_links?.some((link: any) =>
+          link.platform === 'X' || link.platform === 'x'
+        ) || false
 
       case "Mint Royal NFT Status":
         // Unlocked if user has ROYAL tier
@@ -238,37 +252,58 @@ export function PersistentProfileSystem() {
     }))
   }
 
-  // Default profile data with persistent data overlay
-  const profileData = {
-    name: profile?.username || user?.username || "Affiliate User",
-    username: profile?.username || user?.username || "@affiliate_user",
-    kycStatus: profile?.kyc_status || "not_verified",
-    socialMedia: profile?.social_links && profile.social_links.length > 0 ? profile.social_links : [
+  // Convert database social links to UI format
+  const convertSocialLinksToUI = (socialLinks: any[]) => {
+    const defaultSocials = [
       {
         platform: "Discord",
         image: socialImages.Discord,
-        url: "https://discord.gg/aionet",
-        connected: true,
-        username: "Affiliate#1234",
+        url: "",
+        connected: false,
+        username: "",
         color: "#5865F2"
       },
       {
         platform: "Telegram",
         image: socialImages.Telegram,
-        url: "https://t.me/aionet",
-        connected: true,
-        username: "@affiliate_tg",
+        url: "",
+        connected: false,
+        username: "",
         color: "#0088CC"
       },
       {
         platform: "X",
         image: socialImages.X,
-        url: "https://x.com/aionet",
+        url: "",
         connected: false,
         username: "",
         color: "#000000"
       }
-    ],
+    ]
+
+    if (socialLinks && Array.isArray(socialLinks)) {
+      socialLinks.forEach(link => {
+        const social = defaultSocials.find(s =>
+          s.platform.toLowerCase() === link.platform?.toLowerCase() ||
+          (link.platform === 'x' && s.platform === 'X')
+        )
+        if (social && link.username) {
+          social.connected = true
+          social.username = link.username
+          social.url = link.url || social.url
+        }
+      })
+    }
+
+    return defaultSocials
+  }
+
+  // Memoized profile data to prevent recreation on every render
+  const profileData = useMemo(() => ({
+    name: profile?.username || user?.username || "Affiliate User",
+    username: profile?.username || user?.username || "@affiliate_user",
+    kycStatus: profile?.kyc_status || "not_verified",
+    socialMedia: convertSocialLinksToUI(profile?.social_links || []),
     levelInfo: {
       currentLevel: profile?.profile_level || 1,
       nextLevel: (profile?.profile_level || 1) + 1,
@@ -285,7 +320,16 @@ export function PersistentProfileSystem() {
       totalXP: profile?.total_xp || 0
     },
     achievements: createAchievements()
-  }
+  }), [
+    profile?.username,
+    profile?.kyc_status,
+    profile?.social_links,
+    profile?.profile_level,
+    profile?.current_xp,
+    profile?.total_xp,
+    profile?.achievements_data,
+    user?.username
+  ])
 
   // Update level rewards availability based on current level
   useEffect(() => {
@@ -294,21 +338,24 @@ export function PersistentProfileSystem() {
       // Use referral_data.level_rewards as temporary storage until we add proper column
       const claimedLevels = profile.referral_data?.level_rewards || []
 
-      setLevelRewards(prev => prev.map((reward: any) => ({
-        ...reward,
-        available: currentLevel >= reward.level,
-        claimed: claimedLevels.some((claimed: any) => claimed.level === reward.level)
-      })))
+      setLevelRewards(prev => prev.map((reward: any) => {
+        const isExplicitlyClaimed = claimedLevels.some((claimed: any) => claimed.level === reward.level)
+        const isAvailable = currentLevel >= reward.level
+
+        // Auto-unlock affiliate levels (levels 1-5 with 0 points) when reached
+        const isAutoUnlocked = isAvailable && reward.points === 0 && reward.level <= currentLevel
+
+        return {
+          ...reward,
+          available: isAvailable,
+          claimed: isExplicitlyClaimed || isAutoUnlocked
+        }
+      }))
     }
   }, [profile])
 
-  // Synchronize tier between subscription context and persistent profile
-  useEffect(() => {
-    if (profile?.role_tier && profile.role_tier !== tier) {
-      console.log(`🔄 Syncing tier: ${tier} -> ${profile.role_tier}`)
-      setTier(profile.role_tier)
-    }
-  }, [profile?.role_tier, tier, setTier])
+  // Removed tier synchronization to prevent sidebar re-renders
+  // The profile page will use profile?.role_tier directly instead of the subscription context tier
 
   // Helper functions
   const handleCopyLink = () => {
@@ -330,7 +377,11 @@ export function PersistentProfileSystem() {
   }
 
   const handleSocialConnect = (platform: string, url: string) => {
-    window.open(url, '_blank')
+    if (url && url.trim() !== '') {
+      window.open(url, '_blank')
+    } else {
+      toast.error(`No ${platform} profile linked. Please add your ${platform} handle in Settings.`)
+    }
   }
 
   // Check if device is mobile
@@ -618,37 +669,35 @@ export function PersistentProfileSystem() {
                 {/* Social Media Icons - Positioned at top right of banner */}
                 <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2">
                   {profileData.socialMedia.map((social: any, index: number) => (
-                    <TooltipProvider key={index}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant={social.connected ? "default" : "outline"}
-                            className={`w-12 h-12 p-0 transition-all duration-200 ${social.connected
-                              ? "bg-[#10b981] hover:bg-[#10b981] text-white border-[#10b981]"
-                              : "border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 hover:border-[#C0E6FF] bg-transparent"
-                            }`}
-                            onClick={() => handleSocialConnect(social.platform, social.url)}
-                          >
-                            <Image
-                              src={social.image}
-                              alt={social.platform}
-                              width={32}
-                              height={32}
-                              className="w-8 h-8 object-contain"
-                            />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" className="bg-black/90 text-white border border-[#C0E6FF]/20">
-                          <p className="text-sm">
-                            {social.connected
-                              ? `Connected: ${social.username}`
-                              : `Click to connect ${social.platform}`
-                            }
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <Tooltip key={index}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant={social.connected ? "default" : "outline"}
+                          className={`w-12 h-12 p-0 transition-all duration-200 ${social.connected
+                            ? "bg-[#10b981] hover:bg-[#10b981] text-white border-[#10b981]"
+                            : "border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 hover:border-[#C0E6FF] bg-transparent"
+                          }`}
+                          onClick={() => handleSocialConnect(social.platform, social.url)}
+                        >
+                          <Image
+                            src={social.image}
+                            alt={social.platform}
+                            width={32}
+                            height={32}
+                            className="w-8 h-8 object-contain"
+                          />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="bg-black/90 text-white border border-[#C0E6FF]/20">
+                        <p className="text-sm">
+                          {social.connected
+                            ? `Connected: ${social.username}`
+                            : `Click to connect ${social.platform}`
+                          }
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
                   ))}
                 </div>
 
@@ -656,8 +705,8 @@ export function PersistentProfileSystem() {
                 <div className="absolute bottom-4 right-4 flex flex-wrap items-center gap-2 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2">
                   <Badge className="bg-[#3b82f6] text-white text-xs px-2 py-1 h-8 flex items-center">
                     <div className="flex items-center gap-1">
-                      <RoleImage role={tier as "NOMAD" | "PRO" | "ROYAL"} size="md" />
-                      {tier}
+                      <RoleImage role={(profile?.role_tier || "NOMAD") as "NOMAD" | "PRO" | "ROYAL"} size="md" />
+                      {profile?.role_tier || "NOMAD"}
                     </div>
                   </Badge>
                   <Badge className="bg-[#3b82f6] text-white text-xs px-2 py-1 h-8 flex items-center">
@@ -950,28 +999,50 @@ export function PersistentProfileSystem() {
                     <div className="text-[#C0E6FF] text-xs mb-2 min-h-[2rem] flex items-center justify-center">
                       {reward.description}
                     </div>
-                    {reward.claimed ? (
-                      <div className="flex items-center justify-center py-1">
-                        <CheckCircle className="w-5 h-5 text-green-400" />
-                      </div>
-                    ) : reward.points > 0 ? (
-                      <Button
-                        size="sm"
-                        onClick={() => reward.available && !reward.claimed && handleLevelClaim(reward)}
-                        className={`w-full text-white text-xs py-1 px-2 ${
-                          reward.available && !reward.claimed
-                            ? 'bg-green-600 hover:bg-green-700'
-                            : 'bg-gray-600 hover:bg-gray-700'
-                        }`}
-                        disabled={!reward.available || reward.claimed}
-                      >
-                        Claim
-                      </Button>
-                    ) : (
-                      <div className="text-[#6B7280] text-xs py-1">
-                        {reward.available ? "Unlocked" : "Locked"}
-                      </div>
-                    )}
+                    {(() => {
+                      // If already claimed, show checkmark
+                      if (reward.claimed) {
+                        return (
+                          <div className="flex items-center justify-center py-1">
+                            <CheckCircle className="w-5 h-5 text-green-400" />
+                            <span className="text-green-400 text-xs ml-1">
+                              {reward.points > 0 ? 'Claimed' : 'Unlocked'}
+                            </span>
+                          </div>
+                        )
+                      }
+
+                      // If available and has points to claim, show claim button
+                      if (reward.available && reward.points > 0) {
+                        return (
+                          <Button
+                            size="sm"
+                            onClick={() => handleLevelClaim(reward)}
+                            className="w-full text-white text-xs py-1 px-2 bg-green-600 hover:bg-green-700"
+                          >
+                            Claim {reward.points} Points
+                          </Button>
+                        )
+                      }
+
+                      // If available but no points (affiliate levels), show unlocked
+                      if (reward.available && reward.points === 0) {
+                        return (
+                          <div className="flex items-center justify-center py-1">
+                            <CheckCircle className="w-5 h-5 text-green-400" />
+                            <span className="text-green-400 text-xs ml-1">Unlocked</span>
+                          </div>
+                        )
+                      }
+
+                      // If not available, show locked
+                      return (
+                        <div className="text-[#6B7280] text-xs py-1 flex items-center justify-center">
+                          <Lock className="w-4 h-4 mr-1" />
+                          Locked
+                        </div>
+                      )
+                    })()}
                   </div>
                 ))}
               </div>
@@ -984,8 +1055,7 @@ export function PersistentProfileSystem() {
       <div className="enhanced-card">
         <div className="enhanced-card-content">
           <h3 className="text-white font-semibold mb-4 text-center">Achievements</h3>
-          <TooltipProvider>
-            <div className="grid grid-cols-3 md:grid-cols-7 gap-2 md:gap-3">
+          <div className="grid grid-cols-3 md:grid-cols-7 gap-2 md:gap-3">
               {profileData.achievements.map((achievement: any, index: number) => {
                 // Check if this achievement is claimed in the persistent profile
                 const persistentAchievement = profile?.achievements_data?.find(
@@ -1145,7 +1215,6 @@ export function PersistentProfileSystem() {
                 return achievementCard
               })}
             </div>
-          </TooltipProvider>
         </div>
       </div>
 
@@ -1609,57 +1678,55 @@ function ChannelsJoinedSection() {
       <div className="pb-32 sm:pb-20">
         <div className="grid grid-cols-5 gap-3 justify-items-center">
           {displayedChannels.map((channel) => (
-            <TooltipProvider key={channel.id}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="w-16 h-16 rounded-full cursor-pointer transition-all hover:scale-110 border-2 border-[#C0E6FF]/20 hover:border-[#C0E6FF]/40 overflow-hidden">
-                    {channel.avatarUrl ? (
-                      <Image
-                        src={channel.avatarUrl}
-                        alt={channel.name}
-                        width={64}
-                        height={64}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div
-                        className="w-full h-full flex items-center justify-center"
-                        style={{ backgroundColor: channel.color }}
-                      >
-                        <Hash className="w-8 h-8 text-white" />
-                      </div>
-                    )}
+            <Tooltip key={channel.id}>
+              <TooltipTrigger asChild>
+                <div className="w-16 h-16 rounded-full cursor-pointer transition-all hover:scale-110 border-2 border-[#C0E6FF]/20 hover:border-[#C0E6FF]/40 overflow-hidden">
+                  {channel.avatarUrl ? (
+                    <Image
+                      src={channel.avatarUrl}
+                      alt={channel.name}
+                      width={64}
+                      height={64}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full flex items-center justify-center"
+                      style={{ backgroundColor: channel.color }}
+                    >
+                      <Hash className="w-8 h-8 text-white" />
+                    </div>
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="bg-[#1a2f51] border border-[#C0E6FF]/20 text-white p-3 max-w-xs">
+                <div className="space-y-2">
+                  <div className="font-semibold text-sm">{channel.name}</div>
+                  {channel.description && (
+                    <div className="text-xs text-[#C0E6FF]/80">{channel.description}</div>
+                  )}
+                  <div className="flex items-center gap-2 text-xs">
+                    <Badge className={`${getChannelTypeBadgeColor(channel.type)} text-xs`}>
+                      {channel.type.toUpperCase()}
+                    </Badge>
+                    <span className="text-[#C0E6FF]">
+                      {formatSubscriptionStatus(channel)}
+                    </span>
                   </div>
-                </TooltipTrigger>
-                <TooltipContent className="bg-[#1a2f51] border border-[#C0E6FF]/20 text-white p-3 max-w-xs">
-                  <div className="space-y-2">
-                    <div className="font-semibold text-sm">{channel.name}</div>
-                    {channel.description && (
-                      <div className="text-xs text-[#C0E6FF]/80">{channel.description}</div>
-                    )}
-                    <div className="flex items-center gap-2 text-xs">
-                      <Badge className={`${getChannelTypeBadgeColor(channel.type)} text-xs`}>
-                        {channel.type.toUpperCase()}
-                      </Badge>
-                      <span className="text-[#C0E6FF]">
-                        {formatSubscriptionStatus(channel)}
-                      </span>
-                    </div>
-                    <div className="text-xs text-[#C0E6FF]">
-                      {channel.subscribers.toLocaleString()} subscribers
-                    </div>
+                  <div className="text-xs text-[#C0E6FF]">
+                    {channel.subscribers.toLocaleString()} subscribers
+                  </div>
+                  <div className="text-xs text-[#C0E6FF]/60">
+                    Joined: {new Date(channel.joinedDate).toLocaleDateString()}
+                  </div>
+                  {channel.expiryDate && (
                     <div className="text-xs text-[#C0E6FF]/60">
-                      Joined: {new Date(channel.joinedDate).toLocaleDateString()}
+                      Expires: {new Date(channel.expiryDate).toLocaleDateString()}
                     </div>
-                    {channel.expiryDate && (
-                      <div className="text-xs text-[#C0E6FF]/60">
-                        Expires: {new Date(channel.expiryDate).toLocaleDateString()}
-                      </div>
-                    )}
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+                  )}
+                </div>
+              </TooltipContent>
+            </Tooltip>
           ))}
           {channels.length > maxChannels && (
             <div className="col-span-1 flex items-center justify-center">

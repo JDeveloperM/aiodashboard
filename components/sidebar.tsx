@@ -1,21 +1,29 @@
 "use client"
 
-import { useState, useEffect, MouseEvent } from "react"
+import { useState, useEffect, MouseEvent, memo } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useSubscription } from "@/contexts/subscription-context"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
 import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, LineChart, ArrowUpRight, Crown, ArrowRight, Bot, Users, BookOpen, ChevronDown, ChevronRight, Dice6, Rocket, Share2, HelpCircle, Globe, Settings } from "lucide-react"
 
-export function Sidebar() {
+export const Sidebar = memo(function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [copyTradingExpanded, setCopyTradingExpanded] = useState(false)
+
+  // RESTORED: Using stable subscription context
   const { canAccessCryptoBots, canAccessForexBots, tier } = useSubscription()
+
+  // Debug re-renders (reduced logging)
+  console.log('🔄 STABLE Sidebar re-render:', {
+    pathname,
+    tier,
+    timestamp: new Date().toISOString()
+  })
 
 
 
@@ -97,33 +105,29 @@ export function Sidebar() {
     if (item.hasDropdown && (!isCollapsed || isMobileOpen)) {
       return (
         <div>
-          <Tooltip delayDuration={0}>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => {
-                  if (item.name === "Copy Trading") {
-                    setCopyTradingExpanded(!copyTradingExpanded)
-                  }
-                }}
-                className={cn(
-                  "flex items-center w-full rounded-md px-3 py-2 text-sm font-medium nav-item-hover",
-                  isActive
-                    ? "nav-item-active"
-                    : "text-white",
-                  item.restricted && "opacity-50 cursor-not-allowed",
-                )}
-              >
-                <item.icon className="h-5 w-5 mr-3" />
-                <span className="flex-1 text-left">{item.name}</span>
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-                {item.restricted && <Lock className="w-4 h-4 text-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]" />}
-              </button>
-            </TooltipTrigger>
-          </Tooltip>
+          <button
+            onClick={() => {
+              if (item.name === "Copy Trading") {
+                setCopyTradingExpanded(!copyTradingExpanded)
+              }
+            }}
+            className={cn(
+              "flex items-center w-full rounded-md px-3 py-2 text-sm font-medium nav-item-hover",
+              isActive
+                ? "nav-item-active"
+                : "text-white",
+              item.restricted && "opacity-50 cursor-not-allowed",
+            )}
+          >
+            <item.icon className="h-5 w-5 mr-3" />
+            <span className="flex-1 text-left">{item.name}</span>
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+            {item.restricted && <Lock className="w-4 h-4 text-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]" />}
+          </button>
 
           {isExpanded && (
             <div className="ml-6 mt-1 space-y-1">
@@ -156,35 +160,27 @@ export function Sidebar() {
     }
 
     return (
-      <Tooltip delayDuration={0}>
-        <TooltipTrigger asChild>
-          <Link
-            href={item.restricted ? "#" : item.href}
-            className={cn(
-              "flex items-center rounded-md px-3 py-2 text-sm font-medium nav-item-hover",
-              isActive
-                ? "nav-item-active"
-                : "text-white",
-              isCollapsed && !isMobileOpen && "justify-center px-2",
-              item.restricted && "opacity-50 cursor-not-allowed",
-            )}
-            onClick={(e) => {
-              if (item.restricted) {
-                e.preventDefault()
-              }
-            }}
-          >
-            <item.icon className={cn("h-5 w-5", (!isCollapsed || isMobileOpen) && "mr-3")} />
-            {(!isCollapsed || isMobileOpen) && <span>{item.name}</span>}
-            {(!isCollapsed || isMobileOpen) && item.restricted && <Lock className="w-4 h-4 text-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]" />}
-          </Link>
-        </TooltipTrigger>
-        {isCollapsed && !isMobileOpen && (
-          <TooltipContent side="right" className="flex items-center gap-4">
-            {item.name} {item.restricted && "(Upgrade required)"}
-          </TooltipContent>
+      <Link
+        href={item.restricted ? "#" : item.href}
+        className={cn(
+          "flex items-center rounded-md px-3 py-2 text-sm font-medium nav-item-hover",
+          isActive
+            ? "nav-item-active"
+            : "text-white",
+          isCollapsed && !isMobileOpen && "justify-center px-2",
+          item.restricted && "opacity-50 cursor-not-allowed",
         )}
-      </Tooltip>
+        onClick={(e) => {
+          if (item.restricted) {
+            e.preventDefault()
+          }
+        }}
+        title={isCollapsed && !isMobileOpen ? `${item.name}${item.restricted ? " (Upgrade required)" : ""}` : undefined}
+      >
+        <item.icon className={cn("h-5 w-5", (!isCollapsed || isMobileOpen) && "mr-3")} />
+        {(!isCollapsed || isMobileOpen) && <span>{item.name}</span>}
+        {(!isCollapsed || isMobileOpen) && item.restricted && <Lock className="w-4 h-4 text-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]" />}
+      </Link>
     )
   }
 
@@ -193,9 +189,8 @@ export function Sidebar() {
   }
 
   return (
-    <TooltipProvider>
-      <>
-        <button
+    <>
+      <button
           id="mobile-toggle"
           className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-background rounded-md shadow-md"
           onClick={() => setIsMobileOpen(true)}
@@ -267,28 +262,21 @@ export function Sidebar() {
             <div className={cn("my-2 border-t border-border", isCollapsed && "mx-2")}></div>
 
             {bottomNavigation.map((item) => (
-              <Tooltip key={item.name} delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      "flex items-center rounded-md px-3 py-2 text-sm font-medium nav-item-hover mb-1",
-                      pathname === item.href
-                        ? "nav-item-active"
-                        : "text-white",
-                      isCollapsed && !isMobileOpen && "justify-center px-2"
-                    )}
-                  >
-                    <item.icon className={cn("h-5 w-5", (!isCollapsed || isMobileOpen) && "mr-3")} />
-                    {(!isCollapsed || isMobileOpen) && <span>{item.name}</span>}
-                  </Link>
-                </TooltipTrigger>
-                {isCollapsed && !isMobileOpen && (
-                  <TooltipContent side="right">
-                    {item.name}
-                  </TooltipContent>
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "flex items-center rounded-md px-3 py-2 text-sm font-medium nav-item-hover mb-1",
+                  pathname === item.href
+                    ? "nav-item-active"
+                    : "text-white",
+                  isCollapsed && !isMobileOpen && "justify-center px-2"
                 )}
-              </Tooltip>
+                title={isCollapsed && !isMobileOpen ? item.name : undefined}
+              >
+                <item.icon className={cn("h-5 w-5", (!isCollapsed || isMobileOpen) && "mr-3")} />
+                {(!isCollapsed || isMobileOpen) && <span>{item.name}</span>}
+              </Link>
             ))}
           </div>
 
@@ -310,24 +298,17 @@ export function Sidebar() {
           )}
           {isCollapsed && !isMobileOpen && (
             <div className="p-2 m-2 mb-4 bg-[#0c1b36]/80 backdrop-blur-sm rounded-lg border border-blue-500/20 flex justify-center">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                    size="icon"
-                    onClick={() => router.push('/subscriptions')}
-                  >
-                    <TrendingUp className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  Upgrade now
-                </TooltipContent>
-              </Tooltip>
+              <Button
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                size="icon"
+                onClick={() => router.push('/subscriptions')}
+                title="Upgrade now"
+              >
+                <TrendingUp className="h-4 w-4" />
+              </Button>
             </div>
           )}
         </div>
       </>
-    </TooltipProvider>
   )
-}
+})

@@ -291,12 +291,14 @@ class EncryptedDatabaseStorage {
       // if (profileData.location) {
       //   encryptedData.location_encrypted = this.encrypt(profileData.location, encryptionKey)
       // }
-      // if (profileData.social_links) {
-      //   encryptedData.social_links_encrypted = this.encrypt(
-      //     JSON.stringify(profileData.social_links),
-      //     encryptionKey
-      //   )
-      // }
+
+      // Enable social links encryption
+      if (profileData.social_links) {
+        encryptedData.social_links_encrypted = this.encrypt(
+          JSON.stringify(profileData.social_links),
+          encryptionKey
+        )
+      }
 
       // Set public fields (non-encrypted, searchable)
       if (profileData.role_tier) {
@@ -446,10 +448,12 @@ class EncryptedDatabaseStorage {
       // if (encryptedProfile.location_encrypted) {
       //   decrypted.location = this.decrypt(encryptedProfile.location_encrypted, key)
       // }
-      // if (encryptedProfile.social_links_encrypted) {
-      //   const socialLinksJson = this.decrypt(encryptedProfile.social_links_encrypted, key)
-      //   decrypted.social_links = JSON.parse(socialLinksJson)
-      // }
+
+      // Enable social links decryption
+      if (encryptedProfile.social_links_encrypted) {
+        const socialLinksJson = this.decrypt(encryptedProfile.social_links_encrypted, key)
+        decrypted.social_links = JSON.parse(socialLinksJson)
+      }
     } catch (error) {
       console.error('Failed to decrypt some profile fields:', error)
       // Continue with partial data
@@ -710,6 +714,37 @@ class EncryptedDatabaseStorage {
       console.log(`✅ Achievements updated for ${address}:`, data)
     } catch (error) {
       console.error('Failed to update achievements:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update only social links (encrypted) without affecting other fields
+   */
+  async updateSocialLinks(address: string, socialLinks: any[]): Promise<void> {
+    try {
+      console.log(`🔗 Updating social links for ${address}:`, socialLinks)
+
+      const encryptionKey = this.generateEncryptionKey(address)
+      const encryptedSocialLinks = this.encrypt(JSON.stringify(socialLinks), encryptionKey)
+
+      const { error } = await this.supabase
+        .from('user_profiles')
+        .update({
+          social_links_encrypted: encryptedSocialLinks,
+          updated_at: new Date().toISOString(),
+          last_active: new Date().toISOString()
+        })
+        .eq('address', address)
+
+      if (error) {
+        console.error('❌ Failed to update social links:', error)
+        throw error
+      }
+
+      console.log(`✅ Social links updated for ${address}`)
+    } catch (error) {
+      console.error('Failed to update social links:', error)
       throw error
     }
   }

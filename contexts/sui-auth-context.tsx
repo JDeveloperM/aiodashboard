@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useCurrentAccount } from '@mysten/dapp-kit'
 import { useZkLogin } from '@/components/zklogin-provider'
 import {
@@ -65,6 +65,13 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [isNewUser, setIsNewUser] = useState(false)
 
+  // Prevent infinite re-renders with refs
+  const lastSuiAddress = useRef<string | undefined>(undefined)
+  const lastZkLoginAddress = useRef<string | null | undefined>(undefined)
+  const isProcessing = useRef(false)
+
+  // Removed debug logs to clean console
+
   // Initialize session manager
   useEffect(() => {
     initializeSessionManager()
@@ -92,22 +99,45 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
 
   // Create or update user when wallet connects
   useEffect(() => {
+    // Prevent infinite re-renders
+    if (isProcessing.current) {
+      console.log('⏸️ Skipping SuiAuth update - already processing')
+      return
+    }
+
+    // Check if addresses actually changed
+    const currentSuiAddress = suiAccount?.address
+    const currentZkLoginAddress = zkLoginUserAddress
+
+    if (lastSuiAddress.current === currentSuiAddress &&
+        lastZkLoginAddress.current === currentZkLoginAddress) {
+      console.log('⏸️ Skipping SuiAuth update - no address change')
+      return
+    }
+
+    // Removed debug logs
+
+    // Update refs
+    lastSuiAddress.current = currentSuiAddress
+    lastZkLoginAddress.current = currentZkLoginAddress
+    isProcessing.current = true
+
     const createOrUpdateUser = async () => {
       try {
         let currentUser: SuiUser | null = null
         let userIsNew = false
 
         // Check for active wallet or zkLogin connection first
-        if (suiAccount?.address) {
+        if (currentSuiAddress) {
           // Check if this is a new user by looking for existing profile
           try {
-            const existingProfile = await encryptedStorage.getDecryptedProfile(suiAccount.address)
+            const existingProfile = await encryptedStorage.getDecryptedProfile(currentSuiAddress)
             // User is new if no profile exists OR onboarding is not completed
             const profileExists = !!existingProfile
             const onboardingCompleted = existingProfile?.onboarding_completed === true
             userIsNew = !profileExists || !onboardingCompleted
 
-            console.log(`🔍 User ${suiAccount.address} is ${userIsNew ? 'NEW' : 'EXISTING'}`, {
+            console.log(`🔍 User ${currentSuiAddress} is ${userIsNew ? 'NEW' : 'EXISTING'}`, {
               profileExists,
               onboardingCompleted,
               profileId: existingProfile?.id,
@@ -120,10 +150,10 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
 
           // Wallet connection
           currentUser = {
-            id: suiAccount.address,
-            address: suiAccount.address,
+            id: currentSuiAddress,
+            address: currentSuiAddress,
             connectionType: 'wallet',
-            username: `User ${suiAccount.address.slice(0, 6)}`,
+            username: `User ${currentSuiAddress.slice(0, 6)}`,
             createdAt: new Date(),
             lastLoginAt: new Date(),
             isNewUser: userIsNew,
@@ -131,16 +161,16 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
             profileSetupCompleted: !userIsNew,
             kycCompleted: false
           }
-        } else if (zkLoginUserAddress) {
+        } else if (currentZkLoginAddress) {
           // Check if this is a new user by looking for existing profile
           try {
-            const existingProfile = await encryptedStorage.getDecryptedProfile(zkLoginUserAddress)
+            const existingProfile = await encryptedStorage.getDecryptedProfile(currentZkLoginAddress)
             // User is new if no profile exists OR onboarding is not completed
             const profileExists = !!existingProfile
             const onboardingCompleted = existingProfile?.onboarding_completed === true
             userIsNew = !profileExists || !onboardingCompleted
 
-            console.log(`🔍 zkLogin User ${zkLoginUserAddress} is ${userIsNew ? 'NEW' : 'EXISTING'}`, {
+            console.log(`🔍 zkLogin User ${currentZkLoginAddress} is ${userIsNew ? 'NEW' : 'EXISTING'}`, {
               profileExists,
               onboardingCompleted,
               profileId: existingProfile?.id,
@@ -153,10 +183,10 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
 
           // zkLogin connection
           currentUser = {
-            id: zkLoginUserAddress,
-            address: zkLoginUserAddress,
+            id: currentZkLoginAddress,
+            address: currentZkLoginAddress,
             connectionType: 'zklogin',
-            username: `User ${zkLoginUserAddress.slice(0, 6)}`,
+            username: `User ${currentZkLoginAddress.slice(0, 6)}`,
             createdAt: new Date(),
             lastLoginAt: new Date(),
             isNewUser: userIsNew,
@@ -235,6 +265,9 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Error creating/updating user:', error)
         setUser(null)
         setIsLoaded(true)
+      } finally {
+        // Reset processing flag
+        isProcessing.current = false
       }
     }
 

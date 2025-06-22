@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 
 
@@ -24,7 +25,11 @@ import {
   CheckCircle,
   AlertCircle,
   MapPin,
-  Users
+  Users,
+  MessageSquare,
+  Edit3,
+  Save,
+  X
 } from "lucide-react"
 
 interface ProfileData {
@@ -491,6 +496,212 @@ export function DashboardProfiles() {
       {/* Referral Code Management Section */}
       <ReferralCodeManagement />
 
+      {/* Social Media Management Section */}
+      <SocialMediaSection />
+
     </div>
+  )
+}
+
+// Simple Social Media Management Component
+function SocialMediaSection() {
+  const { profile, updateSocialLinks } = usePersistentProfile()
+  const { user } = useSuiAuth()
+  const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Simple state for each platform
+  const [discord, setDiscord] = useState('')
+  const [telegram, setTelegram] = useState('')
+  const [twitter, setTwitter] = useState('')
+
+  // Load existing data when profile changes
+  useEffect(() => {
+    if (profile?.social_links && Array.isArray(profile.social_links)) {
+      setDiscord('')
+      setTelegram('')
+      setTwitter('')
+
+      profile.social_links.forEach((link: any) => {
+        if (link.platform === 'discord') setDiscord(link.username || '')
+        if (link.platform === 'telegram') setTelegram(link.username || '')
+        if (link.platform === 'x') setTwitter(link.username || '')
+      })
+    }
+  }, [profile?.social_links])
+
+  const handleSave = async () => {
+    if (!user?.address) {
+      toast.error('User not authenticated')
+      return
+    }
+
+    setIsSaving(true)
+
+    try {
+      const socialLinks = []
+
+      if (discord.trim()) {
+        socialLinks.push({
+          platform: 'discord',
+          username: discord.trim(),
+          url: `https://discord.com/users/${discord.trim()}`
+        })
+      }
+
+      if (telegram.trim()) {
+        const telegramUsername = telegram.trim().startsWith('@') ? telegram.trim() : `@${telegram.trim()}`
+        socialLinks.push({
+          platform: 'telegram',
+          username: telegramUsername,
+          url: `https://t.me/${telegramUsername.slice(1)}`
+        })
+      }
+
+      if (twitter.trim()) {
+        const twitterUsername = twitter.trim().startsWith('@') ? twitter.trim() : `@${twitter.trim()}`
+        socialLinks.push({
+          platform: 'x',
+          username: twitterUsername,
+          url: `https://x.com/${twitterUsername.slice(1)}`
+        })
+      }
+
+      const success = await updateSocialLinks(socialLinks)
+
+      if (success) {
+        toast.success('Social media links saved!')
+        setIsEditing(false)
+      } else {
+        toast.error('Failed to save social media links')
+      }
+    } catch (error) {
+      console.error('Error saving social links:', error)
+      toast.error('Failed to save social media links')
+    }
+
+    setIsSaving(false)
+  }
+
+  return (
+    <Card className="bg-[#030f1c] border border-[#C0E6FF]/20">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-white flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-[#4DA2FF]" />
+              Social Media Links
+            </CardTitle>
+            <p className="text-[#C0E6FF] text-sm mt-1">
+              Add your social media handles to display on your profile
+            </p>
+          </div>
+          <div className="flex gap-2">
+            {isEditing ? (
+              <>
+                <Button
+                  onClick={() => setIsEditing(false)}
+                  variant="outline"
+                  size="sm"
+                  className="border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  size="sm"
+                  className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white"
+                >
+                  {isSaving ? 'Saving...' : (
+                    <>
+                      <Save className="w-4 h-4 mr-1" />
+                      Save
+                    </>
+                  )}
+                </Button>
+              </>
+            ) : (
+              <Button
+                onClick={() => setIsEditing(true)}
+                size="sm"
+                className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white"
+              >
+                <Edit3 className="w-4 h-4 mr-1" />
+                Edit
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Discord */}
+        <div className="p-4 bg-[#1a2f51]/30 rounded-lg border border-[#C0E6FF]/10">
+          <label className="text-white font-medium block mb-2">Discord</label>
+          {isEditing ? (
+            <input
+              type="text"
+              value={discord}
+              onChange={(e) => setDiscord(e.target.value)}
+              placeholder="YourUsername#1234"
+              className="w-full px-3 py-2 bg-[#030F1C] border border-[#C0E6FF]/30 text-white rounded-md focus:ring-2 focus:ring-[#4DA2FF] focus:border-[#4DA2FF] focus:outline-none"
+            />
+          ) : (
+            <div>
+              {discord ? (
+                <span className="text-[#C0E6FF]">{discord}</span>
+              ) : (
+                <span className="text-[#C0E6FF]/50 text-sm">Not connected</span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Telegram */}
+        <div className="p-4 bg-[#1a2f51]/30 rounded-lg border border-[#C0E6FF]/10">
+          <label className="text-white font-medium block mb-2">Telegram</label>
+          {isEditing ? (
+            <input
+              type="text"
+              value={telegram}
+              onChange={(e) => setTelegram(e.target.value)}
+              placeholder="@yourusername"
+              className="w-full px-3 py-2 bg-[#030F1C] border border-[#C0E6FF]/30 text-white rounded-md focus:ring-2 focus:ring-[#4DA2FF] focus:border-[#4DA2FF] focus:outline-none"
+            />
+          ) : (
+            <div>
+              {telegram ? (
+                <span className="text-[#C0E6FF]">{telegram}</span>
+              ) : (
+                <span className="text-[#C0E6FF]/50 text-sm">Not connected</span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* X (Twitter) */}
+        <div className="p-4 bg-[#1a2f51]/30 rounded-lg border border-[#C0E6FF]/10">
+          <label className="text-white font-medium block mb-2">X (Twitter)</label>
+          {isEditing ? (
+            <input
+              type="text"
+              value={twitter}
+              onChange={(e) => setTwitter(e.target.value)}
+              placeholder="@yourusername"
+              className="w-full px-3 py-2 bg-[#030F1C] border border-[#C0E6FF]/30 text-white rounded-md focus:ring-2 focus:ring-[#4DA2FF] focus:border-[#4DA2FF] focus:outline-none"
+            />
+          ) : (
+            <div>
+              {twitter ? (
+                <span className="text-[#C0E6FF]">{twitter}</span>
+              ) : (
+                <span className="text-[#C0E6FF]/50 text-sm">Not connected</span>
+              )}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   )
 }

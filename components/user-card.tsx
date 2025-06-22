@@ -82,8 +82,7 @@ export function UserCard({ user }: UserCardProps) {
   }
 
   return (
-    <TooltipProvider>
-      <div className="enhanced-card group hover:border-[#4DA2FF]/50 transition-all duration-300 hover:shadow-lg hover:shadow-[#4DA2FF]/10">
+    <div className="enhanced-card group hover:border-[#4DA2FF]/50 transition-all duration-300 hover:shadow-lg hover:shadow-[#4DA2FF]/10">
         <div className="enhanced-card-content">
           {/* Header with Role Badge */}
           <div className="flex items-center justify-between mb-4">
@@ -326,8 +325,5 @@ export function UserCard({ user }: UserCardProps) {
 
         </div>
       </div>
-
-
-    </TooltipProvider>
   )
 }

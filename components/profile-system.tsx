@@ -681,9 +681,8 @@ export function ProfileSystem() {
                     { id: '3', name: 'DeFi Basics', type: 'free', price: 0, subscribers: 9200, color: '#3b82f6', avatar: '/images/channels/defi-basics.png' },
                     { id: '4', name: 'Advanced Bot Strategies', type: 'premium', price: 12.0, subscribers: 2100, color: '#f97316', avatar: '/images/channels/bot-strategies.png' },
                   ].map((channel) => (
-                    <TooltipProvider key={channel.id}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
+                    <Tooltip key={channel.id}>
+                      <TooltipTrigger asChild>
                           <div
                             className="w-36 h-16 rounded-lg flex items-center cursor-pointer transition-all hover:scale-105 border-2 border-[#C0E6FF]/20 relative overflow-hidden"
                             style={{ backgroundColor: channel.color }}
@@ -718,7 +717,6 @@ export function ProfileSystem() {
                           </div>
                         </TooltipContent>
                       </Tooltip>
-                    </TooltipProvider>
                   ))}
                 </div>
 

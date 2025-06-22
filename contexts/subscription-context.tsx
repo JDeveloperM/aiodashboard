@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useContext, useState, useEffect, useMemo, useRef } from "react"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { encryptedStorage } from "@/lib/encrypted-database-storage"
 import { toast } from "sonner"
@@ -29,6 +29,10 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   const [isLoaded, setIsLoaded] = useState(false)
   const [isUpdatingTier, setIsUpdatingTier] = useState(false)
+
+  // Prevent infinite re-renders with stable references
+  const stableUserAddress = useMemo(() => user?.address, [user?.address])
+  const lastLoadedAddress = useRef<string | undefined>(undefined)
 
   // Determine access based on AIONET tier system
   // According to guidelines: PRO and ROYAL have no cycle payments, ROYAL has VIP features
@@ -76,23 +80,25 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     await setTier("ROYAL")
   }
 
-  // Load tier from database when user connects
+  // Load tier from database when user connects (STABLE VERSION)
   useEffect(() => {
+    // Only load if address actually changed
+    if (lastLoadedAddress.current === stableUserAddress) {
+      return
+    }
+
+    lastLoadedAddress.current = stableUserAddress
+
     const loadTierFromDatabase = async () => {
-      if (user?.address) {
+      if (stableUserAddress) {
         try {
-          console.log(`[SubscriptionContext] Loading tier from database for ${user.address}`)
-          const profile = await encryptedStorage.getDecryptedProfile(user.address)
+          console.log(`[SubscriptionContext] Loading tier from database for ${stableUserAddress}`)
+          const profile = await encryptedStorage.getDecryptedProfile(stableUserAddress)
 
           if (profile?.role_tier) {
-            const dbTier = profile.role_tier
-            console.log(`[SubscriptionContext] Found tier in database: ${dbTier}`)
-
-            // Only update if different from current state
-            if (dbTier !== tier) {
-              console.log(`[SubscriptionContext] Updating tier from database: ${tier} -> ${dbTier}`)
-              setTierState(dbTier)
-            }
+            console.log(`[SubscriptionContext] Found tier in database: ${profile.role_tier}`)
+            // Use callback to avoid dependency on current tier state
+            setTierState(profile.role_tier)
           } else {
             console.log(`[SubscriptionContext] No tier found in database, defaulting to NOMAD`)
             setTierState("NOMAD")
@@ -110,8 +116,13 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       setIsLoaded(true)
     }
 
-    loadTierFromDatabase()
-  }, [user?.address]) // Re-run when user connects/disconnects
+    // Small delay to prevent rapid successive calls
+    const timeoutId = setTimeout(() => {
+      loadTierFromDatabase()
+    }, 100)
+
+    return () => clearTimeout(timeoutId)
+  }, [stableUserAddress]) // Only depend on stable address
 
 
 
