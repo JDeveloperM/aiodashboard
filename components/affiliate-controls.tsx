@@ -44,6 +44,7 @@ export function AffiliateControls() {
 
   // State for new redesigned data
   const [userProfileLevel, setUserProfileLevel] = useState<UserProfileLevel | null>(null)
+  const [userAffiliateLevel, setUserAffiliateLevel] = useState<number>(1)
   const [networkMetrics, setNetworkMetrics] = useState<NetworkMetrics>({
     personalNomadUsers: 0,
     personalProUsers: 0,
@@ -58,7 +59,7 @@ export function AffiliateControls() {
     networkLevel9Users: 0,
     networkLevel10Users: 0
   })
-  const [totalDirectUsers, setTotalDirectUsers] = useState(0)
+  const [totalAllUsers, setTotalAllUsers] = useState(0)
 
   // State for affiliate users list
   const [affiliateUsers, setAffiliateUsers] = useState<AffiliateUser[]>([])
@@ -117,13 +118,19 @@ export function AffiliateControls() {
       const profileLevel = await affiliateService.getUserProfileLevel(userAddress)
       setUserProfileLevel(profileLevel)
 
+      // Calculate user's affiliate level based on profile level
+      const affiliateLevel = profileLevel ? calculateAffiliateLevel(profileLevel.profileLevel) : 1
+      setUserAffiliateLevel(affiliateLevel)
+
       // Load network metrics (personal + network breakdown)
       const networkData = await affiliateService.getNetworkMetrics(userAddress)
       setNetworkMetrics(networkData)
 
-      // Calculate total direct users
+      // Calculate total users (direct + network)
       const totalDirect = networkData.personalNomadUsers + networkData.personalProUsers + networkData.personalRoyalUsers
-      setTotalDirectUsers(totalDirect)
+      const totalNetwork = networkData.networkNomadUsers + networkData.networkProUsers + networkData.networkRoyalUsers
+      const totalAll = totalDirect + totalNetwork
+      setTotalAllUsers(totalAll)
 
       // Load affiliate users with current filters (including network)
       const { users, totalCount: count } = await affiliateService.getAffiliateUsers(userAddress, {
@@ -165,7 +172,17 @@ export function AffiliateControls() {
           console.log('🧪 Using admin test data')
           setUserProfileLevel(adminProfileLevel)
           setNetworkMetrics(adminNetworkData)
-          setTotalDirectUsers(adminNetworkData.personalNomadUsers + adminNetworkData.personalProUsers + adminNetworkData.personalRoyalUsers)
+
+          // Calculate admin's affiliate level
+          const adminAffiliateLevel = adminProfileLevel ? calculateAffiliateLevel(adminProfileLevel.profileLevel) : 1
+          setUserAffiliateLevel(adminAffiliateLevel)
+
+          // Calculate total users for admin (direct + network)
+          const adminTotalDirect = adminNetworkData.personalNomadUsers + adminNetworkData.personalProUsers + adminNetworkData.personalRoyalUsers
+          const adminTotalNetwork = adminNetworkData.networkNomadUsers + adminNetworkData.networkProUsers + adminNetworkData.networkRoyalUsers
+          const adminTotalAll = adminTotalDirect + adminTotalNetwork
+          setTotalAllUsers(adminTotalAll)
+
           setAffiliateUsers(adminUsers)
           setTotalCount(adminUsers.length)
           setCommissionData(adminCommissionData)
@@ -178,6 +195,18 @@ export function AffiliateControls() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Helper function to calculate affiliate level from profile level
+  // Profile levels 1-5 map directly to affiliate levels 1-5
+  // Profile levels 6-10 are capped at affiliate level 5
+  const calculateAffiliateLevel = (profileLevel: number): number => {
+    if (profileLevel >= 5) return 5  // Profile Level 5-10 → Affiliate Level 5 (capped)
+    if (profileLevel >= 4) return 4  // Profile Level 4 → Affiliate Level 4
+    if (profileLevel >= 3) return 3  // Profile Level 3 → Affiliate Level 3
+    if (profileLevel >= 2) return 2  // Profile Level 2 → Affiliate Level 2
+    if (profileLevel >= 1) return 1  // Profile Level 1 → Affiliate Level 1
+    return 1  // Default/fallback
   }
 
   // Helper functions
@@ -386,7 +415,7 @@ export function AffiliateControls() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-[#C0E6FF]">TOTAL USERS</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">{totalDirectUsers}</p>
+                <p className="text-2xl font-bold text-[#FFFFFF]">{totalAllUsers}</p>
               </div>
               <div className="bg-[#4DA2FF]/20 p-3 rounded-full">
                 <Users className="w-6 h-6 text-white" />
@@ -395,13 +424,13 @@ export function AffiliateControls() {
           </div>
         </div>
 
-        {/* My Profile Level Card */}
+        {/* My Affiliate Level Card */}
         <div className="enhanced-card">
           <div className="enhanced-card-content">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[#C0E6FF]">MY PROFILE LEVEL</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">Level {userProfileLevel?.profileLevel || 1}</p>
+                <p className="text-sm font-medium text-[#C0E6FF]">MY AFFILIATE LEVEL</p>
+                <p className="text-2xl font-bold text-[#FFFFFF]">Level {userAffiliateLevel}</p>
               </div>
               <div className="bg-purple-600/20 p-3 rounded-full">
                 <Award className="w-6 h-6 text-purple-400" />
