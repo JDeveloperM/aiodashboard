@@ -17,6 +17,7 @@ interface EnhancedAvatarProps {
   className?: string
   showStorageInfo?: boolean
   showDeleteButton?: boolean
+  showStatusIndicator?: boolean
 }
 
 const sizeClasses = {
@@ -32,7 +33,8 @@ export function EnhancedAvatar({
   editable = true,
   className,
   showStorageInfo = false,
-  showDeleteButton = true
+  showDeleteButton = true,
+  showStatusIndicator = false
 }: EnhancedAvatarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -180,6 +182,17 @@ export function EnhancedAvatar({
         {avatarLoading && (
           <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
             <Loader2 className="w-6 h-6 text-white animate-spin" />
+          </div>
+        )}
+
+        {/* AIONET Status Indicator */}
+        {showStatusIndicator && (
+          <div className="absolute -bottom-2 -right-2 w-16 h-16 rounded-full shadow-lg">
+            <img
+              src="/images/animepfp/AIONETmin.png"
+              alt="AIONET Status"
+              className="w-full h-full object-contain rounded-full"
+            />
           </div>
         )}
 

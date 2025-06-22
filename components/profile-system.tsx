@@ -647,6 +647,7 @@ export function ProfileSystem() {
                   size="2xl"
                   editable={true}
                   showStorageInfo={true}
+                  showStatusIndicator={true}
                   className="mb-4 mt-6"
                 />
 

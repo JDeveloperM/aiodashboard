@@ -663,6 +663,7 @@ export function PersistentProfileSystem() {
                     editable={true}
                     showStorageInfo={false}
                     showDeleteButton={false}
+                    showStatusIndicator={false}
                   />
                 </div>
 
@@ -675,9 +676,20 @@ export function PersistentProfileSystem() {
                           size="sm"
                           variant={social.connected ? "default" : "outline"}
                           className={`w-12 h-12 p-0 transition-all duration-200 ${social.connected
-                            ? "bg-[#10b981] hover:bg-[#10b981] text-white border-[#10b981]"
+                            ? "text-white border-[#7dffae63] backdrop-blur-sm"
                             : "border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 hover:border-[#C0E6FF] bg-transparent"
                           }`}
+                          style={social.connected ? { backgroundColor: '#7dffae63' } : {}}
+                          onMouseEnter={(e) => {
+                            if (social.connected) {
+                              e.currentTarget.style.backgroundColor = '#7dffae88'
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (social.connected) {
+                              e.currentTarget.style.backgroundColor = '#7dffae63'
+                            }
+                          }}
                           onClick={() => handleSocialConnect(social.platform, social.url)}
                         >
                           <Image
@@ -722,17 +734,24 @@ export function PersistentProfileSystem() {
               </div>
 
               {/* Username and Referral Link below banner */}
-              <div className="px-4 md:px-8 py-4 bg-[#030f1c] rounded-b-lg">
+              <div className="px-4 md:px-8 py-4 bg-[#1a2f51] border border-[#C0E6FF]/20 rounded-b-lg">
                 {/* Username with Referral Link */}
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                   <div className="flex flex-col justify-center">
-                    <h2 className="text-lg md:text-xl font-bold text-white">{profileData.name}</h2>
+                    <div className="flex items-center gap-2 border border-[#C0E6FF]/10 rounded-lg px-3 py-2">
+                      <img
+                        src="/images/animepfp/AIONETmin.png"
+                        alt="AIONET"
+                        className="w-6 h-6 object-contain"
+                      />
+                      <h2 className="text-lg md:text-xl font-bold text-white">{profileData.name}</h2>
+                    </div>
                   </div>
 
                   {/* Referral Link - positioned next to username */}
                   <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
                     <span className="text-[#C0E6FF] text-sm font-medium">Referral:</span>
-                    <div className="flex items-center gap-1 md:gap-2 bg-[#1a2f51]/50 rounded-lg px-2 md:px-3 py-2">
+                    <div className="flex items-center gap-1 md:gap-2 bg-[#1a2f51]/50 border border-[#C0E6FF]/10 rounded-lg px-2 md:px-3 py-2">
                       <Input
                         value={affiliateLink}
                         readOnly
