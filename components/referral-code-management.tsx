@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -93,27 +93,25 @@ export function ReferralCodeManagement() {
 
   if (isLoading) {
     return (
-      <Card className="bg-[#030f1c] border-[#C0E6FF]/20">
-        <CardContent className="p-6">
+      <div className="enhanced-card">
+        <div className="enhanced-card-content">
           <div className="flex items-center justify-center">
             <RefreshCw className="w-6 h-6 text-[#4DA2FF] animate-spin" />
             <span className="ml-2 text-[#C0E6FF]">Loading referral codes...</span>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
   if (codes.length === 0) {
     return (
-      <Card className="bg-[#030f1c] border-[#C0E6FF]/20">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
+      <div className="enhanced-card">
+        <div className="enhanced-card-content">
+          <div className="flex items-center gap-2 text-white mb-4">
             <Users className="w-5 h-5 text-[#4DA2FF]" />
-            My Referral Codes
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
+            <h3 className="font-semibold">My Referral Codes</h3>
+          </div>
           <div className="text-center py-8">
             <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-white mb-2">No Referral Codes Yet</h3>
@@ -129,19 +127,19 @@ export function ReferralCodeManagement() {
               Refresh
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
   return (
-    <Card className="bg-[#030f1c] border-[#C0E6FF]/20">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-white flex items-center gap-2">
+    <div className="enhanced-card">
+      <div className="enhanced-card-content">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2 text-white">
             <Users className="w-5 h-5 text-[#4DA2FF]" />
-            My Referral Codes
-          </CardTitle>
+            <h3 className="font-semibold">My Referral Codes</h3>
+          </div>
           <div className="flex gap-2">
             <Button
               onClick={handleRefreshStatistics}
@@ -155,8 +153,7 @@ export function ReferralCodeManagement() {
             </Button>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="p-6 space-y-4">
+        <div className="space-y-4">
         {/* Statistics Info */}
         <div className="bg-[#1a2f51]/30 rounded-lg p-3 border border-[#C0E6FF]/10">
           <p className="text-[#C0E6FF]/70 text-sm">
@@ -294,7 +291,8 @@ export function ReferralCodeManagement() {
             )}
           </div>
         ))}
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   )
 }

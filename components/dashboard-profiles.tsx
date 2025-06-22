@@ -584,15 +584,15 @@ function SocialMediaSection() {
   }
 
   return (
-    <Card className="bg-[#030f1c] border border-[#C0E6FF]/20">
-      <CardHeader>
-        <div className="flex items-center justify-between">
+    <div className="enhanced-card">
+      <div className="enhanced-card-content">
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <CardTitle className="text-white flex items-center gap-2">
+            <div className="flex items-center gap-2 text-white mb-1">
               <MessageSquare className="w-5 h-5 text-[#4DA2FF]" />
-              Social Media Links
-            </CardTitle>
-            <p className="text-[#C0E6FF] text-sm mt-1">
+              <h3 className="font-semibold">Social Media Links</h3>
+            </div>
+            <p className="text-[#C0E6FF] text-sm">
               Add your social media handles to display on your profile
             </p>
           </div>
@@ -634,8 +634,7 @@ function SocialMediaSection() {
             )}
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        <div className="space-y-4">
         {/* Discord */}
         <div className="p-4 bg-[#1a2f51]/30 rounded-lg border border-[#C0E6FF]/10">
           <label className="text-white font-medium block mb-2">Discord</label>
@@ -701,7 +700,8 @@ function SocialMediaSection() {
             </div>
           )}
         </div>
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   )
 }

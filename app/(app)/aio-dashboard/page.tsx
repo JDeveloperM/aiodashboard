@@ -2,27 +2,12 @@
 
 import Link from "next/link"
 import { useSubscription } from "@/contexts/subscription-context"
+import { useCommunityAnalytics } from "@/hooks/use-community-analytics"
 
 import { RoleImage } from "@/components/ui/role-image"
-import { TrendingUp, Users, Copy, Zap, BookOpen, ArrowRight, CheckCircle, Dice6, Rocket } from "lucide-react"
+import { TrendingUp, Users, Copy, Zap, BookOpen, ArrowRight, CheckCircle, Dice6, Rocket, RefreshCw } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
-
-
-
-// AIONET Community Analytics
-const aionetAnalytics = {
-  // Community Stats
-  totalHolders: "283",
-  nomadUsers: "156", // Users with NOMAD tier (basic users)
-  proHolders: "163",
-  royalHolders: "120",
-  targetHolders: "1100", // Goal for community growth
-  dewhaleTargetHolders: "500", // Goal for DEWhale deployment
-
-  // Community Growth
-  monthlyGrowth: "+15%"
-}
 
 // Navigation cards data
 const navigationCards = [
@@ -73,29 +58,87 @@ const navigationCards = [
 
 export default function AIODashboard() {
   const { tier } = useSubscription()
+  const { analytics, isLoading, error, refreshAnalytics } = useCommunityAnalytics()
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">AIO Dashboard</h1>
+          </div>
+        </div>
+
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="enhanced-card">
+              <div className="enhanced-card-content">
+                <div className="flex items-center justify-center">
+                  <RefreshCw className="w-6 h-6 text-[#4DA2FF] animate-spin" />
+                  <span className="ml-2 text-[#C0E6FF]">Loading...</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error || !analytics) {
+    return (
+      <div className="space-y-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">AIO Dashboard</h1>
+          </div>
+        </div>
+
+        <div className="enhanced-card">
+          <div className="enhanced-card-content text-center py-8">
+            <p className="text-red-400 mb-4">Failed to load community analytics</p>
+            <button
+              onClick={refreshAnalytics}
+              className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white px-4 py-2 rounded-md"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
         {/* Header */}
         <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">AIO Dashboard</h1>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">AIO Dashboard</h1>
+            <p className="text-[#C0E6FF] text-sm mt-1">
+              Last updated: {new Date(analytics.lastUpdated).toLocaleString()}
+            </p>
+          </div>
+          <button
+            onClick={refreshAnalytics}
+            className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white px-4 py-2 rounded-md flex items-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
         </div>
-      </div>
 
       {/* AIONET Community Stats */}
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-        {/* Total NFT Holders */}
+        {/* Total AIONET Users */}
         <div className="enhanced-card">
           <div className="enhanced-card-content">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white">Total NFT Holders</p>
-                <p className="text-2xl font-bold text-white">{aionetAnalytics.totalHolders}</p>
-                <div className="flex items-center mt-1">
-                  <TrendingUp className="w-4 h-4 text-green-400 mr-1" />
-                  <span className="text-green-400 text-sm">Target: {aionetAnalytics.targetHolders}</span>
-                </div>
+                <p className="text-sm font-medium text-white">Total AIONET Users</p>
+                <p className="text-2xl font-bold text-white">{analytics.totalHolders}</p>
               </div>
               <div className="bg-[#4DA2FF]/20 p-3 rounded-full">
                 <Users className="w-6 h-6 text-white" />
@@ -110,11 +153,7 @@ export default function AIODashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-white">NOMAD Users</p>
-                <p className="text-2xl font-bold text-white">{aionetAnalytics.nomadUsers}</p>
-                <div className="flex items-center mt-1">
-                  <RoleImage role="NOMAD" size="sm" className="mr-1" />
-                  <span className="text-[#C0E6FF] text-sm">Basic Tier</span>
-                </div>
+                <p className="text-2xl font-bold text-white">{analytics.nomadUsers}</p>
               </div>
               <RoleImage role="NOMAD" size="2xl" />
             </div>
@@ -127,11 +166,7 @@ export default function AIODashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-white">PRO NFT Holders</p>
-                <p className="text-2xl font-bold text-white">{aionetAnalytics.proHolders}</p>
-                <div className="flex items-center mt-1">
-                  <RoleImage role="PRO" size="sm" className="mr-1" />
-                  <span className="text-[#C0E6FF] text-sm">PRO Tier</span>
-                </div>
+                <p className="text-2xl font-bold text-white">{analytics.proHolders}</p>
               </div>
               <RoleImage role="PRO" size="2xl" />
             </div>
@@ -144,11 +179,7 @@ export default function AIODashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-white">ROYAL NFT Holders</p>
-                <p className="text-2xl font-bold text-white">{aionetAnalytics.royalHolders}</p>
-                <div className="flex items-center mt-1">
-                  <RoleImage role="ROYAL" size="sm" className="mr-1" />
-                  <span className="text-[#C0E6FF] text-sm">ROYAL Tier</span>
-                </div>
+                <p className="text-2xl font-bold text-white">{analytics.royalHolders}</p>
               </div>
               <RoleImage role="ROYAL" size="2xl" />
             </div>
@@ -212,13 +243,13 @@ export default function AIODashboard() {
             <div className="space-y-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-white mb-2">
-                  {aionetAnalytics.totalHolders} / {aionetAnalytics.dewhaleTargetHolders}
+                  {analytics.totalHolders} / {analytics.dewhaleTargetHolders}
                 </div>
                 <div className="text-sm text-[#C0E6FF]">Holders for DEWhale Deployment</div>
                 <div className="w-full bg-gray-700 rounded-full h-3 mt-2">
                   <div
                     className="bg-gradient-to-r from-[#4DA2FF] to-[#007ACC] h-3 rounded-full transition-all duration-300"
-                    style={{ width: `${(parseInt(aionetAnalytics.totalHolders) / parseInt(aionetAnalytics.dewhaleTargetHolders)) * 100}%` }}
+                    style={{ width: `${(analytics.totalHolders / analytics.dewhaleTargetHolders) * 100}%` }}
                   ></div>
                 </div>
               </div>
