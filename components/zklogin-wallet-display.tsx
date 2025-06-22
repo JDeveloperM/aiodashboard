@@ -25,6 +25,8 @@ import { useSuiClientQuery } from '@mysten/dapp-kit'
 import { useAvatar } from '@/contexts/avatar-context'
 import { usePersistentProfile } from '@/hooks/use-persistent-profile'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { DepositModal } from './deposit-modal'
+import { SendModal } from './send-modal'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 
@@ -46,6 +48,8 @@ export function ZkLoginWalletDisplay() {
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [jwtPayload, setJwtPayload] = useState<JWTPayload | null>(null)
   const [isOpen, setIsOpen] = useState(false)
+  const [showDepositModal, setShowDepositModal] = useState(false)
+  const [showSendModal, setShowSendModal] = useState(false)
 
   // USDC contract address on Sui testnet
   const USDC_COIN_TYPE = '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC'
@@ -123,6 +127,7 @@ export function ZkLoginWalletDisplay() {
   }
 
   return (
+    <>
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button
@@ -210,14 +215,14 @@ export function ZkLoginWalletDisplay() {
           <div className="flex gap-2">
             <Button
               className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
-              onClick={() => toast.info('Send feature coming soon!')}
+              onClick={() => setShowSendModal(true)}
             >
               <Send className="w-4 h-4 mr-2" />
               Send
             </Button>
             <Button
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => toast.info('Deposit feature coming soon!')}
+              onClick={() => setShowDepositModal(true)}
             >
               <ArrowDownToLine className="w-4 h-4 mr-2" />
               Deposit
@@ -269,5 +274,25 @@ export function ZkLoginWalletDisplay() {
         </div>
       </PopoverContent>
     </Popover>
+
+    {/* Deposit Modal */}
+    <DepositModal
+      isOpen={showDepositModal}
+      onClose={() => setShowDepositModal(false)}
+      walletAddress={zkLoginUserAddress}
+      suiBalance={suiAmount}
+      usdcBalance={usdcAmount}
+    />
+
+    {/* Send Modal */}
+    <SendModal
+      isOpen={showSendModal}
+      onClose={() => setShowSendModal(false)}
+      walletAddress={zkLoginUserAddress}
+      suiBalance={suiAmount}
+      usdcBalance={usdcAmount}
+      isZkLogin={true}
+    />
+  </>
   )
 }
