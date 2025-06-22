@@ -101,7 +101,6 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Prevent infinite re-renders
     if (isProcessing.current) {
-      console.log('⏸️ Skipping SuiAuth update - already processing')
       return
     }
 
@@ -111,7 +110,6 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
 
     if (lastSuiAddress.current === currentSuiAddress &&
         lastZkLoginAddress.current === currentZkLoginAddress) {
-      console.log('⏸️ Skipping SuiAuth update - no address change')
       return
     }
 
@@ -137,14 +135,7 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
             const onboardingCompleted = existingProfile?.onboarding_completed === true
             userIsNew = !profileExists || !onboardingCompleted
 
-            console.log(`🔍 User ${currentSuiAddress} is ${userIsNew ? 'NEW' : 'EXISTING'}`, {
-              profileExists,
-              onboardingCompleted,
-              profileId: existingProfile?.id,
-              username: existingProfile?.username
-            })
           } catch (error) {
-            console.log('📝 Profile check failed, treating as new user:', error)
             userIsNew = true
           }
 
@@ -170,14 +161,7 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
             const onboardingCompleted = existingProfile?.onboarding_completed === true
             userIsNew = !profileExists || !onboardingCompleted
 
-            console.log(`🔍 zkLogin User ${currentZkLoginAddress} is ${userIsNew ? 'NEW' : 'EXISTING'}`, {
-              profileExists,
-              onboardingCompleted,
-              profileId: existingProfile?.id,
-              username: existingProfile?.username
-            })
           } catch (error) {
-            console.log('📝 Profile check failed, treating as new user:', error)
             userIsNew = true
           }
 
@@ -211,18 +195,15 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
               lastLoginAt: new Date(existingSession.lastLoginAt)
             }
 
-            console.log('User restored from session - wallet may reconnect automatically')
           }
         }
 
         // For new users, trigger database profile creation
         if (currentUser && userIsNew) {
-          console.log('🆕 Creating database profile for new user...')
           try {
             await encryptedStorage.ensureProfileExists(currentUser.address)
-            console.log('✅ Database profile created for new user')
           } catch (error) {
-            console.error('❌ Failed to create database profile:', error)
+            console.error('Failed to create database profile:', error)
           }
         }
 
@@ -254,7 +235,6 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
               lastLoginAt: currentUser.lastLoginAt instanceof Date ? currentUser.lastLoginAt.toISOString() : new Date(currentUser.lastLoginAt).toISOString()
             })
 
-            console.log('User session saved to cookies')
           }
         }
 
@@ -290,8 +270,6 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
       if (user) {
         localStorage.removeItem(`sui_user_${user.address}`)
       }
-
-      console.log('User signed out and session cleared')
     } catch (error) {
       console.error('Error signing out:', error)
     }
@@ -319,7 +297,6 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
         lastLoginAt: updatedUser.lastLoginAt instanceof Date ? updatedUser.lastLoginAt.toISOString() : new Date(updatedUser.lastLoginAt).toISOString()
       })
 
-      console.log('Profile updated and saved to cookies')
     } catch (error) {
       console.error('Error updating profile:', error)
     }
@@ -350,10 +327,8 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
         lastLoginAt: new Date().toISOString()
       }
       saveAuthSession(session)
-
-      console.log('✅ Onboarding completed for user')
     } catch (error) {
-      console.error('❌ Failed to complete onboarding:', error)
+      console.error('Failed to complete onboarding:', error)
     }
   }
 
@@ -366,9 +341,8 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
 
       // Save to localStorage and cookies
       localStorage.setItem(`sui_user_${user.address}`, JSON.stringify(updatedUser))
-      console.log('✅ Profile setup completed for user')
     } catch (error) {
-      console.error('❌ Failed to complete profile setup:', error)
+      console.error('Failed to complete profile setup:', error)
     }
   }
 
@@ -381,9 +355,8 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
 
       // Save to localStorage and cookies
       localStorage.setItem(`sui_user_${user.address}`, JSON.stringify(updatedUser))
-      console.log('✅ KYC completed for user')
     } catch (error) {
-      console.error('❌ Failed to complete KYC:', error)
+      console.error('Failed to complete KYC:', error)
     }
   }
 
@@ -411,7 +384,7 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
 
         // User state refreshed successfully
       } catch (error) {
-        console.error('❌ Failed to refresh user state:', error)
+        console.error('Failed to refresh user state:', error)
       }
     }
   }, [user])

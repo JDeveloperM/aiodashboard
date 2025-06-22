@@ -18,15 +18,6 @@ export const Sidebar = memo(function Sidebar() {
   // RESTORED: Using stable subscription context
   const { canAccessCryptoBots, canAccessForexBots, tier } = useSubscription()
 
-  // Debug re-renders (reduced logging)
-  console.log('🔄 STABLE Sidebar re-render:', {
-    pathname,
-    tier,
-    timestamp: new Date().toISOString()
-  })
-
-
-
   // Close mobile sidebar when route changes
   useEffect(() => {
     setIsMobileOpen(false)
