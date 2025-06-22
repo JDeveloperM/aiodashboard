@@ -404,7 +404,8 @@ export default function RaffleCraftPage() {
     startQuiz,
     submitQuiz,
     mintTicket,
-    resetQuiz
+    resetQuiz,
+    showTicketMintingInterface
   } = useRaffleCraft()
 
   // Quiz timer
@@ -600,7 +601,7 @@ export default function RaffleCraftPage() {
                       <h3 className="text-lg font-semibold text-green-400 mb-2">Quiz Completed!</h3>
                       <p className="text-[#C0E6FF] mb-4">You answered correctly and can now mint a raffle ticket.</p>
                       <Button
-                        onClick={() => window.location.reload()}
+                        onClick={showTicketMintingInterface}
                         className="bg-green-600 hover:bg-green-700 text-white"
                       >
                         <Ticket className="w-4 h-4 mr-2" />
@@ -627,12 +628,12 @@ export default function RaffleCraftPage() {
             showQuizResults ? (
               <QuizResults
                 isCorrect={userQuizAttempt?.is_correct || false}
-                correctAnswer={currentWeek.question_text} // This should be the correct answer
+                correctAnswer={currentWeek.options[0]} // First option is always correct in our format
                 userAnswer={selectedAnswer}
-                explanation="Quiz explanation would go here"
+                explanation="Great job! You've earned the right to mint a raffle ticket."
                 pointsEarned={userQuizAttempt?.points_earned || 0}
                 canMintTicket={userQuizAttempt?.can_mint_ticket || false}
-                onContinue={() => window.location.reload()}
+                onContinue={showTicketMintingInterface}
               />
             ) : (
               <QuizComponent

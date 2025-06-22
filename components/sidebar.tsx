@@ -47,7 +47,7 @@ export const Sidebar = memo(function Sidebar() {
   }, [isMobileOpen])
 
   const navigation = [
-    { name: "AIO Dashboard", href: "/aio-dashboard", icon: LayoutDashboard, restricted: false },
+    { name: "Dashboard", href: "/aio-dashboard", icon: LayoutDashboard, restricted: false },
     {
       name: "Copy Trading",
       href: "/copy-trading",
@@ -63,9 +63,9 @@ export const Sidebar = memo(function Sidebar() {
     },
     { name: "AIO Connect", href: "/community", icon: Globe, restricted: false },
     { name: "AIO Creators", href: "/aio-creators", icon: Users, restricted: false },
-    { name: "RaffleCraft", href: "/dapps/rafflecraft", icon: Dice6, restricted: false },
-    { name: "DEWhale Launchpad", href: "/dapps/dewhale-launchpad", icon: Rocket, restricted: false },
-    { name: "MetaGo Academy", href: "/metago-academy", icon: BookOpen, restricted: false },
+    { name: "RaffleQuiz", href: "/dapps/rafflecraft", icon: Dice6, restricted: false },
+    { name: "Dewhale", href: "/dapps/dewhale-launchpad", icon: Rocket, restricted: false },
+    { name: "E-Learning", href: "/metago-academy", icon: BookOpen, restricted: false },
   ]
 
   const bottomNavigation = [

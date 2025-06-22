@@ -172,18 +172,36 @@ export function useRaffleCraft() {
       const result = await response.json()
       
       if (result.success) {
-        setState(prev => ({ 
-          ...prev, 
+        // Create a mock user quiz attempt object to update the state immediately
+        const mockQuizAttempt: UserQuizAttempt = {
+          id: 'temp-id',
+          user_address: user.address,
+          week_number: state.currentWeek.week_number,
+          quiz_question_id: state.currentWeek.question_id,
+          user_answer: answer,
+          is_correct: result.data.is_correct,
+          attempt_number: 1,
+          points_earned: result.data.points_earned,
+          can_mint_ticket: result.data.can_mint_ticket,
+          attempted_at: new Date().toISOString()
+        }
+
+        setState(prev => ({
+          ...prev,
           quizCompleted: true,
           quizAnswer: answer,
           showQuizResults: true,
           isSubmittingQuiz: false,
-          showTicketMinting: result.data.can_mint_ticket
+          showTicketMinting: result.data.can_mint_ticket,
+          userQuizAttempt: mockQuizAttempt
         }))
-        
-        // Refresh eligibility after quiz submission
-        await checkEligibility()
-        
+
+        // Refresh eligibility and user data after quiz submission
+        await Promise.all([
+          checkEligibility(),
+          loadUserData()
+        ])
+
         return result.data
       } else {
         setState(prev => ({ ...prev, isSubmittingQuiz: false }))
@@ -264,12 +282,23 @@ export function useRaffleCraft() {
    * Reset quiz state
    */
   const resetQuiz = useCallback(() => {
-    setState(prev => ({ 
-      ...prev, 
+    setState(prev => ({
+      ...prev,
       quizAnswer: '',
       quizStartTime: 0,
       showQuizResults: false,
       showTicketMinting: false
+    }))
+  }, [])
+
+  /**
+   * Show ticket minting interface
+   */
+  const showTicketMintingInterface = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      showTicketMinting: true,
+      showQuizResults: false
     }))
   }, [])
 
@@ -304,6 +333,7 @@ export function useRaffleCraft() {
     submitQuiz,
     mintTicket,
     resetQuiz,
+    showTicketMintingInterface,
     
     // Computed values
     canTakeQuiz: !state.quizCompleted && state.currentWeek && !state.userQuizAttempt,
