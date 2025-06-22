@@ -2,6 +2,7 @@
  * zkLogin Wallet Hook
  * Provides easy access to zkLogin wallet functionality
  */
+"use client"
 
 import { useState, useEffect, useMemo } from 'react'
 import { SuiClient } from '@mysten/sui/client'
