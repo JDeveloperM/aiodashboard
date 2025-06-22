@@ -99,7 +99,7 @@ export function DashboardProfiles() {
       const [firstName = "", lastName = ""] = fullName.split(" ")
 
       // Check if email was set once for traditional wallet users
-      const hasEmailSet = !isZkLoginUser && profile.email && profile.email.trim() !== ""
+      const hasEmailSet = !isZkLoginUser && !!profile.email && profile.email.trim() !== ""
       setEmailSetOnce(hasEmailSet)
 
       setProfileData({
