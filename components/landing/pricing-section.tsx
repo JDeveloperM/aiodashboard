@@ -40,57 +40,57 @@ const useInView = (ref: React.RefObject<Element>, options: InViewOptions = {}) =
 
 const plans = [
   {
-    name: "Free",
-    price: "€0",
-    description: "Perfect for beginners to explore the platform",
+    name: "NOMAD",
+    price: "Free",
+    description: "Start your Web3 journey with basic community access",
     features: [
-      { included: true, text: "Access to basic dashboard" },
-      { included: true, text: "1 free trading strategy" },
-      { included: true, text: "Real-time market data" },
-      { included: true, text: "Basic analytics" },
-      { included: false, text: "Crypto trading bots" },
-      { included: false, text: "Forex trading bots" },
-      { included: false, text: "Priority support" },
+      { included: true, text: "Profile & Achievement System" },
+      { included: true, text: "Basic Referral Network" },
+      { included: true, text: "RaffleQuiz Participation" },
+      { included: true, text: "Community Dashboard" },
+      { included: false, text: "Premium Channel Access" },
+      { included: false, text: "Creator Tools" },
+      { included: false, text: "Advanced Analytics" },
     ],
     popular: false,
-    buttonText: "Get Started",
+    buttonText: "Join Free",
     color: "#3b82f6" // blue
   },
   {
-    name: "Premium",
-    price: "€250",
-    period: "one-time",
-    description: "For active traders seeking advanced strategies",
+    name: "PRO",
+    price: "0.5 SUI",
+    period: "NFT mint",
+    description: "Unlock premium features and creator tools",
     features: [
-      { included: true, text: "Everything in Free" },
-      { included: true, text: "Unlimited trading strategies" },
-      { included: true, text: "Crypto trading bots" },
-      { included: true, text: "Advanced analytics" },
-      { included: true, text: "Email support" },
-      { included: false, text: "Forex trading bots" },
-      { included: false, text: "Custom strategy development" },
+      { included: true, text: "Everything in NOMAD" },
+      { included: true, text: "3 Free Premium Channel Access" },
+      { included: true, text: "Create up to 2 Channels" },
+      { included: true, text: "Advanced Referral Analytics" },
+      { included: true, text: "Creator Controls Dashboard" },
+      { included: false, text: "Maximum Channel Creation" },
+      { included: false, text: "Priority Creator Support" },
     ],
     popular: true,
-    buttonText: "Upgrade Now",
+    buttonText: "Mint PRO NFT",
     color: "#8b5cf6" // purple
   },
   {
-    name: "VIP",
-    price: "€600",
-    period: "one-time",
-    description: "Complete access to all features and priority support",
+    name: "ROYAL",
+    price: "1.0 SUI",
+    period: "NFT mint",
+    description: "Ultimate access with maximum creator privileges",
     features: [
-      { included: true, text: "Everything in Premium" },
-      { included: true, text: "Forex trading bots" },
-      { included: true, text: "Stock trading bots" },
-      { included: true, text: "Priority support" },
-      { included: true, text: "1-on-1 strategy consultation" },
-      { included: true, text: "Early access to new features" },
-      { included: true, text: "Dedicated account manager" },
+      { included: true, text: "Everything in PRO" },
+      { included: true, text: "9 Free Premium Channel Access" },
+      { included: true, text: "Create up to 3 Channels" },
+      { included: true, text: "Priority Creator Support" },
+      { included: true, text: "Exclusive ROYAL Features" },
+      { included: true, text: "Advanced Network Analytics" },
+      { included: true, text: "Early Access to New Features" },
     ],
     popular: false,
-    buttonText: "Upgrade to VIP",
-    color: "#f59e0b" // Changed from #0ea5e9 to amber/golden color
+    buttonText: "Mint ROYAL NFT",
+    color: "#f59e0b" // golden color
   }
 ]
 
@@ -122,11 +122,11 @@ export function PricingSection() {
           </div>
           
           <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white">
-            One-Time <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">Pricing</span>
+            NFT-Based <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">Membership</span>
           </h2>
-          
+
           <p className="text-lg md:text-xl text-white/70 max-w-3xl mx-auto">
-            No monthly fees or hidden costs. Pay once and get lifetime access to your chosen plan.
+            Mint your membership NFT on Sui Network for lifetime access to exclusive community features and creator tools.
           </p>
         </div>
 

@@ -67,29 +67,29 @@ export function HeroSection() {
           className="text-center"
         >
           <div className="inline-block mb-3 px-4 py-1 rounded-full bg-white/5 backdrop-blur-sm border border-white/10">
-            <span className="text-sm font-medium text-white/80">🇬🇷 Greek NFT-Gated Community</span>
+            <span className="text-sm font-medium text-white/80">🚀 NFT-Gated Community on Sui</span>
           </div>
 
           <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white leading-tight tracking-tight">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">MetadudesX</span>
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">AIONET</span>
           </h1>
 
           <p className="text-lg md:text-xl text-white/70 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Empowering everyday individuals through decentralized investment opportunities and blockchain technology. Join our NFT-gated community and access exclusive trading bots, DApps, and educational resources on Sui Network.
+            Join the exclusive NFT-gated community on Sui Network. Build your profile, earn achievements, grow your referral network, and access premium creator content. Experience Web3 social features with zkLogin authentication.
           </p>
 
           <div className="flex flex-wrap justify-center gap-4 mb-10">
             <div className="flex items-center bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-4 py-2">
               <span className="h-2 w-2 rounded-full bg-blue-500 mr-2"></span>
-              <span className="text-sm font-medium text-white/80">AI-Powered</span>
+              <span className="text-sm font-medium text-white/80">NFT-Gated</span>
             </div>
             <div className="flex items-center bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-4 py-2">
               <span className="h-2 w-2 rounded-full bg-purple-500 mr-2"></span>
-              <span className="text-sm font-medium text-white/80">Multi-Market</span>
+              <span className="text-sm font-medium text-white/80">Sui Network</span>
             </div>
             <div className="flex items-center bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-4 py-2">
               <span className="h-2 w-2 rounded-full bg-green-500 mr-2"></span>
-              <span className="text-sm font-medium text-white/80">Automated</span>
+              <span className="text-sm font-medium text-white/80">Social Auth</span>
             </div>
           </div>
 
@@ -144,18 +144,18 @@ export function HeroSection() {
 
             {/* Floating stats */}
             <div className="absolute top-24 right-8 bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-3 shadow-lg transform rotate-3 hover:rotate-0 transition-transform duration-300">
-              <div className="text-xs text-blue-400 font-medium">Total Profit</div>
-              <div className="text-lg font-bold text-white">+$24,876.55</div>
+              <div className="text-xs text-blue-400 font-medium">Community Members</div>
+              <div className="text-lg font-bold text-white">2,847</div>
             </div>
 
             <div className="absolute bottom-24 left-8 bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-3 shadow-lg transform -rotate-2 hover:rotate-0 transition-transform duration-300">
-              <div className="text-xs text-purple-400 font-medium">Win Rate</div>
-              <div className="text-lg font-bold text-white">92.3%</div>
+              <div className="text-xs text-purple-400 font-medium">NFT Holders</div>
+              <div className="text-lg font-bold text-white">1,234</div>
             </div>
 
             <div className="absolute top-1/2 left-1/4 bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-3 shadow-lg transform rotate-1 hover:rotate-0 transition-transform duration-300">
-              <div className="text-xs text-green-400 font-medium">Active Bots</div>
-              <div className="text-lg font-bold text-white">12</div>
+              <div className="text-xs text-green-400 font-medium">Active Creators</div>
+              <div className="text-lg font-bold text-white">89</div>
             </div>
           </div>
         </motion.div>

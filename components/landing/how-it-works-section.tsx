@@ -38,26 +38,26 @@ const useInView = (ref: React.RefObject<Element>, options: InViewOptions = {}) =
 const steps = [
   {
     icon: UserPlus,
-    title: "Create an Account",
-    description: "Sign up for AIonet in minutes and complete your profile to get started.",
+    title: "Connect Your Wallet",
+    description: "Sign in with zkLogin (Google) or connect your Sui wallet to access the NFT-gated community.",
     color: "#3b82f6" // blue
   },
   {
     icon: Settings,
-    title: "Connect Your Exchange",
-    description: "Securely connect your preferred exchange account using API keys with trade-only permissions.",
+    title: "Complete Profile Setup",
+    description: "Set up your username, email, and choose from 12 anime avatars during the 4-step onboarding process.",
     color: "#8b5cf6" // purple
   },
   {
     icon: LineChart,
-    title: "Select Trading Strategies",
-    description: "Browse our marketplace of proven strategies and select the ones that match your goals.",
+    title: "Earn Achievements & XP",
+    description: "Complete 21 unique achievements to level up your profile and unlock exclusive community features.",
     color: "#0ea5e9" // sky blue
   },
   {
     icon: DollarSign,
-    title: "Start Automated Trading",
-    description: "Activate your selected strategies and watch as trades are automatically executed for you.",
+    title: "Access Premium Features",
+    description: "Mint NFTs for PRO/ROYAL tiers, join creator channels, participate in RaffleQuiz, and grow your referral network.",
     color: "#10b981" // emerald
   }
 ]
@@ -86,7 +86,7 @@ export function HowItWorksSection() {
           </h2>
           
           <p className="text-lg md:text-xl text-white/70 max-w-3xl mx-auto">
-            Getting started with AIonet is simple. Follow these steps to begin your AI-powered automated trading journey.
+            Join the AIONET community in four simple steps. Connect your wallet, build your profile, and unlock exclusive Web3 features.
           </p>
         </div>
 

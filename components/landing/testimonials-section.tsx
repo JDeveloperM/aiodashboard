@@ -39,38 +39,38 @@ const useInView = (ref: React.RefObject<Element>, options: InViewOptions = {}) =
 
 const testimonials = [
   {
-    name: "Alex Johnson",
-    role: "Crypto Trader",
+    name: "Alex Crypto",
+    role: "ROYAL Member",
     image: "/images/landing/testimonial-1.jpg",
-    content: "AIonet has completely transformed my trading experience. The automated strategies have consistently outperformed my manual trading, and the analytics help me understand exactly what's working.",
+    content: "AIONET's referral system has been incredible. I've built a network of 50+ members and the commission tracking is transparent. The achievement system keeps me engaged daily.",
     rating: 5
   },
   {
-    name: "Sarah Williams",
-    role: "Forex Investor",
+    name: "Sarah Web3",
+    role: "Content Creator",
     image: "/images/landing/testimonial-2.jpg",
-    content: "As someone who works full-time, I never had the time to actively trade. AIonet's automated bots have allowed me to participate in the forex market without sacrificing my day job.",
+    content: "As a PRO member, I love the creator tools. I've monetized my Telegram channel and the SUI payment system is seamless. The community is genuinely supportive.",
     rating: 5
   },
   {
-    name: "Michael Chen",
-    role: "Day Trader",
+    name: "Michael Sui",
+    role: "Community Builder",
     image: "/images/landing/testimonial-3.jpg",
-    content: "The risk management features are what sold me on AIonet. I can sleep at night knowing my positions have proper stop losses and take profits automatically managed by the system.",
+    content: "The zkLogin authentication made joining so easy - no complex wallet setup needed. I've unlocked 15 achievements so far and love tracking my XP progress.",
     rating: 4
   },
   {
-    name: "Emma Rodriguez",
-    role: "Investment Advisor",
+    name: "Emma NFT",
+    role: "PRO Member",
     image: "/images/landing/testimonial-4.jpg",
-    content: "I recommend AIonet to all my clients who want exposure to crypto markets. The platform's transparency and performance tracking make it easy to demonstrate results.",
+    content: "The premium channel access is worth the NFT mint cost alone. I've learned so much from verified creators and the RaffleQuiz is addictive - won 5 SUI last week!",
     rating: 5
   },
   {
-    name: "David Kim",
-    role: "Passive Investor",
+    name: "David Builder",
+    role: "NOMAD Member",
     image: "/images/landing/testimonial-5.jpg",
-    content: "The copy trading feature is brilliant. I've been following several top traders and my portfolio has grown steadily without me having to make a single trading decision.",
+    content: "Started as a free NOMAD member and the profile system hooked me. The anime avatars are cute and building my referral network has been surprisingly rewarding.",
     rating: 5
   }
 ]
@@ -132,7 +132,7 @@ export function TestimonialsSection() {
           </h2>
           
           <p className="text-lg md:text-xl text-white/70 max-w-3xl mx-auto">
-            Join thousands of satisfied traders who have improved their trading results with AIonet.
+            Join thousands of community members who are building their Web3 presence and earning rewards with AIONET.
           </p>
         </div>
 

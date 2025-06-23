@@ -33,12 +33,14 @@ export function Footer() {
           {/* Brand Column */}
           <div className="col-span-1 md:col-span-1">
             <Link href="/" className="inline-block mb-6">
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                AIONET
-              </span>
+              <img
+                src="/images/aionet-logo.png"
+                alt="AIONET"
+                className="h-8 w-auto"
+              />
             </Link>
             <p className="text-white/60 mb-6">
-              Greek NFT-gated community empowering everyday individuals through decentralized investment opportunities on Sui Network.
+              NFT-gated community on Sui Network. Build your Web3 profile, earn achievements, grow your referral network, and access exclusive creator content.
             </p>
             <div className="flex space-x-4">
               <a href="https://twitter.com" className="text-white/60 hover:text-white transition-colors">
@@ -91,41 +93,41 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Resources */}
+          {/* Community */}
           <div className="col-span-1">
-            <h3 className="text-white font-medium mb-4">Resources</h3>
+            <h3 className="text-white font-medium mb-4">Community</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/blog" className="text-white/60 hover:text-white transition-colors">
-                  Blog
+                <Link href="/profile" className="text-white/60 hover:text-white transition-colors">
+                  Profile & Achievements
                 </Link>
               </li>
               <li>
-                <Link href="/documentation" className="text-white/60 hover:text-white transition-colors">
-                  Documentation
+                <Link href="/aio-creators" className="text-white/60 hover:text-white transition-colors">
+                  Creator Marketplace
                 </Link>
               </li>
               <li>
-                <Link href="/api" className="text-white/60 hover:text-white transition-colors">
-                  API
+                <Link href="/dapps/rafflecraft" className="text-white/60 hover:text-white transition-colors">
+                  RaffleQuiz
                 </Link>
               </li>
               <li>
-                <Link href="/support" className="text-white/60 hover:text-white transition-colors">
-                  Support
+                <Link href="/affiliate-controls" className="text-white/60 hover:text-white transition-colors">
+                  Referral Network
                 </Link>
               </li>
               <li>
-                <Link href="/community" className="text-white/60 hover:text-white transition-colors">
-                  AIO Connect
+                <Link href="/subscriptions" className="text-white/60 hover:text-white transition-colors">
+                  NFT Membership
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Legal */}
+          {/* Platform */}
           <div className="col-span-1">
-            <h3 className="text-white font-medium mb-4">Legal</h3>
+            <h3 className="text-white font-medium mb-4">Platform</h3>
             <ul className="space-y-2">
               <li>
                 <Link href="/terms" className="text-white/60 hover:text-white transition-colors">
@@ -138,13 +140,13 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/cookies" className="text-white/60 hover:text-white transition-colors">
-                  Cookie Policy
-                </Link>
+                <a href="https://sui.io" target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-white transition-colors">
+                  Sui Network
+                </a>
               </li>
               <li>
-                <Link href="/disclaimer" className="text-white/60 hover:text-white transition-colors">
-                  Risk Disclaimer
+                <Link href="/support" className="text-white/60 hover:text-white transition-colors">
+                  Support
                 </Link>
               </li>
               <li>
@@ -166,9 +168,9 @@ export function Footer() {
             transitionDelay: "200ms"
           }}
         >
-          <p>© {currentYear} AIonet. All rights reserved.</p>
+          <p>© {currentYear} AIONET. All rights reserved.</p>
           <p className="mt-4 md:mt-0">
-            Trading involves risk. Only risk capital you're prepared to lose.
+            Built on Sui Network. NFT-gated community for Web3 enthusiasts.
           </p>
         </div>
       </div>

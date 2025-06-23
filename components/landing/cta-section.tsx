@@ -57,15 +57,15 @@ export function CTASection() {
       >
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-block mb-4 px-4 py-1 rounded-full bg-white/5 backdrop-blur-sm border border-white/10">
-            <span className="text-sm font-medium text-white/80">Start Trading Today</span>
+            <span className="text-sm font-medium text-white/80">Join the Community</span>
           </div>
 
           <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white">
-            Ready to <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">Automate</span> Your Trading?
+            Ready to <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">Build</span> Your Web3 Profile?
           </h2>
 
           <p className="text-lg md:text-xl text-white/70 mb-10 max-w-3xl mx-auto">
-            Join the AIONET community and access exclusive NFT-gated features, decentralized investment opportunities, and educational resources. Start your Web3 journey today on Sui Network.
+            Join the AIONET NFT-gated community on Sui Network. Build your profile, earn achievements, grow your referral network, and access exclusive creator content. Start your Web3 social journey today.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">

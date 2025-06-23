@@ -37,34 +37,34 @@ const useInView = (ref: React.RefObject<Element>, options: InViewOptions = {}) =
 
 const features = [
   {
+    icon: Users,
+    title: "Profile & Achievement System",
+    description: "Build your profile with XP-based achievements, level progression, and showcase your Web3 journey with 21 unique achievements to unlock."
+  },
+  {
     icon: TrendingUp,
-    title: "Crypto Trading Bots",
-    description: "Automated trading strategies for Bitcoin, Ethereum, and other major cryptocurrencies with proven track records."
-  },
-  {
-    icon: BarChart2,
-    title: "Forex Bots",
-    description: "Advanced algorithms for forex markets that adapt to changing market conditions and maximize profits."
-  },
-  {
-    icon: Shield,
-    title: "Stocks Trading Bots",
-    description: "Advanced stategies and and options to icrease your capital and ensure sustainable growth over time."
+    title: "Referral Network",
+    description: "Grow your network with a 5-level affiliate system. Earn commissions from referrals and track your network growth with detailed analytics."
   },
   {
     icon: Zap,
-    title: "Real-time Analytics",
-    description: "Comprehensive dashboards with real-time performance metrics and detailed trade history."
+    title: "RaffleQuiz",
+    description: "Participate in weekly quiz-based raffles. Answer blockchain questions to earn ticket minting rights and win SUI token prizes."
   },
   {
-    icon: Users,
-    title: "Copy Trading",
-    description: "Follow and automatically copy the trades of successful traders with transparent performance history."
+    icon: BarChart2,
+    title: "Creator Marketplace",
+    description: "Access premium Telegram channels from verified creators. Subscribe with SUI tokens and join exclusive communities."
+  },
+  {
+    icon: Shield,
+    title: "NFT-Gated Access",
+    description: "Hold NOMAD, PRO, or ROYAL NFTs to unlock exclusive features, premium channel access, and creator tools on Sui Network."
   },
   {
     icon: Globe,
-    title: "Multi-exchange Support",
-    description: "Connect to major exchanges including Binance, Bybit, and more with secure API integration."
+    title: "Social Authentication",
+    description: "Seamless login with zkLogin social authentication (Google) or traditional Sui wallet connection with persistent sessions."
   }
 ]
 
@@ -85,11 +85,11 @@ export function FeaturesSection() {
           </div>
           
           <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white">
-            Powerful Trading <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">Features</span>
+            Exclusive Community <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">Features</span>
           </h2>
-          
+
           <p className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto">
-            Our platform combines advanced AI technology with user-friendly interfaces to give you the edge in trading markets.
+            Experience the future of Web3 communities with NFT-gated access, social features, and decentralized rewards on Sui Network.
           </p>
         </div>
 

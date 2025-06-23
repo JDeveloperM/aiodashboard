@@ -36,32 +36,32 @@ const useInView = (ref: React.RefObject<Element>, options: InViewOptions = {}) =
 
 const faqs = [
   {
-    question: "How do AIonet's trading bots work?",
-    answer: "AIonet's trading bots use advanced algorithms and machine learning to analyze market trends, execute trades, and manage risk. Our bots monitor markets 24/7, identifying opportunities based on technical indicators, market sentiment, and historical data patterns."
+    question: "What is AIONET and how does it work?",
+    answer: "AIONET is an NFT-gated community on Sui Network that combines social features, achievement systems, and creator monetization. Members can build profiles, earn XP through achievements, grow referral networks, and access premium creator content."
   },
   {
-    question: "Is my money safe with AIonet?",
-    answer: "Yes, AIonet never directly holds your funds. We connect to your exchange accounts using API keys with trade-only permissions (no withdrawal access). Your funds remain in your exchange accounts at all times, and you maintain full control over your assets."
+    question: "How do I join the community?",
+    answer: "You can join for free as a NOMAD member using zkLogin (Google) or by connecting your Sui wallet. Complete the 4-step onboarding process to set up your profile, choose an avatar, and start earning achievements."
   },
   {
-    question: "What exchanges are supported?",
-    answer: "AIonet currently supports major exchanges including Binance, Bybit, Coinbase Pro, KuCoin, and more. We're constantly adding support for additional exchanges based on user demand and market significance."
+    question: "What are the different membership tiers?",
+    answer: "There are three tiers: NOMAD (free), PRO (0.5 SUI NFT), and ROYAL (1.0 SUI NFT). PRO members get 3 free premium channel accesses and can create 2 channels. ROYAL members get 9 free accesses and can create 3 channels."
   },
   {
-    question: "What is the minimum investment required?",
-    answer: "There is no minimum investment required to use AIonet. You can start with any amount you're comfortable with. However, we recommend starting with at least €500 to effectively utilize our trading strategies and offset any exchange fees."
+    question: "How does the referral system work?",
+    answer: "The referral system has 5 levels with commission tracking. Generate your unique referral code, share it with others, and earn from their activities. Your affiliate level matches your profile level (1-5) based on XP earned through achievements."
   },
   {
-    question: "How do I connect my exchange account?",
-    answer: "After signing up, navigate to the 'Exchanges' section in your dashboard. Select your exchange and follow the instructions to create API keys with trading permissions only. Copy and paste the API key and secret into AIonet to establish a secure connection."
+    question: "What is RaffleQuiz and how do I participate?",
+    answer: "RaffleQuiz is a weekly quiz-based raffle system. Answer blockchain-related questions to earn ticket minting rights, then use SUI tokens to mint numbered tickets and participate in weekly prize drawings."
   },
   {
-    question: "Can I customize the trading strategies?",
-    answer: "Yes, Premium and VIP users can customize various parameters of our trading strategies, including risk level, take profit targets, stop loss settings, and more. Free users have access to pre-configured strategies with limited customization options."
+    question: "How do creator channels work?",
+    answer: "Verified creators can monetize their Telegram channels through AIONET. Users pay in SUI tokens for 30, 60, or 90-day access. PRO and ROYAL members get free premium channel accesses based on their tier."
   },
   {
-    question: "What is the average performance of your bots?",
-    answer: "Performance varies based on market conditions, selected strategies, and risk settings. Our top-performing strategies have historically achieved 5-15% monthly returns in favorable market conditions. However, past performance is not indicative of future results, and all trading involves risk."
+    question: "What achievements can I earn?",
+    answer: "There are 21 unique achievements worth 50-800 XP each, covering profile completion, social connections, referrals, and community participation. Achievements unlock as you progress through 10 profile levels (0-5000 XP total)."
   }
 ]
 
@@ -97,7 +97,7 @@ export function FAQSection() {
           </h2>
           
           <p className="text-lg md:text-xl text-white/70 max-w-3xl mx-auto">
-            Find answers to common questions about AIonet's trading platform and services.
+            Find answers to common questions about AIONET's NFT-gated community and Web3 features.
           </p>
         </div>
 
