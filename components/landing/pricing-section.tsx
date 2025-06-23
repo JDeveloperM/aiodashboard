@@ -58,7 +58,7 @@ const plans = [
   },
   {
     name: "PRO",
-    price: "0.5 SUI",
+    price: "400 USDC",
     period: "NFT mint",
     description: "Unlock premium features and creator tools",
     features: [
@@ -76,7 +76,7 @@ const plans = [
   },
   {
     name: "ROYAL",
-    price: "1.0 SUI",
+    price: "1500 USDC",
     period: "NFT mint",
     description: "Ultimate access with maximum creator privileges",
     features: [
@@ -185,7 +185,7 @@ function PricingCard({ plan, index }: {
         </div>
       )}
 
-      <div className="p-8">
+      <div className="p-8 flex flex-col h-full">
         <h3 className="text-2xl font-bold mb-2 text-white">{plan.name}</h3>
         <div className="flex items-end mb-4">
           <span className="text-4xl font-bold text-white">{plan.price}</span>
@@ -193,33 +193,13 @@ function PricingCard({ plan, index }: {
         </div>
         <p className="text-white/70 mb-6">{plan.description}</p>
 
-        <SignedOut>
-          <div className="w-full mb-6">
-            <SuiWalletWithSocial />
-          </div>
-        </SignedOut>
-        <SignedIn>
-          <Link href="/subscriptions">
-            <Button
-              className={`w-full mb-6 rounded-full py-6 h-auto ${
-                plan.popular
-                  ? 'bg-white hover:bg-white/90 text-black'
-                  : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
-              }`}
-              variant={plan.popular ? 'default' : 'outline'}
-            >
-              {plan.buttonText}
-            </Button>
-          </Link>
-        </SignedIn>
-
-        <div className="space-y-4">
+        <div className="space-y-4 flex-grow">
           {plan.features.map((feature, featureIndex) => (
             <div key={featureIndex} className="flex items-center">
               {feature.included ? (
-                <div 
+                <div
                   className="h-5 w-5 rounded-full flex items-center justify-center mr-3 flex-shrink-0"
-                  style={{ 
+                  style={{
                     background: `${plan.color}20`,
                     border: `1px solid ${plan.color}40`
                   }}
@@ -237,6 +217,23 @@ function PricingCard({ plan, index }: {
             </div>
           ))}
         </div>
+
+        {plan.name !== "NOMAD" && (
+          <div className="mt-6 pt-4 border-t border-white/10">
+            <Link href="/subscriptions">
+              <Button
+                className={`w-full rounded-lg py-3 h-auto transition-all duration-300 font-medium text-sm ${
+                  plan.popular
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                    : 'bg-amber-600 hover:bg-amber-700 text-white'
+                }`}
+                variant="default"
+              >
+                {plan.buttonText}
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   )
