@@ -3,6 +3,7 @@
 import { Notifications } from "./notifications"
 import { UnifiedWalletConnect } from "@/components/unified-wallet-connect"
 import { SessionRestorationBadge } from "@/components/session-restoration-indicator"
+import { UserSearch } from "@/components/user-search"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import React from "react"

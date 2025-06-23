@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Bell, Globe, Zap, AlertTriangle, User, CreditCard, Coins, Plus, Trash2 } from "lucide-react"
+import { Bell, Globe, Zap, AlertTriangle, User, CreditCard, Coins, Plus, Trash2, Shield, Eye, EyeOff } from "lucide-react"
 import { useNotifications } from "@/hooks/use-notifications"
 import { usePersistentProfile } from "@/hooks/use-persistent-profile"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
@@ -76,6 +76,14 @@ export default function SettingsPage() {
   const [performanceMode, setPerformanceMode] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
+  // Privacy settings state
+  const [profileVisibility, setProfileVisibility] = useState<'public' | 'private'>('public')
+  const [showAchievements, setShowAchievements] = useState(true)
+  const [showLevel, setShowLevel] = useState(true)
+  const [showJoinDate, setShowJoinDate] = useState(true)
+  const [showLastActive, setShowLastActive] = useState(false)
+  const [allowProfileSearch, setAllowProfileSearch] = useState(true)
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteConfirmation, setDeleteConfirmation] = useState("")
   const isDeleteConfirmed = deleteConfirmation === "DELETE"
@@ -98,6 +106,15 @@ export default function SettingsPage() {
       const displayPrefs = profile.display_preferences || {}
       setLanguage(displayPrefs.language || "en")
       setPerformanceMode(displayPrefs.performance_mode || false)
+
+      // Load privacy preferences
+      const privacyPrefs = displayPrefs.privacy_settings || {}
+      setProfileVisibility(privacyPrefs.profile_visibility || 'public')
+      setShowAchievements(privacyPrefs.show_achievements !== false)
+      setShowLevel(privacyPrefs.show_level !== false)
+      setShowJoinDate(privacyPrefs.show_join_date !== false)
+      setShowLastActive(privacyPrefs.show_last_active === true)
+      setAllowProfileSearch(privacyPrefs.allow_profile_search !== false)
     }
   }, [profile])
 
@@ -195,7 +212,15 @@ export default function SettingsPage() {
         browser_notifications: notifications?.browser_enabled,
         trade_notifications: notifications?.trade_enabled,
         news_notifications: notifications?.platform_enabled,
-        promo_notifications: notifications?.promotion_enabled
+        promo_notifications: notifications?.promotion_enabled,
+        privacy_settings: {
+          profile_visibility: profileVisibility,
+          show_achievements: showAchievements,
+          show_level: showLevel,
+          show_join_date: showJoinDate,
+          show_last_active: showLastActive,
+          allow_profile_search: allowProfileSearch
+        }
       }
 
       await updateProfile({
@@ -257,15 +282,165 @@ export default function SettingsPage() {
         </div>
 
       <Tabs defaultValue="account" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 bg-[#011829] border border-[#C0E6FF]/20">
+        <TabsList className="grid w-full grid-cols-5 bg-[#011829] border border-[#C0E6FF]/20">
           <TabsTrigger value="account" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">Account</TabsTrigger>
-          <TabsTrigger value="payment" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">Payment Methods</TabsTrigger>
+          <TabsTrigger value="privacy" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">Privacy</TabsTrigger>
+          <TabsTrigger value="payment" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">Payment</TabsTrigger>
           <TabsTrigger value="general" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">General</TabsTrigger>
           <TabsTrigger value="notifications" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">Notifications</TabsTrigger>
         </TabsList>
 
         <TabsContent value="account">
           <DashboardProfiles />
+        </TabsContent>
+
+        <TabsContent value="privacy">
+          <div className="enhanced-card">
+            <div className="enhanced-card-content">
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <Shield className="h-5 w-5 text-[#4DA2FF]" />
+                  <h3 className="text-lg font-semibold text-white">Privacy Settings</h3>
+                </div>
+                <p className="text-[#C0E6FF] text-sm">Control who can see your profile and what information is displayed publicly.</p>
+              </div>
+
+              <div className="space-y-6">
+                {/* Profile Visibility */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <Eye className="h-5 w-5 text-[#4DA2FF]" />
+                        <Label htmlFor="profile-visibility" className="text-white">Profile Visibility</Label>
+                      </div>
+                      <p className="text-sm text-[#C0E6FF]">Choose who can view your profile.</p>
+                    </div>
+                    <Select value={profileVisibility} onValueChange={(value: 'public' | 'private') => setProfileVisibility(value)}>
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="public">
+                          <div className="flex items-center gap-2">
+                            <Eye className="w-4 h-4" />
+                            Public
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="private">
+                          <div className="flex items-center gap-2">
+                            <EyeOff className="w-4 h-4" />
+                            Private
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {profileVisibility === 'private' && (
+                    <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+                      <div className="flex items-center gap-2 text-yellow-400 mb-2">
+                        <AlertTriangle className="w-4 h-4" />
+                        <span className="font-medium">Private Profile</span>
+                      </div>
+                      <p className="text-sm text-yellow-300">
+                        Your profile will not be visible to other users. Profile links will show a "Profile not found" message.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Search Visibility */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <User className="h-5 w-5 text-[#4DA2FF]" />
+                      <Label htmlFor="allow-search" className="text-white">Allow Profile Search</Label>
+                    </div>
+                    <p className="text-sm text-[#C0E6FF]">Allow other users to find your profile through search.</p>
+                  </div>
+                  <Switch
+                    id="allow-search"
+                    checked={allowProfileSearch}
+                    onCheckedChange={setAllowProfileSearch}
+                    disabled={profileVisibility === 'private'}
+                  />
+                </div>
+
+                {/* Information Display Settings */}
+                <div className="border-t border-[#C0E6FF]/20 pt-6">
+                  <h4 className="text-white font-medium mb-4">Public Information Display</h4>
+                  <p className="text-sm text-[#C0E6FF] mb-4">
+                    Choose what information to show on your public profile. These settings only apply when your profile is public.
+                  </p>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="show-achievements" className="text-white">Show Achievements</Label>
+                        <p className="text-sm text-[#C0E6FF]">Display your claimed achievements on your profile.</p>
+                      </div>
+                      <Switch
+                        id="show-achievements"
+                        checked={showAchievements}
+                        onCheckedChange={setShowAchievements}
+                        disabled={profileVisibility === 'private'}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="show-level" className="text-white">Show Level & XP</Label>
+                        <p className="text-sm text-[#C0E6FF]">Display your profile level and XP progress.</p>
+                      </div>
+                      <Switch
+                        id="show-level"
+                        checked={showLevel}
+                        onCheckedChange={setShowLevel}
+                        disabled={profileVisibility === 'private'}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="show-join-date" className="text-white">Show Join Date</Label>
+                        <p className="text-sm text-[#C0E6FF]">Display when you joined the platform.</p>
+                      </div>
+                      <Switch
+                        id="show-join-date"
+                        checked={showJoinDate}
+                        onCheckedChange={setShowJoinDate}
+                        disabled={profileVisibility === 'private'}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="show-last-active" className="text-white">Show Last Active</Label>
+                        <p className="text-sm text-[#C0E6FF]">Display when you were last active on the platform.</p>
+                      </div>
+                      <Switch
+                        id="show-last-active"
+                        checked={showLastActive}
+                        onCheckedChange={setShowLastActive}
+                        disabled={profileVisibility === 'private'}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-[#C0E6FF]/20">
+                <Button
+                  onClick={saveGeneralSettings}
+                  disabled={isSaving || isLoading}
+                  className="bg-[#4da2ff] hover:bg-[#3d8ae6] text-white transition-colors duration-200"
+                >
+                  {isSaving ? "Saving Privacy Settings..." : "Save Privacy Settings"}
+                </Button>
+              </div>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="payment">

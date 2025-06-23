@@ -14,6 +14,7 @@ import { useSuiAuth } from "@/contexts/sui-auth-context"
 
 import { CommissionTracking } from "@/components/commission-tracking"
 import { ContactSponsorModal } from "@/components/contact-sponsor-modal"
+import { UsernameDisplay } from "@/components/profile-link"
 import {
   Users,
   Search,
@@ -818,7 +819,13 @@ export function AffiliateControls() {
                       {/* Header Row */}
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-white font-semibold text-base">{user.username}</span>
+                          <UsernameDisplay
+                            address={user.address}
+                            username={user.username}
+                            className="text-white font-semibold text-base"
+                            variant="subtle"
+                            showIcon={false}
+                          />
                           <Badge className={`${getKycStatusColor(user.kycStatus)} bg-transparent border-0 text-xs font-semibold px-1 py-0`}>
                             {getKycStatusText(user.kycStatus)}
                           </Badge>
@@ -841,7 +848,14 @@ export function AffiliateControls() {
                         ) : (
                           <div className="flex items-center gap-2">
                             <Users className="w-3 h-3 text-[#C0E6FF]" />
-                            <span className="text-[#C0E6FF] text-sm">Invited by: {user.sponsorUsername}</span>
+                            <span className="text-[#C0E6FF] text-sm">Invited by: </span>
+                            <UsernameDisplay
+                              address={user.sponsorAddress}
+                              username={user.sponsorUsername}
+                              className="text-[#C0E6FF] text-sm"
+                              variant="subtle"
+                              showIcon={false}
+                            />
                           </div>
                         )}
                       </div>
@@ -979,7 +993,13 @@ export function AffiliateControls() {
                           <>
                             <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm">
                               <div className="flex items-center gap-2">
-                                <span className="truncate">{user.username}</span>
+                                <UsernameDisplay
+                                  address={user.address}
+                                  username={user.username}
+                                  className="truncate text-[#FFFFFF] text-sm"
+                                  variant="subtle"
+                                  showIcon={false}
+                                />
                                 <Badge className={`${getKycStatusColor(user.kycStatus)} bg-transparent border-0 text-xs font-semibold px-1 py-0`}>
                                   {getKycStatusText(user.kycStatus)}
                                 </Badge>
@@ -995,7 +1015,13 @@ export function AffiliateControls() {
                                 ) : (
                                   <div className="flex items-center gap-1">
                                     <Users className="w-3 h-3 flex-shrink-0" />
-                                    <span className="truncate text-xs">{user.sponsorUsername}</span>
+                                    <UsernameDisplay
+                                      address={user.sponsorAddress}
+                                      username={user.sponsorUsername}
+                                      className="truncate text-xs text-[#C0E6FF]"
+                                      variant="subtle"
+                                      showIcon={false}
+                                    />
                                   </div>
                                 )}
                               </div>
@@ -1043,7 +1069,13 @@ export function AffiliateControls() {
                             <div className="flex items-center justify-between flex-wrap gap-3">
                               <div className="flex items-center gap-3">
                                 <div className="text-left">
-                                  <p className="text-white font-semibold text-sm">{user.username}</p>
+                                  <UsernameDisplay
+                                    address={user.address}
+                                    username={user.username}
+                                    className="text-white font-semibold text-sm"
+                                    variant="subtle"
+                                    showIcon={false}
+                                  />
                                   <p className="text-[#C0E6FF] text-xs">{user.email}</p>
                                 </div>
                               </div>

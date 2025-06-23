@@ -8,11 +8,12 @@ import { RoleImage } from "@/components/ui/role-image"
 import { UserCard } from "./user-card"
 
 import { User } from "./user-search-interface"
-import { X, Trophy, ExternalLink, MessageSquare, Send } from "lucide-react"
+import { X, Trophy, ExternalLink, MessageSquare, Send, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/components/ui/use-mobile"
+import { useRouter } from "next/navigation"
 
 // Social media image paths
 const socialImages = {
@@ -92,6 +93,20 @@ interface UserAvatarProps {
 function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect }: UserAvatarProps) {
   const isMobile = useIsMobile()
   const [showCard, setShowCard] = useState(false)
+  const router = useRouter()
+
+  const handleViewProfile = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    // Use the user's id (which is the address) or username to navigate to their profile
+    let identifier = user.id || user.username
+    if (identifier) {
+      // Remove @ prefix from username if present (it gets added in community display)
+      if (identifier.startsWith('@')) {
+        identifier = identifier.slice(1)
+      }
+      router.push(`/profile/${encodeURIComponent(identifier)}`)
+    }
+  }
 
 
 
@@ -170,6 +185,16 @@ function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect }: UserAvat
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-white font-semibold text-sm">{user.name}</h3>
+                      {/* View Profile Button - Minimal outline */}
+                      <Button
+                        onClick={handleViewProfile}
+                        size="sm"
+                        variant="outline"
+                        className="h-6 px-2 text-xs border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10 hover:border-[#4DA2FF]/50 bg-transparent"
+                      >
+                        <Eye className="w-3 h-3 mr-1" />
+                        View
+                      </Button>
                     </div>
                     <p className="text-[#C0E6FF] text-xs mb-1">{user.username}</p>
 
@@ -289,6 +314,18 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
   } | null>(null)
 
   const isMobile = useIsMobile()
+  const router = useRouter()
+
+  const handleViewProfile = (user: User) => {
+    let identifier = user.id || user.username
+    if (identifier) {
+      // Remove @ prefix from username if present (it gets added in community display)
+      if (identifier.startsWith('@')) {
+        identifier = identifier.slice(1)
+      }
+      router.push(`/profile/${encodeURIComponent(identifier)}`)
+    }
+  }
 
   const handleCardToggle = (user: User | null) => {
     if (isMobile) {
@@ -446,6 +483,26 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="text-white font-semibold text-sm">{selectedUser.name}</h3>
+                    {/* View Profile Button - Minimal outline */}
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        let identifier = selectedUser.id || selectedUser.username
+                        if (identifier) {
+                          // Remove @ prefix from username if present (it gets added in community display)
+                          if (identifier.startsWith('@')) {
+                            identifier = identifier.slice(1)
+                          }
+                          router.push(`/profile/${encodeURIComponent(identifier)}`)
+                        }
+                      }}
+                      size="sm"
+                      variant="outline"
+                      className="h-6 px-2 text-xs border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10 hover:border-[#4DA2FF]/50 bg-transparent"
+                    >
+                      <Eye className="w-3 h-3 mr-1" />
+                      View
+                    </Button>
                   </div>
                   <p className="text-[#C0E6FF] text-xs mb-1">{selectedUser.username}</p>
 

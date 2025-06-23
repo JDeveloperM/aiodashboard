@@ -105,6 +105,14 @@ interface DecryptedProfile {
     trade_notifications?: boolean
     news_notifications?: boolean
     promo_notifications?: boolean
+    privacy_settings?: {
+      profile_visibility?: 'public' | 'private'
+      show_achievements?: boolean
+      show_level?: boolean
+      show_join_date?: boolean
+      show_last_active?: boolean
+      allow_profile_search?: boolean
+    }
   }
   // payment_preferences: { // Column doesn't exist in current schema
   //   points_auto_renewal?: boolean

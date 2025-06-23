@@ -86,7 +86,15 @@ export function usePersistentProfile(): ProfileState & ProfileActions {
             browser_notifications: false,
             trade_notifications: true,
             news_notifications: true,
-            promo_notifications: true
+            promo_notifications: true,
+            privacy_settings: {
+              profile_visibility: 'public',
+              show_achievements: true,
+              show_level: true,
+              show_join_date: true,
+              show_last_active: false,
+              allow_profile_search: true
+            }
           },
           // payment_preferences: { // Column doesn't exist in current schema
           //   payment_methods: [],

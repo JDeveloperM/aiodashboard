@@ -132,7 +132,7 @@ export function ZkLoginWalletDisplay() {
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="bg-[#030F1C] border-[#C0E6FF]/30 text-white hover:bg-[#C0E6FF]/10 px-3 py-2 h-auto"
+          className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white hover:bg-[#C0E6FF]/10 px-3 py-2 h-auto"
         >
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium">
