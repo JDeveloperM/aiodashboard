@@ -284,13 +284,14 @@ class EncryptedDatabaseStorage {
         encryptedData.email_encrypted = this.encrypt(profileData.email, encryptionKey)
       }
 
-      // Skip fields that don't exist in current schema
-      // if (profileData.real_name) {
-      //   encryptedData.real_name_encrypted = this.encrypt(profileData.real_name, encryptionKey)
-      // }
-      // if (profileData.location) {
-      //   encryptedData.location_encrypted = this.encrypt(profileData.location, encryptionKey)
-      // }
+      // Encrypt real_name (first name + last name)
+      if (profileData.real_name) {
+        encryptedData.real_name_encrypted = this.encrypt(profileData.real_name, encryptionKey)
+      }
+      // Encrypt location field
+      if (profileData.location) {
+        encryptedData.location_encrypted = this.encrypt(profileData.location, encryptionKey)
+      }
 
       // Enable social links encryption
       if (profileData.social_links) {
@@ -441,13 +442,14 @@ class EncryptedDatabaseStorage {
         decrypted.email = this.decrypt(encryptedProfile.email_encrypted, key)
       }
 
-      // Skip fields that don't exist in current schema
-      // if (encryptedProfile.real_name_encrypted) {
-      //   decrypted.real_name = this.decrypt(encryptedProfile.real_name_encrypted, key)
-      // }
-      // if (encryptedProfile.location_encrypted) {
-      //   decrypted.location = this.decrypt(encryptedProfile.location_encrypted, key)
-      // }
+      // Decrypt real_name (first name + last name)
+      if (encryptedProfile.real_name_encrypted) {
+        decrypted.real_name = this.decrypt(encryptedProfile.real_name_encrypted, key)
+      }
+      // Decrypt location field
+      if (encryptedProfile.location_encrypted) {
+        decrypted.location = this.decrypt(encryptedProfile.location_encrypted, key)
+      }
 
       // Enable social links decryption
       if (encryptedProfile.social_links_encrypted) {
@@ -496,9 +498,15 @@ class EncryptedDatabaseStorage {
         return null
       }
 
-      const avatarUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${data.profile_image_blob_id}`
-      console.log('✅ Avatar URL found:', avatarUrl)
-      return avatarUrl
+      // Check if it's a default avatar path or Walrus blob ID
+      if (data.profile_image_blob_id.startsWith('/images/animepfp/')) {
+        console.log('✅ Default avatar path found:', data.profile_image_blob_id)
+        return data.profile_image_blob_id // Return path directly for default avatars
+      } else {
+        const avatarUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${data.profile_image_blob_id}`
+        console.log('✅ Walrus avatar URL found:', avatarUrl)
+        return avatarUrl
+      }
     } catch (error) {
       console.error('❌ Failed to get avatar URL:', error)
       return null

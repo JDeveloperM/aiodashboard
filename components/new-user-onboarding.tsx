@@ -48,7 +48,8 @@ export function NewUserOnboarding() {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
-    referralCode: ''
+    referralCode: '',
+    selectedAvatar: '' // Add avatar selection to form data
   })
 
   // Check if user is zkLogin and extract email
@@ -98,7 +99,7 @@ export function NewUserOnboarding() {
     {
       id: 'profile',
       title: 'Complete Your Profile',
-      description: 'Add your basic information and referral code',
+      description: 'Choose your avatar and add your basic information',
       icon: User,
       completed: currentStep > 1,
       required: true
@@ -131,7 +132,8 @@ export function NewUserOnboarding() {
       setFormData({
         username: profile.username || '',
         email: profile.email || '',
-        referralCode: trackedReferralCode || ''
+        referralCode: trackedReferralCode || '',
+        selectedAvatar: '' // Initialize as empty for existing profiles
       })
     } else if (user?.address) {
       // Initialize with default username if no profile exists
@@ -139,7 +141,8 @@ export function NewUserOnboarding() {
       setFormData({
         username: `User ${user.address.slice(0, 6)}`,
         email: '',
-        referralCode: trackedReferralCode || ''
+        referralCode: trackedReferralCode || '',
+        selectedAvatar: '' // Initialize as empty for new users
       })
     }
 
@@ -197,6 +200,21 @@ export function NewUserOnboarding() {
 
       if (success) {
         console.log('✅ Profile updated successfully')
+
+        // Handle avatar selection if user chose one
+        if (formData.selectedAvatar) {
+          console.log('🖼️ Setting selected avatar:', formData.selectedAvatar)
+          try {
+            // Update profile with selected avatar path
+            await updateProfile({
+              profile_image_blob_id: formData.selectedAvatar // Store the path as blob ID for default avatars
+            })
+            console.log('✅ Avatar selection saved')
+          } catch (error) {
+            console.error('❌ Failed to save avatar selection:', error)
+            // Don't fail the entire onboarding for avatar issues
+          }
+        }
 
         // Process referral if user came from referral link
         if (trackedReferralCode && user?.address) {
@@ -349,11 +367,47 @@ export function NewUserOnboarding() {
               <User className="w-12 h-12 text-[#4DA2FF] mx-auto mb-4" />
               <h2 className="text-xl font-bold text-white mb-2">Complete Your Profile</h2>
               <p className="text-[#C0E6FF]">
-                Add your information to personalize your AIONET experience
+                Choose your avatar and add your information to personalize your AIONET experience
               </p>
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Avatar Selection Section */}
+              <div>
+                <Label className="text-white mb-3 block">Choose Your Avatar</Label>
+                <div className="grid grid-cols-4 gap-3 p-4 bg-[#1a2f51]/30 rounded-lg border border-[#C0E6FF]/10">
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => {
+                    const avatarPath = `/images/animepfp/default${num}.webp`
+                    const isSelected = formData.selectedAvatar === avatarPath
+                    return (
+                      <div
+                        key={num}
+                        className={`relative cursor-pointer rounded-lg overflow-hidden transition-all duration-200 ${
+                          isSelected
+                            ? 'ring-2 ring-[#4DA2FF] ring-offset-2 ring-offset-[#0A1628] scale-105'
+                            : 'hover:scale-105 hover:ring-1 hover:ring-[#C0E6FF]/50'
+                        }`}
+                        onClick={() => setFormData({ ...formData, selectedAvatar: avatarPath })}
+                      >
+                        <img
+                          src={avatarPath}
+                          alt={`Avatar ${num}`}
+                          className="w-full h-16 object-cover"
+                        />
+                        {isSelected && (
+                          <div className="absolute inset-0 bg-[#4DA2FF]/20 flex items-center justify-center">
+                            <CheckCircle className="w-6 h-6 text-[#4DA2FF]" />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+                <p className="text-[#C0E6FF]/70 text-sm mt-2">
+                  Select an avatar for your profile. You can upload a custom image later.
+                </p>
+              </div>
+
               <div>
                 <Label htmlFor="username" className="text-white">Username *</Label>
                 <Input

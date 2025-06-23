@@ -81,14 +81,24 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
       console.log('📡 Database response:', avatarUrl)
 
       if (avatarUrl) {
-        // Extract blob ID from URL
-        const blobId = avatarUrl.split('/').pop()
-        if (blobId) {
-          setAvatarData({ blobId, lastUpdated: new Date().toISOString() })
+        // Check if it's a default avatar path or Walrus URL
+        if (avatarUrl.startsWith('/images/animepfp/')) {
+          // It's a default avatar path
+          setAvatarData({ blobId: avatarUrl, lastUpdated: new Date().toISOString() })
           setCachedImageUrl(avatarUrl)
-          console.log('✅ Avatar loaded from database:', blobId)
+          console.log('✅ Default avatar loaded from database:', avatarUrl)
           setIsLoading(false)
           return
+        } else {
+          // Extract blob ID from Walrus URL
+          const blobId = avatarUrl.split('/').pop()
+          if (blobId) {
+            setAvatarData({ blobId, lastUpdated: new Date().toISOString() })
+            setCachedImageUrl(avatarUrl)
+            console.log('✅ Walrus avatar loaded from database:', blobId)
+            setIsLoading(false)
+            return
+          }
         }
       }
 
@@ -97,10 +107,16 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
       const blobId = user?.profileImageBlobId
       if (blobId) {
         setAvatarData({ blobId, lastUpdated: new Date().toISOString() })
-        // Construct Walrus URL directly
-        const walrusUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${blobId}`
-        setCachedImageUrl(walrusUrl)
-        console.log('✅ Avatar loaded from cookies (fallback):', blobId)
+        // Check if it's a default avatar or Walrus blob
+        if (blobId.startsWith('/images/animepfp/')) {
+          setCachedImageUrl(blobId) // Use path directly for default avatars
+          console.log('✅ Default avatar loaded from cookies:', blobId)
+        } else {
+          // Construct Walrus URL for uploaded images
+          const walrusUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${blobId}`
+          setCachedImageUrl(walrusUrl)
+          console.log('✅ Walrus avatar loaded from cookies (fallback):', blobId)
+        }
       } else {
         console.log('❌ No avatar found in database or cookies')
         setAvatarData({})
@@ -113,8 +129,12 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
       const blobId = user?.profileImageBlobId
       if (blobId) {
         setAvatarData({ blobId, lastUpdated: new Date().toISOString() })
-        const walrusUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${blobId}`
-        setCachedImageUrl(walrusUrl)
+        if (blobId.startsWith('/images/animepfp/')) {
+          setCachedImageUrl(blobId) // Use path directly for default avatars
+        } else {
+          const walrusUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${blobId}`
+          setCachedImageUrl(walrusUrl)
+        }
       }
     } finally {
       setIsLoading(false)
@@ -268,6 +288,11 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (avatarData.blobId) {
+      // Check if it's a default avatar path (starts with /images/animepfp/)
+      if (avatarData.blobId.startsWith('/images/animepfp/')) {
+        return avatarData.blobId // Return the path directly for default avatars
+      }
+      // Otherwise it's a Walrus blob ID
       return `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${avatarData.blobId}`
     }
 
