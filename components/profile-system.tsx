@@ -84,6 +84,8 @@ const getAchievementImage = (achievementName: string): string | null => {
 
     // User Upgrades Category
     "Mint Royal NFT Status": "/images/achievements/Elite ROYAL Network.png", // Using Elite ROYAL Network icon
+    "Upgrade to PRO": "/images/achievements/Expand Your PRO Network.png",
+    "Upgrade to ROYAL": "/images/achievements/Elite ROYAL Network.png",
 
     // Referral Tiers Category
     "Recruit PRO NFT Holders": "/images/achievements/Recruit PRO NFT Holders.png",

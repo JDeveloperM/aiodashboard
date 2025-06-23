@@ -23,10 +23,17 @@ const socialImages = {
   X: "/images/social/x.png"
 }
 
-// Helper function to get avatar URL from Walrus
+// Helper function to get avatar URL (handles both default avatars and Walrus blobs)
 const getAvatarUrl = async (blobId: string | null): Promise<string | undefined> => {
   if (!blobId) return undefined
+
   try {
+    // Check if it's a default avatar path (starts with /images/animepfp/)
+    if (blobId.startsWith('/images/animepfp/')) {
+      return blobId // Return the path directly for default avatars
+    }
+
+    // Otherwise it's a Walrus blob ID
     return `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${blobId}`
   } catch (error) {
     console.warn('Failed to get avatar URL:', error)

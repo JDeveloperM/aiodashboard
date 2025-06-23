@@ -17,7 +17,9 @@ import {
   Star,
   Gift,
   Trophy,
-  Users
+  Users,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { usePersistentProfile } from '@/hooks/use-persistent-profile'
@@ -82,6 +84,9 @@ export function NewUserOnboarding() {
 
   // Referral options
   const [skipReferral, setSkipReferral] = useState(false)
+
+  // Avatar selection state
+  const [showAvatarSelection, setShowAvatarSelection] = useState(false)
 
   // Form validation
   const isFormValid = formData.username.trim().length >= 3 &&
@@ -374,38 +379,71 @@ export function NewUserOnboarding() {
             <div className="space-y-6">
               {/* Avatar Selection Section */}
               <div>
-                <Label className="text-white mb-3 block">Choose Your Avatar</Label>
-                <div className="grid grid-cols-4 gap-3 p-4 bg-[#1a2f51]/30 rounded-lg border border-[#C0E6FF]/10">
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => {
-                    const avatarPath = `/images/animepfp/default${num}.webp`
-                    const isSelected = formData.selectedAvatar === avatarPath
-                    return (
-                      <div
-                        key={num}
-                        className={`relative cursor-pointer rounded-lg overflow-hidden transition-all duration-200 ${
-                          isSelected
-                            ? 'ring-2 ring-[#4DA2FF] ring-offset-2 ring-offset-[#0A1628] scale-105'
-                            : 'hover:scale-105 hover:ring-1 hover:ring-[#C0E6FF]/50'
-                        }`}
-                        onClick={() => setFormData({ ...formData, selectedAvatar: avatarPath })}
-                      >
-                        <img
-                          src={avatarPath}
-                          alt={`Avatar ${num}`}
-                          className="w-full h-16 object-cover"
-                        />
-                        {isSelected && (
-                          <div className="absolute inset-0 bg-[#4DA2FF]/20 flex items-center justify-center">
-                            <CheckCircle className="w-6 h-6 text-[#4DA2FF]" />
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
+                <button
+                  onClick={() => setShowAvatarSelection(!showAvatarSelection)}
+                  className="flex items-center justify-between w-full text-left mb-3"
+                >
+                  <Label className="text-white">Choose Your Avatar</Label>
+                  {showAvatarSelection ? (
+                    <ChevronUp className="w-5 h-5 text-[#C0E6FF]" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-[#C0E6FF]" />
+                  )}
+                </button>
+
+                {/* Current Avatar Preview */}
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden border-2 border-[#4DA2FF]">
+                    <img
+                      src={formData.selectedAvatar}
+                      alt="Selected avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <span className="text-sm text-[#C0E6FF]/70">
+                    {showAvatarSelection ? 'Click an avatar below to change' : 'Click above to change avatar'}
+                  </span>
                 </div>
-                <p className="text-[#C0E6FF]/70 text-sm mt-2">
-                  Select an avatar for your profile. You can upload a custom image later.
-                </p>
+
+                {/* Collapsible Avatar Grid */}
+                {showAvatarSelection && (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-4 gap-3 p-4 bg-[#1a2f51]/30 rounded-lg border border-[#C0E6FF]/10">
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => {
+                        const avatarPath = `/images/animepfp/default${num}.webp`
+                        const isSelected = formData.selectedAvatar === avatarPath
+                        return (
+                          <div
+                            key={num}
+                            className={`relative cursor-pointer rounded-lg overflow-hidden transition-all duration-200 ${
+                              isSelected
+                                ? 'ring-2 ring-[#4DA2FF] ring-offset-2 ring-offset-[#0A1628] scale-105'
+                                : 'hover:scale-105 hover:ring-1 hover:ring-[#C0E6FF]/50'
+                            }`}
+                            onClick={() => {
+                              setFormData({ ...formData, selectedAvatar: avatarPath })
+                              setShowAvatarSelection(false) // Auto-collapse after selection
+                            }}
+                          >
+                            <img
+                              src={avatarPath}
+                              alt={`Avatar ${num}`}
+                              className="w-full h-16 object-cover"
+                            />
+                            {isSelected && (
+                              <div className="absolute inset-0 bg-[#4DA2FF]/20 flex items-center justify-center">
+                                <CheckCircle className="w-6 h-6 text-[#4DA2FF]" />
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <p className="text-[#C0E6FF]/70 text-sm">
+                      Select an avatar for your profile. You can upload a custom image later.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div>

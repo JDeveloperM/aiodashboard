@@ -205,6 +205,15 @@ class EncryptedDatabaseStorage {
         console.error('❌ Database connection test failed:', connectionTest.error)
         throw new Error(`Database connection failed: ${connectionTest.error}`)
       }
+
+      // Check if profile already exists to determine if this is an update or create
+      const { data: existingProfile } = await this.supabase
+        .from('user_profiles')
+        .select('onboarding_completed, onboarding_completed_at')
+        .eq('address', address)
+        .single()
+
+      const isExistingProfile = !!existingProfile
       console.log('✅ Database connection verified')
 
       const encryptionKey = this.generateEncryptionKey(address)
@@ -239,9 +248,13 @@ class EncryptedDatabaseStorage {
         points: profileData.points ?? 0,
         kyc_status: profileData.kyc_status || 'not_verified',
 
-        // Onboarding tracking
-        onboarding_completed: profileData.onboarding_completed ?? false,
-        onboarding_completed_at: profileData.onboarding_completed_at || null
+        // Onboarding tracking - preserve existing values for updates, set defaults for new profiles
+        onboarding_completed: profileData.onboarding_completed !== undefined
+          ? profileData.onboarding_completed
+          : (isExistingProfile ? existingProfile?.onboarding_completed ?? false : false),
+        onboarding_completed_at: profileData.onboarding_completed_at !== undefined
+          ? profileData.onboarding_completed_at
+          : (isExistingProfile ? existingProfile?.onboarding_completed_at : null)
       }
 
       // Only add optional fields if they exist in the data

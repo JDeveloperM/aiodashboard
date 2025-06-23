@@ -237,7 +237,10 @@ export function DashboardProfiles() {
         location: profileData.location,
         display_preferences: {
           ...profile?.display_preferences
-        }
+        },
+        // Preserve existing onboarding status to prevent reset
+        onboarding_completed: profile?.onboarding_completed ?? false,
+        onboarding_completed_at: profile?.onboarding_completed_at
       }
 
       // Handle email based on authentication method and immutability rules
