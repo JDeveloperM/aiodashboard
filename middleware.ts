@@ -29,6 +29,7 @@ const protectedRoutes = [
   '/dapps',
   '/metago-academy',
   '/marketplace',
+  '/leaderboard',
 ]
 
 function isPublicRoute(pathname: string): boolean {
