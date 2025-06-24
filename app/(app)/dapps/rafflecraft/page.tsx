@@ -547,7 +547,7 @@ export default function RaffleCraftPage() {
       <div className="p-4 md:p-8">
         {/* Page Title */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white">RaffleCraft</h1>
+          <h1 className="text-3xl font-bold text-white">RaffleQuiz</h1>
         </div>
 
         {/* Dashboard Style Layout */}
@@ -565,9 +565,7 @@ export default function RaffleCraftPage() {
                       🟢 ACTIVE
                     </div>
                   </div>
-                  <div className="bg-purple-500/20 w-12 h-12 rounded-full flex items-center justify-center">
-                    <Calendar className="w-6 h-6 text-purple-400" />
-                  </div>
+                  <Calendar className="w-10 h-10 text-purple-400" />
                 </div>
               </div>
             </div>
@@ -578,28 +576,27 @@ export default function RaffleCraftPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-yellow-400 font-semibold text-sm mb-1">Current Prize Pool</h3>
-                    <p className="text-white text-2xl font-bold">{currentWeek.prize_pool_sui} SUI</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-white text-2xl font-bold">{currentWeek.prize_pool_sui}</p>
+                      <img src="/images/logo-sui.png" alt="SUI" className="w-6 h-6" />
+                    </div>
                     <p className="text-[#C0E6FF] text-xs mt-1">≈ ${(currentWeek.prize_pool_sui * 2.5).toFixed(2)} USD</p>
                   </div>
-                  <div className="bg-yellow-500/20 w-12 h-12 rounded-full flex items-center justify-center">
-                    <Trophy className="w-6 h-6 text-yellow-400" />
-                  </div>
+                  <img src="/images/logo-sui.png" alt="SUI" className="w-10 h-10" />
                 </div>
               </div>
             </div>
 
-            {/* Total Monthly Rounds */}
+            {/* Total Participants */}
             <div className="enhanced-card">
               <div className="enhanced-card-content">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-[#4DA2FF] font-semibold text-sm mb-1">Total Monthly Rounds</h3>
-                    <p className="text-white text-2xl font-bold">4</p>
-                    <p className="text-[#C0E6FF] text-xs mt-1">This Month</p>
+                    <h3 className="text-[#4DA2FF] font-semibold text-sm mb-1">Total Participants</h3>
+                    <p className="text-white text-2xl font-bold">1,247</p>
+                    <p className="text-[#C0E6FF] text-xs mt-1">All Time</p>
                   </div>
-                  <div className="bg-[#4DA2FF]/20 w-12 h-12 rounded-full flex items-center justify-center">
-                    <BarChart3 className="w-6 h-6 text-[#4DA2FF]" />
-                  </div>
+                  <Users className="w-10 h-10 text-[#4DA2FF]" />
                 </div>
               </div>
             </div>
@@ -610,12 +607,13 @@ export default function RaffleCraftPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-green-400 font-semibold text-sm mb-1">Total Prizes Distributed</h3>
-                    <p className="text-white text-2xl font-bold">127.5 SUI</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-white text-2xl font-bold">127.5</p>
+                      <img src="/images/logo-sui.png" alt="SUI" className="w-6 h-6" />
+                    </div>
                     <p className="text-[#C0E6FF] text-xs mt-1">All Time</p>
                   </div>
-                  <div className="bg-green-500/20 w-12 h-12 rounded-full flex items-center justify-center">
-                    <Coins className="w-6 h-6 text-green-400" />
-                  </div>
+                  <img src="/images/logo-sui.png" alt="SUI" className="w-10 h-10" />
                 </div>
               </div>
             </div>
@@ -640,7 +638,10 @@ export default function RaffleCraftPage() {
                       </div>
                       <span className="text-[#C0E6FF] font-medium">Quiz Ticket Price</span>
                     </div>
-                    <div className="text-white font-bold">{currentWeek.ticket_price_sui} SUI</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-bold">{currentWeek.ticket_price_sui}</span>
+                      <img src="/images/logo-sui.png" alt="SUI" className="w-8 h-8" />
+                    </div>
                   </div>
 
                   {/* Quiz Tickets Minted */}
