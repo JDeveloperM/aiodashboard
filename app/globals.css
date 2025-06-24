@@ -685,11 +685,16 @@ button[data-dapp-kit="connectButton"]:hover,
   padding: 0;
   border-radius: 15px;
   flex: 1;
-  transition: none !important;
+  transition: all 0.3s ease !important;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2), inset 0 0 10px rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(0, 184, 230, 0.2);
   position: relative;
   overflow: visible;
+}
+
+.enhanced-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), inset 0 0 15px rgba(255, 255, 255, 0.15);
 }
 
 .enhanced-card-content {
@@ -697,6 +702,82 @@ button[data-dapp-kit="connectButton"]:hover,
   padding: 15px;
   background: transparent;
   border-radius: 10px;
+}
+
+/* RaffleCraft Specific Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(77, 162, 255, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(77, 162, 255, 0.6); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+.glow-animation {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.shimmer-effect {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Organic Layout Helpers */
+.organic-rotate-1 { transform: rotate(1deg); }
+.organic-rotate-2 { transform: rotate(-1.5deg); }
+.organic-rotate-3 { transform: rotate(0.8deg); }
+.organic-rotate-4 { transform: rotate(-0.5deg); }
+
+.organic-rotate-1:hover { transform: rotate(0deg) scale(1.02); }
+.organic-rotate-2:hover { transform: rotate(0deg) scale(1.02); }
+.organic-rotate-3:hover { transform: rotate(0deg) scale(1.02); }
+.organic-rotate-4:hover { transform: rotate(0deg) scale(1.02); }
+
+/* Admin Controls Animations */
+@keyframes slide-in-from-bottom {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out-to-bottom {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+.animate-in {
+  animation-fill-mode: both;
+}
+
+.slide-in-from-bottom-4 {
+  animation: slide-in-from-bottom 0.3s ease-out;
+}
+
+.slide-out-to-bottom-4 {
+  animation: slide-out-to-bottom 0.3s ease-in;
 }
 
 /* Sidebar and Header Gradients */
