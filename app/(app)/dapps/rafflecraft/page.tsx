@@ -576,10 +576,7 @@ export default function RaffleCraftPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-yellow-400 font-semibold text-sm mb-1">Current Prize Pool</h3>
-                    <div className="flex items-center gap-2">
-                      <p className="text-white text-2xl font-bold">{currentWeek.prize_pool_sui}</p>
-                      <img src="/images/logo-sui.png" alt="SUI" className="w-6 h-6" />
-                    </div>
+                    <p className="text-white text-2xl font-bold">{currentWeek.prize_pool_sui} SUI</p>
                     <p className="text-[#C0E6FF] text-xs mt-1">≈ ${(currentWeek.prize_pool_sui * 2.5).toFixed(2)} USD</p>
                   </div>
                   <img src="/images/logo-sui.png" alt="SUI" className="w-10 h-10" />
@@ -607,10 +604,7 @@ export default function RaffleCraftPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-green-400 font-semibold text-sm mb-1">Total Prizes Distributed</h3>
-                    <div className="flex items-center gap-2">
-                      <p className="text-white text-2xl font-bold">127.5</p>
-                      <img src="/images/logo-sui.png" alt="SUI" className="w-6 h-6" />
-                    </div>
+                    <p className="text-white text-2xl font-bold">127.5 SUI</p>
                     <p className="text-[#C0E6FF] text-xs mt-1">All Time</p>
                   </div>
                   <img src="/images/logo-sui.png" alt="SUI" className="w-10 h-10" />
@@ -634,14 +628,11 @@ export default function RaffleCraftPage() {
                   <div className="flex items-center justify-between p-3 bg-[#0f2746] rounded-lg border border-[#4DA2FF]/30">
                     <div className="flex items-center gap-3">
                       <div className="bg-[#4DA2FF]/20 p-2 rounded">
-                        <DollarSign className="w-4 h-4 text-[#4DA2FF]" />
+                        <img src="/images/logo-sui.png" alt="SUI" className="w-6 h-6" />
                       </div>
                       <span className="text-[#C0E6FF] font-medium">Quiz Ticket Price</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-white font-bold">{currentWeek.ticket_price_sui}</span>
-                      <img src="/images/logo-sui.png" alt="SUI" className="w-8 h-8" />
-                    </div>
+                    <div className="text-white font-bold">{currentWeek.ticket_price_sui}</div>
                   </div>
 
                   {/* Quiz Tickets Minted */}
@@ -818,6 +809,85 @@ export default function RaffleCraftPage() {
                     </Button>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+
+          {/* Winners Table and Transactions - Two Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+            {/* Winners Table */}
+            <div className="enhanced-card">
+              <div className="enhanced-card-content">
+                <div className="flex items-center gap-2 text-white mb-4">
+                  <Trophy className="w-5 h-5 text-yellow-400" />
+                  <h3 className="text-lg font-semibold">Recent Winners</h3>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-600/30">
+                        <th className="text-left text-[#C0E6FF] text-sm font-medium py-2">Week</th>
+                        <th className="text-left text-[#C0E6FF] text-sm font-medium py-2">Winner</th>
+                        <th className="text-left text-[#C0E6FF] text-sm font-medium py-2">Prize</th>
+                        <th className="text-left text-[#C0E6FF] text-sm font-medium py-2">Ticket #</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-gray-600/20">
+                        <td className="py-3 text-white font-medium">Week 4</td>
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-purple-500/20 rounded-full flex items-center justify-center">
+                              <span className="text-purple-400 text-xs font-bold">A</span>
+                            </div>
+                            <span className="text-white text-sm">0x1234...5678</span>
+                          </div>
+                        </td>
+                        <td className="py-3 text-green-400 font-bold">24.5 SUI</td>
+                        <td className="py-3 text-[#C0E6FF]">#127</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Current Round Transactions */}
+            <div className="enhanced-card">
+              <div className="enhanced-card-content">
+                <div className="flex items-center gap-2 text-white mb-4">
+                  <Ticket className="w-5 h-5 text-purple-400" />
+                  <h3 className="text-lg font-semibold">Current Round Transactions</h3>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-600/30">
+                        <th className="text-left text-[#C0E6FF] text-sm font-medium py-2">User</th>
+                        <th className="text-left text-[#C0E6FF] text-sm font-medium py-2">Ticket #</th>
+                        <th className="text-left text-[#C0E6FF] text-sm font-medium py-2">Amount</th>
+                        <th className="text-left text-[#C0E6FF] text-sm font-medium py-2">Time</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-gray-600/20">
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-[#4DA2FF]/20 rounded-full flex items-center justify-center">
+                              <span className="text-[#4DA2FF] text-xs font-bold">B</span>
+                            </div>
+                            <span className="text-white text-sm">0x9876...4321</span>
+                          </div>
+                        </td>
+                        <td className="py-3 text-purple-400 font-bold">#156</td>
+                        <td className="py-3 text-white font-medium">1.0 SUI</td>
+                        <td className="py-3 text-[#C0E6FF] text-sm">2 hours ago</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
