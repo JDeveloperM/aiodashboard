@@ -6,21 +6,26 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { 
-  Trophy, 
-  Medal, 
-  Award, 
-  Crown, 
-  ChevronLeft, 
+import {
+  Trophy,
+  Medal,
+  Award,
+  Crown,
+  ChevronLeft,
   ChevronRight,
   CheckCircle,
   AlertCircle,
   XCircle,
   TrendingUp,
   Users,
-  Coins
+  Coins,
+  BarChart3,
+  LineChart,
+  Zap,
+  Brain,
+  Video
 } from 'lucide-react'
-import { LeaderboardUser, LeaderboardCategory } from '@/lib/leaderboard-service'
+import { LeaderboardUser, LeaderboardCategory, CountryStats } from '@/lib/leaderboard-service'
 import { cn } from '@/lib/utils'
 
 interface LeaderboardTableProps {
@@ -112,11 +117,52 @@ export function LeaderboardTable({
   }
 
   const getMetricIcon = (key: string) => {
-    if (key.includes('referral') || key.includes('count')) return <Users className="w-3 h-3" />
-    if (key.includes('commission') || key.includes('volume')) return <Coins className="w-3 h-3" />
-    if (key.includes('xp') || key.includes('score')) return <TrendingUp className="w-3 h-3" />
+    if (key.includes('referral_count')) return <Users className="w-3 h-3" />
+    if (key.includes('total_commissions')) return <img src="/images/logo-sui.png" alt="SUI" className="w-3 h-3" />
+    if (key.includes('conversion_rate')) return <TrendingUp className="w-3 h-3" />
+    if (key.includes('trading_volume')) return <BarChart3 className="w-3 h-3" />
+    if (key.includes('trades_count')) return <LineChart className="w-3 h-3" />
+    if (key.includes('win_rate')) return <Trophy className="w-3 h-3" />
+    if (key.includes('current_xp')) return <Zap className="w-3 h-3" />
+    if (key.includes('profile_level')) return <Award className="w-3 h-3" />
+    if (key.includes('achievements_count')) return <Medal className="w-3 h-3" />
+    if (key.includes('correct_answers')) return <CheckCircle className="w-3 h-3" />
+    if (key.includes('quiz_participation')) return <Brain className="w-3 h-3" />
+    if (key.includes('tickets_minted')) return <Coins className="w-3 h-3" />
+    if (key.includes('channels_created')) return <Video className="w-3 h-3" />
+    if (key.includes('subscribers')) return <Users className="w-3 h-3" />
+    if (key.includes('engagement_rate')) return <TrendingUp className="w-3 h-3" />
     return <Award className="w-3 h-3" />
   }
+
+  const getMetricLabel = (key: string) => {
+    // Special case for commissions - return SUI logo
+    if (key === 'total_commissions') {
+      return <img src="/images/logo-sui.png" alt="SUI" className="w-4 h-4 mx-auto" />
+    }
+
+    const labels: Record<string, string> = {
+      'referral_count': 'Referrals',
+      'conversion_rate': 'Conv. Rate',
+      'trading_volume': 'Volume',
+      'trades_count': 'Trades',
+      'win_rate': 'Win Rate',
+      'current_xp': 'Current XP',
+      'profile_level': 'Level',
+      'achievements_count': 'Achievements',
+      'correct_answers': 'Correct',
+      'quiz_participation': 'Quizzes',
+      'tickets_minted': 'Tickets',
+      'channels_created': 'Channels',
+      'subscribers': 'Subscribers',
+      'engagement_rate': 'Engagement',
+      'level_rewards': 'Rewards',
+      'community_engagement': 'Community'
+    }
+    return labels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  }
+
+
 
   if (isLoading) {
     return (
@@ -167,85 +213,156 @@ export function LeaderboardTable({
         </CardHeader>
         <CardContent className="p-0">
           <div className="space-y-2">
+            {/* User View - Always show users now, countries are in sidebar */}
             {users.map((user, index) => (
               <div
                 key={user.address}
                 className={cn(
-                  "flex items-center p-4 hover:bg-[#1a2f51]/30 transition-all duration-300 cursor-pointer border-b border-[#1a2f51]/20 last:border-b-0 relative rounded-t-lg",
+                  "flex flex-col sm:flex-row items-center sm:items-center p-4 hover:bg-[#1a2f51]/30 transition-all duration-300 cursor-pointer border-b border-[#1a2f51]/20 last:border-b-0 relative rounded-t-lg gap-2 sm:gap-0",
                   user.rank <= 3 && getTopRankBackground(user.rank)
                 )}
                 onClick={() => onUserClick?.(user)}
               >
-                {/* Rank */}
-                <div className="w-12 flex justify-center">
-                  {getRankIcon(user.rank)}
-                </div>
-
-                {/* Avatar */}
-                <div className="relative">
-                  <Avatar className="w-10 h-10 border-2 border-[#1a2f51]">
-                    <AvatarImage 
-                      src={user.profileImageUrl || undefined} 
-                      alt={user.username}
-                    />
-                    <AvatarFallback className="bg-[#1a2f51] text-white text-sm">
-                      {user.username.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="absolute -bottom-1 -right-1">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="w-5 h-5 rounded-full bg-[#030f1c] flex items-center justify-center border border-[#1a2f51]">
-                          {getKycStatusIcon(user.kycStatus)}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>KYC Status: {user.kycStatus.replace('_', ' ')}</p>
-                      </TooltipContent>
-                    </Tooltip>
+                {/* Desktop: Single Row Layout */}
+                <div className="hidden sm:flex items-center w-full">
+                  {/* Rank */}
+                  <div className="w-12 flex justify-center">
+                    {getRankIcon(user.rank)}
                   </div>
-                </div>
 
-                {/* User Info */}
-                <div className="flex-1 ml-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-white font-medium">{user.username}</span>
-                    {getTierBadge(user.roleTier)}
-                  </div>
-                  <div className="flex items-center gap-4 text-xs text-[#C0E6FF]">
-                    <span>Level {user.profileLevel}</span>
-                    <span>{user.totalXp.toLocaleString()} XP</span>
-                    <span>Joined {new Date(user.joinDate).toLocaleDateString()}</span>
-                  </div>
-                </div>
-
-                {/* Score */}
-                <div className="text-right mr-4">
-                  <div className="text-lg font-bold text-white">
-                    {user.score.toLocaleString()}
-                  </div>
-                  <div className="text-xs text-[#C0E6FF]">Score</div>
-                </div>
-
-                {/* Metrics */}
-                <div className="flex gap-2">
-                  {Object.entries(user.metrics).slice(0, 3).map(([key, value]) => (
-                    <Tooltip key={key}>
-                      <TooltipTrigger asChild>
-                        <div className="bg-transparent rounded-lg px-3 py-2 min-w-[60px] text-center">
-                          <div className="flex items-center justify-center mb-1">
-                            {getMetricIcon(key)}
+                  {/* Avatar */}
+                  <div className="relative">
+                    <Avatar className="w-10 h-10 border-2 border-[#1a2f51]">
+                      <AvatarImage
+                        src={user.profileImageUrl || undefined}
+                        alt={user.username}
+                      />
+                      <AvatarFallback className="bg-[#1a2f51] text-white text-sm">
+                        {user.username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -bottom-1 -right-1">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="w-5 h-5 rounded-full bg-[#030f1c] flex items-center justify-center border border-[#1a2f51]">
+                            {getKycStatusIcon(user.kycStatus)}
                           </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>KYC Status: {user.kycStatus.replace('_', ' ')}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
+
+                  {/* User Info */}
+                  <div className="flex-1 ml-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-white font-medium">{user.username}</span>
+                      {getTierBadge(user.roleTier)}
+                      {user.location && (
+                        <span className="text-xs text-[#C0E6FF] bg-[#1a2f51]/30 px-2 py-1 rounded">
+                          📍 {user.location}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-[#C0E6FF]">
+                      <span>Level {user.profileLevel}</span>
+                      <span>{user.totalXp.toLocaleString()} XP</span>
+                      <span>Joined {new Date(user.joinDate).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Points */}
+                  <div className="text-right mr-4">
+                    <div className="text-lg font-bold text-white flex items-center justify-end gap-2">
+                      <span className="text-xs text-[#C0E6FF] font-normal">Points</span>
+                      {user.points.toLocaleString()}
+                    </div>
+                  </div>
+
+                  {/* Metrics */}
+                  <div className="flex gap-3">
+                    {Object.entries(user.metrics).slice(0, 3).map(([key, value]) => (
+                      <div key={key} className="bg-transparent rounded-lg px-3 py-2 min-w-[70px] text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          {getMetricIcon(key)}
                           <div className="text-xs font-medium text-white">
                             {formatMetricValue(key, value)}
                           </div>
                         </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}: {formatMetricValue(key, value)}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  ))}
+                        <div className="text-[10px] text-[#C0E6FF] opacity-80 flex justify-center items-center">
+                          {getMetricLabel(key)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mobile: Multi-Row Layout */}
+                <div className="sm:hidden w-full space-y-3">
+                  {/* Row 1: Rank + Avatar + Username */}
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="flex justify-center">
+                      {getRankIcon(user.rank)}
+                    </div>
+                    <div className="relative">
+                      <Avatar className="w-12 h-12 border-2 border-[#1a2f51]">
+                        <AvatarImage
+                          src={user.profileImageUrl || undefined}
+                          alt={user.username}
+                        />
+                        <AvatarFallback className="bg-[#1a2f51] text-white text-sm">
+                          {user.username.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute -bottom-1 -right-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="w-5 h-5 rounded-full bg-[#030f1c] flex items-center justify-center border border-[#1a2f51]">
+                              {getKycStatusIcon(user.kycStatus)}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>KYC Status: {user.kycStatus.replace('_', ' ')}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </div>
+                    <span className="text-white font-medium text-lg">{user.username}</span>
+                  </div>
+
+                  {/* Row 2: Role Badge + Level + XP */}
+                  <div className="flex items-center justify-center gap-3">
+                    {getTierBadge(user.roleTier)}
+                    <span className="text-sm text-[#C0E6FF]">Level {user.profileLevel}</span>
+                    <span className="text-sm text-[#C0E6FF]">{user.totalXp.toLocaleString()} XP</span>
+                  </div>
+
+                  {/* Row 3: Points */}
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-white flex items-center justify-center gap-2">
+                      <span className="text-xs text-[#C0E6FF] font-normal">Points</span>
+                      {user.points.toLocaleString()}
+                    </div>
+                  </div>
+
+                  {/* Row 4: Metrics */}
+                  <div className="flex gap-2 overflow-x-auto justify-center">
+                    {Object.entries(user.metrics).slice(0, 3).map(([key, value]) => (
+                      <div key={key} className="bg-transparent rounded-lg px-2 py-2 min-w-[60px] text-center flex-shrink-0">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          {getMetricIcon(key)}
+                          <div className="text-xs font-medium text-white">
+                            {formatMetricValue(key, value)}
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-[#C0E6FF] opacity-80 flex justify-center items-center">
+                          {getMetricLabel(key)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             ))}

@@ -32,12 +32,33 @@ export interface LeaderboardUser {
   profileLevel: number
   currentXp: number
   totalXp: number
+  points: number
+  location: string | null
   kycStatus: string
   joinDate: string
   lastActive: string
   rank: number
   score: number
   metrics: Record<string, any>
+}
+
+export interface CountryStats {
+  code: string
+  name: string
+  flag: string
+  rank: number
+  members: number
+  totalVolume: number
+  totalActivity: number
+  avgLevel: number
+  topTier: 'NOMAD' | 'PRO' | 'ROYAL'
+  metrics: {
+    members: number
+    volume: number
+    activity: number
+    avg_level: number
+    top_tier: string
+  }
 }
 
 export interface LeaderboardCategory {
@@ -54,13 +75,16 @@ export interface LeaderboardFilters {
   timePeriod: 'weekly' | 'monthly' | 'all-time'
   limit: number
   offset: number
+  locationFilter?: string
 }
 
 export interface LeaderboardResponse {
   users: LeaderboardUser[]
+  countries?: CountryStats[]
   totalCount: number
   hasMore: boolean
   lastUpdated: string
+  isCountryView?: boolean
 }
 
 // Leaderboard categories configuration
@@ -81,14 +105,7 @@ export const LEADERBOARD_CATEGORIES: LeaderboardCategory[] = [
     scoreField: 'trading_score',
     additionalMetrics: ['trading_volume', 'trades_count', 'win_rate']
   },
-  {
-    id: 'community',
-    name: 'Top Community Members',
-    description: 'Based on XP and achievement points',
-    icon: 'Award',
-    scoreField: 'total_xp',
-    additionalMetrics: ['achievements_count', 'level_rewards', 'community_engagement']
-  },
+
   {
     id: 'xp',
     name: 'Top XP',
@@ -113,14 +130,7 @@ export const LEADERBOARD_CATEGORIES: LeaderboardCategory[] = [
     scoreField: 'creator_score',
     additionalMetrics: ['channels_created', 'subscribers', 'engagement_rate']
   },
-  {
-    id: 'overall',
-    name: 'Overall Rankings',
-    description: 'Combined scoring across all activities',
-    icon: 'Trophy',
-    scoreField: 'overall_score',
-    additionalMetrics: ['total_xp', 'referral_count', 'trading_volume', 'achievements_count']
-  }
+
 ]
 
 class LeaderboardService {
@@ -266,10 +276,17 @@ class LeaderboardService {
    */
   async getLeaderboard(filters: LeaderboardFilters): Promise<LeaderboardResponse> {
     try {
-      const { category, timePeriod, limit, offset } = filters
+      const { category, timePeriod, limit, offset, locationFilter = 'all' } = filters
+
+      // Always fetch country stats for sidebar (top 10)
+      const normalizedCategory = category === 'all' ? 'overall' : category
+      const countryStatsPromise = this.getCountryStats(normalizedCategory, timePeriod, 0, 10)
+
+      // If locationFilter is 'all', show all users (no location filtering)
+      // Countries will be shown in the sidebar only
 
       // Generate cache key
-      const cacheKey = `leaderboard:${category}:${timePeriod}:${limit}:${offset}`
+      const cacheKey = `leaderboard:${category}:${timePeriod}:${limit}:${offset}:${locationFilter}`
 
       // Check cache first
       const cachedData = this.getCachedData<LeaderboardResponse>(cacheKey)
@@ -288,6 +305,8 @@ class LeaderboardService {
           profile_level,
           current_xp,
           total_xp,
+          points,
+          location_encrypted,
           kyc_status,
           join_date,
           last_active,
@@ -324,9 +343,28 @@ class LeaderboardService {
 
       if (error) throw error
 
+      // Filter users by location if specific location is selected
+      let filteredUsers = users || []
+      if (locationFilter !== 'all') {
+        filteredUsers = filteredUsers.filter(user => {
+          if (!user.location_encrypted) return false
+          try {
+            const userLocation = this.decrypt(user.location_encrypted, user.address)
+            // Match by location code or name
+            return userLocation && (
+              userLocation.toLowerCase() === locationFilter.toLowerCase() ||
+              userLocation.toLowerCase().includes(locationFilter.toLowerCase())
+            )
+          } catch (error) {
+            return false
+          }
+        })
+      }
+
       // Process and score users based on category
-      const processedUsers: LeaderboardUser[] = (users || []).map((user, index) => {
+      const processedUsers: LeaderboardUser[] = filteredUsers.map((user, index) => {
         const username = this.decrypt(user.username_encrypted, user.address)
+        const location = user.location_encrypted ? this.decrypt(user.location_encrypted, user.address) : null
         const profileImageUrl = this.getWalrusImageUrl(user.profile_image_blob_id)
         
         // Calculate scores based on category
@@ -408,6 +446,8 @@ class LeaderboardService {
           profileLevel: user.profile_level,
           currentXp: user.current_xp,
           totalXp: user.total_xp,
+          points: user.points || 0,
+          location,
           kycStatus: user.kyc_status,
           joinDate: user.join_date,
           lastActive: user.last_active,
@@ -425,11 +465,16 @@ class LeaderboardService {
           rank: offset + index + 1
         }))
 
+      // Get country stats for sidebar
+      const countryStats = await countryStatsPromise
+
       const result: LeaderboardResponse = {
         users: sortedUsers,
+        countries: countryStats.countries,
         totalCount: count || 0,
         hasMore: (count || 0) > offset + limit,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
+        isCountryView: false
       }
 
       // Cache the result
@@ -487,6 +532,264 @@ class LeaderboardService {
     } catch (error) {
       console.error('Failed to fetch leaderboard stats:', error)
       return {}
+    }
+  }
+
+  /**
+   * Get country statistics for country-level leaderboard
+   */
+  async getCountryStats(
+    category: string = 'overall',
+    timePeriod: 'weekly' | 'monthly' | 'all-time' = 'all-time',
+    offset: number = 0,
+    limit: number = 20
+  ): Promise<LeaderboardResponse> {
+    try {
+      // Get all users with their locations and metrics
+      let query = supabase
+        .from('user_profiles')
+        .select(`
+          address,
+          username_encrypted,
+          profile_image_blob_id,
+          role_tier,
+          profile_level,
+          current_xp,
+          total_xp,
+          points,
+          location_encrypted,
+          kyc_status,
+          join_date,
+          last_active,
+          referral_data,
+          achievements_data
+        `)
+        .not('username_encrypted', 'is', null)
+        .not('location_encrypted', 'is', null)
+
+      const { data: users, error } = await query
+
+      if (error) throw error
+
+
+
+      // Group users by country and calculate statistics
+      const countryMap = new Map<string, {
+        users: any[]
+        totalVolume: number
+        totalActivity: number
+        totalXp: number
+        totalPoints: number
+        tierCounts: Record<string, number>
+      }>()
+
+      users?.forEach(user => {
+        if (user.location_encrypted) {
+          try {
+            const location = this.decrypt(user.location_encrypted, user.address)
+            if (location) {
+              if (!countryMap.has(location)) {
+                countryMap.set(location, {
+                  users: [],
+                  totalVolume: 0,
+                  totalActivity: 0,
+                  totalXp: 0,
+                  totalPoints: 0,
+                  tierCounts: { NOMAD: 0, PRO: 0, ROYAL: 0 }
+                })
+              }
+
+              const countryData = countryMap.get(location)!
+              countryData.users.push(user)
+              countryData.totalXp += user.total_xp || 0
+              countryData.totalPoints += user.points || 0
+              countryData.tierCounts[user.role_tier] = (countryData.tierCounts[user.role_tier] || 0) + 1
+
+              // Calculate volume and activity based on user data
+              const referralData = user.referral_data ? JSON.parse(user.referral_data) : {}
+              const achievementsData = user.achievements_data ? JSON.parse(user.achievements_data) : {}
+
+              // Volume calculation (based on category)
+              switch (category) {
+                case 'affiliates':
+                  countryData.totalVolume += (referralData.total_commissions || 0)
+                  break
+                case 'traders':
+                  countryData.totalVolume += (user.points || 0) // Use points as trading volume proxy
+                  break
+                case 'xp':
+                  countryData.totalVolume += (user.total_xp || 0)
+                  break
+                case 'quiz':
+                  countryData.totalVolume += (achievementsData.quiz_score || user.current_xp || 0)
+                  break
+                case 'creators':
+                  countryData.totalVolume += (achievementsData.channels_created || 0) * 1000
+                  break
+                default:
+                  countryData.totalVolume += (user.total_xp || 0) + (referralData.total_commissions || 0) * 10
+              }
+
+              // Activity calculation
+              countryData.totalActivity += (achievementsData.achievements_count || 0) + (user.current_xp || 0) / 100
+            }
+          } catch (error) {
+            // Skip if decryption fails
+          }
+        }
+      })
+
+      // Import locations data for flags
+      const { LOCATIONS, getLocationByCode } = await import('./locations')
+
+      // Convert to CountryStats array
+      const countries: CountryStats[] = Array.from(countryMap.entries()).map(([locationName, data], index) => {
+        // Find matching location for flag
+        const location = LOCATIONS.find(l =>
+          l.name.toLowerCase() === locationName.toLowerCase() ||
+          locationName.toLowerCase().includes(l.name.toLowerCase()) ||
+          l.name.toLowerCase().includes(locationName.toLowerCase())
+        )
+
+        // Determine top tier
+        const topTier = data.tierCounts.ROYAL > 0 ? 'ROYAL' :
+                      data.tierCounts.PRO > 0 ? 'PRO' : 'NOMAD'
+
+        return {
+          code: location?.code || locationName.toLowerCase().replace(/\s+/g, '_'),
+          name: locationName,
+          flag: location?.flag || '🌍',
+          rank: index + 1,
+          members: data.users.length,
+          totalVolume: Math.round(data.totalVolume),
+          totalActivity: Math.round(data.totalActivity),
+          avgLevel: data.users.length > 0 ? Math.round(data.totalXp / data.users.length / 1000) : 0,
+          topTier,
+          metrics: {
+            members: data.users.length,
+            volume: Math.round(data.totalVolume),
+            activity: Math.round(data.totalActivity),
+            avg_level: data.users.length > 0 ? Math.round(data.totalXp / data.users.length / 1000) : 0,
+            top_tier: topTier
+          }
+        }
+      })
+
+      // Sort countries based on category
+      countries.sort((a, b) => {
+        switch (category) {
+          case 'affiliates':
+            return b.totalVolume - a.totalVolume
+          case 'traders':
+            return b.totalActivity - a.totalActivity
+          case 'xp':
+            return b.avgLevel - a.avgLevel
+          case 'quiz':
+            return b.totalActivity - a.totalActivity
+          case 'creators':
+            return b.totalVolume - a.totalVolume
+          case 'all':
+          default:
+            return b.members - a.members // Default: sort by member count
+        }
+      })
+
+      // Reassign ranks after sorting
+      countries.forEach((country, index) => {
+        country.rank = index + 1
+      })
+
+      // Apply pagination
+      const paginatedCountries = countries.slice(offset, offset + limit)
+
+      return {
+        users: [], // Empty for country view
+        countries: paginatedCountries,
+        totalCount: countries.length,
+        hasMore: countries.length > offset + limit,
+        lastUpdated: new Date().toISOString(),
+        isCountryView: true
+      }
+
+    } catch (error) {
+      console.error('Failed to fetch country stats:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get available locations from database (based on user locations)
+   */
+  async getAvailableLocations(): Promise<Array<{code: string, name: string, flag: string, count: number}>> {
+    try {
+      // Get all unique encrypted locations from user profiles
+      const { data: users, error } = await supabase
+        .from('user_profiles')
+        .select('location_encrypted, address')
+        .not('location_encrypted', 'is', null)
+        .not('username_encrypted', 'is', null)
+
+      if (error) throw error
+
+      // Decrypt locations and count occurrences
+      const locationCounts = new Map<string, number>()
+
+      users?.forEach(user => {
+        if (user.location_encrypted) {
+          try {
+            const decryptedLocation = this.decrypt(user.location_encrypted, user.address)
+            if (decryptedLocation) {
+              const currentCount = locationCounts.get(decryptedLocation) || 0
+              locationCounts.set(decryptedLocation, currentCount + 1)
+            }
+          } catch (error) {
+            // Skip if decryption fails
+            console.warn('Failed to decrypt location for user:', user.address)
+          }
+        }
+      })
+
+      // Import locations data and match with database locations
+      const { LOCATIONS, getLocationByCode } = await import('./locations')
+
+      const availableLocations: Array<{code: string, name: string, flag: string, count: number}> = []
+
+      locationCounts.forEach((count, locationName) => {
+        // Try to find matching location by name (fuzzy matching)
+        const location = LOCATIONS.find(l =>
+          l.name.toLowerCase() === locationName.toLowerCase() ||
+          l.code.toLowerCase() === locationName.toLowerCase() ||
+          locationName.toLowerCase().includes(l.name.toLowerCase()) ||
+          l.name.toLowerCase().includes(locationName.toLowerCase())
+        )
+
+        if (location) {
+          availableLocations.push({
+            code: location.code,
+            name: location.name,
+            flag: location.flag,
+            count
+          })
+        } else {
+          // If no match found, create a generic entry
+          availableLocations.push({
+            code: locationName.toLowerCase().replace(/\s+/g, '_'),
+            name: locationName,
+            flag: '🌍',
+            count
+          })
+        }
+      })
+
+      // Sort by count (descending) then by name
+      return availableLocations.sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count
+        return a.name.localeCompare(b.name)
+      })
+
+    } catch (error) {
+      console.error('Failed to fetch available locations:', error)
+      return []
     }
   }
 

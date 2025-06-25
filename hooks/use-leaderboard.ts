@@ -11,6 +11,7 @@ import {
 interface UseLeaderboardOptions {
   category: string
   timePeriod: 'weekly' | 'monthly' | 'all-time'
+  locationFilter?: string
   autoRefresh?: boolean
   refreshInterval?: number
 }
@@ -18,6 +19,7 @@ interface UseLeaderboardOptions {
 interface UseLeaderboardReturn {
   data: LeaderboardResponse | null
   stats: Record<string, any> | null
+  availableLocations: Array<{code: string, name: string, flag: string, count: number}>
   isLoading: boolean
   error: string | null
   currentPage: number
@@ -30,11 +32,13 @@ interface UseLeaderboardReturn {
 export function useLeaderboard({
   category,
   timePeriod,
+  locationFilter = 'all',
   autoRefresh = false,
   refreshInterval = 5 * 60 * 1000 // 5 minutes
 }: UseLeaderboardOptions): UseLeaderboardReturn {
   const [data, setData] = useState<LeaderboardResponse | null>(null)
   const [stats, setStats] = useState<Record<string, any> | null>(null)
+  const [availableLocations, setAvailableLocations] = useState<Array<{code: string, name: string, flag: string, count: number}>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -63,7 +67,8 @@ export function useLeaderboard({
         category,
         timePeriod,
         limit: itemsPerPage,
-        offset: (page - 1) * itemsPerPage
+        offset: (page - 1) * itemsPerPage,
+        locationFilter
       }
 
       const result = await leaderboardService.getLeaderboard(filters)
@@ -84,7 +89,7 @@ export function useLeaderboard({
         setIsLoading(false)
       }
     }
-  }, [category, timePeriod, currentPage, itemsPerPage])
+  }, [category, timePeriod, locationFilter, currentPage, itemsPerPage])
 
   const loadStats = useCallback(async () => {
     try {
@@ -95,12 +100,22 @@ export function useLeaderboard({
     }
   }, [])
 
+  const loadAvailableLocations = useCallback(async () => {
+    try {
+      const locations = await leaderboardService.getAvailableLocations()
+      setAvailableLocations(locations)
+    } catch (err) {
+      console.error('Available locations loading error:', err)
+    }
+  }, [])
+
   const refresh = useCallback(async () => {
     await Promise.all([
       loadLeaderboard(currentPage, true),
-      loadStats()
+      loadStats(),
+      loadAvailableLocations()
     ])
-  }, [loadLeaderboard, loadStats, currentPage])
+  }, [loadLeaderboard, loadStats, loadAvailableLocations, currentPage])
 
   const setPage = useCallback((page: number) => {
     if (page >= 1 && page <= totalPages && page !== currentPage) {
@@ -117,17 +132,18 @@ export function useLeaderboard({
 
   // Load data when dependencies change
   useEffect(() => {
-    setCurrentPage(1) // Reset to first page when category/period changes
-  }, [category, timePeriod])
+    setCurrentPage(1) // Reset to first page when category/period/location changes
+  }, [category, timePeriod, locationFilter])
 
   useEffect(() => {
     loadLeaderboard(currentPage)
   }, [loadLeaderboard, currentPage])
 
-  // Load stats once on mount
+  // Load stats and available locations once on mount
   useEffect(() => {
     loadStats()
-  }, [loadStats])
+    loadAvailableLocations()
+  }, [loadStats, loadAvailableLocations])
 
   // Auto-refresh setup
   useEffect(() => {
@@ -172,6 +188,7 @@ export function useLeaderboard({
   return {
     data,
     stats,
+    availableLocations,
     isLoading,
     error,
     currentPage,

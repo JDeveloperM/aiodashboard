@@ -4,9 +4,10 @@ import { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LeaderboardTable } from '@/components/leaderboard-table'
+import { CountriesSidebar } from '@/components/countries-sidebar'
 import { useLeaderboard } from '@/hooks/use-leaderboard'
 import {
   LEADERBOARD_CATEGORIES,
@@ -23,10 +24,12 @@ import {
   Calendar,
   Filter,
   BarChart3,
-  Zap
+  Zap,
+  MapPin
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+
 
 // Icon mapping for categories
 const CATEGORY_ICONS = {
@@ -52,12 +55,14 @@ interface LeaderboardStats {
 }
 
 export function Leaderboard() {
-  const [activeCategory, setActiveCategory] = useState('overall')
+  const [activeCategory, setActiveCategory] = useState('affiliates')
   const [timePeriod, setTimePeriod] = useState<'weekly' | 'monthly' | 'all-time'>('all-time')
+  const [locationFilter, setLocationFilter] = useState<string>('all')
 
   const {
     data: leaderboardData,
     stats,
+    availableLocations,
     isLoading,
     currentPage,
     totalPages,
@@ -67,6 +72,7 @@ export function Leaderboard() {
   } = useLeaderboard({
     category: activeCategory,
     timePeriod,
+    locationFilter,
     autoRefresh: true,
     refreshInterval: 5 * 60 * 1000 // 5 minutes
   })
@@ -82,6 +88,10 @@ export function Leaderboard() {
 
   const handleTimePeriodChange = (period: string) => {
     setTimePeriod(period as 'weekly' | 'monthly' | 'all-time')
+  }
+
+  const handleLocationFilterChange = (location: string) => {
+    setLocationFilter(location)
   }
 
   const handlePageChange = (page: number) => {
@@ -107,74 +117,139 @@ export function Leaderboard() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
             Leaderboard
+            {locationFilter !== 'all' && (
+              <span className="text-sm font-normal text-[#C0E6FF] ml-2">
+                - {availableLocations.find(l => l.code === locationFilter)?.name || locationFilter}
+              </span>
+            )}
           </h1>
           <p className="text-[#C0E6FF] mt-1">
-            Compete with the community across different activities and achievements
+            {locationFilter === 'all'
+              ? 'Top performers across all locations. Click a country on the right to filter by location.'
+              : `Showing top users from ${availableLocations.find(l => l.code === locationFilter)?.name || locationFilter}. Click "Back to All Users" to see global rankings.`
+            }
           </p>
         </div>
         
-        <div className="flex items-center gap-3">
-          {/* Time Period Filter */}
-          <Select value={timePeriod} onValueChange={handleTimePeriodChange}>
-            <SelectTrigger className="w-32 bg-[#1a2f51] border-[#1a2f51] text-white">
-              <Calendar className="w-4 h-4 mr-2" />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {/* Category Filter */}
+          <Select value={activeCategory} onValueChange={handleCategoryChange}>
+            <SelectTrigger className="w-full sm:w-64 bg-[#1a2f51] border-[#1a2f51] text-white">
+              <Filter className="w-4 h-4 mr-2" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-[#1a2f51] border-[#1a2f51]">
-              <SelectItem value="weekly" className="text-white hover:bg-[#2a3f61]">Weekly</SelectItem>
-              <SelectItem value="monthly" className="text-white hover:bg-[#2a3f61]">Monthly</SelectItem>
-              <SelectItem value="all-time" className="text-white hover:bg-[#2a3f61]">All Time</SelectItem>
+              <SelectItem value="all" className="text-white hover:bg-[#2a3f61]">
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-4 h-4" />
+                  All Categories
+                </div>
+              </SelectItem>
+              {LEADERBOARD_CATEGORIES.map((category) => {
+                const IconComponent = CATEGORY_ICONS[category.icon as keyof typeof CATEGORY_ICONS] || Trophy
+                return (
+                  <SelectItem key={category.id} value={category.id} className="text-white hover:bg-[#2a3f61]">
+                    <div className="flex items-center gap-2">
+                      <IconComponent className="w-4 h-4" />
+                      {category.name}
+                    </div>
+                  </SelectItem>
+                )
+              })}
             </SelectContent>
           </Select>
 
-          {/* Refresh Button */}
-          <Button
-            onClick={handleRefresh}
-            variant="outline"
-            size="sm"
-            className="bg-[#1a2f51] border-[#1a2f51] text-white hover:bg-[#2a3f61]"
-            disabled={isLoading}
-          >
-            <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
-          </Button>
+          {/* Location/Language Filter */}
+          <Select value={locationFilter} onValueChange={handleLocationFilterChange}>
+            <SelectTrigger className="w-full sm:w-64 bg-[#1a2f51] border-[#1a2f51] text-white">
+              <MapPin className="w-4 h-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-[#1a2f51] border-[#1a2f51] max-h-60 overflow-y-auto">
+              <SelectItem value="all" className="text-white hover:bg-[#2a3f61]">
+                🌍 All Locations
+              </SelectItem>
+
+              {/* Dynamic locations from database */}
+              {availableLocations.length > 0 && (
+                <>
+                  <div className="px-2 py-1 text-xs text-[#C0E6FF] font-semibold">Available Locations</div>
+                  {availableLocations.map((location) => (
+                    <SelectItem key={location.code} value={location.code} className="text-white hover:bg-[#2a3f61]">
+                      <div className="flex items-center justify-between w-full">
+                        <span>{location.flag} {location.name}</span>
+                        <span className="text-xs text-[#C0E6FF] ml-2">({location.count})</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </>
+              )}
+
+              {/* Show message if no locations available */}
+              {availableLocations.length === 0 && (
+                <div className="px-2 py-2 text-xs text-[#C0E6FF] text-center">
+                  No user locations found
+                </div>
+              )}
+            </SelectContent>
+          </Select>
+
+          <div className="flex gap-3">
+            {/* Time Period Filter */}
+            <Select value={timePeriod} onValueChange={handleTimePeriodChange}>
+              <SelectTrigger className="w-full sm:w-32 bg-[#1a2f51] border-[#1a2f51] text-white">
+                <Calendar className="w-4 h-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-[#1a2f51] border-[#1a2f51]">
+                <SelectItem value="weekly" className="text-white hover:bg-[#2a3f61]">Weekly</SelectItem>
+                <SelectItem value="monthly" className="text-white hover:bg-[#2a3f61]">Monthly</SelectItem>
+                <SelectItem value="all-time" className="text-white hover:bg-[#2a3f61]">All Time</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Refresh Button */}
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              size="sm"
+              className="bg-[#1a2f51] border-[#1a2f51] text-white hover:bg-[#2a3f61] px-3"
+              disabled={isLoading}
+            >
+              <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
+            </Button>
+          </div>
         </div>
       </div>
 
 
 
-      {/* Category Tabs */}
-      <Tabs value={activeCategory} onValueChange={handleCategoryChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 bg-[#1a2f51] p-1">
-          {LEADERBOARD_CATEGORIES.map((category) => {
-            const IconComponent = CATEGORY_ICONS[category.icon as keyof typeof CATEGORY_ICONS] || Trophy
-            return (
-              <TabsTrigger
-                key={category.id}
-                value={category.id}
-                className="flex items-center gap-2 text-xs lg:text-sm data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white text-[#C0E6FF]"
-              >
-                <IconComponent className="w-4 h-4" />
-                <span className="hidden lg:inline">{category.name.replace('Top ', '')}</span>
-                <span className="lg:hidden">{category.name.split(' ')[1] || category.name}</span>
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
+      {/* Leaderboard Content */}
+      <div className="mt-6 flex flex-col lg:flex-row gap-6">
+        {/* Countries Sidebar - Full width on mobile (first), 1/4 on desktop (second) */}
+        <div className="w-full lg:w-1/4 lg:min-w-[300px] order-1 lg:order-2">
+          <CountriesSidebar
+            countries={leaderboardData?.countries || []}
+            isLoading={isLoading}
+            onCountryClick={(countryCode) => setLocationFilter(countryCode)}
+            selectedCountry={locationFilter !== 'all' ? locationFilter : undefined}
+            category={currentCategory}
+          />
+        </div>
 
-        {LEADERBOARD_CATEGORIES.map((category) => (
-          <TabsContent key={category.id} value={category.id} className="mt-6">
-            <LeaderboardTable
-              users={leaderboardData?.users || []}
-              category={category}
-              isLoading={isLoading}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              onUserClick={handleUserClick}
-            />
-          </TabsContent>
-        ))}
-      </Tabs>
+        {/* Main Table - Full width on mobile (second), 3/4 on desktop (first) */}
+        <div className="flex-1 lg:w-3/4 order-2 lg:order-1">
+          <LeaderboardTable
+            users={leaderboardData?.users || []}
+            category={currentCategory}
+            isLoading={isLoading}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            onUserClick={handleUserClick}
+          />
+        </div>
+      </div>
 
       {/* Last Updated */}
       {leaderboardData?.lastUpdated && (
