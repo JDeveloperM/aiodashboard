@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { useSubscription } from "@/contexts/subscription-context"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, LineChart, ArrowUpRight, Crown, ArrowRight, Bot, Users, BookOpen, ChevronDown, ChevronRight, Dice6, Rocket, Share2, HelpCircle, Globe, Settings, Trophy } from "lucide-react"
+import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, LineChart, ArrowUpRight, Crown, ArrowRight, Bot, Users, BookOpen, ChevronDown, ChevronRight, Dice6, Rocket, Share2, HelpCircle, Globe, Settings, Trophy, MessageSquare } from "lucide-react"
 
 export const Sidebar = memo(function Sidebar() {
   const pathname = usePathname()
@@ -67,6 +67,7 @@ export const Sidebar = memo(function Sidebar() {
     { name: "Dewhale", href: "/dapps/dewhale-launchpad", icon: Rocket, restricted: false },
     { name: "E-Learning", href: "/metago-academy", icon: BookOpen, restricted: false },
     { name: "Leaderboard", href: "/leaderboard", icon: Trophy, restricted: false },
+    { name: "Forum", href: "/forum", icon: MessageSquare, restricted: false },
   ]
 
   const bottomNavigation = [
