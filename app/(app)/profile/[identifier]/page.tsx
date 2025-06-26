@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 interface PublicProfileData {
   address: string
   username: string
+  location?: string | null
   profileImageUrl: string | null
   bannerImageUrl: string | null
   roleTier: 'NOMAD' | 'PRO' | 'ROYAL'

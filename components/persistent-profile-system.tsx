@@ -16,6 +16,8 @@ import { usePersistentProfile } from '@/hooks/use-persistent-profile'
 import { useChannelSubscriptions, getChannelTypeBadgeColor, formatSubscriptionStatus } from '@/hooks/use-channel-subscriptions'
 import { useReferralCodes } from '@/hooks/use-referral-codes'
 import { encryptedStorage } from '@/lib/encrypted-database-storage'
+import { getCountryCodeByName } from '@/lib/locations'
+import ReactCountryFlag from 'react-country-flag'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { useSubscription } from "@/contexts/subscription-context"
 import { toast } from 'sonner'
@@ -746,7 +748,20 @@ export function PersistentProfileSystem() {
                         alt="AIONET"
                         className="w-6 h-6 object-contain"
                       />
-                      <h2 className="text-lg md:text-xl font-bold text-white">{profileData.name}</h2>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-lg md:text-xl font-bold text-white">{profileData.name}</h2>
+                        {profile?.location && getCountryCodeByName(profile.location) && (
+                          <ReactCountryFlag
+                            countryCode={getCountryCodeByName(profile.location)!}
+                            svg
+                            style={{
+                              width: '1.5em',
+                              height: '1.5em',
+                            }}
+                            title={profile.location}
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
 

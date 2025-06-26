@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 
@@ -15,6 +16,8 @@ import { usePersistentProfile } from "@/hooks/use-persistent-profile"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { EnhancedAvatar } from "@/components/enhanced-avatar"
 import { ReferralCodeManagement } from "@/components/referral-code-management"
+import { LOCATIONS } from "@/lib/locations"
+import ReactCountryFlag from 'react-country-flag'
 import { toast } from "sonner"
 import { affiliateService } from "@/lib/affiliate-service"
 import {
@@ -54,7 +57,7 @@ export function DashboardProfiles() {
     lastName: "",
     username: "",
     email: "",
-    location: "",
+    location: "unspecified",
     walletAddress: "",
     kycStatus: 'not-started',
     referralCode: ""
@@ -107,7 +110,7 @@ export function DashboardProfiles() {
         lastName: lastName || "",
         username: profile.username || "",
         email: isZkLoginUser ? zkLoginEmail : (profile.email || ""),
-        location: profile.location || "",
+        location: profile.location || "unspecified",
         walletAddress: user?.address || "",
         kycStatus: profile.kyc_status === 'verified' ? 'verified' :
                   profile.kyc_status === 'pending' ? 'pending' : 'not-started',
@@ -230,17 +233,38 @@ export function DashboardProfiles() {
         toast.success('✅ Referral code applied successfully!')
       }
 
-      // Prepare profile data for database
+      // Prepare profile data for database - PRESERVE ALL EXISTING DATA
       const profileUpdateData: any = {
+        // Preserve ALL existing profile data first
+        ...profile,
+        // Only update the specific fields that user can edit in this form
         username: profileData.username,
         real_name: `${profileData.firstName} ${profileData.lastName}`.trim(),
-        location: profileData.location,
+        location: profileData.location === 'unspecified' ? '' : profileData.location,
         display_preferences: {
           ...profile?.display_preferences
         },
-        // Preserve existing onboarding status to prevent reset
+        // Explicitly preserve critical profile data to prevent reset
+        role_tier: profile?.role_tier || 'NOMAD',
+        profile_level: profile?.profile_level || 1,
+        current_xp: profile?.current_xp || 0,
+        total_xp: profile?.total_xp || 0,
+        points: profile?.points || 0,
+        kyc_status: profile?.kyc_status || 'not_verified',
         onboarding_completed: profile?.onboarding_completed ?? false,
-        onboarding_completed_at: profile?.onboarding_completed_at
+        onboarding_completed_at: profile?.onboarding_completed_at,
+        // Preserve important data structures
+        achievements_data: profile?.achievements_data,
+        referral_data: profile?.referral_data,
+        social_links: profile?.social_links,
+        walrus_metadata: profile?.walrus_metadata,
+        // Preserve image blob IDs
+        profile_image_blob_id: profile?.profile_image_blob_id,
+        banner_image_blob_id: profile?.banner_image_blob_id,
+        // Preserve timestamps
+        created_at: profile?.created_at,
+        join_date: profile?.join_date,
+        updated_at: new Date().toISOString()
       }
 
       // Handle email based on authentication method and immutability rules
@@ -568,17 +592,39 @@ export function DashboardProfiles() {
                 <Label htmlFor="location" className="text-[#C0E6FF]">
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
-                    Location
+                    Country
                   </div>
                 </Label>
-                <Input
-                  id="location"
+                <Select
                   value={profileData.location}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, location: e.target.value }))}
+                  onValueChange={(value) => setProfileData(prev => ({ ...prev, location: value }))}
                   disabled={!isEditing}
-                  className="bg-[#030F1C] border-[#C0E6FF]/30 text-white"
-                  placeholder="Enter your location"
-                />
+                >
+                  <SelectTrigger className="bg-[#030F1C] border-[#C0E6FF]/30 text-white">
+                    <SelectValue placeholder="Select your country" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#1a2f51] border-[#1a2f51] max-h-60 overflow-y-auto">
+                    <SelectItem value="unspecified" className="text-white hover:bg-[#2a3f61]">
+                      🌍 Prefer not to say
+                    </SelectItem>
+                    {LOCATIONS.map((location) => (
+                      <SelectItem key={location.code} value={location.name} className="text-white hover:bg-[#2a3f61]">
+                        <div className="flex items-center gap-2">
+                          <ReactCountryFlag
+                            countryCode={location.code}
+                            svg
+                            style={{
+                              width: '1.2em',
+                              height: '1.2em',
+                            }}
+                            title={location.name}
+                          />
+                          {location.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

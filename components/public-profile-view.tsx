@@ -26,6 +26,8 @@ import { RoleImage } from '@/components/ui/role-image'
 import { EnhancedAvatar } from '@/components/enhanced-avatar'
 import { EnhancedBanner } from '@/components/enhanced-banner'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { getCountryCodeByName } from '@/lib/locations'
+import ReactCountryFlag from 'react-country-flag'
 import { toast } from 'sonner'
 
 // Helper functions for channel display (same as main profile)
@@ -90,6 +92,7 @@ const getAchievementImage = (achievementName: string): string | null => {
 interface PublicProfileData {
   address: string
   username: string
+  location?: string | null
   profileImageUrl: string | null
   bannerImageUrl: string | null
   roleTier: 'NOMAD' | 'PRO' | 'ROYAL'
@@ -305,7 +308,20 @@ export function PublicProfileView({ profileData }: PublicProfileViewProps) {
                           alt="AIONET"
                           className="w-6 h-6 object-contain"
                         />
-                        <h2 className="text-lg md:text-xl font-bold text-white">{profileDisplayData.name}</h2>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-lg md:text-xl font-bold text-white">{profileDisplayData.name}</h2>
+                          {profileData.location && getCountryCodeByName(profileData.location) && (
+                            <ReactCountryFlag
+                              countryCode={getCountryCodeByName(profileData.location)!}
+                              svg
+                              style={{
+                                width: '1.5em',
+                                height: '1.5em',
+                              }}
+                              title={profileData.location}
+                            />
+                          )}
+                        </div>
                       </div>
 
                       {/* Profile Details - Same Line */}

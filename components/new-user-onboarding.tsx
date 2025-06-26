@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   User,
   Mail,
@@ -19,13 +20,16 @@ import {
   Trophy,
   Users,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  MapPin
 } from 'lucide-react'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { usePersistentProfile } from '@/hooks/use-persistent-profile'
 import { useReferralTracking } from '@/hooks/use-referral-tracking'
 import { useReferralCodes } from '@/hooks/use-referral-codes'
 import { affiliateService } from '@/lib/affiliate-service'
+import { LOCATIONS } from '@/lib/locations'
+import ReactCountryFlag from 'react-country-flag'
 import { toast } from 'sonner'
 
 interface OnboardingStep {
@@ -51,7 +55,8 @@ export function NewUserOnboarding() {
     username: '',
     email: '',
     referralCode: '',
-    selectedAvatar: '' // Add avatar selection to form data
+    selectedAvatar: '', // Add avatar selection to form data
+    country: '' // Add country selection
   })
 
   // Check if user is zkLogin and extract email
@@ -138,7 +143,8 @@ export function NewUserOnboarding() {
         username: profile.username || '',
         email: profile.email || '',
         referralCode: trackedReferralCode || '',
-        selectedAvatar: '' // Initialize as empty for existing profiles
+        selectedAvatar: '', // Initialize as empty for existing profiles
+        country: profile.location || ''
       })
     } else if (user?.address) {
       // Initialize with default username if no profile exists
@@ -147,7 +153,8 @@ export function NewUserOnboarding() {
         username: `User ${user.address.slice(0, 6)}`,
         email: '',
         referralCode: trackedReferralCode || '',
-        selectedAvatar: '' // Initialize as empty for new users
+        selectedAvatar: '', // Initialize as empty for new users
+        country: ''
       })
     }
 
@@ -181,6 +188,8 @@ export function NewUserOnboarding() {
         username: formData.username.trim(),
         // Handle email based on authentication method
         email: isZkLoginUser ? zkLoginEmail : (formData.email.trim() || undefined),
+        // Add country if provided
+        location: formData.country === 'unspecified' ? '' : formData.country.trim() || undefined,
         // Ensure we don't lose existing data
         role_tier: profile?.role_tier || 'NOMAD',
         profile_level: profile?.profile_level || 1,
@@ -485,6 +494,45 @@ export function NewUserOnboarding() {
                   </p>
                 )}
               </div>
+
+              {/* Country Selection */}
+              <div>
+                <Label htmlFor="country" className="text-white flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  Country (Optional)
+                </Label>
+                <Select value={formData.country} onValueChange={(value) => setFormData({ ...formData, country: value })}>
+                  <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white">
+                    <SelectValue placeholder="Select your country" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#1a2f51] border-[#1a2f51] max-h-60 overflow-y-auto">
+                    <SelectItem value="unspecified" className="text-white hover:bg-[#2a3f61]">
+                      🌍 Prefer not to say
+                    </SelectItem>
+                    {LOCATIONS.map((location) => (
+                      <SelectItem key={location.code} value={location.name} className="text-white hover:bg-[#2a3f61]">
+                        <div className="flex items-center gap-2">
+                          <ReactCountryFlag
+                            countryCode={location.code}
+                            svg
+                            style={{
+                              width: '1.2em',
+                              height: '1.2em',
+                            }}
+                            title={location.name}
+                          />
+                          {location.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[#C0E6FF]/70 text-sm mt-1">
+                  Help us show you relevant content and connect with users in your region
+                </p>
+              </div>
+
+
 
               <div>
                 <Label htmlFor="referralCode" className="text-white flex items-center gap-2">

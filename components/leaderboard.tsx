@@ -27,6 +27,7 @@ import {
   Zap,
   MapPin
 } from 'lucide-react'
+import ReactCountryFlag from 'react-country-flag'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -177,7 +178,18 @@ export function Leaderboard() {
                   {availableLocations.map((location) => (
                     <SelectItem key={location.code} value={location.code} className="text-white hover:bg-[#2a3f61]">
                       <div className="flex items-center justify-between w-full">
-                        <span>{location.flag} {location.name}</span>
+                        <div className="flex items-center gap-2">
+                          <ReactCountryFlag
+                            countryCode={location.code}
+                            svg
+                            style={{
+                              width: '1.2em',
+                              height: '1.2em',
+                            }}
+                            title={location.name}
+                          />
+                          <span>{location.name}</span>
+                        </div>
                         <span className="text-xs text-[#C0E6FF] ml-2">({location.count})</span>
                       </div>
                     </SelectItem>

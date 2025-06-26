@@ -72,7 +72,6 @@ export default function SettingsPage() {
   })
 
   // General settings state - loaded from persistent profile
-  const [language, setLanguage] = useState("en")
   const [performanceMode, setPerformanceMode] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -104,7 +103,6 @@ export default function SettingsPage() {
 
       // Load display preferences
       const displayPrefs = profile.display_preferences || {}
-      setLanguage(displayPrefs.language || "en")
       setPerformanceMode(displayPrefs.performance_mode || false)
 
       // Load privacy preferences
@@ -205,7 +203,6 @@ export default function SettingsPage() {
 
       const displayPreferences = {
         ...profile?.display_preferences,
-        language,
         performance_mode: performanceMode,
         email_notifications: notifications?.email_enabled,
         push_notifications: notifications?.push_enabled,
@@ -668,28 +665,6 @@ export default function SettingsPage() {
               </div>
               <div className="space-y-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <Globe className="h-5 w-5 text-[#4DA2FF]" />
-                        <Label htmlFor="language" className="text-white">Language</Label>
-                      </div>
-                      <p className="text-sm text-[#C0E6FF]">Select your preferred language.</p>
-                    </div>
-                  <Select value={language} onValueChange={setLanguage}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="es">Spanish</SelectItem>
-                      <SelectItem value="fr">French</SelectItem>
-                      <SelectItem value="de">German</SelectItem>
-                      <SelectItem value="ja">Japanese</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-2">

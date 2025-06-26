@@ -26,6 +26,8 @@ import {
   Video
 } from 'lucide-react'
 import { LeaderboardUser, LeaderboardCategory, CountryStats } from '@/lib/leaderboard-service'
+import { getCountryCodeByName } from '@/lib/locations'
+import ReactCountryFlag from 'react-country-flag'
 import { cn } from '@/lib/utils'
 
 interface LeaderboardTableProps {
@@ -260,9 +262,18 @@ export function LeaderboardTable({
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-white font-medium">{user.username}</span>
                       {getTierBadge(user.roleTier)}
-                      {user.location && (
-                        <span className="text-xs text-[#C0E6FF] bg-[#1a2f51]/30 px-2 py-1 rounded">
-                          📍 {user.location}
+                      {user.location && getCountryCodeByName(user.location) && (
+                        <span className="text-xs text-[#C0E6FF] bg-[#1a2f51]/30 px-2 py-1 rounded flex items-center gap-1">
+                          <ReactCountryFlag
+                            countryCode={getCountryCodeByName(user.location)!}
+                            svg
+                            style={{
+                              width: '1em',
+                              height: '1em',
+                            }}
+                            title={user.location}
+                          />
+                          {user.location}
                         </span>
                       )}
                     </div>

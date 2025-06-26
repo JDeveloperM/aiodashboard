@@ -54,7 +54,8 @@ export async function GET(
           join_date,
           last_active,
           achievements_data,
-          username_encrypted
+          username_encrypted,
+          location_encrypted
         `)
         .eq('address', identifier)
         .single()
@@ -88,7 +89,8 @@ export async function GET(
           join_date,
           last_active,
           achievements_data,
-          username_encrypted
+          username_encrypted,
+          location_encrypted
         `)
         .not('username_encrypted', 'is', null)
 
@@ -120,6 +122,7 @@ export async function GET(
 
     // Decrypt username and check privacy settings
     let decryptedUsername = `User ${profileData.address.slice(0, 6)}`
+    let decryptedLocation = null
     let privacySettings = null
     let socialLinks: any[] = []
     try {
@@ -127,12 +130,15 @@ export async function GET(
       if (fullDecryptedProfile?.username) {
         decryptedUsername = fullDecryptedProfile.username
       }
+      if (fullDecryptedProfile?.location) {
+        decryptedLocation = fullDecryptedProfile.location
+      }
       // Get privacy settings from display preferences
       privacySettings = fullDecryptedProfile?.display_preferences?.privacy_settings || {}
       // Get social links
       socialLinks = fullDecryptedProfile?.social_links || []
     } catch (error) {
-      console.warn('Could not decrypt username for profile:', profileData.address)
+      console.warn('Could not decrypt profile data for:', profileData.address)
     }
 
     // Check if profile is private
@@ -147,6 +153,7 @@ export async function GET(
     const publicProfile: any = {
       address: profileData.address,
       username: decryptedUsername,
+      location: decryptedLocation,
       profileImageUrl: profileData.profile_image_blob_id
         ? `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${profileData.profile_image_blob_id}`
         : null,

@@ -640,25 +640,21 @@ class LeaderboardService {
       })
 
       // Import locations data for flags
-      const { LOCATIONS, getLocationByCode } = await import('./locations')
+      const { LOCATIONS, getLocationByCode, getCountryCodeByName } = await import('./locations')
 
       // Convert to CountryStats array
       const countries: CountryStats[] = Array.from(countryMap.entries()).map(([locationName, data], index) => {
-        // Find matching location for flag
-        const location = LOCATIONS.find(l =>
-          l.name.toLowerCase() === locationName.toLowerCase() ||
-          locationName.toLowerCase().includes(l.name.toLowerCase()) ||
-          l.name.toLowerCase().includes(locationName.toLowerCase())
-        )
+        // Use our improved country code mapping function
+        const countryCode = getCountryCodeByName(locationName)
 
         // Determine top tier
         const topTier = data.tierCounts.ROYAL > 0 ? 'ROYAL' :
                       data.tierCounts.PRO > 0 ? 'PRO' : 'NOMAD'
 
         return {
-          code: location?.code || locationName.toLowerCase().replace(/\s+/g, '_'),
+          code: countryCode || locationName.toLowerCase().replace(/\s+/g, '_'),
           name: locationName,
-          flag: location?.flag || '🌍',
+          flag: '🌍', // We'll use ReactCountryFlag with the code instead
           rank: index + 1,
           members: data.users.length,
           totalVolume: Math.round(data.totalVolume),
@@ -750,24 +746,21 @@ class LeaderboardService {
       })
 
       // Import locations data and match with database locations
-      const { LOCATIONS, getLocationByCode } = await import('./locations')
+      const { LOCATIONS, getLocationByCode, getCountryCodeByName } = await import('./locations')
 
       const availableLocations: Array<{code: string, name: string, flag: string, count: number}> = []
 
       locationCounts.forEach((count, locationName) => {
-        // Try to find matching location by name (fuzzy matching)
-        const location = LOCATIONS.find(l =>
-          l.name.toLowerCase() === locationName.toLowerCase() ||
-          l.code.toLowerCase() === locationName.toLowerCase() ||
-          locationName.toLowerCase().includes(l.name.toLowerCase()) ||
-          l.name.toLowerCase().includes(locationName.toLowerCase())
-        )
+        // Use our improved country code mapping function
+        const countryCode = getCountryCodeByName(locationName)
 
-        if (location) {
+        if (countryCode) {
+          // Find the proper country name from LOCATIONS
+          const location = LOCATIONS.find(l => l.code === countryCode)
           availableLocations.push({
-            code: location.code,
-            name: location.name,
-            flag: location.flag,
+            code: countryCode,
+            name: location?.name || locationName,
+            flag: '🌍', // We'll use ReactCountryFlag with the code instead
             count
           })
         } else {

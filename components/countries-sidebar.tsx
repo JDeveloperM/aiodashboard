@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react'
+import ReactCountryFlag from 'react-country-flag'
 
 interface CountryStats {
   code: string
@@ -194,8 +195,16 @@ export function CountriesSidebar({
                   </div>
 
                   {/* Flag */}
-                  <div className="text-lg mr-3">
-                    {country.flag}
+                  <div className="mr-3">
+                    <ReactCountryFlag
+                      countryCode={country.code}
+                      svg
+                      style={{
+                        width: '1.5em',
+                        height: '1.5em',
+                      }}
+                      title={country.name}
+                    />
                   </div>
 
                   {/* Country Info */}
