@@ -14,6 +14,8 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/components/ui/use-mobile"
 import { useRouter } from "next/navigation"
+import ReactCountryFlag from 'react-country-flag'
+import { getCountryCodeByName } from '@/lib/locations'
 
 // Social media image paths
 const socialImages = {
@@ -185,6 +187,17 @@ function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect }: UserAvat
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-white font-semibold text-sm">{user.name}</h3>
+                      {user.location && getCountryCodeByName(user.location) && (
+                        <ReactCountryFlag
+                          countryCode={getCountryCodeByName(user.location)!}
+                          svg
+                          style={{
+                            width: '1em',
+                            height: '1em',
+                          }}
+                          title={user.location}
+                        />
+                      )}
                       {/* View Profile Button - Minimal outline */}
                       <Button
                         onClick={handleViewProfile}
@@ -483,6 +496,17 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="text-white font-semibold text-sm">{selectedUser.name}</h3>
+                    {selectedUser.location && getCountryCodeByName(selectedUser.location) && (
+                      <ReactCountryFlag
+                        countryCode={getCountryCodeByName(selectedUser.location)!}
+                        svg
+                        style={{
+                          width: '1em',
+                          height: '1em',
+                        }}
+                        title={selectedUser.location}
+                      />
+                    )}
                     {/* View Profile Button - Minimal outline */}
                     <Button
                       onClick={(e) => {

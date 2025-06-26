@@ -28,6 +28,8 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
+import ReactCountryFlag from 'react-country-flag'
+import { getCountryCodeByName } from '@/lib/locations'
 
 interface UserCardProps {
   user: User
@@ -195,7 +197,20 @@ export function UserCard({ user }: UserCardProps) {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
-                  <p>Location: {user.location}</p>
+                  <div className="flex items-center gap-2">
+                    {getCountryCodeByName(user.location) && (
+                      <ReactCountryFlag
+                        countryCode={getCountryCodeByName(user.location)!}
+                        svg
+                        style={{
+                          width: '1.2em',
+                          height: '1.2em',
+                        }}
+                        title={user.location}
+                      />
+                    )}
+                    <p>Location: {user.location}</p>
+                  </div>
                 </TooltipContent>
               </Tooltip>
             )}

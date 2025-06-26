@@ -17,6 +17,8 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
+import ReactCountryFlag from 'react-country-flag'
+import { getCountryCodeByName } from '@/lib/locations'
 
 interface UserListItemProps {
   user: User
@@ -113,6 +115,17 @@ export function UserListItem({ user }: UserListItemProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-white font-semibold truncate">{user.name}</h3>
+            {user.location && getCountryCodeByName(user.location) && (
+              <ReactCountryFlag
+                countryCode={getCountryCodeByName(user.location)!}
+                svg
+                style={{
+                  width: '1em',
+                  height: '1em',
+                }}
+                title={user.location}
+              />
+            )}
             <div className="w-6 h-6 flex items-center justify-center">
               <RoleImage role={user.role} size="md" />
             </div>
