@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { WalrusProfileImage } from "@/components/walrus-profile-image"
 import { WalrusCoverImage } from "@/components/walrus-cover-image"
 import {
@@ -371,8 +372,8 @@ export function CreatorControlsInterface() {
       creatorAddress: user?.address || '', // Add the wallet address for ownership verification
       name: data.channelName, // Using channel name as creator name for now
       username: data.telegramUsername,
-      avatar: profileImage || "/api/placeholder/64/64", // Creator profile avatar
-      coverImage: coverImage || undefined, // Creator profile cover
+      avatar: "/api/placeholder/64/64", // Placeholder - we use channel-specific images instead
+      coverImage: "/api/placeholder/400/200", // Placeholder - we use channel-specific images instead
       role: data.creatorRole,
       tier: tier as 'PRO' | 'ROYAL',
       subscribers: 0,
@@ -521,9 +522,26 @@ export function CreatorControlsInterface() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      <Tabs defaultValue="manage" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 bg-[#1a2f51] border-[#C0E6FF]/20">
+          <TabsTrigger
+            value="manage"
+            className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white"
+          >
+            Manage Channels
+          </TabsTrigger>
+          <TabsTrigger
+            value="create"
+            className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white"
+          >
+            Create Channel
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Existing Channels Section */}
-      {userChannels.length > 0 && (
+        {/* Tab 1: Manage Channels */}
+        <TabsContent value="manage" className="space-y-6 mt-6">
+          {/* Existing Channels Section */}
+          {userChannels.length > 0 && (
         <Card className="enhanced-card">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
@@ -540,23 +558,49 @@ export function CreatorControlsInterface() {
                   <div
                     className="relative h-20 flex items-center p-3 rounded-t-lg overflow-hidden"
                     style={{
-                      background: userCreator?.coverImage
-                        ? `url(${userCreator.coverImage})`
-                        : `linear-gradient(135deg, ${userCreator?.bannerColor || '#4DA2FF'}40, ${userCreator?.bannerColor || '#4DA2FF'}20)`,
-                      backgroundSize: userCreator?.coverImage ? 'cover' : 'auto',
-                      backgroundPosition: userCreator?.coverImage ? 'center' : 'auto',
+                      background: (() => {
+                        // Use channel-specific cover only (no creator profile cover)
+                        const channelData = channel as any
+                        const channelCover = channelData.channelCover
+
+                        return channelCover
+                          ? `url(${channelCover})`
+                          : `linear-gradient(135deg, ${userCreator?.bannerColor || '#4DA2FF'}40, ${userCreator?.bannerColor || '#4DA2FF'}20)`
+                      })(),
+                      backgroundSize: (() => {
+                        const channelData = channel as any
+                        const channelCover = channelData.channelCover
+                        return channelCover ? 'cover' : 'auto'
+                      })(),
+                      backgroundPosition: (() => {
+                        const channelData = channel as any
+                        const channelCover = channelData.channelCover
+                        return channelCover ? 'center' : 'auto'
+                      })(),
                       borderBottom: `2px solid ${userCreator?.bannerColor || '#4DA2FF'}60`
                     }}
                   >
                     {/* Cover Image Overlay for better text readability */}
-                    {userCreator?.coverImage && (
-                      <div className="absolute inset-0 bg-black bg-opacity-40 rounded-t-lg"></div>
-                    )}
+                    {(() => {
+                      const channelData = channel as any
+                      const channelCover = channelData.channelCover
+                      return channelCover && (
+                        <div className="absolute inset-0 bg-black bg-opacity-40 rounded-t-lg"></div>
+                      )
+                    })()}
 
                     {/* Main Banner Content */}
                     <div className="banner-main-content flex items-center gap-2 w-full relative z-10">
                       <Avatar className="h-12 w-12 border-2 border-white/20">
-                        <AvatarImage src={userCreator?.avatar} alt={channel.name} />
+                        <AvatarImage
+                          src={(() => {
+                            // Use channel-specific avatar only (no creator profile avatar)
+                            const channelData = channel as any
+                            const channelAvatar = channelData.channelAvatar
+                            return channelAvatar
+                          })()}
+                          alt={channel.name}
+                        />
                         <AvatarFallback className="bg-[#4DA2FF] text-white text-sm">
                           {channel.name.charAt(0)}
                         </AvatarFallback>
@@ -634,7 +678,23 @@ export function CreatorControlsInterface() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {/* Empty state for manage tab when no channels */}
+          {userChannels.length === 0 && (
+            <Card className="enhanced-card">
+              <CardContent className="p-8 text-center">
+                <MessageCircle className="w-12 h-12 text-[#C0E6FF]/50 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-white mb-2">No Channels Yet</h3>
+                <p className="text-[#C0E6FF]/70 mb-4">
+                  You haven't created any channels yet. Switch to the "Create Channel" tab to get started.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Tab 2: Create Channel */}
+        <TabsContent value="create" className="space-y-6 mt-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Form Section */}
         <div className="space-y-6">
           <Form {...form}>
@@ -1424,6 +1484,8 @@ export function CreatorControlsInterface() {
           </Card>
         </div>
       </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Edit Channel Modal */}
       <EditChannelModal

@@ -19,6 +19,7 @@ interface ChannelSubscription {
   channel_type: 'free' | 'premium' | 'vip'
   channel_description?: string
   channel_avatar_blob_id?: string
+  channel_cover_blob_id?: string
   
   // Subscription details
   subscription_status: 'active' | 'expired' | 'cancelled'
@@ -47,15 +48,17 @@ export interface UserChannel {
   description?: string
   avatarUrl?: string
   avatarBlobId?: string
+  coverUrl?: string
+  coverBlobId?: string
   subscribers: number
   color: string
-  
+
   // Subscription info
   joinedDate: string
   expiryDate?: string
   isActive: boolean
   daysRemaining?: number
-  
+
   // Creator info
   creatorAddress: string
   telegramUrl?: string
@@ -108,6 +111,17 @@ class ChannelSubscriptionsStorage {
             console.log(`⚠️ No avatar blob ID found for channel ${sub.channel_name}`)
           }
 
+          // Get cover URL from Walrus if available
+          let coverUrl: string | undefined
+          if (sub.channel_cover_blob_id) {
+            try {
+              coverUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${sub.channel_cover_blob_id}`
+              console.log(`🖼️ Generated cover URL for channel ${sub.channel_name}:`, coverUrl)
+            } catch (error) {
+              console.warn('⚠️ Failed to get cover URL for channel:', sub.channel_id, error)
+            }
+          }
+
           // Calculate subscription status
           const now = new Date()
           const expiryDate = sub.expiry_date ? new Date(sub.expiry_date) : null
@@ -133,15 +147,17 @@ class ChannelSubscriptionsStorage {
             description: sub.channel_description,
             avatarUrl,
             avatarBlobId: sub.channel_avatar_blob_id,
+            coverUrl,
+            coverBlobId: sub.channel_cover_blob_id,
             subscribers: 0, // TODO: Get from creators table or separate tracking
             color: typeColors[sub.channel_type],
-            
+
             // Subscription info
             joinedDate: sub.joined_date,
             expiryDate: sub.expiry_date,
             isActive,
             daysRemaining,
-            
+
             // Creator info
             creatorAddress: sub.creator_address,
             telegramUrl: sub.telegram_channel_url

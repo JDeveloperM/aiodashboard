@@ -163,11 +163,11 @@ export function MyChannelsList({ onChannelClick }: MyChannelsListProps) {
             <div
               className="relative bg-cover bg-center bg-no-repeat min-h-[120px]"
               style={{
-                background: channel.avatarUrl
-                  ? `linear-gradient(135deg, ${channel.color}40, ${channel.color}20), url(${channel.avatarUrl})`
+                background: channel.coverUrl
+                  ? `linear-gradient(135deg, ${channel.color}40, ${channel.color}20), url(${channel.coverUrl})`
                   : `linear-gradient(135deg, ${channel.color}40, ${channel.color}20)`,
-                backgroundSize: channel.avatarUrl ? 'cover' : 'auto',
-                backgroundPosition: channel.avatarUrl ? 'center' : 'auto',
+                backgroundSize: channel.coverUrl ? 'cover' : 'auto',
+                backgroundPosition: channel.coverUrl ? 'center' : 'auto',
                 borderBottom: `2px solid ${channel.color}60`
               }}
             >

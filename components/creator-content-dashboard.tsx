@@ -190,7 +190,15 @@ export function CreatorContentDashboard({ className, tier = 'PRO', currentChanne
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3 mb-3">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={channel.creatorAvatar} alt={channel.creatorName} />
+                      <AvatarImage
+                        src={(() => {
+                          // Use channel-specific avatar if available
+                          const channelData = channel as any
+                          const channelAvatar = channelData?.channelAvatar
+                          return channelAvatar || channel.creatorAvatar
+                        })()}
+                        alt={channel.creatorName}
+                      />
                       <AvatarFallback className="bg-[#4DA2FF] text-white">
                         {channel.creatorName.charAt(0)}
                       </AvatarFallback>

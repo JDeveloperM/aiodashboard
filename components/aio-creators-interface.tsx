@@ -52,7 +52,8 @@ export function AIOCreatorsInterface() {
 
         // Make each channel card visually distinct
         bannerColor: index === 0 ? creator.bannerColor : (index === 1 ? '#FF6B6B' : '#4ECDC4'), // Different colors for different channels
-        avatar: creator.avatar, // Keep same avatar for now
+        avatar: (channel as any).channelAvatar, // Use channel-specific avatar only
+        coverImage: (channel as any).channelCover, // Use channel-specific cover only
 
         // Use channel-specific data if available, fallback to creator data
         availability: channel.availability || creator.availability,

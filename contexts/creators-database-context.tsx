@@ -129,7 +129,12 @@ function convertDecryptedCreatorToCreator(decryptedCreator: DecryptedCreator): C
       // Preserve channel-specific data for individual channel cards
       channelCategories: channelData.channelCategories || decryptedCreator.channel_categories,
       channelRole: channelData.channelRole || decryptedCreator.creator_role,
-      channelLanguage: channelData.channelLanguage || decryptedCreator.channel_language
+      channelLanguage: channelData.channelLanguage || decryptedCreator.channel_language,
+      // Channel-specific images (separate from creator profile images)
+      channelAvatar: channelData.channelAvatar,
+      channelCover: channelData.channelCover,
+      channelAvatarBlobId: channelData.channelAvatarBlobId,
+      channelCoverBlobId: channelData.channelCoverBlobId
     }))
   } else if (decryptedCreator.channels_data) {
     // Handle case where channels_data might be a single object instead of array
@@ -153,7 +158,12 @@ function convertDecryptedCreatorToCreator(decryptedCreator: DecryptedCreator): C
       // Preserve channel-specific data for individual channel cards
       channelCategories: channelData.channelCategories || decryptedCreator.channel_categories,
       channelRole: channelData.channelRole || decryptedCreator.creator_role,
-      channelLanguage: channelData.channelLanguage || decryptedCreator.channel_language
+      channelLanguage: channelData.channelLanguage || decryptedCreator.channel_language,
+      // Channel-specific images (separate from creator profile images)
+      channelAvatar: channelData.channelAvatar,
+      channelCover: channelData.channelCover,
+      channelAvatarBlobId: channelData.channelAvatarBlobId,
+      channelCoverBlobId: channelData.channelCoverBlobId
     }]
   } else {
     // Fallback: create a channel from the creator's basic data

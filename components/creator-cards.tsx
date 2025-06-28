@@ -738,22 +738,48 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
               <div
                 className="relative h-20 flex items-center p-3 rounded-t-lg overflow-hidden"
                 style={{
-                  background: creator.coverImage
-                    ? `url(${creator.coverImage})`
-                    : `linear-gradient(135deg, ${creator.bannerColor}40, ${creator.bannerColor}20)`,
-                  backgroundSize: creator.coverImage ? 'cover' : 'auto',
-                  backgroundPosition: creator.coverImage ? 'center' : 'auto',
+                  background: (() => {
+                    // Use first channel's cover image only (no creator profile cover)
+                    const firstChannel = creator.channels[0] as any
+                    const channelCover = firstChannel?.channelCover
+
+                    return channelCover
+                      ? `url(${channelCover})`
+                      : `linear-gradient(135deg, ${creator.bannerColor}40, ${creator.bannerColor}20)`
+                  })(),
+                  backgroundSize: (() => {
+                    const firstChannel = creator.channels[0] as any
+                    const channelCover = firstChannel?.channelCover
+                    return channelCover ? 'cover' : 'auto'
+                  })(),
+                  backgroundPosition: (() => {
+                    const firstChannel = creator.channels[0] as any
+                    const channelCover = firstChannel?.channelCover
+                    return channelCover ? 'center' : 'auto'
+                  })(),
                   borderBottom: `2px solid ${creator.bannerColor}60`
                 }}
               >
                 {/* Cover Image Overlay for better text readability */}
-                {creator.coverImage && (
-                  <div className="absolute inset-0 bg-black bg-opacity-40 rounded-t-lg"></div>
-                )}
+                {(() => {
+                  const firstChannel = creator.channels[0] as any
+                  const channelCover = firstChannel?.channelCover
+                  return channelCover && (
+                    <div className="absolute inset-0 bg-black bg-opacity-40 rounded-t-lg"></div>
+                  )
+                })()}
                 {/* Main Banner Content */}
                 <div className="banner-main-content flex items-center gap-2 w-full relative z-10">
                   <Avatar className="h-16 w-16 border-2 border-white/20">
-                    <AvatarImage src={creator.avatar} alt={creator.name} />
+                    <AvatarImage
+                      src={(() => {
+                        // Use first channel's avatar only (no creator profile avatar)
+                        const firstChannel = creator.channels[0] as any
+                        const channelAvatar = firstChannel?.channelAvatar
+                        return channelAvatar
+                      })()}
+                      alt={creator.name}
+                    />
                     <AvatarFallback className="bg-[#4DA2FF] text-white text-xl">
                       {creator.name.charAt(0)}
                     </AvatarFallback>

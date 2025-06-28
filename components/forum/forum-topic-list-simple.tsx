@@ -178,8 +178,17 @@ export function ForumTopicListSimple({
           <div
             className="relative bg-cover bg-center bg-no-repeat"
             style={{
-              backgroundImage: currentCreator.coverImage ? `url(${currentCreator.coverImage})` : 'none',
-              backgroundColor: !currentCreator.coverImage ? currentCreator.bannerColor : 'transparent'
+              backgroundImage: (() => {
+                // Use channel-specific cover image if available
+                const channelData = currentChannel as any
+                const channelCover = channelData?.channelCover
+                return channelCover ? `url(${channelCover})` : 'none'
+              })(),
+              backgroundColor: (() => {
+                const channelData = currentChannel as any
+                const channelCover = channelData?.channelCover
+                return !channelCover ? currentCreator.bannerColor : 'transparent'
+              })()
             }}
           >
             {/* Overlay for better text readability */}
@@ -188,7 +197,15 @@ export function ForumTopicListSimple({
             <CardHeader className="relative z-10">
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16 border-2 border-white/20">
-                  <AvatarImage src={currentCreator.avatar} alt={currentCreator.name} />
+                  <AvatarImage
+                    src={(() => {
+                      // Use channel-specific avatar if available
+                      const channelData = currentChannel as any
+                      const channelAvatar = channelData?.channelAvatar
+                      return channelAvatar
+                    })()}
+                    alt={currentCreator.name}
+                  />
                   <AvatarFallback className="bg-[#4DA2FF] text-white text-lg">
                     {currentCreator.name.charAt(0)}
                   </AvatarFallback>

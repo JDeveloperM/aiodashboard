@@ -5,24 +5,18 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { WalrusProfileImage } from "@/components/walrus-profile-image"
 import { WalrusCoverImage } from "@/components/walrus-cover-image"
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -35,7 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { CheckCircle, X, Coins } from "lucide-react"
 import type { Channel } from "@/contexts/creators-context"
 
 // Form validation schema
@@ -66,12 +59,12 @@ interface EditChannelModalProps {
   onSave: (channelId: string, updatedData: Partial<Channel>) => Promise<void>
 }
 
-export function EditChannelModal({ 
-  isOpen, 
-  onClose, 
-  channel, 
-  creatorId, 
-  onSave 
+export function EditChannelModal({
+  isOpen,
+  onClose,
+  channel,
+  creatorId,
+  onSave
 }: EditChannelModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [profileImage, setProfileImage] = useState("")
@@ -200,7 +193,7 @@ export function EditChannelModal({
   }
 
   const categories = [
-    "Trading", "DeFi", "Analysis", "Education", "NFTs", "Gaming", 
+    "Trading", "DeFi", "Analysis", "Education", "NFTs", "Gaming",
     "News", "Technical Analysis", "Altcoins", "Bitcoin", "Ethereum"
   ]
 
@@ -226,395 +219,421 @@ export function EditChannelModal({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Images Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Profile Image */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-[#C0E6FF]">Channel Avatar</label>
-                <WalrusProfileImage
-                  currentImage={profileImage}
-                  currentBlobId={profileImageBlobId}
-                  onImageUpdate={handleProfileImageUpdate}
-                  onImageRemove={handleProfileImageRemove}
-                  editable={true}
-                  size="xl"
-                  fallbackText={channel?.name?.charAt(0) || "C"}
-                />
-                <p className="text-xs text-gray-400">Recommended: 400x400px, max 5MB</p>
-              </div>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-6">
 
-              {/* Cover Image */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-[#C0E6FF]">Channel Cover</label>
-                <WalrusCoverImage
-                  currentImage={coverImage}
-                  currentBlobId={coverImageBlobId}
-                  onImageUpdate={handleCoverImageUpdate}
-                  onImageRemove={handleCoverImageRemove}
-                  editable={true}
-                />
-                <p className="text-xs text-gray-400">Recommended: 1200x400px, max 5MB</p>
-              </div>
-            </div>
-
-            {/* Basic Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="channelName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[#C0E6FF]">Channel Name *</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter channel name"
-                        className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="telegramUsername"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[#C0E6FF]">Telegram Username *</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="your_channel"
-                        className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Description */}
-            <FormField
-              control={form.control}
-              name="channelDescription"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-[#C0E6FF]">Channel Description *</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Describe your channel..."
-                      className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white min-h-[100px]"
-                      {...field}
+            {/* Channel Images Section */}
+            <Card className="enhanced-card">
+              <CardHeader>
+                <CardTitle className="text-white">Channel Images</CardTitle>
+                <p className="text-gray-400 text-sm">
+                  Update your channel profile image and cover photo.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Profile Image */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[#C0E6FF]">Channel Profile Image</label>
+                  <div className="flex items-center gap-4">
+                    <WalrusProfileImage
+                      currentImage={profileImage}
+                      currentBlobId={profileImageBlobId}
+                      fallbackText={channel?.name?.charAt(0) || "C"}
+                      size="xl"
+                      onImageUpdate={handleProfileImageUpdate}
+                      onImageRemove={handleProfileImageRemove}
+                      editable={true}
+                      className="border-2 border-[#4DA2FF]"
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Language and Role */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="channelLanguage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[#C0E6FF]">Primary Language *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
-                          <SelectValue placeholder="Select language" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {languages.map((language) => (
-                          <SelectItem key={language} value={language}>
-                            {language}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="creatorRole"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[#C0E6FF]">Your Role *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
-                          <SelectValue placeholder="Select your role" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {roles.map((role) => (
-                          <SelectItem key={role} value={role}>
-                            {role}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Categories */}
-            <FormField
-              control={form.control}
-              name="channelCategories"
-              render={() => (
-                <FormItem>
-                  <FormLabel className="text-[#C0E6FF]">Channel Categories *</FormLabel>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {categories.map((category) => (
-                      <FormField
-                        key={category}
-                        control={form.control}
-                        name="channelCategories"
-                        render={({ field }) => {
-                          return (
-                            <FormItem
-                              key={category}
-                              className="flex flex-row items-start space-x-3 space-y-0"
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(category)}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([...field.value, category])
-                                      : field.onChange(
-                                          field.value?.filter(
-                                            (value) => value !== category
-                                          )
-                                        )
-                                  }}
-                                  className="border-[#C0E6FF]/30"
-                                />
-                              </FormControl>
-                              <FormLabel className="text-sm text-[#C0E6FF] font-normal">
-                                {category}
-                              </FormLabel>
-                            </FormItem>
-                          )
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Premium Settings */}
-            <div className="space-y-4 p-4 bg-[#1a2f51] rounded-lg">
-              <FormField
-                control={form.control}
-                name="isPremium"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-[#C0E6FF]">Premium Channel</FormLabel>
-                      <FormDescription className="text-gray-400">
-                        Enable paid access to your channel
-                      </FormDescription>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-400">Recommended: 400x400px, max 5MB</p>
+                      <p className="text-xs text-[#C0E6FF] mt-1">Click the avatar to upload or change image</p>
                     </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+                  </div>
+                </div>
 
-              {form.watch("isPremium") && (
-                <div className="space-y-4 pt-4 border-t border-[#C0E6FF]/20">
-                  {/* Subscription Packages */}
+                {/* Cover Image */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[#C0E6FF]">Channel Cover Photo (Optional)</label>
+                  <WalrusCoverImage
+                    currentImage={coverImage}
+                    currentBlobId={coverImageBlobId}
+                    onImageUpdate={handleCoverImageUpdate}
+                    onImageRemove={handleCoverImageRemove}
+                    editable={true}
+                    height="h-32"
+                  />
+                  <p className="text-xs text-gray-400">Recommended: 1200x400px, max 5MB</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Channel Details Section */}
+            <Card className="enhanced-card">
+              <CardHeader>
+                <CardTitle className="text-white">Channel Details</CardTitle>
+                <p className="text-gray-400 text-sm">
+                  Basic information about your channel.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Channel Name */}
+                <FormField
+                  control={form.control}
+                  name="channelName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[#C0E6FF]">Channel Name</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Enter your channel name"
+                          {...field}
+                          className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white placeholder:text-gray-400"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Channel Description */}
+                <FormField
+                  control={form.control}
+                  name="channelDescription"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[#C0E6FF]">Channel Description</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Describe what your channel offers..."
+                          className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white placeholder:text-gray-400 min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Language and Role */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="subscriptionPackages"
-                    render={() => (
+                    name="channelLanguage"
+                    render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[#C0E6FF]">Available Packages</FormLabel>
-                        <div className="flex gap-4">
-                          {["30", "60", "90"].map((days) => (
-                            <FormField
-                              key={days}
-                              control={form.control}
-                              name="subscriptionPackages"
-                              render={({ field }) => {
-                                return (
-                                  <FormItem
-                                    key={days}
-                                    className="flex flex-row items-start space-x-3 space-y-0"
-                                  >
-                                    <FormControl>
-                                      <Checkbox
-                                        checked={field.value?.includes(days)}
-                                        onCheckedChange={(checked) => {
-                                          return checked
-                                            ? field.onChange([...field.value || [], days])
-                                            : field.onChange(
-                                                field.value?.filter(
-                                                  (value) => value !== days
-                                                )
-                                              )
-                                        }}
-                                        className="border-[#C0E6FF]/30"
-                                      />
-                                    </FormControl>
-                                    <FormLabel className="text-sm text-[#C0E6FF] font-normal">
-                                      {days} days
-                                    </FormLabel>
-                                  </FormItem>
-                                )
-                              }}
-                            />
-                          ))}
-                        </div>
+                        <FormLabel className="text-[#C0E6FF]">Primary Language</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white">
+                              <SelectValue placeholder="Select language" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-[#1a2f51] border-[#C0E6FF]/20">
+                            {languages.map((language) => (
+                              <SelectItem key={language} value={language} className="text-[#C0E6FF] hover:bg-[#1a2f51] focus:bg-[#1a2f51]">
+                                {language}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  {/* Pricing */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="tipPricing.thirtyDays"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-[#C0E6FF]">30 Days (SUI)</FormLabel>
+                  <FormField
+                    control={form.control}
+                    name="creatorRole"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[#C0E6FF]">Your Role</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <Input
-                              type="number"
-                              step="0.1"
-                              min="0"
-                              placeholder="0.0"
-                              className="bg-[#030f1c] border-[#C0E6FF]/30 text-white"
-                              {...field}
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            />
+                            <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white">
+                              <SelectValue placeholder="Select your role" />
+                            </SelectTrigger>
                           </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="tipPricing.sixtyDays"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-[#C0E6FF]">60 Days (SUI)</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              step="0.1"
-                              min="0"
-                              placeholder="0.0"
-                              className="bg-[#030f1c] border-[#C0E6FF]/30 text-white"
-                              {...field}
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="tipPricing.ninetyDays"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-[#C0E6FF]">90 Days (SUI)</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              step="0.1"
-                              min="0"
-                              placeholder="0.0"
-                              className="bg-[#030f1c] border-[#C0E6FF]/30 text-white"
-                              {...field}
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                          <SelectContent className="bg-[#1a2f51] border-[#C0E6FF]/20">
+                            {roles.map((role) => (
+                              <SelectItem key={role} value={role} className="text-[#C0E6FF] hover:bg-[#1a2f51] focus:bg-[#1a2f51]">
+                                {role}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-              )}
-            </div>
 
-            {/* Max Subscribers */}
-            <FormField
-              control={form.control}
-              name="maxSubscribers"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-[#C0E6FF]">Max Subscribers (0 = unlimited)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0"
-                      placeholder="0"
-                      className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white"
-                      {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                {/* Categories */}
+                <FormField
+                  control={form.control}
+                  name="channelCategories"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[#C0E6FF]">Categories (Select up to 3)</FormLabel>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {categories.map((category) => {
+                          const isSelected = field.value?.includes(category)
+                          const canSelect = !isSelected && (field.value?.length || 0) < 3
+
+                          return (
+                            <FormItem key={category}>
+                              <FormControl>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    checked={isSelected}
+                                    disabled={!canSelect && !isSelected}
+                                    onCheckedChange={(checked) => {
+                                      const currentValues = field.value || []
+                                      if (checked) {
+                                        field.onChange([...currentValues, category])
+                                      } else {
+                                        field.onChange(currentValues.filter((value) => value !== category))
+                                      }
+                                    }}
+                                    className="border-[#C0E6FF]/20 data-[state=checked]:bg-[#4DA2FF] data-[state=checked]:border-[#4DA2FF]"
+                                  />
+                                  <label className={`text-sm ${isSelected ? 'text-[#4DA2FF]' : canSelect ? 'text-[#C0E6FF]' : 'text-gray-500'}`}>
+                                    {category}
+                                  </label>
+                                </div>
+                              </FormControl>
+                            </FormItem>
+                          )
+                        })}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Channel Settings Section */}
+            <Card className="enhanced-card">
+              <CardHeader>
+                <CardTitle className="text-white">Channel Settings</CardTitle>
+                <p className="text-gray-400 text-sm">
+                  Configure your channel settings and access.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Telegram Username */}
+                <FormField
+                  control={form.control}
+                  name="telegramUsername"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[#C0E6FF]">Telegram Username</FormLabel>
+                      <FormControl>
+                        <div className="flex items-center">
+                          <span className="text-gray-400 bg-[#1a2f51] border border-r-0 border-[#C0E6FF]/20 px-3 py-2 rounded-l-md">
+                            t.me/
+                          </span>
+                          <Input
+                            placeholder="your_username"
+                            {...field}
+                            className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white placeholder:text-gray-400 rounded-l-none"
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Max Subscribers */}
+                <FormField
+                  control={form.control}
+                  name="maxSubscribers"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[#C0E6FF]">Maximum Subscribers (0 = unlimited)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white placeholder:text-gray-400"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Pricing & Packages Section */}
+            <Card className="enhanced-card">
+              <CardHeader>
+                <CardTitle className="text-white">Pricing & Packages</CardTitle>
+                <p className="text-gray-400 text-sm">
+                  Set up premium access and pricing for your channel.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Premium Toggle */}
+                <FormField
+                  control={form.control}
+                  name="isPremium"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border border-[#C0E6FF]/20 p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base text-[#C0E6FF]">
+                          Premium Channel
+                        </FormLabel>
+                        <div className="text-sm text-gray-400">
+                          Enable paid subscriptions for your channel
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className="data-[state=checked]:bg-[#4DA2FF]"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {/* Subscription Packages - only show if premium */}
+                {form.watch("isPremium") && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="subscriptionPackages"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-[#C0E6FF]">Subscription Packages</FormLabel>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {[
+                              { value: "30", label: "30 Days", key: "thirtyDays" },
+                              { value: "60", label: "60 Days", key: "sixtyDays" },
+                              { value: "90", label: "90 Days", key: "ninetyDays" },
+                            ].map((pkg) => (
+                              <FormItem key={pkg.value}>
+                                <FormControl>
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      checked={field.value?.includes(pkg.value)}
+                                      onCheckedChange={(checked) => {
+                                        const currentValues = field.value || []
+                                        if (checked) {
+                                          field.onChange([...currentValues, pkg.value])
+                                        } else {
+                                          field.onChange(currentValues.filter((value) => value !== pkg.value))
+                                        }
+                                      }}
+                                      className="border-[#C0E6FF]/20 data-[state=checked]:bg-[#4DA2FF] data-[state=checked]:border-[#4DA2FF]"
+                                    />
+                                    <label className="text-sm text-[#C0E6FF]">
+                                      {pkg.label}
+                                    </label>
+                                  </div>
+                                </FormControl>
+                              </FormItem>
+                            ))}
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </FormControl>
-                  <FormDescription className="text-gray-400">
-                    Set a limit on how many users can subscribe to your channel
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-3 pt-4">
+                    {/* Pricing */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="tipPricing.thirtyDays"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-[#C0E6FF]">30 Days Price (SUI)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white placeholder:text-gray-400"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="tipPricing.sixtyDays"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-[#C0E6FF]">60 Days Price (SUI)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white placeholder:text-gray-400"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="tipPricing.ninetyDays"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-[#C0E6FF]">90 Days Price (SUI)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white placeholder:text-gray-400"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Submit Button */}
+            <div className="flex justify-end gap-4 pt-4">
               <Button
                 type="button"
-                onClick={onClose}
                 variant="outline"
-                className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
+                onClick={onClose}
+                className="border-[#C0E6FF]/20 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-[#4da2ffcc] hover:bg-[#4da2ff] text-white"
+                className="bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
               >
-                {isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Update Channel
-                  </>
-                )}
+                {isSubmitting ? "Updating..." : "Update Channel"}
               </Button>
             </div>
+
           </form>
         </Form>
       </DialogContent>
