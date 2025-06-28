@@ -78,56 +78,54 @@ const getLastActiveTime = (lastActive: string): string => {
 const convertAchievements = (achievementsData: any[], profile: DecryptedProfile): Achievement[] => {
   // Base achievements that should always be available (updated with new names and XP values)
   const baseAchievements = [
-    // Profile & KYC Category
+    // Profile & KYC Category - Updated to match profile page
     { name: "Personalize Your Profile", color: "#4DA2FF", xp: 50, tooltip: "Upload a profile picture to your account" },
     { name: "Unlock Full Access", color: "#10B981", xp: 100, tooltip: "Finish the KYC verification process" },
     { name: "Advanced User Status", color: "#FFD700", xp: 200, tooltip: "Achieve profile level 5" },
 
-    // Social Connection Achievements
-    { name: "Connect Discord", color: "#5865F2", xp: 15, tooltip: "Connect your Discord account to join our community" },
-    { name: "Connect Telegram", color: "#0088CC", xp: 15, tooltip: "Connect your Telegram account for updates" },
-    { name: "Connect X", color: "#000000", xp: 15, tooltip: "Connect your X (Twitter) account" },
+    // Social Connections Category - Updated to match profile page
+    { name: "Join the Community", color: "#5865F2", xp: 50, tooltip: "Link your Discord account" },
+    { name: "Stay Informed", color: "#0088CC", xp: 50, tooltip: "Link your Telegram account" },
+    { name: "Follow the Conversation", color: "#000000", xp: 50, tooltip: "Link your X (Twitter) account" },
 
-    // Bot & Trading Achievements
-    { name: "Connect Bybit", color: "#F7931A", xp: 25, tooltip: "Connect your Bybit account for trading" },
-    { name: "Follow Apollon Bot", color: "#9333EA", xp: 20, tooltip: "Follow Apollon AI bot for trading signals" },
-    { name: "Follow Hermes Bot", color: "#059669", xp: 20, tooltip: "Follow Hermes bot for market insights" },
-    { name: "Make 3 Cycles", color: "#10B981", xp: 50, tooltip: "Complete 3 successful trading cycles" },
+    // Crypto Bot Activities Category - Updated to match profile page
+    { name: "Automate Your Trades", color: "#F7931A", xp: 150, tooltip: "Link your Bybit account" },
+    { name: "APLN Trading Signals", color: "#9333EA", xp: 100, tooltip: "Subscribe to the APLN Bot" },
+    { name: "HRMS Trading Insights", color: "#06B6D4", xp: 100, tooltip: "Subscribe to the HRMS Bot" },
+    { name: "ATHN Trading Edge", color: "#8B5CF6", xp: 100, tooltip: "Subscribe to the ATHN Bot" },
+    { name: "Master Trading Cycles", color: "#10B981", xp: 200, tooltip: "Finish at least 3 trading cycles with platform bots" },
 
-    // Upgrade Achievements
-    { name: "Upgrade to PRO", color: "#4DA2FF", xp: 50, tooltip: "Upgrade your membership to PRO tier" },
-    { name: "Upgrade to ROYAL", color: "#FFD700", xp: 75, tooltip: "Upgrade your membership to ROYAL tier" },
+    // User Upgrades Category - Updated to match profile page
+    { name: "Mint Royal NFT Status", color: "#8B5CF6", xp: 300, tooltip: "Mint a Royal NFT to achieve elite status" },
 
-    // Referral Achievements
-    { name: "Refer 10 NOMADs", color: "#6B7280", xp: 75, tooltip: "Successfully refer 10 NOMAD members" },
-    { name: "Refer 50 NOMADs", color: "#6B7280", xp: 100, tooltip: "Successfully refer 50 NOMAD members" },
-    { name: "Refer 100 NOMADs", color: "#6B7280", xp: 150, tooltip: "Successfully refer 100 NOMAD members" },
-    { name: "Refer 1 PRO", color: "#4DA2FF", xp: 60, tooltip: "Successfully refer 1 PRO member" },
-    { name: "Refer 5 PRO", color: "#4DA2FF", xp: 100, tooltip: "Successfully refer 5 PRO members" },
-    { name: "Refer 10 PRO", color: "#4DA2FF", xp: 150, tooltip: "Successfully refer 10 PRO members" },
-    { name: "Refer 1 ROYAL", color: "#FFD700", xp: 70, tooltip: "Successfully refer 1 ROYAL member" },
-    { name: "Refer 3 ROYAL", color: "#FFD700", xp: 120, tooltip: "Successfully refer 3 ROYAL members" },
-    { name: "Refer 5 ROYAL", color: "#FFD700", xp: 200, tooltip: "Successfully refer 5 ROYAL members" }
+    // Referral Tiers Category - Updated to match profile page
+    { name: "Recruit PRO NFT Holders", color: "#3B82F6", xp: 250, tooltip: "Refer 5 users to become PRO NFT holders" },
+    { name: "Royal NFT Ambassadors", color: "#8B5CF6", xp: 300, tooltip: "Refer 3 users to become ROYAL NFT holders" },
+    { name: "Build a NOMAD Network", color: "#F59E0B", xp: 500, tooltip: "Add 50 NOMAD users to your network" },
+    { name: "Expand Your PRO Network", color: "#3B82F6", xp: 600, tooltip: "Add 30 PRO users to your network" },
+    { name: "Elite ROYAL Network", color: "#8B5CF6", xp: 700, tooltip: "Add 30 ROYAL users to your network" },
+    { name: "Mentor Level 5 Users", color: "#10B981", xp: 400, tooltip: "Help 10 network users achieve profile level 5" },
+    { name: "Scale Level 5 Mentorship", color: "#10B981", xp: 700, tooltip: "Help 50 network users achieve profile level 5" },
+    { name: "Guide to Level 7", color: "#F59E0B", xp: 600, tooltip: "Help 20 network users achieve profile level 7" },
+    { name: "Lead to Level 9", color: "#FFD700", xp: 800, tooltip: "Help 5 network users achieve profile level 9" }
   ]
 
   // Function to check if achievement should be unlocked based on profile data
   const checkAchievementUnlocked = (achievementName: string): boolean => {
     switch (achievementName) {
-      case "Profile Picture":
+      case "Personalize Your Profile":
         return !!profile?.profile_image_blob_id
-      case "KYC Verification":
+      case "Unlock Full Access":
         return profile?.kyc_status === 'verified'
-      case "Reach Level 5":
+      case "Advanced User Status":
         return (profile?.profile_level || 1) >= 5
-      case "Connect Discord":
-        return profile?.social_links?.some((link: any) => link.platform === 'Discord') || false
-      case "Connect Telegram":
-        return profile?.social_links?.some((link: any) => link.platform === 'Telegram') || false
-      case "Connect X":
-        return profile?.social_links?.some((link: any) => link.platform === 'X') || false
-      case "Upgrade to PRO":
-        return profile?.role_tier === 'PRO' || profile?.role_tier === 'ROYAL'
-      case "Upgrade to ROYAL":
+      case "Join the Community":
+        return profile?.social_links?.some((link: any) => link.platform === 'discord' && link.username) || false
+      case "Stay Informed":
+        return profile?.social_links?.some((link: any) => link.platform === 'telegram' && link.username) || false
+      case "Follow the Conversation":
+        return profile?.social_links?.some((link: any) => link.platform === 'x' && link.username) || false
+      case "Mint Royal NFT Status":
         return profile?.role_tier === 'ROYAL'
       // For other achievements, assume unlocked if they exist in database
       default:

@@ -30,8 +30,7 @@ import { toast } from "sonner"
 import { MessageSquare, Loader2 } from "lucide-react"
 
 const createReplySchema = z.object({
-  title: z.string().optional(),
-  content: z.string().min(10, "Content must be at least 10 characters").max(5000, "Content must be less than 5000 characters"),
+  content: z.string().min(10, "Reply must be at least 10 characters").max(5000, "Reply must be less than 5000 characters"),
   content_type: z.enum(["text", "markdown"]).default("text")
 })
 
@@ -54,7 +53,6 @@ export function CreateReplyModal({ topicId, topicName, onReplyCreated, children,
   const form = useForm<CreateReplyForm>({
     resolver: zodResolver(createReplySchema),
     defaultValues: {
-      title: "",
       content: "",
       content_type: "text"
     }
@@ -66,9 +64,9 @@ export function CreateReplyModal({ topicId, topicName, onReplyCreated, children,
       return
     }
 
-    // Validate title for new posts
-    if (!replyToPost && (!data.title || data.title.trim().length < 5)) {
-      toast.error("Title is required and must be at least 5 characters")
+    // This modal should only be used for replies, not new posts
+    if (!replyToPost) {
+      toast.error("This modal is for replies only. Use the New Post button to create a new discussion.")
       return
     }
 
@@ -78,7 +76,7 @@ export function CreateReplyModal({ topicId, topicName, onReplyCreated, children,
         user.address,
         {
           topic_id: topicId,
-          title: replyToPost ? `Re: ${replyToPost.title || 'Post'}` : (data.title || "Untitled Post"),
+          title: `Re: ${replyToPost.title || 'Post'}`,
           content: data.content,
           content_type: data.content_type
         },
@@ -86,7 +84,7 @@ export function CreateReplyModal({ topicId, topicName, onReplyCreated, children,
       )
 
       if (result.success) {
-        toast.success(replyToPost ? "Reply posted successfully!" : "Post created successfully!")
+        toast.success("Reply posted successfully!")
         form.reset()
         setOpen(false)
         // Call the callback after a short delay to ensure database update
@@ -95,11 +93,11 @@ export function CreateReplyModal({ topicId, topicName, onReplyCreated, children,
         }, 300)
       } else {
         console.error("Forum service error:", result.error)
-        toast.error(result.error || (replyToPost ? "Failed to post reply" : "Failed to create post"))
+        toast.error(result.error || "Failed to post reply")
       }
     } catch (error) {
-      console.error("Error creating post:", error)
-      toast.error(replyToPost ? "Failed to post reply" : "Failed to create post")
+      console.error("Error creating reply:", error)
+      toast.error("Failed to post reply")
     } finally {
       setIsSubmitting(false)
     }
@@ -118,7 +116,7 @@ export function CreateReplyModal({ topicId, topicName, onReplyCreated, children,
       <DialogContent className="bg-[#030f1c] border-[#C0E6FF]/20 max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-white text-lg">
-            {replyToPost ? `Reply to ${replyToPost.author_username || 'User'}` : `New Post in ${topicName}`}
+            Reply to {replyToPost?.author_username || 'User'}
           </DialogTitle>
           {replyToPost && (
             <div className="bg-[#1a2f51] border-l-4 border-[#4DA2FF] p-3 mt-2 rounded-r-md">
@@ -135,39 +133,18 @@ export function CreateReplyModal({ topicId, topicName, onReplyCreated, children,
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Post Title - only show if not replying to a post */}
-            {!replyToPost && (
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[#C0E6FF]">Title</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter your post title..."
-                        className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white placeholder:text-[#C0E6FF]/50"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+            {/* Title field removed - replies don't need titles */}
 
-            {/* Post Content */}
+            {/* Reply Content */}
             <FormField
               control={form.control}
               name="content"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-[#C0E6FF]">
-                    {replyToPost ? 'Your Reply' : 'Content'}
-                  </FormLabel>
+                  <FormLabel className="text-[#C0E6FF]">Your Reply</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder={replyToPost ? "Write your reply..." : "Write your post content..."}
+                      placeholder="Write your reply..."
                       className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white placeholder:text-[#C0E6FF]/50 min-h-[120px] resize-none"
                       {...field}
                     />
@@ -205,7 +182,7 @@ export function CreateReplyModal({ topicId, topicName, onReplyCreated, children,
                 ) : (
                   <>
                     <MessageSquare className="w-4 h-4 mr-2" />
-                    {replyToPost ? 'Post Reply' : 'Create Post'}
+                    Post Reply
                   </>
                 )}
               </Button>

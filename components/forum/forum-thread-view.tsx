@@ -5,9 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { CreateReplyModal } from "./create-reply-modal"
 import { CreatePostModal } from "./create-post-modal"
+import { ForumUserTooltip } from "./forum-user-tooltip"
 import { ForumPost, ForumTopic, forumService } from "@/lib/forum-service"
+import { forumUserService, ForumUserData } from "@/lib/forum-user-service"
 import { useForumRealtime } from "@/hooks/use-forum-realtime"
 import { useSubscription } from "@/contexts/subscription-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
@@ -43,6 +46,8 @@ export function ForumThreadView({
   const [posts, setPosts] = useState<ForumPost[]>([])
   const [topics, setTopics] = useState<ForumTopic[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set())
+  const [userDataCache, setUserDataCache] = useState<Map<string, ForumUserData>>(new Map())
   const { tier } = useSubscription()
   const { user } = useSuiAuth()
 
@@ -78,6 +83,10 @@ export function ForumThreadView({
     try {
       const result = await forumService.getPostsWithUserData(topicId, 1, 100, tier)
       setPosts(result.posts)
+
+      // Preload user data for all unique authors
+      const uniqueAuthors = [...new Set(result.posts.map(post => post.author_address))]
+      await forumUserService.preloadUsers(uniqueAuthors)
     } catch (error) {
       console.error('Failed to load posts:', error)
     } finally {
@@ -124,6 +133,40 @@ export function ForumThreadView({
       case 'PRO': return <Star className="w-3 h-3" />
       default: return null
     }
+  }
+
+  // Helper function to organize posts and replies
+  const organizePostsAndReplies = () => {
+    const standalonePosts = posts.filter(post => !post.title.startsWith('Re:'))
+    const replies = posts.filter(post => post.title.startsWith('Re:'))
+
+    // Group replies by their parent post (based on title matching)
+    const postsWithReplies = standalonePosts.map(post => {
+      const postReplies = replies.filter(reply =>
+        reply.title === `Re: ${post.title}` ||
+        reply.title.includes(post.title)
+      )
+      return {
+        ...post,
+        replies: postReplies,
+        replyCount: postReplies.length
+      }
+    })
+
+    return postsWithReplies
+  }
+
+  // Toggle post expansion
+  const togglePostExpansion = (postId: string) => {
+    setExpandedPosts(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(postId)) {
+        newSet.delete(postId)
+      } else {
+        newSet.add(postId)
+      }
+      return newSet
+    })
   }
 
   const formatDate = (dateString: string) => {
@@ -184,7 +227,8 @@ export function ForumThreadView({
   }
 
   return (
-    <div className="space-y-6">
+    <TooltipProvider delayDuration={300} skipDelayDuration={100}>
+      <div className="space-y-6">
       {/* Header with back button */}
       <div className="flex items-center gap-4">
         <Button
@@ -219,13 +263,13 @@ export function ForumThreadView({
                   </div>
                   {topicName}
                 </CardTitle>
-                <p className="text-white/80 text-sm">
-                  {posts.length > 1 ? `${posts.length - 1} ${posts.length === 2 ? 'reply' : 'replies'}` : 'No replies yet'}
-                </p>
               </div>
               <CreatePostModal
                 topics={topics}
                 onPostCreated={handlePostCreated}
+                currentTopicId={topicId}
+                currentTopicName={topicName}
+                hideTopicSelector={true}
               >
                 <Button className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white">
                   <Plus className="w-4 h-4 mr-2" />
@@ -237,102 +281,42 @@ export function ForumThreadView({
         </div>
       </Card>
 
-      {/* Thread Posts */}
+      {/* Posts with Collapsible Replies */}
       {posts.length > 0 ? (
-        <div className="space-y-2">
-          {/* Original Post */}
-          {posts[0] && (
-            <Card className="bg-[#1a2f51] border-[#C0E6FF]/10">
-              <CardContent className="p-3">
-                <div className="flex items-start gap-3">
-                  {/* User Avatar */}
-                  <div className="flex-shrink-0">
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage
-                        src={getAvatarUrl(posts[0].author_avatar)}
-                        alt={posts[0].author_username || 'User'}
-                        onError={() => console.log('❌ Avatar Debug: Failed to load image for main post:', posts[0].author_avatar)}
-                      />
-                      <AvatarFallback className="bg-[#4DA2FF] text-white text-sm">
-                        {posts[0].author_username?.charAt(0).toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
+        <div className="space-y-4">
+          {organizePostsAndReplies().map((post) => {
+            const isExpanded = expandedPosts.has(post.id)
 
-                  {/* Post Content */}
-                  <div className="flex-1 min-w-0">
-                    {/* Post Header */}
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium text-white">
-                        {posts[0].author_username || `User ${posts[0].author_address.slice(0, 6)}`}
-                      </span>
-                      <Badge className={`${getTierBadgeColor(posts[0].author_tier || 'NOMAD')} text-white text-xs px-1 py-0 h-4 flex items-center gap-1`}>
-                        {getTierIcon(posts[0].author_tier || 'NOMAD')}
-                        {posts[0].author_tier || 'NOMAD'}
-                      </Badge>
-                      <span className="text-xs text-[#C0E6FF]/40">
-                        {formatDate(posts[0].created_at)}
-                      </span>
-                    </div>
-
-                    {/* Post Title */}
-                    {posts[0].title && (
-                      <h3 className="text-base font-semibold text-white mb-2">
-                        {posts[0].title}
-                      </h3>
-                    )}
-
-                    {/* Post Content */}
-                    <div className="text-[#C0E6FF] whitespace-pre-wrap mb-3 text-sm">
-                      {posts[0].content}
-                    </div>
-
-                    {/* Reply Button - Only on original post */}
-                    <CreateReplyModal
-                      topicId={topicId}
-                      topicName={topicName}
-                      onReplyCreated={handleReplyCreated}
-                      replyToPost={posts[0]}
-                    >
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-[#C0E6FF]/20 text-[#C0E6FF] hover:bg-[#030f1c] hover:text-white h-7 text-xs"
-                      >
-                        <MessageSquare className="w-3 h-3 mr-1" />
-                        Reply
-                      </Button>
-                    </CreateReplyModal>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Replies - Show newest first */}
-          {posts.length > 1 && (
-            <div className="ml-6 space-y-2">
-              {posts.slice(1).reverse().map((post, index) => (
-                <Card key={post.id} className="bg-[#0f1a2e] border-[#C0E6FF]/5">
+            return (
+              <div key={post.id}>
+                {/* Main Post */}
+                <Card className="bg-[#1a2f51] border-[#C0E6FF]/10">
                   <CardContent className="p-3">
                     <div className="flex items-start gap-3">
                       {/* User Avatar */}
                       <div className="flex-shrink-0">
-                        <Avatar className="w-7 h-7">
-                          <AvatarImage
-                            src={getAvatarUrl(post.author_avatar)}
-                            alt={post.author_username || 'User'}
-                            onError={() => console.log('❌ Avatar Debug: Failed to load image for reply:', post.author_avatar)}
-                          />
-                          <AvatarFallback className="bg-[#4DA2FF] text-white text-xs">
-                            {post.author_username?.charAt(0).toUpperCase() || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
+                        <ForumUserTooltip
+                          userAddress={post.author_address}
+                          username={post.author_username}
+                          avatar={getAvatarUrl(post.author_avatar)}
+                          tier={post.author_tier}
+                        >
+                          <Avatar className="w-8 h-8 cursor-pointer hover:ring-2 hover:ring-[#4DA2FF]/50 transition-all duration-200">
+                            <AvatarImage
+                              src={getAvatarUrl(post.author_avatar)}
+                              alt={post.author_username || 'User'}
+                              onError={() => console.log('❌ Avatar Debug: Failed to load image:', post.author_avatar)}
+                            />
+                            <AvatarFallback className="bg-[#4DA2FF] text-white text-sm">
+                              {post.author_username?.charAt(0).toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                        </ForumUserTooltip>
                       </div>
 
-                      {/* Reply Content */}
+                      {/* Post Content */}
                       <div className="flex-1 min-w-0">
-                        {/* Reply Header */}
+                        {/* Post Header */}
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-medium text-white">
                             {post.author_username || `User ${post.author_address.slice(0, 6)}`}
@@ -346,17 +330,118 @@ export function ForumThreadView({
                           </span>
                         </div>
 
-                        {/* Reply Content */}
-                        <div className="text-[#C0E6FF] whitespace-pre-wrap text-sm">
+                        {/* Post Title */}
+                        {post.title && (
+                          <h3 className="text-base font-semibold text-white mb-2">
+                            {post.title}
+                          </h3>
+                        )}
+
+                        {/* Post Content */}
+                        <div className="text-[#C0E6FF] whitespace-pre-wrap mb-3 text-sm">
                           {post.content}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-2">
+                          {/* Reply Button */}
+                          <CreateReplyModal
+                            topicId={topicId}
+                            topicName={topicName}
+                            onReplyCreated={handleReplyCreated}
+                            replyToPost={post}
+                          >
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-[#C0E6FF]/20 text-[#C0E6FF] hover:bg-[#030f1c] hover:text-white h-7 text-xs"
+                            >
+                              <MessageSquare className="w-3 h-3 mr-1" />
+                              Reply
+                            </Button>
+                          </CreateReplyModal>
+
+                          {/* Replies Toggle Button */}
+                          {post.replyCount > 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => togglePostExpansion(post.id)}
+                              className="text-[#C0E6FF]/70 hover:text-white hover:bg-[#030f1c] h-7 text-xs"
+                            >
+                              <MessageSquare className="w-3 h-3 mr-1" />
+                              {post.replyCount} {post.replyCount === 1 ? 'reply' : 'replies'}
+                              <span className="ml-1 text-xs">
+                                {isExpanded ? '▼' : '▶'}
+                              </span>
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          )}
+
+                {/* Collapsible Replies */}
+                {post.replyCount > 0 && isExpanded && (
+                  <div className="ml-6 mt-2 space-y-2">
+                    {post.replies.map((reply) => (
+                      <Card key={reply.id} className="bg-[#0f1a2e] border-[#C0E6FF]/5">
+                        <CardContent className="p-3">
+                          <div className="flex items-start gap-3">
+                            {/* Reply Avatar */}
+                            <div className="flex-shrink-0">
+                              <ForumUserTooltip
+                                userAddress={reply.author_address}
+                                username={reply.author_username}
+                                avatar={getAvatarUrl(reply.author_avatar)}
+                                tier={reply.author_tier}
+                              >
+                                <Avatar className="w-7 h-7 cursor-pointer hover:ring-2 hover:ring-[#4DA2FF]/50 transition-all duration-200">
+                                  <AvatarImage
+                                    src={getAvatarUrl(reply.author_avatar)}
+                                    alt={reply.author_username || 'User'}
+                                  />
+                                  <AvatarFallback className="bg-[#4DA2FF] text-white text-xs">
+                                    {reply.author_username?.charAt(0).toUpperCase() || 'U'}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </ForumUserTooltip>
+                            </div>
+
+                            {/* Reply Content */}
+                            <div className="flex-1 min-w-0">
+                              {/* Reply Header */}
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-sm font-medium text-white">
+                                  {reply.author_username || `User ${reply.author_address.slice(0, 6)}`}
+                                </span>
+                                <Badge className={`${getTierBadgeColor(reply.author_tier || 'NOMAD')} text-white text-xs px-1 py-0 h-4 flex items-center gap-1`}>
+                                  {getTierIcon(reply.author_tier || 'NOMAD')}
+                                  {reply.author_tier || 'NOMAD'}
+                                </Badge>
+                                <span className="text-xs text-[#C0E6FF]/40">
+                                  {formatDate(reply.created_at)}
+                                </span>
+                                <Badge variant="outline" className="text-xs text-[#C0E6FF]/60 border-[#C0E6FF]/20">
+                                  Reply
+                                </Badge>
+                              </div>
+
+                              {/* Reply Content */}
+                              <div className="text-[#C0E6FF] whitespace-pre-wrap text-sm">
+                                {reply.content}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       ) : (
         <Card className="bg-[#1a2f51] border-[#C0E6FF]/10">
@@ -366,19 +451,22 @@ export function ForumThreadView({
             <p className="text-[#C0E6FF]/70 mb-4 text-sm">
               Be the first to start this discussion!
             </p>
-            <CreateReplyModal
-              topicId={topicId}
-              topicName={topicName}
-              onReplyCreated={handleReplyCreated}
+            <CreatePostModal
+              topics={topics}
+              onPostCreated={handlePostCreated}
+              currentTopicId={topicId}
+              currentTopicName={topicName}
+              hideTopicSelector={true}
             >
               <Button className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white h-8 text-sm">
                 <Plus className="w-3 h-3 mr-2" />
                 Start Discussion
               </Button>
-            </CreateReplyModal>
+            </CreatePostModal>
           </CardContent>
         </Card>
       )}
-    </div>
+      </div>
+    </TooltipProvider>
   )
 }

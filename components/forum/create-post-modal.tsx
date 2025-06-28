@@ -43,24 +43,43 @@ const createPostSchema = z.object({
   content_type: z.enum(["text", "markdown"]).default("text")
 })
 
+// Schema for context-aware posts (when topic is pre-selected)
+const createContextPostSchema = z.object({
+  topic_id: z.string().optional(),
+  title: z.string().min(5, "Title must be at least 5 characters").max(200, "Title must be less than 200 characters"),
+  content: z.string().min(10, "Content must be at least 10 characters").max(5000, "Content must be less than 5000 characters"),
+  content_type: z.enum(["text", "markdown"]).default("text")
+})
+
 type CreatePostForm = z.infer<typeof createPostSchema>
 
 interface CreatePostModalProps {
   topics: ForumTopic[]
   onPostCreated?: () => void
   children?: React.ReactNode
+  // Context-aware props for when opened from within a topic
+  currentTopicId?: string
+  currentTopicName?: string
+  hideTopicSelector?: boolean
 }
 
-export function CreatePostModal({ topics, onPostCreated, children }: CreatePostModalProps) {
+export function CreatePostModal({
+  topics,
+  onPostCreated,
+  children,
+  currentTopicId,
+  currentTopicName,
+  hideTopicSelector = false
+}: CreatePostModalProps) {
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { tier } = useSubscription()
   const { user } = useSuiAuth()
 
   const form = useForm<CreatePostForm>({
-    resolver: zodResolver(createPostSchema),
+    resolver: zodResolver(hideTopicSelector ? createContextPostSchema : createPostSchema),
     defaultValues: {
-      topic_id: "",
+      topic_id: currentTopicId || "",
       title: "",
       content: "",
       content_type: "text"
@@ -91,12 +110,19 @@ export function CreatePostModal({ topics, onPostCreated, children }: CreatePostM
       return
     }
 
+    // Use currentTopicId if topic_id is not provided (context-aware mode)
+    const topicId = data.topic_id || currentTopicId
+    if (!topicId) {
+      toast.error("Please select a topic")
+      return
+    }
+
     setIsSubmitting(true)
     try {
       const result = await forumService.createPost(
         user.address,
         {
-          topic_id: data.topic_id,
+          topic_id: topicId,
           title: data.title,
           content: data.content,
           content_type: data.content_type
@@ -132,43 +158,52 @@ export function CreatePostModal({ topics, onPostCreated, children }: CreatePostM
       </DialogTrigger>
       <DialogContent className="bg-[#030f1c] border-[#C0E6FF]/20 max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-white">Create New Post</DialogTitle>
+          <DialogTitle className="text-white">
+            {currentTopicName ? `New Post in ${currentTopicName}` : 'Create New Post'}
+          </DialogTitle>
+          {currentTopicName && (
+            <p className="text-[#C0E6FF]/70 text-sm">
+              Creating a new discussion thread in this topic
+            </p>
+          )}
         </DialogHeader>
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Topic Selection */}
-            <FormField
-              control={form.control}
-              name="topic_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-[#C0E6FF]">Topic</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white">
-                        <SelectValue placeholder="Select a topic" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-[#030f1c] border-[#C0E6FF]/20">
-                      {accessibleTopics.map((topic) => (
-                        <SelectItem 
-                          key={topic.id} 
-                          value={topic.id}
-                          className="text-[#C0E6FF] hover:bg-[#1a2f51] focus:bg-[#1a2f51]"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span>{topic.name}</span>
-                            {topic.access_level !== 'ALL' && getTierIcon(topic.access_level)}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Topic Selection - Hidden when in topic context */}
+            {!hideTopicSelector && (
+              <FormField
+                control={form.control}
+                name="topic_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[#C0E6FF]">Topic</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white">
+                          <SelectValue placeholder="Select a topic" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-[#030f1c] border-[#C0E6FF]/20">
+                        {accessibleTopics.map((topic) => (
+                          <SelectItem
+                            key={topic.id}
+                            value={topic.id}
+                            className="text-[#C0E6FF] hover:bg-[1a2f51] focus:bg-[#1a2f51]"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span>{topic.name}</span>
+                              {topic.access_level !== 'ALL' && getTierIcon(topic.access_level)}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {/* Post Title */}
             <FormField

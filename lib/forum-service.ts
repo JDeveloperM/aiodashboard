@@ -286,7 +286,7 @@ class ForumService {
         .eq('topic_id', topicId)
         .eq('is_deleted', false)
         .order('is_pinned', { ascending: false })
-        .order('last_reply_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1)
 
       if (error) throw error
