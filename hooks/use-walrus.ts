@@ -51,8 +51,8 @@ export function useWalrus() {
   const [localLoading, setLocalLoading] = useState(false)
 
   // Check if we have any wallet connection (traditional or zkLogin)
-  const isConnected = !!(currentAccount || zkLoginUserAddress)
-  const userAddress = user?.address || currentAccount?.address || zkLoginUserAddress
+  const isConnected = !!(user?.address)
+  const userAddress = user?.address
 
   // Calculate storage cost
   const calculateCost = useCallback((sizeInBytes: number, epochs?: number) => {
@@ -76,7 +76,7 @@ export function useWalrus() {
     options: StorageOptions = {}
   ): Promise<StorageResult> => {
     if (!isConnected) {
-      throw new Error('No wallet connected - please connect your wallet or sign in with zkLogin')
+      throw new Error('Authentication required - please connect your wallet or sign in with zkLogin')
     }
 
     if (!isInitialized || !options.useWalrus) {
@@ -185,7 +185,7 @@ export function useWalrus() {
     options: StorageOptions = {}
   ): Promise<StorageResult> => {
     if (!isConnected) {
-      throw new Error('No wallet connected - please connect your wallet or sign in with zkLogin')
+      throw new Error('Authentication required - please connect your wallet or sign in with zkLogin')
     }
 
     if (!isInitialized || !options.useWalrus) {

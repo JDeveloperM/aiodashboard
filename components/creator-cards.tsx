@@ -247,11 +247,12 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
         }
       }
 
-      // Redirect to Telegram channel for free access
-      if (channel.telegramUrl) {
-        window.open(channel.telegramUrl, '_blank')
-      }
+      // Access free channel and redirect to forum
       onAccessChannel(creator.id, channel.id)
+
+      // Redirect to Forum Creators category with creator context
+      const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creator.id)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}`
+      window.location.href = forumUrl
       return
     }
 
@@ -303,10 +304,12 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
           }
         }
 
-        if (channel.telegramUrl) {
-          window.open(channel.telegramUrl, '_blank')
-        }
+        // Access premium channel and redirect to forum
         onAccessChannel(creator.id, channel.id)
+
+        // Redirect to Forum Creators category with creator context
+        const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creator.id)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}`
+        window.location.href = forumUrl
         return
       } else {
         // User has exceeded their free premium channel limit, show payment modal
@@ -319,11 +322,12 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
 
     const accessKey = `${creator.id}_${channel.id}`
     if (userAccess[accessKey]) {
-      // User has access, redirect to Telegram channel
-      if (channel.telegramUrl) {
-        window.open(channel.telegramUrl, '_blank')
-      }
+      // User has access, redirect to forum
       onAccessChannel(creator.id, channel.id)
+
+      // Redirect to Forum Creators category with creator context
+      const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creator.id)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}`
+      window.location.href = forumUrl
       return
     }
 

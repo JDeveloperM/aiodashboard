@@ -193,7 +193,7 @@ export function CreatePostModal({
                           >
                             <div className="flex items-center gap-2">
                               <span>{topic.name}</span>
-                              {topic.access_level !== 'ALL' && getTierIcon(topic.access_level)}
+                              {topic.access_level && topic.access_level !== 'ALL' && getTierIcon(topic.access_level)}
                             </div>
                           </SelectItem>
                         ))}

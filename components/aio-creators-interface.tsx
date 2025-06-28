@@ -44,7 +44,7 @@ export function AIOCreatorsInterface() {
         ...creator,
         id: `${creator.id}_${channel.id}`, // Unique ID for each channel card
         name: channel.name, // Use channel name instead of creator name
-        username: channel.telegramUrl ? channel.telegramUrl.replace('https://t.me/', '') : creator.username, // Extract username from telegram URL
+        username: creator.username, // Use creator username
         subscribers: channel.subscribers, // Use channel subscribers instead of creator subscribers
         channels: [channel], // Each card shows only one channel
         originalCreatorId: creator.id, // Keep reference to original creator
@@ -105,10 +105,10 @@ export function AIOCreatorsInterface() {
 
     if (creator && channel) {
       toast.success(`Accessing ${channel.name} by ${creator.name}`)
-      // Redirect to Telegram channel
-      if (channel.telegramUrl) {
-        window.open(channel.telegramUrl, '_blank')
-      }
+
+      // Redirect to Forum Creators category with creator context
+      const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creatorId)}&channel=${encodeURIComponent(channelId)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}`
+      window.location.href = forumUrl
     }
   }
 

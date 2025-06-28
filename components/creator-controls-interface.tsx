@@ -55,6 +55,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { EditChannelModal } from "./edit-channel-modal"
+import { CreatorContentDashboard } from "./creator-content-dashboard"
 
 // Form validation schema
 const creatorFormSchema = z.object({
@@ -122,6 +123,11 @@ export function CreatorControlsInterface() {
   const [coverImageBlobId, setCoverImageBlobId] = useState<string>("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Progressive card display states
+  const [showChannelDetails, setShowChannelDetails] = useState(false)
+  const [showChannelSettings, setShowChannelSettings] = useState(false)
+  const [showPricingPackages, setShowPricingPackages] = useState(false)
+
   // Edit modal states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editingChannel, setEditingChannel] = useState<any>(null)
@@ -151,6 +157,29 @@ export function CreatorControlsInterface() {
   const watchIsPremium = form.watch("isPremium")
   const watchCategories = form.watch("channelCategories")
   const watchSubscriptionPackages = form.watch("subscriptionPackages") || []
+
+  // Additional watch statements for progressive display
+  const watchChannelName = form.watch("channelName")
+  const watchChannelDescription = form.watch("channelDescription")
+  const watchChannelLanguage = form.watch("channelLanguage")
+  const watchCreatorRole = form.watch("creatorRole")
+  const watchMaxSubscribers = form.watch("maxSubscribers")
+  const watchTelegramUsername = form.watch("telegramUsername")
+
+  // Progressive card visibility logic
+  useEffect(() => {
+    // Show Channel Details card when at least profile image is added
+    const hasImages = !!(profileImage || coverImage)
+    setShowChannelDetails(hasImages)
+
+    // Show Channel Settings card when basic details are filled
+    const hasBasicDetails = !!(watchChannelName && watchChannelDescription && watchChannelLanguage && watchCreatorRole && watchCategories?.length > 0)
+    setShowChannelSettings(hasImages && hasBasicDetails)
+
+    // Show Pricing & Packages card when settings are configured
+    const hasSettings = !!watchTelegramUsername
+    setShowPricingPackages(hasImages && hasBasicDetails && hasSettings)
+  }, [profileImage, coverImage, watchChannelName, watchChannelDescription, watchChannelLanguage, watchCreatorRole, watchCategories, watchMaxSubscribers, watchTelegramUsername])
 
   // Image update handlers - using Walrus integration like profile page
   const handleProfileImageUpdate = (imageUrl: string, blobId?: string) => {
@@ -205,13 +234,13 @@ export function CreatorControlsInterface() {
     console.log('🚀 Form submission started')
     console.log('📝 Form data:', data)
 
-    if (!currentAccount?.address) {
-      console.error('❌ No wallet connected')
-      toast.error('Please connect your wallet first')
+    if (!user?.address) {
+      console.error('❌ No user authenticated')
+      toast.error('Please connect your wallet or sign in first')
       return
     }
 
-    console.log('✅ Wallet connected:', currentAccount.address)
+    console.log('✅ User authenticated:', user.address)
 
     // Check channel creation limits based on user tier
     const userChannelLimit = tier === 'ROYAL' ? 3 : 2 // ROYAL: 3 channels, PRO: 2 channels
@@ -219,7 +248,7 @@ export function CreatorControlsInterface() {
     // Find existing creator profile for current user by wallet address
     const existingUserCreator = creators.find(creator =>
       creator.creatorAddress &&
-      creator.creatorAddress.toLowerCase() === currentAccount.address.toLowerCase()
+      creator.creatorAddress.toLowerCase() === user.address.toLowerCase()
     )
 
     const currentChannelCount = existingUserCreator ? existingUserCreator.channels.length : 0
@@ -329,7 +358,7 @@ export function CreatorControlsInterface() {
   const createNewCreatorWithChannel = async (data: CreatorFormData, newChannel: any, newCreatorId: string, profileImageBlobId: string, coverImageBlobId: string) => {
     const newCreator = {
       id: newCreatorId,
-      creatorAddress: currentAccount?.address || '', // Add the wallet address for ownership verification
+      creatorAddress: user?.address || '', // Add the wallet address for ownership verification
       name: data.channelName, // Using channel name as creator name for now
       username: data.telegramUsername,
       avatar: profileImage || "/api/placeholder/64/64",
@@ -378,26 +407,20 @@ export function CreatorControlsInterface() {
     await updateCreator(existingCreator.id, updatedCreator, profileImageBlobId, coverImageBlobId)
   }
 
-  // Get form values for preview
-  const watchChannelName = form.watch("channelName")
-  const watchChannelDescription = form.watch("channelDescription")
-  const watchCreatorRole = form.watch("creatorRole")
-  const watchChannelLanguage = form.watch("channelLanguage")
-  const watchMaxSubscribers = form.watch("maxSubscribers")
-  const watchTelegramUsername = form.watch("telegramUsername")
+  // Get form values for preview (using existing watch statements above)
 
   // Helper function to get current user's channel count
   const getCurrentUserChannelCount = () => {
-    if (!currentAccount?.address) {
-      console.log('📊 No wallet connected, returning 0 channels')
+    if (!user?.address) {
+      console.log('📊 No user authenticated, returning 0 channels')
       return 0
     }
 
     // Use the getUserCreators method for accurate filtering
-    const userCreators = getUserCreators(currentAccount.address)
+    const userCreators = getUserCreators(user.address)
     const totalChannels = userCreators.reduce((total, creator) => total + creator.channels.length, 0)
 
-    console.log(`📊 Found ${userCreators.length} creators for wallet ${currentAccount.address} with ${totalChannels} total channels`)
+    console.log(`📊 Found ${userCreators.length} creators for user ${user.address} with ${totalChannels} total channels`)
 
     return totalChannels
   }
@@ -472,22 +495,24 @@ export function CreatorControlsInterface() {
   // Get user's existing channels
   const userCreator = creators.find(creator =>
     creator.creatorAddress &&
-    creator.creatorAddress.toLowerCase() === currentAccount?.address?.toLowerCase()
+    creator.creatorAddress.toLowerCase() === user?.address?.toLowerCase()
   )
   const userChannels = userCreator?.channels || []
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+
       {/* Existing Channels Section */}
       {userChannels.length > 0 && (
         <Card className="enhanced-card">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <MessageCircle className="w-5 h-5" />
-              Your Channels ({userChannels.length}/{tier === 'ROYAL' ? 3 : 2})
+              Manage Your Channels ({userChannels.length}/{tier === 'ROYAL' ? 3 : 2})
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
+            {/* Channels Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {userChannels.map((channel) => (
                 <div key={channel.id} className="enhanced-card overflow-hidden">
@@ -576,6 +601,15 @@ export function CreatorControlsInterface() {
                 </div>
               ))}
             </div>
+
+            {/* Content Management Section */}
+            <div className="border-t border-gray-700 pt-6">
+              <CreatorContentDashboard
+                tier={tier}
+                currentChannelCount={currentChannelCount}
+                maxChannels={maxChannels}
+              />
+            </div>
           </CardContent>
         </Card>
       )}
@@ -585,50 +619,28 @@ export function CreatorControlsInterface() {
         <div className="space-y-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Channel Limits Info */}
+
+
+          {/* Progress Indicator */}
           <Card className="enhanced-card">
-            <CardHeader>
-              <CardTitle className="text-white">Channel Creation Limits</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-[#1a2f51] rounded-lg">
-                  <div>
-                    <p className="text-white font-medium">Your Tier: {tier}</p>
-                    <p className="text-[#C0E6FF] text-sm">
-                      {tier === 'ROYAL' ? 'Maximum 3 channels allowed' : 'Maximum 2 channels allowed'}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className={`font-medium ${currentChannelCount >= maxChannels ? 'text-red-400' : 'text-white'}`}>
-                      {currentChannelCount} / {maxChannels}
-                    </p>
-                    <p className="text-[#C0E6FF] text-sm">Channels Created</p>
-                  </div>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-[#4DA2FF] text-white flex items-center justify-center text-xs font-bold">1</div>
+                  <span className="text-white">Channel Images</span>
                 </div>
-
-                {/* Warning messages */}
-                {currentChannelCount >= maxChannels && (
-                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                    <p className="text-red-400 text-sm font-medium">⚠️ Channel limit reached!</p>
-                    <p className="text-red-300 text-xs mt-1">
-                      You have reached the maximum number of channels for {tier} tier.
-                      {tier === 'PRO' && ' Upgrade to ROYAL to create up to 3 channels.'}
-                    </p>
-                  </div>
-                )}
-
-                {currentChannelCount === maxChannels - 1 && (
-                  <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                    <p className="text-yellow-400 text-sm font-medium">⚠️ One channel remaining</p>
-                    <p className="text-yellow-300 text-xs mt-1">
-                      You can create {maxChannels - currentChannelCount} more channel with your {tier} tier.
-                      {tier === 'PRO' && ' Upgrade to ROYAL for more channels.'}
-                    </p>
-                  </div>
-                )}
-
-
+                <div className="flex items-center gap-2">
+                  <div className={`w-6 h-6 rounded-full ${showChannelDetails ? 'bg-[#4DA2FF] text-white' : 'bg-gray-600 text-gray-400'} flex items-center justify-center text-xs font-bold`}>2</div>
+                  <span className={showChannelDetails ? 'text-white' : 'text-gray-400'}>Channel Details</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className={`w-6 h-6 rounded-full ${showChannelSettings ? 'bg-[#4DA2FF] text-white' : 'bg-gray-600 text-gray-400'} flex items-center justify-center text-xs font-bold`}>3</div>
+                  <span className={showChannelSettings ? 'text-white' : 'text-gray-400'}>Settings</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className={`w-6 h-6 rounded-full ${showPricingPackages ? 'bg-[#4DA2FF] text-white' : 'bg-gray-600 text-gray-400'} flex items-center justify-center text-xs font-bold`}>4</div>
+                  <span className={showPricingPackages ? 'text-white' : 'text-gray-400'}>Complete</span>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -637,6 +649,9 @@ export function CreatorControlsInterface() {
           <Card className="enhanced-card">
             <CardHeader>
               <CardTitle className="text-white">Channel Images</CardTitle>
+              <p className="text-gray-400 text-sm">
+                Start by adding your channel profile image and cover photo. More options will appear as you complete each step.
+              </p>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Profile Image */}
@@ -677,7 +692,8 @@ export function CreatorControlsInterface() {
             </CardContent>
           </Card>
 
-          {/* Basic Channel Information */}
+          {/* Basic Channel Information - Show after images are added */}
+          {showChannelDetails && (
           <Card className="enhanced-card">
             <CardHeader>
               <CardTitle className="text-white">Channel Information</CardTitle>
@@ -785,8 +801,10 @@ export function CreatorControlsInterface() {
               />
             </CardContent>
           </Card>
+          )}
 
-          {/* Creator Role and Categories */}
+          {/* Creator Role and Categories - Show after images are added */}
+          {showChannelDetails && (
           <Card className="enhanced-card">
             <CardHeader>
               <CardTitle className="text-white">Creator Profile</CardTitle>
@@ -893,8 +911,10 @@ export function CreatorControlsInterface() {
               />
             </CardContent>
           </Card>
+          )}
 
-          {/* Channel Settings */}
+          {/* Channel Settings - Show after basic details are filled */}
+          {showChannelSettings && (
           <Card className="enhanced-card">
             <CardHeader>
               <CardTitle className="text-white">Channel Settings</CardTitle>
@@ -1023,9 +1043,10 @@ export function CreatorControlsInterface() {
               )}
             </CardContent>
           </Card>
+          )}
 
-          {/* Tip Pricing - Only show if Premium is enabled and packages are selected */}
-          {watchIsPremium && watchSubscriptionPackages.length > 0 && (
+          {/* Tip Pricing - Show after settings are configured and if Premium is enabled */}
+          {showPricingPackages && watchIsPremium && watchSubscriptionPackages.length > 0 && (
             <Card className="enhanced-card">
               <CardHeader>
                 <CardTitle className="text-white">Tip Pricing (SUI)</CardTitle>
@@ -1127,7 +1148,8 @@ export function CreatorControlsInterface() {
             </Card>
           )}
 
-          {/* Terms and Conditions */}
+          {/* Terms and Conditions - Show after pricing is configured */}
+          {showPricingPackages && (
           <Card className="enhanced-card">
             <CardHeader>
               <CardTitle className="text-white">Agreement</CardTitle>
@@ -1159,8 +1181,10 @@ export function CreatorControlsInterface() {
               />
             </CardContent>
           </Card>
+          )}
 
-          {/* Submit Button */}
+          {/* Submit Button - Show after all steps are completed */}
+          {showPricingPackages && (
           <div className="flex justify-center pt-6">
             <Button
               type="submit"
@@ -1189,6 +1213,7 @@ export function CreatorControlsInterface() {
               )}
             </Button>
             </div>
+          )}
           </form>
         </Form>
         </div>

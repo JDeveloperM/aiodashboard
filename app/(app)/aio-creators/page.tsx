@@ -8,7 +8,7 @@ export default function AIOCreatorsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">AIO Creators</h1>
-          <p className="text-gray-400 mt-1">Discover and support content creators, access premium channels with SUI tips</p>
+          <p className="text-gray-400 mt-1">Discover and support content creators, access premium channels and view their content in the forum</p>
         </div>
       </div>
 

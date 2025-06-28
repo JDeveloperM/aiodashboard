@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
+import { useSearchParams } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ForumTopicListSimple } from "@/components/forum/forum-topic-list-simple"
 import { ForumThreadView } from "@/components/forum/forum-thread-view"
+import { MyChannelsList } from "@/components/forum/my-channels-list"
 import { ForumUserActivity } from "@/components/forum/forum-user-activity"
 import { ForumCategory, ForumTopic, forumService } from "@/lib/forum-service"
 import { useSubscription } from "@/contexts/subscription-context"
@@ -17,21 +19,57 @@ import {
   Crown,
   Star,
   Loader2,
-  User
+  User,
+  ArrowLeft,
+  ExternalLink,
+  ChevronRight
 } from "lucide-react"
 
 export default function ForumPage() {
   const { tier } = useSubscription()
   const { isSignedIn } = useSuiAuth()
-  const [activeTab, setActiveTab] = useState("general")
+  const searchParams = useSearchParams()
+
+  // Get URL parameters for creator context
+  const urlTab = searchParams.get('tab')
+  const creatorId = searchParams.get('creator')
+  const channelId = searchParams.get('channel')
+  const creatorName = searchParams.get('creatorName')
+  const channelName = searchParams.get('channelName')
+
+  const [activeTab, setActiveTab] = useState(urlTab || "general")
   const [categories, setCategories] = useState<ForumCategory[]>([])
   const [allTopics, setAllTopics] = useState<ForumTopic[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedTopic, setSelectedTopic] = useState<{id: string, name: string, categoryName: string} | null>(null)
 
+  // Creator context state
+  const [creatorContext, setCreatorContext] = useState<{
+    creatorId: string
+    channelId: string
+    creatorName: string
+    channelName: string
+  } | null>(null)
+
   useEffect(() => {
     loadForumData()
   }, [tier])
+
+  // Handle URL parameters for creator context
+  useEffect(() => {
+    if (creatorId && channelId && creatorName && channelName) {
+      setCreatorContext({
+        creatorId,
+        channelId,
+        creatorName,
+        channelName
+      })
+      // Set active tab to creators if coming from AIO Creators
+      if (urlTab === 'creators') {
+        setActiveTab('creators')
+      }
+    }
+  }, [creatorId, channelId, creatorName, channelName, urlTab])
 
   const loadForumData = async () => {
     setIsLoading(true)
@@ -65,6 +103,20 @@ export default function ForumPage() {
 
   const handleTopicClick = (topicId: string, topicName: string, categoryName: string) => {
     setSelectedTopic({ id: topicId, name: topicName, categoryName })
+  }
+
+  const handleMyChannelClick = (creatorAddress: string, channelId: string, channelName: string) => {
+    // Set creator context and navigate to that creator's content
+    setCreatorContext({
+      creatorId: creatorAddress,
+      channelId: channelId,
+      creatorName: channelName, // We'll use channel name as creator name for now
+      channelName: channelName
+    })
+
+    // Update URL to reflect the creator context
+    const newUrl = `/forum?tab=creators&creator=${encodeURIComponent(creatorAddress)}&channel=${encodeURIComponent(channelId)}&creatorName=${encodeURIComponent(channelName)}&channelName=${encodeURIComponent(channelName)}`
+    window.history.pushState({}, '', newUrl)
   }
 
   const handleBackToTopics = () => {
@@ -153,61 +205,164 @@ export default function ForumPage() {
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">AIONET Forum</h1>
           <p className="text-gray-400 mt-1">Connect, discuss, and share with the AIONET community</p>
         </div>
-
       </div>
 
-
-
-      {/* Forum Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-[#1a2f51] border border-[#C0E6FF]/20">
-          <TabsTrigger 
-            value="general" 
-            className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white flex items-center gap-2"
+      {/* Breadcrumb Navigation for Creator Context */}
+      {creatorContext && (
+        <div className="flex items-center gap-2 text-sm bg-[#1a2f51] p-3 rounded-lg border border-[#C0E6FF]/20">
+          <button
+            onClick={() => window.location.href = '/aio-creators'}
+            className="flex items-center gap-1 text-[#4DA2FF] hover:text-[#4DA2FF]/80 transition-colors"
           >
-            <MessageSquare className="w-4 h-4" />
-            General
-          </TabsTrigger>
-          <TabsTrigger 
-            value="creators" 
-            className={`text-[#C0E6FF] data-[state=active]:bg-[#9333EA] data-[state=active]:text-white flex items-center gap-2 ${
-              !canAccessTab("creators") ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={!canAccessTab("creators")}
-          >
-            <Users className="w-4 h-4" />
-            Creators
-            {!canAccessTab("creators") && <Crown className="w-3 h-3 text-yellow-400" />}
-          </TabsTrigger>
-          <TabsTrigger
-            value="activity"
-            className="text-[#C0E6FF] data-[state=active]:bg-[#10B981] data-[state=active]:text-white flex items-center gap-2"
-          >
-            <User className="w-4 h-4" />
-            My Activity
-          </TabsTrigger>
-        </TabsList>
-
-        {/* General Tab Content */}
-        <TabsContent value="general" className="space-y-4">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-[#4DA2FF]" />
-            </div>
-          ) : (
-            <ForumTopicListSimple
-              categoryId={getCategoryByName("general")?.id || ""}
-              categoryName="General Discussion"
-              categoryIcon={<MessageSquare className="w-5 h-5" />}
-              categoryColor="#4DA2FF"
-              categoryImage="/images/generalF.png"
-              onTopicClick={(topicId, topicName, categoryName) => handleTopicClick(topicId, topicName, "general")}
-            />
+            <ArrowLeft className="w-4 h-4" />
+            AIO Creators
+          </button>
+          <ChevronRight className="w-4 h-4 text-gray-400" />
+          <span className="text-gray-300">{creatorContext.creatorName}</span>
+          {creatorContext.channelName !== creatorContext.creatorName &&
+           creatorContext.channelName !== 'Default Channel' &&
+           creatorContext.channelName !== 'Unnamed Channel' && (
+            <>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <span className="text-gray-300">{creatorContext.channelName}</span>
+            </>
           )}
-        </TabsContent>
+          <ChevronRight className="w-4 h-4 text-gray-400" />
+          <span className="text-white font-medium">Content</span>
+          <div className="ml-auto">
+            <button
+              onClick={() => {
+                setCreatorContext(null)
+                window.history.replaceState({}, '', '/forum?tab=creators')
+              }}
+              className="text-[#4DA2FF] hover:text-[#4DA2FF]/80 text-sm flex items-center gap-1"
+            >
+              <ExternalLink className="w-3 h-3" />
+              View All Creators
+            </button>
+          </div>
+        </div>
+      )}
 
-        {/* Creators Tab Content */}
-        <TabsContent value="creators" className="space-y-4">
+
+
+      {/* Forum Tabs - Hide when viewing creator content */}
+      {!creatorContext && (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 bg-[#1a2f51] border border-[#C0E6FF]/20">
+            <TabsTrigger
+              value="general"
+              className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white flex items-center gap-2"
+            >
+              <MessageSquare className="w-4 h-4" />
+              General
+            </TabsTrigger>
+            <TabsTrigger
+              value="creators"
+              className={`text-[#C0E6FF] data-[state=active]:bg-[#9333EA] data-[state=active]:text-white flex items-center gap-2 ${
+                !canAccessTab("creators") ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              disabled={!canAccessTab("creators")}
+            >
+              <Users className="w-4 h-4" />
+              Creators
+              {!canAccessTab("creators") && <Crown className="w-3 h-3 text-yellow-400" />}
+            </TabsTrigger>
+            <TabsTrigger
+              value="activity"
+              className="text-[#C0E6FF] data-[state=active]:bg-[#10B981] data-[state=active]:text-white flex items-center gap-2"
+            >
+              <User className="w-4 h-4" />
+              My Activity
+            </TabsTrigger>
+          </TabsList>
+
+          {/* General Tab Content */}
+          <TabsContent value="general" className="space-y-4">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-[#4DA2FF]" />
+              </div>
+            ) : (
+              <ForumTopicListSimple
+                categoryId={getCategoryByName("general")?.id || ""}
+                categoryName="General Discussion"
+                categoryIcon={<MessageSquare className="w-5 h-5" />}
+                categoryColor="#4DA2FF"
+                categoryImage="/images/generalF.png"
+                onTopicClick={(topicId, topicName, categoryName) => handleTopicClick(topicId, topicName, "general")}
+              />
+            )}
+          </TabsContent>
+
+          {/* Creators Tab Content */}
+          <TabsContent value="creators" className="space-y-4">
+            {/* Creator Hub Banner - Show when no specific creator context */}
+            {!creatorContext && (
+              <Card className="bg-[#030f1c] border-[#C0E6FF]/20">
+                <div
+                  className="relative bg-cover bg-center bg-no-repeat"
+                  style={{
+                    backgroundImage: `url(/images/creatorsF.png)`,
+                    backgroundColor: '#9333EA'
+                  }}
+                >
+                  {/* Overlay for better text readability */}
+                  <div className="absolute inset-0 bg-black/60"></div>
+
+                  <CardHeader className="relative z-10">
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Users className="w-5 h-5" />
+                      Creator Hub
+                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <p className="text-white/80">
+                        The Creator Hub content can be accessed from{" "}
+                        <a
+                          href="/aio-creators"
+                          className="text-[#4DA2FF] hover:text-[#4DA2FF]/80 underline font-medium"
+                        >
+                          AIO Creators page
+                        </a>
+                      </p>
+                    </div>
+                  </CardHeader>
+                </div>
+              </Card>
+            )}
+
+            {/* My Channels Section - Show when no specific creator context */}
+            {!creatorContext && (
+              <Card className="bg-[#1a2f51] border-[#C0E6FF]/20">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    My Channels
+                  </CardTitle>
+                  <p className="text-[#C0E6FF]/70 text-sm">
+                    Channels you've joined and have access to
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <MyChannelsList onChannelClick={handleMyChannelClick} />
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* My Activity Tab Content */}
+          <TabsContent value="activity" className="space-y-4">
+            <ForumUserActivity
+              onPostClick={(postId, topicId, topicName) => handleTopicClick(topicId, topicName, "activity")}
+            />
+          </TabsContent>
+        </Tabs>
+      )}
+
+      {/* Creator Content - Show when viewing specific creator (no tabs) */}
+      {creatorContext && (
+        <div className="space-y-4">
+          {/* Creator Channel Content */}
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-[#9333EA]" />
@@ -215,22 +370,16 @@ export default function ForumPage() {
           ) : (
             <ForumTopicListSimple
               categoryId={getCategoryByName("creator")?.id || ""}
-              categoryName="Creator Hub"
+              categoryName={creatorContext.channelName}
               categoryIcon={<Users className="w-5 h-5" />}
               categoryColor="#9333EA"
               categoryImage="/images/creatorsF.png"
               onTopicClick={(topicId, topicName, categoryName) => handleTopicClick(topicId, topicName, "creators")}
+              creatorContext={creatorContext}
             />
           )}
-        </TabsContent>
-
-        {/* My Activity Tab Content */}
-        <TabsContent value="activity" className="space-y-4">
-          <ForumUserActivity
-            onPostClick={(postId, topicId, topicName) => handleTopicClick(topicId, topicName, "activity")}
-          />
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
     </div>
   )
 }

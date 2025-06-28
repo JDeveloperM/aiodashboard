@@ -99,6 +99,8 @@ function convertDecryptedCreatorToCreator(decryptedCreator: DecryptedCreator): C
 
 
 
+
+
   // Convert channels data
   let channels: Channel[] = []
 
@@ -299,19 +301,19 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
     console.log('🖼️ Profile image blob ID:', profileImageBlobId)
     console.log('🖼️ Cover image blob ID:', coverImageBlobId)
 
-    if (!currentAccount?.address) {
-      console.error('❌ No wallet connected in addCreator')
-      throw new Error('No wallet connected')
+    if (!user?.address) {
+      console.error('❌ No user authenticated in addCreator')
+      throw new Error('Authentication required')
     }
 
-    console.log('✅ Wallet address:', currentAccount.address)
+    console.log('✅ User address:', user.address)
 
     try {
       console.log('➕ Adding new creator to database...')
 
       // Convert Creator to DecryptedCreator format
       const decryptedCreatorData: Partial<DecryptedCreator> = {
-        creator_address: currentAccount.address,
+        creator_address: user.address,
         channel_name: creator.name,
         channel_description: creator.channels[0]?.description || '',
         telegram_username: creator.username,
@@ -337,7 +339,7 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
       console.log('📝 Converted creator data:', decryptedCreatorData)
       console.log('🔄 Calling createOrUpdateCreator with blob IDs...')
 
-      await createOrUpdateCreator(currentAccount.address, decryptedCreatorData)
+      await createOrUpdateCreator(user.address, decryptedCreatorData)
 
       console.log('✅ createOrUpdateCreator completed successfully')
       console.log('🔄 Refreshing creators list...')
@@ -376,8 +378,8 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
     console.log('🖼️ Profile image blob ID:', profileImageBlobId)
     console.log('🖼️ Cover image blob ID:', coverImageBlobId)
 
-    if (!currentAccount?.address) {
-      throw new Error('No wallet connected')
+    if (!user?.address) {
+      throw new Error('Authentication required')
     }
 
     try {
@@ -421,7 +423,7 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
 
       console.log('📝 Converted creator data for database:', decryptedCreatorData)
 
-      await createOrUpdateCreator(currentAccount.address, decryptedCreatorData)
+      await createOrUpdateCreator(user.address, decryptedCreatorData)
 
       console.log('✅ Creator updated in database')
 
@@ -447,8 +449,8 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
   const updateChannel = async (creatorId: string, channelId: string, updatedChannel: Partial<Channel>) => {
     console.log('✏️ updateChannel called with:', { creatorId, channelId, updatedChannel })
 
-    if (!currentAccount?.address) {
-      throw new Error('No wallet connected')
+    if (!user?.address) {
+      throw new Error('Authentication required')
     }
 
     try {
@@ -489,7 +491,7 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
       console.log('👤 Found creator:', actualCreator.name)
 
       // Verify ownership
-      if (actualCreator.creatorAddress?.toLowerCase() !== currentAccount.address.toLowerCase()) {
+      if (actualCreator.creatorAddress?.toLowerCase() !== user.address.toLowerCase()) {
         throw new Error('You can only update your own channels')
       }
 
@@ -512,7 +514,7 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
 
       // Prepare the updated creator data for database using the same format as deleteChannel
       const decryptedCreatorData: Partial<DecryptedCreator> = {
-        creator_address: currentAccount.address,
+        creator_address: user.address,
         channel_name: actualCreator.name,
         channel_description: updatedChannels[0]?.description || actualCreator.channels[0]?.description || '',
         telegram_username: actualCreator.username,
@@ -534,7 +536,7 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
 
       console.log('📝 Updating creator in database with updated channel data...')
 
-      await createOrUpdateCreator(currentAccount.address, decryptedCreatorData)
+      await createOrUpdateCreator(user.address, decryptedCreatorData)
 
       console.log('✅ Channel updated in database')
 
@@ -582,8 +584,8 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
       }
     }
 
-    if (!currentAccount?.address) {
-      throw new Error('No wallet connected')
+    if (!user?.address) {
+      throw new Error('Authentication required')
     }
 
     try {
@@ -627,7 +629,7 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
       // Create a complete update that preserves existing data but updates channels
       // Use the actualCreator we found above
       const decryptedCreatorData: Partial<DecryptedCreator> = {
-        creator_address: currentAccount.address,
+        creator_address: user.address,
         channel_name: actualCreator.name,
         channel_description: updatedChannels[0]?.description || actualCreator.channels[0]?.description || '',
         telegram_username: actualCreator.username,
@@ -649,13 +651,13 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
 
       console.log('📝 Updating creator in database with new channels data...')
       console.log('🔍 Database update payload:', {
-        wallet: currentAccount.address,
+        wallet: user.address,
         channelsCount: updatedChannels.length,
         creatorName: actualCreator.name,
         originalChannelsCount: actualCreator.channels.length
       })
 
-      await createOrUpdateCreator(currentAccount.address, decryptedCreatorData)
+      await createOrUpdateCreator(user.address, decryptedCreatorData)
 
       console.log('✅ Channel deleted from database')
 
