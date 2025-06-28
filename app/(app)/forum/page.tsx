@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ForumTopicListSimple } from "@/components/forum/forum-topic-list-simple"
 import { ForumThreadView } from "@/components/forum/forum-thread-view"
+import { ForumUserActivity } from "@/components/forum/forum-user-activity"
 import { ForumCategory, ForumTopic, forumService } from "@/lib/forum-service"
 import { useSubscription } from "@/contexts/subscription-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
@@ -15,7 +16,8 @@ import {
   AlertTriangle,
   Crown,
   Star,
-  Loader2
+  Loader2,
+  User
 } from "lucide-react"
 
 export default function ForumPage() {
@@ -88,8 +90,11 @@ export default function ForumPage() {
 
   const canAccessTab = (tabName: string) => {
     if (tabName === "general") return true
-    if (tabName === "creators" || tabName === "affiliates") {
+    if (tabName === "creators") {
       return tier === "PRO" || tier === "ROYAL"
+    }
+    if (tabName === "activity") {
+      return isSignedIn // Only signed-in users can see their activity
     }
     return false
   }
@@ -174,16 +179,12 @@ export default function ForumPage() {
             Creators
             {!canAccessTab("creators") && <Crown className="w-3 h-3 text-yellow-400" />}
           </TabsTrigger>
-          <TabsTrigger 
-            value="affiliates" 
-            className={`text-[#C0E6FF] data-[state=active]:bg-[#10B981] data-[state=active]:text-white flex items-center gap-2 ${
-              !canAccessTab("affiliates") ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={!canAccessTab("affiliates")}
+          <TabsTrigger
+            value="activity"
+            className="text-[#C0E6FF] data-[state=active]:bg-[#10B981] data-[state=active]:text-white flex items-center gap-2"
           >
-            <TrendingUp className="w-4 h-4" />
-            Affiliates
-            {!canAccessTab("affiliates") && <Crown className="w-3 h-3 text-yellow-400" />}
+            <User className="w-4 h-4" />
+            My Activity
           </TabsTrigger>
         </TabsList>
 
@@ -223,22 +224,11 @@ export default function ForumPage() {
           )}
         </TabsContent>
 
-        {/* Affiliates Tab Content */}
-        <TabsContent value="affiliates" className="space-y-4">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-[#10B981]" />
-            </div>
-          ) : (
-            <ForumTopicListSimple
-              categoryId={getCategoryByName("affiliate")?.id || ""}
-              categoryName="Affiliate Network"
-              categoryIcon={<TrendingUp className="w-5 h-5" />}
-              categoryColor="#10B981"
-              categoryImage="/images/affiliatesF.png"
-              onTopicClick={(topicId, topicName, categoryName) => handleTopicClick(topicId, topicName, "affiliates")}
-            />
-          )}
+        {/* My Activity Tab Content */}
+        <TabsContent value="activity" className="space-y-4">
+          <ForumUserActivity
+            onPostClick={(postId, topicId, topicName) => handleTopicClick(topicId, topicName, "activity")}
+          />
         </TabsContent>
       </Tabs>
     </div>

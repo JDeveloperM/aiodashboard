@@ -445,11 +445,18 @@ class ForumService {
       // Enhance posts with profile data
       return posts.map(post => {
         const profile = profileMap.get(post.author_address)
+
+        // Extract topic and category names from joined data if available
+        const topicName = (post as any).forum_topics?.name || post.topic_name
+        const categoryName = (post as any).forum_topics?.forum_categories?.name || post.category_name
+
         return {
           ...post,
           author_username: profile?.username || `User ${post.author_address.slice(0, 6)}`,
           author_tier: profile?.role_tier || 'NOMAD',
-          author_avatar: profile?.profile_image_blob_id || undefined
+          author_avatar: profile?.profile_image_blob_id || undefined,
+          topic_name: topicName,
+          category_name: categoryName
         }
       })
     } catch (error) {
@@ -599,6 +606,132 @@ class ForumService {
         })
     } catch (error) {
       console.error('Failed to record user activity:', error)
+    }
+  }
+
+  /**
+   * Get user's posts across all accessible topics (excluding replies)
+   */
+  async getUserPosts(
+    userAddress: string,
+    userTier: string = 'NOMAD',
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ posts: ForumPost[], totalCount: number }> {
+    try {
+      const offset = (page - 1) * limit
+
+      // Get accessible categories first
+      const categories = await this.getCategories(userTier)
+      const categoryIds = categories.map(c => c.id)
+
+      if (categoryIds.length === 0) return { posts: [], totalCount: 0 }
+
+      // Get topics from accessible categories
+      const { data: topics } = await supabase
+        .from('forum_topics')
+        .select('id, access_level')
+        .in('category_id', categoryIds)
+        .eq('is_active', true)
+
+      if (!topics) return { posts: [], totalCount: 0 }
+
+      // Filter topics by access level
+      const accessibleTopicIds = topics
+        .filter(topic => this.hasAccess(userTier, topic.access_level))
+        .map(topic => topic.id)
+
+      if (accessibleTopicIds.length === 0) return { posts: [], totalCount: 0 }
+
+      // Get user's original posts (not replies) from accessible topics
+      const { data, error, count } = await supabase
+        .from('forum_posts')
+        .select(`
+          *,
+          forum_topics!inner(name, forum_categories!inner(name))
+        `, { count: 'exact' })
+        .eq('author_address', userAddress)
+        .in('topic_id', accessibleTopicIds)
+        .eq('is_deleted', false)
+        .not('title', 'like', 'Re:%') // Exclude replies (posts with titles starting with "Re:")
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1)
+
+      if (error) throw error
+
+      // Enhance posts with user data
+      const enhancedPosts = await this.enhancePostsWithUserData(data || [])
+
+      return {
+        posts: enhancedPosts,
+        totalCount: count || 0
+      }
+    } catch (error) {
+      console.error('Failed to get user posts:', error)
+      return { posts: [], totalCount: 0 }
+    }
+  }
+
+  /**
+   * Get user's replies across all accessible topics (posts with "Re:" prefix)
+   */
+  async getUserReplies(
+    userAddress: string,
+    userTier: string = 'NOMAD',
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ replies: ForumPost[], totalCount: number }> {
+    try {
+      const offset = (page - 1) * limit
+
+      // Get accessible categories first
+      const categories = await this.getCategories(userTier)
+      const categoryIds = categories.map(c => c.id)
+
+      if (categoryIds.length === 0) return { replies: [], totalCount: 0 }
+
+      // Get topics from accessible categories
+      const { data: topics } = await supabase
+        .from('forum_topics')
+        .select('id, access_level')
+        .in('category_id', categoryIds)
+        .eq('is_active', true)
+
+      if (!topics) return { replies: [], totalCount: 0 }
+
+      // Filter topics by access level
+      const accessibleTopicIds = topics
+        .filter(topic => this.hasAccess(userTier, topic.access_level))
+        .map(topic => topic.id)
+
+      if (accessibleTopicIds.length === 0) return { replies: [], totalCount: 0 }
+
+      // Get user's replies (posts with "Re:" prefix) from accessible topics
+      const { data, error, count } = await supabase
+        .from('forum_posts')
+        .select(`
+          *,
+          forum_topics!inner(name, forum_categories!inner(name))
+        `, { count: 'exact' })
+        .eq('author_address', userAddress)
+        .in('topic_id', accessibleTopicIds)
+        .eq('is_deleted', false)
+        .like('title', 'Re:%') // Only replies (posts with titles starting with "Re:")
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1)
+
+      if (error) throw error
+
+      // Enhance replies with user data
+      const enhancedReplies = await this.enhancePostsWithUserData(data || [])
+
+      return {
+        replies: enhancedReplies,
+        totalCount: count || 0
+      }
+    } catch (error) {
+      console.error('Failed to get user replies:', error)
+      return { replies: [], totalCount: 0 }
     }
   }
 }
