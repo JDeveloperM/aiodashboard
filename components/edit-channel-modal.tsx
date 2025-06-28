@@ -103,7 +103,8 @@ export function EditChannelModal({
   useEffect(() => {
     if (channel && isOpen) {
       const telegramUsername = channel.telegramUrl?.replace('https://t.me/', '') || ''
-      
+
+      // Initialize form data
       form.reset({
         channelName: channel.name,
         channelDescription: channel.description,
@@ -120,6 +121,13 @@ export function EditChannelModal({
           ninetyDays: channel.pricing?.ninetyDays || 0,
         },
       })
+
+      // Initialize channel images
+      const channelData = channel as any
+      setProfileImage(channelData.channelAvatar || '')
+      setCoverImage(channelData.channelCover || '')
+      setProfileImageBlobId(channelData.channelAvatarBlobId || '')
+      setCoverImageBlobId(channelData.channelCoverBlobId || '')
     }
   }, [channel, isOpen, form])
 
@@ -173,6 +181,11 @@ export function EditChannelModal({
         channelCategories: data.channelCategories,
         channelLanguage: data.channelLanguage,
         channelRole: data.creatorRole,
+        // Channel-specific images (only update if new images were uploaded)
+        ...(profileImage && { channelAvatar: profileImage }),
+        ...(coverImage && { channelCover: coverImage }),
+        ...(profileImageBlobId && { channelAvatarBlobId: profileImageBlobId }),
+        ...(coverImageBlobId && { channelCoverBlobId: coverImageBlobId }),
       }
 
       await onSave(channel.id, updatedChannel)
