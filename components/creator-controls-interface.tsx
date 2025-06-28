@@ -356,19 +356,29 @@ export function CreatorControlsInterface() {
 
   // Helper function to create new creator with first channel
   const createNewCreatorWithChannel = async (data: CreatorFormData, newChannel: any, newCreatorId: string, profileImageBlobId: string, coverImageBlobId: string) => {
+    // Add channel-specific images to the new channel
+    const channelWithImages = {
+      ...newChannel,
+      // Store channel-specific images
+      channelAvatar: profileImage || "/api/placeholder/64/64",
+      channelCover: coverImage || undefined,
+      channelAvatarBlobId: profileImageBlobId,
+      channelCoverBlobId: coverImageBlobId,
+    }
+
     const newCreator = {
       id: newCreatorId,
       creatorAddress: user?.address || '', // Add the wallet address for ownership verification
       name: data.channelName, // Using channel name as creator name for now
       username: data.telegramUsername,
-      avatar: profileImage || "/api/placeholder/64/64",
-      coverImage: coverImage || undefined,
+      avatar: profileImage || "/api/placeholder/64/64", // Creator profile avatar
+      coverImage: coverImage || undefined, // Creator profile cover
       role: data.creatorRole,
       tier: tier as 'PRO' | 'ROYAL',
       subscribers: 0,
       category: data.channelCategories[0] || "General",
       categories: data.channelCategories,
-      channels: [newChannel],
+      channels: [channelWithImages], // Use channel with images
       contentTypes: ["Live Streams", "Analysis", "Tutorials"],
       verified: false,
       languages: [data.channelLanguage],
@@ -392,13 +402,23 @@ export function CreatorControlsInterface() {
   const addChannelToExistingCreator = async (existingCreator: any, data: CreatorFormData, newChannel: any, profileImageBlobId: string, coverImageBlobId: string) => {
     console.log('📤 Adding channel to existing creator...')
 
-    // Create updated creator with new channel added
+    // Add channel-specific images to the new channel
+    const channelWithImages = {
+      ...newChannel,
+      // Store channel-specific images, not creator profile images
+      channelAvatar: profileImage || existingCreator.avatar,
+      channelCover: coverImage || existingCreator.coverImage,
+      channelAvatarBlobId: profileImageBlobId,
+      channelCoverBlobId: coverImageBlobId,
+    }
+
+    // Create updated creator with new channel added (keep existing creator profile images unchanged)
     const updatedCreator = {
       ...existingCreator,
-      channels: [...existingCreator.channels, newChannel],
-      // Update images if new ones were uploaded
-      avatar: profileImage || existingCreator.avatar,
-      coverImage: coverImage || existingCreator.coverImage,
+      channels: [...existingCreator.channels, channelWithImages],
+      // Explicitly preserve existing creator profile images
+      avatar: existingCreator.avatar,
+      coverImage: existingCreator.coverImage,
     }
 
     console.log('📝 Updated creator with new channel:', updatedCreator)

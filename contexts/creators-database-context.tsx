@@ -36,6 +36,11 @@ interface Channel {
   channelCategories?: string[]
   channelRole?: string
   channelLanguage?: string
+  // Channel-specific images (separate from creator profile images)
+  channelAvatar?: string
+  channelCover?: string
+  channelAvatarBlobId?: string
+  channelCoverBlobId?: string
 }
 
 interface Creator {
