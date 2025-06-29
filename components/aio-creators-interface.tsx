@@ -37,7 +37,7 @@ export function AIOCreatorsInterface() {
   // Convert creators to individual channel cards (flatten channels into separate creator cards)
   const channelCards = creators.flatMap(creator => {
     console.log('🔄 Processing creator:', creator.name, 'with', creator.channels.length, 'channels')
-    console.log('📊 Creator channels:', creator.channels.map(ch => ({ name: ch.name, url: ch.telegramUrl, subscribers: ch.subscribers })))
+    console.log('📊 Creator channels:', creator.channels.map(ch => ({ name: ch.name, subscribers: ch.subscribers })))
 
     return creator.channels.map((channel, index) => {
       const channelCard = {

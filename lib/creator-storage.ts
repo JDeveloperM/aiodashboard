@@ -15,7 +15,6 @@ interface EncryptedCreator {
   // Encrypted sensitive fields
   channel_name_encrypted?: string
   channel_description_encrypted?: string
-  telegram_username_encrypted?: string
   real_name_encrypted?: string
 
   // Public fields (Walrus blob IDs and non-sensitive data)
@@ -48,7 +47,6 @@ interface EncryptedCreator {
   social_links: {
     website?: string
     twitter?: string
-    telegram?: string
     discord?: string
   }
 
@@ -69,7 +67,6 @@ interface DecryptedCreator {
   // Decrypted sensitive fields
   channel_name?: string
   channel_description?: string
-  telegram_username?: string
   real_name?: string
 
   // Public fields
@@ -203,9 +200,7 @@ class CreatorStorage {
       if (creatorData.channel_description) {
         encryptedData.channel_description_encrypted = this.encrypt(creatorData.channel_description, encryptionKey)
       }
-      if (creatorData.telegram_username) {
-        encryptedData.telegram_username_encrypted = this.encrypt(creatorData.telegram_username, encryptionKey)
-      }
+
       if (creatorData.real_name) {
         encryptedData.real_name_encrypted = this.encrypt(creatorData.real_name, encryptionKey)
       }
@@ -327,9 +322,7 @@ class CreatorStorage {
       if (encryptedCreator.channel_description_encrypted) {
         decrypted.channel_description = this.decrypt(encryptedCreator.channel_description_encrypted, encryptionKey)
       }
-      if (encryptedCreator.telegram_username_encrypted) {
-        decrypted.telegram_username = this.decrypt(encryptedCreator.telegram_username_encrypted, encryptionKey)
-      }
+
       if (encryptedCreator.real_name_encrypted) {
         decrypted.real_name = this.decrypt(encryptedCreator.real_name_encrypted, encryptionKey)
       }

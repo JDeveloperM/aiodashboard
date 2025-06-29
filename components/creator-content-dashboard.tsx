@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useCreatorsDatabase } from "@/contexts/creators-database-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { CreateChannelPostModal } from "./create-channel-post-modal"
+import { forumService } from "@/lib/forum-service"
 import {
   Plus,
   MessageSquare,
@@ -29,11 +30,9 @@ interface CreatorContentDashboardProps {
   maxChannels?: number
 }
 
-interface ChannelStats {
+interface OverallStats {
+  total_channels: number
   total_posts: number
-  total_replies: number
-  total_views: number
-  latest_post_date: string | null
 }
 
 export function CreatorContentDashboard({ className, tier = 'PRO', currentChannelCount = 0, maxChannels = 2 }: CreatorContentDashboardProps) {
@@ -41,7 +40,7 @@ export function CreatorContentDashboard({ className, tier = 'PRO', currentChanne
   const { user } = useSuiAuth()
   const [selectedChannel, setSelectedChannel] = useState<any>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [channelStats, setChannelStats] = useState<Record<string, ChannelStats>>({})
+  const [overallStats, setOverallStats] = useState<OverallStats>({ total_channels: 0, total_posts: 0 })
   const [isLoading, setIsLoading] = useState(true)
 
   // Get user's creator channels - memoize to prevent infinite re-renders
@@ -64,36 +63,55 @@ export function CreatorContentDashboard({ className, tier = 'PRO', currentChanne
   }, [allChannels.length, selectedChannel])
 
   useEffect(() => {
-    loadChannelStats()
-  }, []) // Only load stats once on mount
+    if (user?.address) {
+      loadOverallStats()
+    }
+  }, [user?.address]) // Only load once when user is available
 
-  const loadChannelStats = async () => {
+  const loadOverallStats = async () => {
+    if (!user?.address) {
+      setOverallStats({ total_channels: 0, total_posts: 0 })
+      setIsLoading(false)
+      return
+    }
+
     setIsLoading(true)
     try {
-      // In a real implementation, this would call the Supabase function
-      // For now, we'll simulate the stats
-      const stats: Record<string, ChannelStats> = {}
-      
-      for (const channel of allChannels) {
-        // Use channel ID to generate consistent "random" values
-        const seed = channel.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-        const seededRandom = (seed: number, index: number) => {
-          const x = Math.sin(seed + index) * 10000
-          return x - Math.floor(x)
-        }
+      // Get total channels count
+      const totalChannels = allChannels.length
 
-        stats[channel.id] = {
-          total_posts: Math.floor(seededRandom(seed, 1) * 20) + 1,
-          total_replies: Math.floor(seededRandom(seed, 2) * 100) + 5,
-          total_views: Math.floor(seededRandom(seed, 3) * 1000) + 50,
-          latest_post_date: new Date(Date.now() - seededRandom(seed, 4) * 7 * 24 * 60 * 60 * 1000).toISOString()
-        }
+      // Get total posts count using a more reliable method
+      let totalPosts = 0
+
+      if (totalChannels > 0) {
+        // Query the forum_posts table directly for posts by this creator
+        const { createClient } = await import('@supabase/supabase-js')
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+
+        const { count } = await supabase
+          .from('forum_posts')
+          .select('*', { count: 'exact', head: true })
+          .eq('author_address', user.address)
+          .eq('is_deleted', false)
+          .eq('post_type', 'creator_post')
+
+        totalPosts = count || 0
       }
-      
-      setChannelStats(stats)
+
+      setOverallStats({
+        total_channels: totalChannels,
+        total_posts: totalPosts
+      })
     } catch (error) {
-      console.error('Failed to load channel stats:', error)
-      toast.error('Failed to load channel statistics')
+      console.error('Failed to load overall stats:', error)
+      // Set fallback values on error
+      setOverallStats({
+        total_channels: allChannels.length,
+        total_posts: 0
+      })
     } finally {
       setIsLoading(false)
     }
@@ -111,7 +129,7 @@ export function CreatorContentDashboard({ className, tier = 'PRO', currentChanne
   const handlePostCreated = () => {
     console.log('✅ Post created successfully, closing modal and refreshing stats')
     setShowCreateModal(false)
-    loadChannelStats() // Refresh stats
+    loadOverallStats() // Refresh stats
     toast.success('Post created successfully!')
   }
 
@@ -147,7 +165,7 @@ export function CreatorContentDashboard({ className, tier = 'PRO', currentChanne
     )
   }
 
-  const currentStats = selectedChannel ? channelStats[selectedChannel.id] : null
+  // No longer need currentStats since we show overall stats
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -188,8 +206,8 @@ export function CreatorContentDashboard({ className, tier = 'PRO', currentChanne
                 onClick={() => setSelectedChannel(channel)}
               >
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Avatar className="h-10 w-10">
+                  <div className="flex items-center gap-4 mb-3">
+                    <Avatar className="h-14 w-14">
                       <AvatarImage
                         src={(() => {
                           // Use channel-specific avatar if available
@@ -199,16 +217,15 @@ export function CreatorContentDashboard({ className, tier = 'PRO', currentChanne
                         })()}
                         alt={channel.creatorName}
                       />
-                      <AvatarFallback className="bg-[#4DA2FF] text-white">
+                      <AvatarFallback className="bg-[#4DA2FF] text-white text-lg">
                         {channel.creatorName.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <h3 className="text-white font-semibold text-sm">{channel.name}</h3>
-                      <p className="text-[#C0E6FF]/70 text-xs">{channel.creatorName}</p>
+                    <div className="flex-1">
+                      <h3 className="text-white font-semibold text-base">{channel.name}</h3>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-center">
                     <Badge
                       className={
                         channel.type === 'premium'
@@ -220,9 +237,6 @@ export function CreatorContentDashboard({ className, tier = 'PRO', currentChanne
                     >
                       {channel.type.toUpperCase()}
                     </Badge>
-                    <span className="text-[#C0E6FF]/70 text-xs">
-                      {channel.subscribers} subscribers
-                    </span>
                   </div>
                 </CardContent>
               </Card>
@@ -231,38 +245,37 @@ export function CreatorContentDashboard({ className, tier = 'PRO', currentChanne
         </CardContent>
       </Card>
 
-      {/* Channel Stats */}
-      {selectedChannel && currentStats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-[#1a2f51] border-[#C0E6FF]/20">
-            <CardContent className="p-4 h-full">
-              <div className="flex flex-col justify-center items-center h-full space-y-3 text-center">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-[#4DA2FF]" />
-                  <p className="text-[#C0E6FF]/70 text-sm font-medium">Total Posts</p>
-                </div>
-                <div>
-                  <p className="text-white font-bold text-2xl">{currentStats.total_posts}</p>
-                </div>
+      {/* Overall Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-[#1a2f51] border-[#C0E6FF]/20">
+          <CardContent className="p-4 h-full">
+            <div className="flex flex-col justify-center items-center h-full space-y-3 text-center">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-[#4DA2FF]" />
+                <p className="text-[#C0E6FF]/70 text-sm font-medium">Total Channels</p>
               </div>
-            </CardContent>
-          </Card>
+              <div>
+                <p className="text-white font-bold text-2xl">{overallStats.total_channels}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-[#1a2f51] border-[#C0E6FF]/20">
-            <CardContent className="p-4 h-full">
-              <div className="flex flex-col justify-center items-center h-full space-y-3 text-center">
-                <div className="flex items-center gap-2">
-                  <Reply className="w-5 h-5 text-green-400" />
-                  <p className="text-[#C0E6FF]/70 text-sm font-medium">Total Replies</p>
-                </div>
-                <div>
-                  <p className="text-white font-bold text-2xl">{currentStats.total_replies}</p>
-                </div>
+        <Card className="bg-[#1a2f51] border-[#C0E6FF]/20">
+          <CardContent className="p-4 h-full">
+            <div className="flex flex-col justify-center items-center h-full space-y-3 text-center">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-green-400" />
+                <p className="text-[#C0E6FF]/70 text-sm font-medium">Total Posts</p>
               </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-[#1a2f51] border-[#C0E6FF]/20 md:col-span-2">
+              <div>
+                <p className="text-white font-bold text-2xl">{overallStats.total_posts}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[#1a2f51] border-[#C0E6FF]/20 md:col-span-2">
             <CardContent className="p-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-2 mb-3">
@@ -298,7 +311,6 @@ export function CreatorContentDashboard({ className, tier = 'PRO', currentChanne
             </CardContent>
           </Card>
         </div>
-      )}
 
 
 

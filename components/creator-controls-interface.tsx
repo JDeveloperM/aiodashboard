@@ -584,8 +584,8 @@ export function CreatorControlsInterface() {
                     })()}
 
                     {/* Main Banner Content */}
-                    <div className="banner-main-content flex items-center gap-2 w-full relative z-10">
-                      <Avatar className="h-12 w-12 border-2 border-white/20">
+                    <div className="banner-main-content flex items-center gap-3 w-full relative z-10">
+                      <Avatar className="h-16 w-16 border-2 border-white/20">
                         <AvatarImage
                           src={(() => {
                             // Use channel-specific avatar only (no creator profile avatar)
@@ -595,15 +595,14 @@ export function CreatorControlsInterface() {
                           })()}
                           alt={channel.name}
                         />
-                        <AvatarFallback className="bg-[#4DA2FF] text-white text-sm">
+                        <AvatarFallback className="bg-[#4DA2FF] text-white text-lg">
                           {channel.name.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-white font-semibold text-sm truncate">{channel.name}</h3>
-                            <p className="text-white/80 text-xs">@{channel.telegramUrl?.replace('https://t.me/', '') || 'N/A'}</p>
+                            <h3 className="text-white font-semibold text-base truncate">{channel.name}</h3>
                           </div>
                           <Badge className={`ml-2 ${
                             channel.type === 'premium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
@@ -1324,12 +1323,7 @@ export function CreatorControlsInterface() {
                       <p className="text-white/80 text-xs">@{previewData.username}</p>
                     </div>
 
-                    {/* Telegram Chat Icon */}
-                    <div className="flex items-center gap-1">
-                      <div className="w-6 h-6 bg-[#0088CC] rounded-full flex items-center justify-center">
-                        <MessageCircle className="w-3 h-3 text-white" />
-                      </div>
-                    </div>
+
                   </div>
                 </div>
 

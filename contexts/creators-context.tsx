@@ -9,7 +9,6 @@ interface Channel {
   price: number // in SUI (default price, usually for 30 days)
   description: string
   subscribers: number
-  telegramUrl: string // Telegram channel URL for access
   subscriptionPackages?: string[] // Available durations: ["30", "60", "90"]
   pricing?: {
     thirtyDays?: number
@@ -53,7 +52,6 @@ interface Creator {
   socialLinks: {
     website?: string
     twitter?: string
-    telegram?: string
     discord?: string
   }
   bannerColor: string

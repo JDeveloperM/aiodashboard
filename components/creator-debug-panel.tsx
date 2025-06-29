@@ -85,7 +85,7 @@ export function CreatorDebugPanel() {
           price: 0,
           description: 'Test channel description',
           subscribers: 0,
-          telegramUrl: 'https://t.me/test_creator'
+
         }],
         contentTypes: ['Testing'],
         verified: false,
@@ -94,9 +94,7 @@ export function CreatorDebugPanel() {
           hasLimit: false,
           status: 'available' as const
         },
-        socialLinks: {
-          telegram: 'https://t.me/test_creator'
-        },
+        socialLinks: {},
         bannerColor: '#4DA2FF'
       }
 

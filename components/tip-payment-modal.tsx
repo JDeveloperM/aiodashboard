@@ -36,7 +36,6 @@ interface Creator {
   socialLinks: {
     website?: string
     twitter?: string
-    telegram?: string
     discord?: string
   }
   bannerColor: string

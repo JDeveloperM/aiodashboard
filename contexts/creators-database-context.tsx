@@ -20,7 +20,6 @@ interface Channel {
   price: number
   description: string
   subscribers: number
-  telegramUrl: string
   subscriptionPackages?: string[]
   pricing?: {
     thirtyDays?: number
@@ -69,7 +68,6 @@ interface Creator {
   socialLinks: {
     website?: string
     twitter?: string
-    telegram?: string
     discord?: string
   }
   bannerColor: string
@@ -118,7 +116,7 @@ function convertDecryptedCreatorToCreator(decryptedCreator: DecryptedCreator): C
       price: channelData.price || decryptedCreator.tip_pricing?.thirtyDays || 0,
       description: channelData.description || decryptedCreator.channel_description || '',
       subscribers: channelData.subscribers || decryptedCreator.subscribers_count || 0,
-      telegramUrl: channelData.telegramUrl || `https://t.me/${decryptedCreator.telegram_username}`,
+
       subscriptionPackages: channelData.subscriptionPackages || decryptedCreator.subscription_packages,
       pricing: channelData.pricing || decryptedCreator.tip_pricing,
       availability: channelData.availability || {
@@ -147,7 +145,7 @@ function convertDecryptedCreatorToCreator(decryptedCreator: DecryptedCreator): C
       price: channelData.price || decryptedCreator.tip_pricing?.thirtyDays || 0,
       description: channelData.description || decryptedCreator.channel_description || '',
       subscribers: channelData.subscribers || decryptedCreator.subscribers_count || 0,
-      telegramUrl: channelData.telegramUrl || `https://t.me/${decryptedCreator.telegram_username}`,
+
       subscriptionPackages: channelData.subscriptionPackages || decryptedCreator.subscription_packages,
       pricing: channelData.pricing || decryptedCreator.tip_pricing,
       availability: channelData.availability || {
@@ -175,7 +173,7 @@ function convertDecryptedCreatorToCreator(decryptedCreator: DecryptedCreator): C
       price: decryptedCreator.tip_pricing?.thirtyDays || 0,
       description: decryptedCreator.channel_description || '',
       subscribers: decryptedCreator.subscribers_count || 0,
-      telegramUrl: `https://t.me/${decryptedCreator.telegram_username}`,
+
       subscriptionPackages: decryptedCreator.subscription_packages,
       pricing: decryptedCreator.tip_pricing,
       availability: {
@@ -602,7 +600,7 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
       const decryptedCreatorData: Partial<DecryptedCreator> = {
         creator_address: user.address,
         channel_name: actualCreator.name,
-        channel_description: updatedChannels[0]?.description || actualCreator.channels[0]?.description || '',
+        channel_description: actualCreator.description || '', // Use creator description, not channel description
         telegram_username: actualCreator.username,
         creator_role: actualCreator.role,
         channel_language: actualCreator.languages?.[0] || 'English',
@@ -781,7 +779,7 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
       const decryptedCreatorData: Partial<DecryptedCreator> = {
         creator_address: user.address,
         channel_name: actualCreator.name,
-        channel_description: updatedChannels[0]?.description || actualCreator.channels[0]?.description || '',
+        channel_description: actualCreator.description || '', // Use creator description, not channel description
         telegram_username: actualCreator.username,
         creator_role: actualCreator.role,
         channel_language: actualCreator.languages?.[0] || 'English',
