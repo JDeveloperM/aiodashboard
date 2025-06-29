@@ -193,7 +193,7 @@ function convertDecryptedCreatorToCreator(decryptedCreator: DecryptedCreator): C
     id: decryptedCreator.id,
     creatorAddress: decryptedCreator.creator_address, // Map the wallet address for ownership verification
     name: decryptedCreator.channel_name || 'Unnamed Creator',
-    username: decryptedCreator.telegram_username || 'unknown',
+    username: `User ${decryptedCreator.creator_address?.slice(0, 6)}` || 'unknown',
     avatar,
     coverImage,
     role: decryptedCreator.creator_role,
@@ -336,7 +336,7 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
         creator_address: user.address,
         channel_name: creator.name,
         channel_description: creator.channels[0]?.description || '',
-        telegram_username: creator.username,
+
         creator_role: creator.role,
         channel_language: creator.languages[0] || 'English',
         channel_categories: creator.categories,
@@ -421,7 +421,7 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
       const decryptedCreatorData: Partial<DecryptedCreator> = {
         channel_name: mergedCreator.name,
         channel_description: mergedCreator.channels[0]?.description || '',
-        telegram_username: mergedCreator.username,
+
         creator_role: mergedCreator.role,
         channel_language: mergedCreator.languages[0] || 'English',
         channel_categories: mergedCreator.categories,
@@ -600,8 +600,8 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
       const decryptedCreatorData: Partial<DecryptedCreator> = {
         creator_address: user.address,
         channel_name: actualCreator.name,
-        channel_description: actualCreator.description || '', // Use creator description, not channel description
-        telegram_username: actualCreator.username,
+        channel_description: actualCreator.channels[0]?.description || '', // Use first channel description
+
         creator_role: actualCreator.role,
         channel_language: actualCreator.languages?.[0] || 'English',
         channel_categories: actualCreator.categories,
@@ -779,8 +779,8 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
       const decryptedCreatorData: Partial<DecryptedCreator> = {
         creator_address: user.address,
         channel_name: actualCreator.name,
-        channel_description: actualCreator.description || '', // Use creator description, not channel description
-        telegram_username: actualCreator.username,
+        channel_description: actualCreator.channels[0]?.description || '', // Use first channel description
+
         creator_role: actualCreator.role,
         channel_language: actualCreator.languages?.[0] || 'English',
         channel_categories: actualCreator.categories,
