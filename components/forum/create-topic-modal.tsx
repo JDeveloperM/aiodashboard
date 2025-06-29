@@ -69,6 +69,14 @@ export function CreateTopicModal({ categoryId, categoryName, onTopicCreated, chi
 
     setIsSubmitting(true)
     try {
+      console.log('🚀 Creating topic with data:', {
+        categoryId,
+        name: data.name,
+        description: data.description,
+        access_level: 'ALL',
+        sort_order: 999
+      })
+
       // Create the topic
       const { data: topicData, error: topicError } = await supabase
         .from('forum_topics')
@@ -77,20 +85,32 @@ export function CreateTopicModal({ categoryId, categoryName, onTopicCreated, chi
           name: data.name,
           description: data.description,
           access_level: 'ALL', // Default access level
-          sort_order: 999 // Will be at the end
+          sort_order: 999, // Will be at the end
+          is_active: true // Explicitly set as active
         })
         .select('id')
         .single()
 
-      if (topicError) throw topicError
+      console.log('📝 Topic creation result:', { topicData, topicError })
 
+      if (topicError) {
+        console.error('❌ Topic creation failed:', topicError)
+        throw topicError
+      }
+
+      if (!topicData) {
+        console.error('❌ No topic data returned')
+        throw new Error('No topic data returned from database')
+      }
+
+      console.log('✅ Topic created successfully with ID:', topicData.id)
       toast.success("Topic created successfully!")
       form.reset()
       setOpen(false)
       onTopicCreated?.()
     } catch (error) {
       console.error("Error creating topic:", error)
-      toast.error("Failed to create topic")
+      toast.error(`Failed to create topic: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsSubmitting(false)
     }

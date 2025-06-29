@@ -53,7 +53,6 @@ interface Channel {
   price: number // in SUI (default price, usually for 30 days)
   description: string
   subscribers: number
-  telegramUrl: string // Telegram channel URL for access
   subscriptionPackages?: string[] // Available durations: ["30", "60", "90"]
   pricing?: {
     thirtyDays?: number
@@ -93,7 +92,6 @@ interface Creator {
   socialLinks: {
     website?: string
     twitter?: string
-    telegram?: string
     discord?: string
   }
   bannerColor: string
@@ -228,7 +226,6 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
             pricePaid: 0,
             subscriptionTier: channel.type,
             expiryDate: undefined, // Free channels don't expire
-            telegramChannelUrl: channel.telegramUrl,
             // Use the actual blob ID from database (with fallback)
             channelAvatarBlobId: fallbackBlobId
           })
@@ -285,7 +282,6 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
               pricePaid: 0, // Free for PRO/ROYAL users
               subscriptionTier: channel.type,
               expiryDate: undefined, // Free access doesn't expire
-              telegramChannelUrl: channel.telegramUrl,
               // Use the actual blob ID from database (with fallback)
               channelAvatarBlobId: fallbackBlobId
             })
@@ -557,7 +553,6 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
           pricePaid: channel.price || 0,
           subscriptionTier: channel.type,
           expiryDate: expiry.toISOString(),
-          telegramChannelUrl: channel.telegramUrl,
           // Use the actual blob ID from database (with fallback)
           channelAvatarBlobId: fallbackBlobId
         })
@@ -575,11 +570,6 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
         // Don't show error to user as the payment was successful, just log it
         console.warn('Channel access granted but not recorded in profile. Manual sync may be needed.')
       }
-    }
-
-    // Redirect to Telegram
-    if (channel?.telegramUrl) {
-      window.open(channel.telegramUrl, '_blank')
     }
 
     onAccessChannel(creatorId, channelId)
@@ -802,18 +792,7 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
 
                   {/* Chat Icon - Right Corner */}
                   <div className="flex items-center">
-                    {/* Direct Message to Creator - Personal Telegram */}
-                    {creator.socialLinks.telegram && (
-                      <a
-                        href={creator.socialLinks.telegram}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:scale-110 transition-transform"
-                        title="Direct Message Creator on Telegram"
-                      >
-                        <MessageCircle className="w-5 h-5 text-white opacity-90 hover:opacity-100" />
-                      </a>
-                    )}
+                    {/* No direct messaging for now - removed Telegram */}
                   </div>
                 </div>
 

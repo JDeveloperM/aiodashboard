@@ -119,6 +119,14 @@ export function CreatePostModal({
 
     setIsSubmitting(true)
     try {
+      console.log('🎯 Forum create post modal - submitting with:', {
+        userAddress: user.address,
+        topicId: topicId,
+        currentTopicId: currentTopicId,
+        title: data.title,
+        tier: tier
+      })
+
       const result = await forumService.createPost(
         user.address,
         {

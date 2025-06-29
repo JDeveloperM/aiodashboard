@@ -61,7 +61,7 @@ export function CreateChannelPostModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.title.trim() || !formData.content.trim()) {
       toast.error("Please fill in all required fields")
       return
@@ -72,9 +72,23 @@ export function CreateChannelPostModal({
       return
     }
 
+    if (!channel || !channel.id) {
+      console.error('❌ Invalid channel data:', channel)
+      toast.error("Invalid channel selected. Please select a channel first.")
+      return
+    }
+
     setIsSubmitting(true)
-    
+
     try {
+      console.log('🚀 Starting post creation with data:', {
+        userAddress: user.address,
+        channelId: channel.id,
+        channelName: channel.name,
+        title: formData.title,
+        contentLength: formData.content.length
+      })
+
       // Create the creator channel post using the forum service
       const result = await forumService.createCreatorChannelPost(
         user.address,
@@ -84,12 +98,17 @@ export function CreateChannelPostModal({
           content: formData.content,
           isPinned: formData.isPinned,
           publishNow: formData.publishNow,
-          scheduledDate: formData.scheduledDate
+          scheduledDate: formData.scheduledDate,
+          channelName: channel.name // Pass the actual channel name
         }
       )
 
+      console.log('📝 Forum service result:', result)
+
       if (!result.success) {
-        throw new Error(result.error || 'Failed to create post')
+        console.error('❌ Forum service returned error:', result.error)
+        toast.error(result.error || 'Failed to create post')
+        return
       }
 
       console.log('✅ Creator channel post created:', {
@@ -110,8 +129,9 @@ export function CreateChannelPostModal({
       toast.success("Post created successfully!")
       
     } catch (error) {
-      console.error('Failed to create post:', error)
-      toast.error("Failed to create post. Please try again.")
+      console.error('❌ Exception during post creation:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      toast.error(`Failed to create post: ${errorMessage}`)
     } finally {
       setIsSubmitting(false)
     }

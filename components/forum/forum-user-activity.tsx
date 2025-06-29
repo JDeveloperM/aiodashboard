@@ -167,17 +167,23 @@ export function ForumUserActivity({ onPostClick }: ForumUserActivityProps) {
       {/* Header with Banner */}
       <Card className="bg-[#1a2f51] border-[#C0E6FF]/20 overflow-hidden">
         <div
-          className="h-32 bg-cover bg-center relative"
+          className="relative bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: "url('/images/affiliatesF.png')" }}
         >
-          <div className="absolute inset-0 bg-black/50" />
-          <div className="absolute bottom-4 left-6 flex items-center gap-3">
-            <MessageCircle className="w-8 h-8 text-white" />
-            <div>
-              <h2 className="text-2xl font-bold text-white">My Forum Activity</h2>
-              <p className="text-white/80">Track your posts and replies across all topics</p>
+          {/* Overlay for better text readability */}
+          <div className="absolute inset-0 bg-black/50"></div>
+
+          <CardHeader className="relative z-10">
+            <CardTitle className="text-white flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-white" />
+              My Forum Activity
+            </CardTitle>
+            <div className="flex items-center justify-between">
+              <p className="text-white/80">
+                Track your posts and replies across all topics
+              </p>
             </div>
-          </div>
+          </CardHeader>
         </div>
       </Card>
 
@@ -186,9 +192,9 @@ export function ForumUserActivity({ onPostClick }: ForumUserActivityProps) {
         <TabsList className="grid w-full grid-cols-3 bg-[#1a2f51] border border-[#C0E6FF]/20">
           <TabsTrigger
             value="all"
-            className="text-[#C0E6FF] data-[state=active]:bg-[#10B981] data-[state=active]:text-white flex items-center gap-2"
+            className="text-[#C0E6FF] data-[state=active]:bg-[#045cbd] data-[state=active]:text-white flex items-center gap-2"
           >
-            <MessageCircle className="w-4 h-4" />
+            <MessageSquare className="w-4 h-4" />
             All Activity ({allActivity.length})
           </TabsTrigger>
           <TabsTrigger
@@ -200,7 +206,7 @@ export function ForumUserActivity({ onPostClick }: ForumUserActivityProps) {
           </TabsTrigger>
           <TabsTrigger
             value="replies"
-            className="text-[#C0E6FF] data-[state=active]:bg-[#9333EA] data-[state=active]:text-white flex items-center gap-2"
+            className="text-[#C0E6FF] data-[state=active]:bg-[#10B981] data-[state=active]:text-white flex items-center gap-2"
           >
             <Reply className="w-4 h-4" />
             Replies ({replies.length})
@@ -233,7 +239,7 @@ export function ForumUserActivity({ onPostClick }: ForumUserActivityProps) {
                       <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                         activity.type === 'post'
                           ? 'bg-[#4DA2FF]/20 text-[#4DA2FF]'
-                          : 'bg-[#9333EA]/20 text-[#9333EA]'
+                          : 'bg-[#10B981]/20 text-[#10B981]'
                       }`}>
                         {activity.type === 'post' ? (
                           <FileText className="w-4 h-4" />
@@ -248,7 +254,7 @@ export function ForumUserActivity({ onPostClick }: ForumUserActivityProps) {
                           <Badge className={`${
                             activity.type === 'post'
                               ? 'bg-[#4DA2FF]/20 text-[#4DA2FF] border-[#4DA2FF]/30'
-                              : 'bg-[#9333EA]/20 text-[#9333EA] border-[#9333EA]/30'
+                              : 'bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30'
                           } text-xs`}>
                             {activity.type === 'post' ? 'Posted' : 'Replied'}
                           </Badge>
@@ -261,7 +267,7 @@ export function ForumUserActivity({ onPostClick }: ForumUserActivityProps) {
                         <h3 className={`font-semibold transition-colors mb-1 ${
                           activity.type === 'post'
                             ? 'text-white hover:text-[#4DA2FF]'
-                            : 'text-white hover:text-[#9333EA]'
+                            : 'text-white hover:text-[#10B981]'
                         }`}>
                           {activity.title}
                         </h3>
@@ -271,7 +277,7 @@ export function ForumUserActivity({ onPostClick }: ForumUserActivityProps) {
                           <Badge variant="outline" className={`${
                             activity.type === 'post'
                               ? 'text-[#4DA2FF] border-[#4DA2FF]/30'
-                              : 'text-[#9333EA] border-[#9333EA]/30'
+                              : 'text-[#10B981] border-[#10B981]/30'
                           }`}>
                             {activity.topicName}
                           </Badge>
@@ -376,7 +382,7 @@ export function ForumUserActivity({ onPostClick }: ForumUserActivityProps) {
         <TabsContent value="replies" className="space-y-4">
           {isLoadingReplies ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-[#9333EA]" />
+              <Loader2 className="w-8 h-8 animate-spin text-[#10B981]" />
             </div>
           ) : replies.length > 0 ? (
             <div className="space-y-3">
@@ -389,13 +395,13 @@ export function ForumUserActivity({ onPostClick }: ForumUserActivityProps) {
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       {/* Reply Icon */}
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#9333EA]/20 text-[#9333EA] flex items-center justify-center">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#10B981]/20 text-[#10B981] flex items-center justify-center">
                         <Reply className="w-4 h-4" />
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
-                          <Badge className="bg-[#9333EA]/20 text-[#9333EA] border-[#9333EA]/30 text-xs">
+                          <Badge className="bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30 text-xs">
                             Replied
                           </Badge>
                           <Clock className="w-3 h-3 text-[#C0E6FF]/70" />
@@ -404,13 +410,13 @@ export function ForumUserActivity({ onPostClick }: ForumUserActivityProps) {
                           </span>
                         </div>
 
-                        <h3 className="text-white font-semibold hover:text-[#9333EA] transition-colors mb-1">
+                        <h3 className="text-white font-semibold hover:text-[#10B981] transition-colors mb-1">
                           {cleanReplyTitle(reply.title)}
                         </h3>
 
                         <div className="flex items-center gap-2 text-sm text-[#C0E6FF]/70 mb-2">
                           <span>in</span>
-                          <Badge variant="outline" className="text-[#9333EA] border-[#9333EA]/30">
+                          <Badge variant="outline" className="text-[#10B981] border-[#10B981]/30">
                             {reply.topic_name || 'Unknown Topic'}
                           </Badge>
                         </div>

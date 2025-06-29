@@ -39,7 +39,6 @@ const editChannelSchema = z.object({
   creatorRole: z.string().min(1, "Please select your role"),
   channelCategories: z.array(z.string()).min(1, "Select at least one category"),
   maxSubscribers: z.number().min(0, "Max subscribers must be 0 or greater"),
-  telegramUsername: z.string().min(3, "Telegram username must be at least 3 characters"),
   isPremium: z.boolean(),
   subscriptionPackages: z.array(z.string()).optional(),
   tipPricing: z.object({
@@ -81,7 +80,6 @@ export function EditChannelModal({
       creatorRole: "",
       channelCategories: [],
       maxSubscribers: 0,
-      telegramUsername: "",
       isPremium: false,
       subscriptionPackages: [],
       tipPricing: {
@@ -95,8 +93,6 @@ export function EditChannelModal({
   // Populate form when channel changes
   useEffect(() => {
     if (channel && isOpen) {
-      const telegramUsername = channel.telegramUrl?.replace('https://t.me/', '') || ''
-
       // Initialize form data
       form.reset({
         channelName: channel.name,
@@ -105,7 +101,6 @@ export function EditChannelModal({
         creatorRole: (channel as any).channelRole || '',
         channelCategories: (channel as any).channelCategories || [],
         maxSubscribers: channel.availability?.maxSlots || 0,
-        telegramUsername: telegramUsername,
         isPremium: channel.type === 'premium',
         subscriptionPackages: channel.subscriptionPackages || [],
         tipPricing: {
@@ -157,7 +152,6 @@ export function EditChannelModal({
         price: data.isPremium && data.subscriptionPackages?.includes("30")
           ? (data.tipPricing.thirtyDays || 0)
           : 0,
-        telegramUrl: `https://t.me/${data.telegramUsername}`,
         subscriptionPackages: data.isPremium ? data.subscriptionPackages : undefined,
         pricing: data.isPremium ? {
           thirtyDays: data.tipPricing.thirtyDays,
@@ -421,30 +415,6 @@ export function EditChannelModal({
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Telegram Username */}
-                <FormField
-                  control={form.control}
-                  name="telegramUsername"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-[#C0E6FF]">Telegram Username</FormLabel>
-                      <FormControl>
-                        <div className="flex items-center">
-                          <span className="text-gray-400 bg-[#1a2f51] border border-r-0 border-[#C0E6FF]/20 px-3 py-2 rounded-l-md">
-                            t.me/
-                          </span>
-                          <Input
-                            placeholder="your_username"
-                            {...field}
-                            className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white placeholder:text-gray-400 rounded-l-none"
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 {/* Max Subscribers */}
                 <FormField
                   control={form.control}

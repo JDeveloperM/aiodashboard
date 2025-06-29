@@ -44,6 +44,9 @@ export interface ForumTopic {
   isPinned?: boolean
   authorTier?: string
   viewCount?: number
+  // Special flags for creator posts
+  isCreatorPost?: boolean // Indicates this is a post displayed as a topic
+  topicId?: string // The actual topic ID for replies
 }
 
 export interface ForumPost {
@@ -218,7 +221,7 @@ class ForumService {
   }
 
   /**
-   * Get forum topics for a category
+   * Get forum topics for a category with real-time post counts
    */
   async getTopics(categoryId: string, userTier: string = 'NOMAD'): Promise<ForumTopic[]> {
     try {
@@ -232,9 +235,45 @@ class ForumService {
       if (error) throw error
 
       // Filter topics based on user access level
-      return (data || []).filter(topic =>
+      const filteredTopics = (data || []).filter(topic =>
         this.hasAccess(userTier, topic.access_level)
       )
+
+      // Get real-time post counts for each topic (excluding replies)
+      const topicsWithCounts = await Promise.all(
+        filteredTopics.map(async (topic) => {
+          // Count only original posts (not replies that start with "Re:")
+          const { count } = await supabase
+            .from('forum_posts')
+            .select('*', { count: 'exact', head: true })
+            .eq('topic_id', topic.id)
+            .eq('is_deleted', false)
+            .not('title', 'like', 'Re:%')
+
+          // Get last post info (including replies for last activity)
+          const { data: lastPost } = await supabase
+            .from('forum_posts')
+            .select('created_at, author_address')
+            .eq('topic_id', topic.id)
+            .eq('is_deleted', false)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+
+          console.log(`📊 Topic "${topic.name}": ${count || 0} posts (excluding replies)`)
+
+          return {
+            ...topic,
+            post_count: count || 0,
+            posts: count || 0, // Alternative naming
+            lastActivity: lastPost?.created_at || topic.last_post_at,
+            last_post_at: lastPost?.created_at || topic.last_post_at,
+            last_post_by: lastPost?.author_address || topic.last_post_by
+          }
+        })
+      )
+
+      return topicsWithCounts
     } catch (error) {
       console.error('Failed to get topics:', error)
       return []
@@ -273,12 +312,29 @@ class ForumService {
   }
 
   /**
-   * Get creator channel posts as topics for forum display
+   * Get creator channel posts as actual post objects for direct display
    */
-  async getCreatorChannelPosts(creatorId: string, channelId: string): Promise<ForumTopic[]> {
+  async getCreatorChannelPosts(creatorId: string, channelId: string): Promise<ForumPost[]> {
     try {
-      // Get posts directly from the creator's channel
-      const { data, error } = await supabase
+      console.log('🔍 Fetching posts for creator:', creatorId, 'channel:', channelId)
+
+      // First, get the topic ID for this creator's channel
+      const { data: topic } = await supabase
+        .from('forum_topics')
+        .select('id')
+        .eq('creator_id', creatorId)
+        .eq('channel_id', channelId)
+        .single()
+
+      if (!topic) {
+        console.log('📭 No topic found for creator channel')
+        return []
+      }
+
+      console.log('📋 Found topic ID:', topic.id)
+
+      // Query ALL posts in this topic (both creator posts and user replies)
+      const { data: postsData, error: postsError } = await supabase
         .from('forum_posts')
         .select(`
           id,
@@ -291,41 +347,121 @@ class ForumService {
           is_pinned,
           view_count,
           topic_id,
-          forum_topics (
-            id,
-            name,
-            description
-          )
+          reply_count,
+          creator_id,
+          channel_id
         `)
-        .eq('creator_id', creatorId)
-        .eq('channel_id', channelId)
-        .eq('post_type', 'creator_post')
+        .eq('topic_id', topic.id)
+        .eq('is_deleted', false)
         .order('created_at', { ascending: false })
 
-      if (error) {
-        console.error('Error fetching creator channel posts:', error)
+      if (postsError) {
+        console.error('Error fetching creator channel posts:', postsError)
         return []
       }
 
-      // Convert posts to topic format for display
-      return (data || []).map(post => ({
-        id: post.id,
-        name: post.title,
-        description: post.content.substring(0, 200) + (post.content.length > 200 ? '...' : ''),
-        posts: 1, // Each post is treated as a topic
-        replies: 0, // We'll count replies separately if needed
-        lastActivity: post.updated_at || post.created_at,
-        accessLevel: 'ALL' as 'ALL' | 'PRO' | 'ROYAL',
-        creatorId: creatorId,
-        channelId: channelId,
-        contentType: 'creator_post',
-        isPinned: post.is_pinned || false,
-        authorTier: 'PRO', // Default tier for creators
-        viewCount: post.view_count || 0
+      if (!postsData || postsData.length === 0) {
+        console.log('📭 No posts found in topic')
+        return []
+      }
+
+      console.log('📊 Found posts:', postsData.length, 'posts')
+      postsData.forEach(post => {
+        console.log(`  - ${post.title} (${post.post_type})`)
+      })
+
+      // Get user profiles separately for the authors
+      const authorAddresses = [...new Set(postsData.map(post => post.author_address))]
+      const { data: userProfiles } = await supabase
+        .from('user_profiles')
+        .select('address, username_encrypted, profile_image_blob_id, role_tier')
+        .in('address', authorAddresses)
+
+      // Merge posts with user profile data
+      const postsWithProfiles = postsData.map(post => ({
+        ...post,
+        user_profiles: userProfiles?.find(profile => profile.address === post.author_address) || null
       }))
+
+      return await this.formatPostsData(postsWithProfiles)
     } catch (error) {
       console.error('Error in getCreatorChannelPosts:', error)
       return []
+    }
+  }
+
+  /**
+   * Helper function to format posts data
+   */
+  private async formatPostsData(postsData: any[]): Promise<ForumPost[]> {
+    // Import encryption service for username decryption
+    const { encryptedStorage } = await import('@/lib/encrypted-database-storage')
+
+    const formattedPosts = await Promise.all(postsData.map(async (post) => {
+      let username = 'Unknown'
+
+      // Try to decrypt username if available
+      if (post.user_profiles?.username_encrypted) {
+        try {
+          const decryptedProfile = await encryptedStorage.getDecryptedProfile(post.author_address)
+          username = decryptedProfile?.username || `User ${post.author_address.slice(0, 6)}`
+        } catch (error) {
+          console.error('Failed to decrypt username for', post.author_address, error)
+          username = `User ${post.author_address.slice(0, 6)}`
+        }
+      }
+
+      return {
+        id: post.id,
+        topic_id: post.topic_id,
+        title: post.title,
+        content: post.content,
+        author_address: post.author_address,
+        author_username: username,
+        author_avatar: post.user_profiles?.profile_image_blob_id || '',
+        author_tier: post.user_profiles?.role_tier || 'NOMAD',
+        post_type: post.post_type,
+        is_pinned: post.is_pinned || false,
+        is_locked: post.is_locked || false,
+        is_deleted: post.is_deleted || false,
+        view_count: post.view_count || 0,
+        reply_count: post.reply_count || 0,
+        like_count: post.like_count || 0,
+        created_at: post.created_at,
+        updated_at: post.updated_at,
+        last_reply_at: post.last_reply_at || post.updated_at,
+        last_reply_by: post.last_reply_by,
+        is_moderated: post.is_moderated || false,
+        moderated_by: post.moderated_by,
+        moderated_at: post.moderated_at,
+        moderation_reason: post.moderation_reason,
+        content_type: post.content_type || 'text'
+      }
+    }))
+
+    return formattedPosts
+  }
+
+  /**
+   * Get a specific topic by ID
+   */
+  async getTopicById(topicId: string): Promise<ForumTopic | null> {
+    try {
+      const { data, error } = await supabase
+        .from('forum_topics')
+        .select('*')
+        .eq('id', topicId)
+        .single()
+
+      if (error) {
+        console.error('Error fetching topic:', error)
+        return null
+      }
+
+      return data
+    } catch (error) {
+      console.error('Failed to get topic by ID:', error)
+      return null
     }
   }
 
@@ -455,6 +591,7 @@ class ForumService {
       isPinned?: boolean
       publishNow?: boolean
       scheduledDate?: string
+      channelName?: string // Add channel name to use proper topic name
     }
   ): Promise<{ success: boolean; postId?: string; topicId?: string; error?: string }> {
     try {
@@ -465,29 +602,56 @@ class ForumService {
       })
 
 
-      // First, create or get the creator's channel topic in the Creators category
+      // First, let's check what categories exist
+      const { data: allCategories } = await supabase
+        .from('forum_categories')
+        .select('id, name')
+
+      console.log('📂 Available categories:', allCategories)
+
+      // Try to find the creators category (could be "Creators", "Creator Hub", etc.)
       const { data: creatorCategory, error: categoryError } = await supabase
         .from('forum_categories')
-        .select('id')
-        .eq('name', 'Creator Hub')
+        .select('id, name')
+        .or('name.eq.Creators,name.eq.Creator Hub,name.ilike.%creator%')
+        .limit(1)
         .single()
 
+      console.log('🎯 Found creator category:', creatorCategory)
+
       if (categoryError) {
-        console.error('❌ Error finding Creator Hub category:', categoryError)
-        return { success: false, error: `Creator Hub category error: ${categoryError.message}` }
+        console.error('❌ Error finding creator category:', categoryError)
+        // If no creator category found, let's create one
+        const { data: newCategory, error: createError } = await supabase
+          .from('forum_categories')
+          .insert({
+            name: 'Creators',
+            description: 'Creator channels and content',
+            icon: 'Users',
+            color: '#9333EA',
+            sort_order: 2
+          })
+          .select('id')
+          .single()
+
+        if (createError) {
+          console.error('❌ Failed to create Creators category:', createError)
+          return { success: false, error: `Failed to create Creators category: ${createError.message}` }
+        }
+
+        console.log('✅ Created new Creators category:', newCategory)
+        var categoryId = newCategory.id
+      } else {
+        var categoryId = creatorCategory.id
       }
 
-      if (!creatorCategory) {
-        console.error('❌ Creator Hub category not found')
-        return { success: false, error: 'Creator Hub category not found' }
-      }
-
-      // Create a topic for this creator's channel if it doesn't exist
-      const topicName = `${channelId} - Channel Posts`
+      // Find or create ONE topic for this creator's channel (not per post)
+      // Use the actual channel name if provided, otherwise fall back to channel ID
+      const topicName = postData.channelName || `${channelId} - Channel Posts`
       const { data: existingTopic, error: topicSearchError } = await supabase
         .from('forum_topics')
         .select('id')
-        .eq('category_id', creatorCategory.id)
+        .eq('category_id', categoryId)
         .eq('creator_id', creatorAddress)
         .eq('channel_id', channelId)
         .single()
@@ -506,9 +670,9 @@ class ForumService {
         const { data: newTopic, error: topicError } = await supabase
           .from('forum_topics')
           .insert({
-            category_id: creatorCategory.id,
+            category_id: categoryId,
             name: topicName,
-            description: `Posts and discussions for channel ${channelId}`,
+            description: `Posts and discussions for ${postData.channelName || channelId}`,
             creator_id: creatorAddress,
             channel_id: channelId,
             content_type: 'creator_post',
@@ -711,7 +875,7 @@ class ForumService {
   }
 
   /**
-   * Delete a creator post
+   * Delete a creator post (hard deletion with cascade cleanup)
    */
   async deleteCreatorPost(
     creatorAddress: string,
@@ -721,7 +885,7 @@ class ForumService {
       // Check if the creator owns this post
       const { data: post } = await supabase
         .from('forum_posts')
-        .select('creator_id')
+        .select('creator_id, topic_id')
         .eq('id', postId)
         .single()
 
@@ -729,15 +893,47 @@ class ForumService {
         return { success: false, error: 'You can only delete your own posts' }
       }
 
+      console.log('🗑️ Starting comprehensive post deletion...')
+
+      // 1. Delete all replies to this post first
+      console.log('🗑️ Deleting replies to post...')
+      const { error: repliesError } = await supabase
+        .from('forum_posts')
+        .delete()
+        .eq('parent_post_id', postId)
+
+      if (repliesError) {
+        console.warn('⚠️ Failed to delete replies:', repliesError)
+      } else {
+        console.log('✅ Post replies deleted')
+      }
+
+      // 2. Delete the main post
+      console.log('🗑️ Deleting main post...')
       const { error: deleteError } = await supabase
         .from('forum_posts')
-        .update({ is_deleted: true, deleted_reason: 'Deleted by creator' })
+        .delete()
         .eq('id', postId)
 
       if (deleteError) {
         return { success: false, error: 'Failed to delete post' }
       }
 
+      console.log('✅ Main post deleted')
+
+      // 3. Update topic reply count if this was a reply
+      if (post.topic_id) {
+        console.log('🔄 Updating topic reply count...')
+        const { error: updateError } = await supabase.rpc('decrement_topic_reply_count', {
+          topic_id: post.topic_id
+        })
+
+        if (updateError) {
+          console.warn('⚠️ Failed to update topic reply count:', updateError)
+        }
+      }
+
+      console.log('🎉 Post deletion completed successfully')
       return { success: true }
 
     } catch (error) {
@@ -866,6 +1062,13 @@ class ForumService {
     userTier: string = 'NOMAD'
   ): Promise<{ success: boolean; postId?: string; error?: string }> {
     try {
+      console.log('🔍 createPost called with:', {
+        authorAddress,
+        topicId: postData.topic_id,
+        userTier,
+        title: postData.title
+      })
+
       // Check if user has access to the topic
       const { data: topic } = await supabase
         .from('forum_topics')
@@ -873,16 +1076,36 @@ class ForumService {
         .eq('id', postData.topic_id)
         .single()
 
-      if (!topic || !this.hasAccess(userTier, topic.access_level)) {
+      console.log('📋 Topic data retrieved:', topic)
+
+      if (!topic) {
+        console.log('❌ Topic not found')
+        return { success: false, error: 'Topic not found' }
+      }
+
+      const hasTopicAccess = this.hasAccess(userTier, topic.access_level)
+      console.log('🔐 Access level check:', {
+        userTier,
+        topicAccessLevel: topic.access_level,
+        hasAccess: hasTopicAccess
+      })
+
+      if (!hasTopicAccess) {
         return { success: false, error: 'Access denied to this topic' }
       }
 
       // Check if this is a creator channel topic
       if (topic.creator_id && topic.channel_id && topic.content_type === 'creator_post') {
-        // Only the creator can create new posts in their channel topics
-        if (topic.creator_id !== authorAddress) {
+        // Only the creator can create new posts in their channel topics (case-insensitive comparison)
+        if (topic.creator_id.toLowerCase() !== authorAddress.toLowerCase()) {
+          console.log('🔍 Creator access check failed:', {
+            topicCreatorId: topic.creator_id,
+            authorAddress: authorAddress,
+            match: topic.creator_id.toLowerCase() === authorAddress.toLowerCase()
+          })
           return { success: false, error: 'Only the channel creator can create posts in this channel' }
         }
+        console.log('✅ Creator access check passed for channel topic')
       }
 
       // Create the post

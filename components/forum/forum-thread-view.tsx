@@ -45,6 +45,7 @@ export function ForumThreadView({
 }: ForumThreadViewProps) {
   const [posts, setPosts] = useState<ForumPost[]>([])
   const [topics, setTopics] = useState<ForumTopic[]>([])
+  const [currentTopic, setCurrentTopic] = useState<ForumTopic | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set())
   const [userDataCache, setUserDataCache] = useState<Map<string, ForumUserData>>(new Map())
@@ -64,6 +65,7 @@ export function ForumThreadView({
   useEffect(() => {
     loadPosts()
     loadTopics()
+    loadCurrentTopic()
   }, [topicId, tier])
 
   // Debug posts data
@@ -111,11 +113,30 @@ export function ForumThreadView({
     }
   }
 
+  const loadCurrentTopic = async () => {
+    try {
+      // Get the current topic data to check if it's a creator channel
+      const topic = await forumService.getTopicById(topicId)
+      setCurrentTopic(topic)
+    } catch (error) {
+      console.error('Failed to load current topic:', error)
+    }
+  }
+
   const handlePostCreated = async () => {
     // Wait a moment for the database to update, then reload
     setTimeout(async () => {
       await loadPosts()
     }, 500)
+  }
+
+  // Check if this is a creator channel topic
+  const isCreatorChannel = currentTopic?.contentType === 'creator_post' || currentTopic?.creatorId
+  const isTopicOwner = user?.address === currentTopic?.creatorId
+
+  // Function to redirect to creator controls for post creation
+  const redirectToCreatorControls = () => {
+    window.location.href = '/creator-controls?tab=manage&action=create-post'
   }
 
   const getTierBadgeColor = (tier: string) => {
@@ -264,18 +285,36 @@ export function ForumThreadView({
                   {topicName}
                 </CardTitle>
               </div>
-              <CreatePostModal
-                topics={topics}
-                onPostCreated={handlePostCreated}
-                currentTopicId={topicId}
-                currentTopicName={topicName}
-                hideTopicSelector={true}
-              >
-                <Button className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white">
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Post
-                </Button>
-              </CreatePostModal>
+              {isCreatorChannel ? (
+                // For creator channels, show different UI based on user role
+                isTopicOwner ? (
+                  <Button
+                    onClick={redirectToCreatorControls}
+                    className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Post
+                  </Button>
+                ) : (
+                  <div className="text-[#C0E6FF]/70 text-sm">
+                    Only the channel creator can post here
+                  </div>
+                )
+              ) : (
+                // For regular forum topics, show the normal create post modal
+                <CreatePostModal
+                  topics={topics}
+                  onPostCreated={handlePostCreated}
+                  currentTopicId={topicId}
+                  currentTopicName={topicName}
+                  hideTopicSelector={true}
+                >
+                  <Button className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white">
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Post
+                  </Button>
+                </CreatePostModal>
+              )}
             </div>
           </CardHeader>
         </div>
@@ -449,20 +488,43 @@ export function ForumThreadView({
             <MessageSquare className="w-10 h-10 text-[#C0E6FF]/50 mx-auto mb-3" />
             <h3 className="text-base font-semibold text-white mb-2">No Posts Yet</h3>
             <p className="text-[#C0E6FF]/70 mb-4 text-sm">
-              Be the first to start this discussion!
+              {isCreatorChannel
+                ? (isTopicOwner
+                    ? "Create your first post to start sharing with your community!"
+                    : "This channel creator hasn't posted yet.")
+                : "Be the first to start this discussion!"
+              }
             </p>
-            <CreatePostModal
-              topics={topics}
-              onPostCreated={handlePostCreated}
-              currentTopicId={topicId}
-              currentTopicName={topicName}
-              hideTopicSelector={true}
-            >
-              <Button className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white h-8 text-sm">
-                <Plus className="w-3 h-3 mr-2" />
-                Start Discussion
-              </Button>
-            </CreatePostModal>
+            {isCreatorChannel ? (
+              // For creator channels, show different UI based on user role
+              isTopicOwner ? (
+                <Button
+                  onClick={redirectToCreatorControls}
+                  className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white h-8 text-sm"
+                >
+                  <Plus className="w-3 h-3 mr-2" />
+                  Create First Post
+                </Button>
+              ) : (
+                <div className="text-[#C0E6FF]/70 text-sm">
+                  Waiting for the channel creator to post...
+                </div>
+              )
+            ) : (
+              // For regular forum topics, show the normal create post modal
+              <CreatePostModal
+                topics={topics}
+                onPostCreated={handlePostCreated}
+                currentTopicId={topicId}
+                currentTopicName={topicName}
+                hideTopicSelector={true}
+              >
+                <Button className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white h-8 text-sm">
+                  <Plus className="w-3 h-3 mr-2" />
+                  Start Discussion
+                </Button>
+              </CreatePostModal>
+            )}
           </CardContent>
         </Card>
       )}

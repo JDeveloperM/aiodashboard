@@ -18,7 +18,7 @@ import {
 } from "lucide-react"
 
 interface MyChannelsListProps {
-  onChannelClick: (creatorAddress: string, channelId: string, channelName: string) => void
+  onChannelClick: (creatorAddress: string, channelId: string, channelName: string, channelAvatar?: string, channelCover?: string) => void
 }
 
 export function MyChannelsList({ onChannelClick }: MyChannelsListProps) {
@@ -158,7 +158,7 @@ export function MyChannelsList({ onChannelClick }: MyChannelsListProps) {
           <Card
             key={channel.id}
             className="overflow-hidden border-[#C0E6FF]/20 hover:border-[#4DA2FF]/50 transition-colors cursor-pointer"
-            onClick={() => onChannelClick(channel.creatorAddress, channel.id, channel.name)}
+            onClick={() => onChannelClick(channel.creatorAddress, channel.id, channel.name, channel.avatarUrl, channel.coverUrl)}
           >
             <div
               className="relative bg-cover bg-center bg-no-repeat min-h-[120px]"
@@ -240,7 +240,7 @@ export function MyChannelsList({ onChannelClick }: MyChannelsListProps) {
                     className="bg-[#9333EA] hover:bg-[#9333EA]/80 text-white px-4"
                     onClick={(e) => {
                       e.stopPropagation()
-                      onChannelClick(channel.creatorAddress, channel.id, channel.name)
+                      onChannelClick(channel.creatorAddress, channel.id, channel.name, channel.avatarUrl, channel.coverUrl)
                     }}
                   >
                     <MessageSquare className="w-4 h-4 mr-2" />

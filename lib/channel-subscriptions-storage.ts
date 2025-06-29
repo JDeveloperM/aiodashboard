@@ -30,11 +30,7 @@ interface ChannelSubscription {
   joined_date: string
   expiry_date?: string
   last_accessed: string
-  
-  // Telegram integration
-  telegram_channel_url?: string
-  telegram_access_token?: string
-  
+
   // Metadata
   created_at: string
   updated_at: string
@@ -61,7 +57,6 @@ export interface UserChannel {
 
   // Creator info
   creatorAddress: string
-  telegramUrl?: string
 }
 
 class ChannelSubscriptionsStorage {
@@ -71,12 +66,13 @@ class ChannelSubscriptionsStorage {
   )
 
   /**
-   * Get all channels that a user has joined
+   * Get all channels that a user has joined (only active channels that still exist)
    */
   async getUserChannels(userAddress: string): Promise<UserChannel[]> {
     try {
       console.log('📺 Fetching user channels for address:', userAddress)
 
+      // First, get all subscriptions for the user
       const { data: subscriptions, error } = await this.supabase
         .from('channel_subscriptions')
         .select('*')
@@ -93,32 +89,125 @@ class ChannelSubscriptionsStorage {
         return []
       }
 
-      console.log(`📺 Found ${subscriptions.length} channel subscriptions`)
+      // Verify that channels still exist in the creators table
+      console.log(`📺 Found ${subscriptions.length} subscriptions, verifying channel existence...`)
+
+      const validSubscriptions: any[] = []
+      const orphanedSubscriptions: string[] = []
+
+      for (const sub of subscriptions) {
+        // Check if the creator and channel still exist
+        const { data: creator, error: creatorError } = await this.supabase
+          .from('creators')
+          .select('channels_data')
+          .eq('creator_address', sub.creator_address)
+          .single()
+
+        if (creatorError || !creator) {
+          console.log(`⚠️ Creator not found for subscription ${sub.channel_id}, marking as orphaned`)
+          orphanedSubscriptions.push(sub.id)
+          continue
+        }
+
+        // Check if the specific channel still exists in the creator's channels
+        const channelsData = creator.channels_data || []
+        const channelExists = channelsData.some((channel: any) => channel.id === sub.channel_id)
+
+        if (!channelExists) {
+          console.log(`⚠️ Channel ${sub.channel_id} no longer exists, marking as orphaned`)
+          orphanedSubscriptions.push(sub.id)
+          continue
+        }
+
+        validSubscriptions.push(sub)
+      }
+
+      // Clean up orphaned subscriptions
+      if (orphanedSubscriptions.length > 0) {
+        console.log(`🧹 Cleaning up ${orphanedSubscriptions.length} orphaned subscriptions...`)
+
+        const { error: cleanupError } = await this.supabase
+          .from('channel_subscriptions')
+          .delete()
+          .in('id', orphanedSubscriptions)
+
+        if (cleanupError) {
+          console.warn('⚠️ Failed to clean up orphaned subscriptions:', cleanupError)
+        } else {
+          console.log('✅ Orphaned subscriptions cleaned up successfully')
+        }
+      }
+
+      console.log(`📺 Found ${validSubscriptions.length} valid channel subscriptions`)
+
+      if (validSubscriptions.length === 0) {
+        console.log('📺 No valid channels found for user after cleanup')
+        return []
+      }
 
       // Convert database records to UI-friendly format
       const channels: UserChannel[] = await Promise.all(
-        subscriptions.map(async (sub: ChannelSubscription) => {
-          // Get avatar URL from Walrus if available
+        validSubscriptions.map(async (sub: ChannelSubscription) => {
+          // Get the latest channel data from creators table to ensure up-to-date images
+          const { data: creator, error: creatorError } = await this.supabase
+            .from('creators')
+            .select('channels_data')
+            .eq('creator_address', sub.creator_address)
+            .single()
+
+          let latestChannelData: any = null
+          if (!creatorError && creator?.channels_data) {
+            // Find the specific channel in the creator's channels
+            latestChannelData = creator.channels_data.find((channel: any) => channel.id === sub.channel_id)
+          }
+
+          // Get avatar URL from latest channel data (prioritize latest over subscription snapshot)
           let avatarUrl: string | undefined
-          if (sub.channel_avatar_blob_id) {
+          let avatarBlobId: string | undefined
+
+          if (latestChannelData?.channelAvatarBlobId) {
+            // Use latest avatar from creators table
+            avatarBlobId = latestChannelData.channelAvatarBlobId
             try {
-              avatarUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${sub.channel_avatar_blob_id}`
-              console.log(`🖼️ Generated avatar URL for channel ${sub.channel_name}:`, avatarUrl)
+              avatarUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${avatarBlobId}`
+              console.log(`🖼️ Using latest avatar for channel ${sub.channel_name}:`, avatarUrl)
             } catch (error) {
-              console.warn('⚠️ Failed to get avatar URL for channel:', sub.channel_id, error)
+              console.warn('⚠️ Failed to get latest avatar URL for channel:', sub.channel_id, error)
+            }
+          } else if (sub.channel_avatar_blob_id) {
+            // Fallback to subscription snapshot if latest not available
+            avatarBlobId = sub.channel_avatar_blob_id
+            try {
+              avatarUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${avatarBlobId}`
+              console.log(`🖼️ Using fallback avatar for channel ${sub.channel_name}:`, avatarUrl)
+            } catch (error) {
+              console.warn('⚠️ Failed to get fallback avatar URL for channel:', sub.channel_id, error)
             }
           } else {
             console.log(`⚠️ No avatar blob ID found for channel ${sub.channel_name}`)
           }
 
-          // Get cover URL from Walrus if available
+          // Get cover URL from latest channel data (prioritize latest over subscription snapshot)
           let coverUrl: string | undefined
-          if (sub.channel_cover_blob_id) {
+          let coverBlobId: string | undefined
+
+          if (latestChannelData?.channelCoverBlobId) {
+            // Use latest cover from creators table
+            coverBlobId = latestChannelData.channelCoverBlobId
             try {
-              coverUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${sub.channel_cover_blob_id}`
-              console.log(`🖼️ Generated cover URL for channel ${sub.channel_name}:`, coverUrl)
+              coverUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${coverBlobId}`
+              console.log(`🖼️ Using latest cover for channel ${sub.channel_name}:`, coverUrl)
             } catch (error) {
-              console.warn('⚠️ Failed to get cover URL for channel:', sub.channel_id, error)
+              console.warn('⚠️ Failed to get latest cover URL for channel:', sub.channel_id, error)
+            }
+          } else if (sub.channel_cover_blob_id) {
+            // Fallback to subscription snapshot if latest not available
+            coverBlobId = sub.channel_cover_blob_id
+            try {
+              coverUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${coverBlobId}`
+              console.log(`🖼️ Using fallback cover for channel ${sub.channel_name}:`, coverUrl)
+            } catch (error) {
+              console.warn('⚠️ Failed to get fallback cover URL for channel:', sub.channel_id, error)
             }
           }
 
@@ -146,9 +235,9 @@ class ChannelSubscriptionsStorage {
             type: sub.channel_type,
             description: sub.channel_description,
             avatarUrl,
-            avatarBlobId: sub.channel_avatar_blob_id,
+            avatarBlobId, // Use latest blob ID, not subscription snapshot
             coverUrl,
-            coverBlobId: sub.channel_cover_blob_id,
+            coverBlobId, // Use latest blob ID, not subscription snapshot
             subscribers: 0, // TODO: Get from creators table or separate tracking
             color: typeColors[sub.channel_type],
 
@@ -159,8 +248,7 @@ class ChannelSubscriptionsStorage {
             daysRemaining,
 
             // Creator info
-            creatorAddress: sub.creator_address,
-            telegramUrl: sub.telegram_channel_url
+            creatorAddress: sub.creator_address
           }
         })
       )
@@ -188,7 +276,6 @@ class ChannelSubscriptionsStorage {
       pricePaid?: number
       subscriptionTier?: 'free' | 'premium' | 'vip'
       expiryDate?: string
-      telegramChannelUrl?: string
       avatarFile?: File
       channelAvatarBlobId?: string // Use existing blob ID from creator's profile
     },
@@ -244,7 +331,6 @@ class ChannelSubscriptionsStorage {
           subscription_tier: channelData.subscriptionTier || channelData.channelType,
           price_paid: channelData.pricePaid || 0,
           expiry_date: channelData.expiryDate,
-          telegram_channel_url: channelData.telegramChannelUrl,
           joined_date: new Date().toISOString(),
           last_accessed: new Date().toISOString(),
           created_at: new Date().toISOString(),
@@ -457,7 +543,6 @@ export async function addSampleChannelSubscriptions(userAddress: string): Promis
         channelDescription: 'Get daily cryptocurrency market analysis and updates',
         subscriptionTier: 'free' as const,
         pricePaid: 0,
-        telegramChannelUrl: 'https://t.me/daily_market_updates',
         channelAvatarBlobId: 'sample_avatar_blob_1' // Sample blob ID
       },
       {
@@ -469,7 +554,6 @@ export async function addSampleChannelSubscriptions(userAddress: string): Promis
         subscriptionTier: 'premium' as const,
         pricePaid: 5.0,
         expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
-        telegramChannelUrl: 'https://t.me/premium_trading_signals',
         channelAvatarBlobId: 'sample_avatar_blob_2' // Sample blob ID
       },
       {
@@ -480,7 +564,6 @@ export async function addSampleChannelSubscriptions(userAddress: string): Promis
         channelDescription: 'Learn the fundamentals of decentralized finance',
         subscriptionTier: 'free' as const,
         pricePaid: 0,
-        telegramChannelUrl: 'https://t.me/defi_basics',
         channelAvatarBlobId: 'sample_avatar_blob_3' // Sample blob ID
       },
       {
@@ -492,7 +575,6 @@ export async function addSampleChannelSubscriptions(userAddress: string): Promis
         subscriptionTier: 'premium' as const,
         pricePaid: 12.0,
         expiryDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(), // 25 days from now
-        telegramChannelUrl: 'https://t.me/advanced_bot_strategies',
         channelAvatarBlobId: 'sample_avatar_blob_4' // Sample blob ID
       },
       {
@@ -504,7 +586,6 @@ export async function addSampleChannelSubscriptions(userAddress: string): Promis
         subscriptionTier: 'vip' as const,
         pricePaid: 25.0,
         expiryDate: new Date(Date.now() + 27 * 24 * 60 * 60 * 1000).toISOString(), // 27 days from now
-        telegramChannelUrl: 'https://t.me/nft_alpha_calls',
         channelAvatarBlobId: 'sample_avatar_blob_5' // Sample blob ID
       },
       {
@@ -515,7 +596,6 @@ export async function addSampleChannelSubscriptions(userAddress: string): Promis
         channelDescription: 'Latest news and updates from the Sui blockchain ecosystem',
         subscriptionTier: 'free' as const,
         pricePaid: 0,
-        telegramChannelUrl: 'https://t.me/sui_ecosystem_news',
         channelAvatarBlobId: 'sample_avatar_blob_6' // Sample blob ID
       }
     ]

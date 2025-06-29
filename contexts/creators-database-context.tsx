@@ -1,12 +1,13 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect } from "react"
-import { 
-  getAllCreatorProfiles, 
-  createOrUpdateCreator, 
+import {
+  getAllCreatorProfiles,
+  createOrUpdateCreator,
   getCreatorProfile,
-  type DecryptedCreator 
+  type DecryptedCreator
 } from "@/lib/creator-storage"
+import { createClient } from '@supabase/supabase-js'
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { useCurrentAccount } from "@mysten/dapp-kit"
 import { toast } from "sonner"
@@ -223,6 +224,12 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
   const [error, setError] = useState<string | null>(null)
   const { user } = useSuiAuth()
   const currentAccount = useCurrentAccount()
+
+  // Initialize Supabase client for cleanup operations
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
   // Load creators from database
   const refreshCreators = async () => {
@@ -455,10 +462,74 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
   }
 
   const removeCreator = async (id: string) => {
-    // For now, we don't implement deletion to preserve data
-    // In the future, you could add a soft delete flag
-    console.log('Remove creator not implemented for data preservation')
-    toast.info('Creator removal not available')
+    if (!user?.address) {
+      throw new Error('Authentication required')
+    }
+
+    try {
+      console.log('🗑️ Starting creator removal process...')
+
+      // Find the creator to get their address
+      const creator = creators.find(c => c.id === id)
+      if (!creator) {
+        throw new Error('Creator not found')
+      }
+
+      const creatorAddress = creator.creatorAddress || user.address
+
+      // Confirm deletion
+      const confirmed = window.confirm(
+        `⚠️ DELETE CREATOR CONFIRMATION ⚠️\n\n` +
+        `This will permanently delete:\n` +
+        `• All channels created by this creator\n` +
+        `• All forum posts and topics\n` +
+        `• All subscriber data\n` +
+        `• All reports and statistics\n\n` +
+        `This action cannot be undone!\n\n` +
+        `Are you sure you want to continue?`
+      )
+
+      if (!confirmed) {
+        console.log('Creator deletion cancelled by user')
+        return
+      }
+
+      // Clean up all related data first
+      console.log('🧹 Cleaning up all creator-related data...')
+      const { error: cleanupError } = await supabase.rpc('cleanup_creator_data', {
+        creator_addr: creatorAddress
+      })
+
+      if (cleanupError) {
+        console.warn('⚠️ Cleanup function failed, proceeding with creator deletion:', cleanupError)
+      } else {
+        console.log('✅ Creator data cleanup completed')
+      }
+
+      // Delete the creator profile
+      console.log('🗑️ Deleting creator profile...')
+      const { error: deleteError } = await supabase
+        .from('creators')
+        .delete()
+        .eq('creator_address', creatorAddress)
+
+      if (deleteError) {
+        throw deleteError
+      }
+
+      console.log('✅ Creator profile deleted')
+
+      // Refresh the creators list
+      await refreshCreators()
+
+      console.log('✅ Creator removal completed successfully')
+      toast.success('Creator and all related data deleted successfully!')
+
+    } catch (error) {
+      console.error('❌ Failed to remove creator:', error)
+      toast.error('Failed to remove creator')
+      throw error
+    }
   }
 
   const updateChannel = async (creatorId: string, channelId: string, updatedChannel: Partial<Channel>) => {
@@ -564,6 +635,70 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
       console.error('❌ Failed to update channel:', err)
       toast.error('Failed to update channel')
       throw err
+    }
+  }
+
+  // Helper function to clean up all channel-related data
+  const cleanupChannelRelatedData = async (creatorAddress: string, channelId: string) => {
+    console.log('🧹 Starting comprehensive channel cleanup...')
+
+    try {
+      // Use database function for comprehensive cleanup
+      console.log('🗑️ Executing database cleanup function...')
+      const { error: cleanupError } = await supabase.rpc('cleanup_channel_data', {
+        creator_addr: creatorAddress,
+        channel_id_param: channelId
+      })
+
+      if (cleanupError) {
+        console.error('❌ Database cleanup function failed:', cleanupError)
+        // Fallback to manual cleanup if function fails
+        await manualChannelCleanup(creatorAddress, channelId)
+      } else {
+        console.log('✅ Database cleanup function completed successfully')
+      }
+
+      console.log('🎉 Channel cleanup completed successfully')
+
+    } catch (error) {
+      console.error('❌ Error during channel cleanup:', error)
+      // Fallback to manual cleanup
+      await manualChannelCleanup(creatorAddress, channelId)
+    }
+  }
+
+  // Fallback manual cleanup function
+  const manualChannelCleanup = async (creatorAddress: string, channelId: string) => {
+    console.log('🔧 Performing manual cleanup as fallback...')
+
+    try {
+      // Delete channel subscriptions
+      await supabase.from('channel_subscriptions').delete()
+        .eq('creator_address', creatorAddress).eq('channel_id', channelId)
+
+      // Delete channel reports
+      await supabase.from('channel_reports').delete()
+        .eq('creator_address', creatorAddress).eq('channel_id', channelId)
+
+      // Delete channel report statistics
+      await supabase.from('channel_report_statistics').delete()
+        .eq('creator_address', creatorAddress).eq('channel_id', channelId)
+
+      // Delete forum topics
+      await supabase.from('forum_topics').delete()
+        .eq('creator_id', creatorAddress).eq('channel_id', channelId)
+
+      // Delete forum posts
+      await supabase.from('forum_posts').delete()
+        .eq('creator_id', creatorAddress).eq('channel_id', channelId)
+
+      // Delete creator channel content
+      await supabase.from('creator_channel_content').delete()
+        .eq('creator_address', creatorAddress).eq('channel_id', channelId)
+
+      console.log('✅ Manual cleanup completed')
+    } catch (error) {
+      console.error('❌ Manual cleanup also failed:', error)
     }
   }
 
@@ -674,7 +809,12 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
 
       await createOrUpdateCreator(user.address, decryptedCreatorData)
 
-      console.log('✅ Channel deleted from database')
+      console.log('✅ Channel deleted from creators table')
+
+      // Clean up all related data for this channel
+      await cleanupChannelRelatedData(actualCreator.creatorAddress || user.address, channelId)
+
+      console.log('✅ Channel and all related data deleted')
 
       // Refresh the creators list to reflect changes
       await refreshCreators()

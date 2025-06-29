@@ -66,7 +66,6 @@ const creatorFormSchema = z.object({
   creatorRole: z.string().min(1, "Please select your role/profession"),
   channelCategories: z.array(z.string()).min(1, "Select at least 1 category").max(3, "Select maximum 3 categories"),
   maxSubscribers: z.number().min(0, "Must be 0 or greater"),
-  telegramUsername: z.string().min(1, "Please enter your Telegram username for direct messages"),
   isPremium: z.boolean(),
   subscriptionPackages: z.array(z.string()).optional(),
   tipPricing: z.object({
@@ -143,7 +142,6 @@ export function CreatorControlsInterface() {
       creatorRole: "",
       channelCategories: [],
       maxSubscribers: 0,
-      telegramUsername: "",
       isPremium: false,
       subscriptionPackages: [],
       tipPricing: {
@@ -165,7 +163,6 @@ export function CreatorControlsInterface() {
   const watchChannelLanguage = form.watch("channelLanguage")
   const watchCreatorRole = form.watch("creatorRole")
   const watchMaxSubscribers = form.watch("maxSubscribers")
-  const watchTelegramUsername = form.watch("telegramUsername")
 
   // Progressive card visibility logic
   useEffect(() => {
@@ -177,10 +174,9 @@ export function CreatorControlsInterface() {
     const hasBasicDetails = !!(watchChannelName && watchChannelDescription && watchChannelLanguage && watchCreatorRole && watchCategories?.length > 0)
     setShowChannelSettings(hasImages && hasBasicDetails)
 
-    // Show Pricing & Packages card when settings are configured
-    const hasSettings = !!watchTelegramUsername
-    setShowPricingPackages(hasImages && hasBasicDetails && hasSettings)
-  }, [profileImage, coverImage, watchChannelName, watchChannelDescription, watchChannelLanguage, watchCreatorRole, watchCategories, watchMaxSubscribers, watchTelegramUsername])
+    // Show Pricing & Packages card when settings are configured (no longer depends on Telegram)
+    setShowPricingPackages(hasImages && hasBasicDetails)
+  }, [profileImage, coverImage, watchChannelName, watchChannelDescription, watchChannelLanguage, watchCreatorRole, watchCategories, watchMaxSubscribers])
 
   // Image update handlers - using Walrus integration like profile page
   const handleProfileImageUpdate = (imageUrl: string, blobId?: string) => {
@@ -285,7 +281,6 @@ export function CreatorControlsInterface() {
           : 0,
         description: data.channelDescription,
         subscribers: 0, // New channel starts with 0 subscribers
-        telegramUrl: `https://t.me/${data.telegramUsername}`, // Use the creator's telegram username
         subscriptionPackages: data.isPremium ? data.subscriptionPackages : undefined,
         pricing: data.isPremium ? {
           thirtyDays: data.tipPricing.thirtyDays,
@@ -304,7 +299,7 @@ export function CreatorControlsInterface() {
         channelLanguage: data.channelLanguage, // Store language per channel
         channelRole: data.creatorRole, // Store role/profession per channel
         // Generate unique identifier for this specific channel
-        channelIdentifier: `${data.telegramUsername}_${Date.now()}`
+        channelIdentifier: `${data.channelName.replace(/\s+/g, '_').toLowerCase()}_${Date.now()}`
       }
 
       // Check if user already has a creator profile
@@ -371,7 +366,7 @@ export function CreatorControlsInterface() {
       id: newCreatorId,
       creatorAddress: user?.address || '', // Add the wallet address for ownership verification
       name: data.channelName, // Using channel name as creator name for now
-      username: data.telegramUsername,
+      username: data.channelName.replace(/\s+/g, '_').toLowerCase(), // Generate username from channel name
       avatar: "/api/placeholder/64/64", // Placeholder - we use channel-specific images instead
       coverImage: "/api/placeholder/400/200", // Placeholder - we use channel-specific images instead
       role: data.creatorRole,
@@ -390,7 +385,7 @@ export function CreatorControlsInterface() {
         status: 'available' as const
       },
       socialLinks: {
-        telegram: `https://t.me/${data.telegramUsername}`
+        // No social links for now - removed Telegram
       },
       bannerColor: "#4DA2FF"
     }
@@ -483,7 +478,7 @@ export function CreatorControlsInterface() {
       status: 'available' as const
     },
     socialLinks: {
-      telegram: watchTelegramUsername ? `https://t.me/${watchTelegramUsername}` : "https://t.me/your_username"
+      // No social links for now - removed Telegram
     },
     bannerColor: "#4DA2FF",
     channels: [
@@ -496,7 +491,6 @@ export function CreatorControlsInterface() {
           : 0,
         description: watchChannelDescription || "Your channel description",
         subscribers: Math.floor(Math.random() * 500) + 50,
-        telegramUrl: "https://t.me/your_channel",
         subscriptionPackages: watchIsPremium ? watchSubscriptionPackages : undefined,
         pricing: watchIsPremium ? {
           thirtyDays: form.getValues("tipPricing.thirtyDays"),
@@ -853,32 +847,6 @@ export function CreatorControlsInterface() {
                 )}
               />
 
-              {/* Telegram Username */}
-              <FormField
-                control={form.control}
-                name="telegramUsername"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[#C0E6FF]">Telegram Username for Direct Messages *</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#C0E6FF] text-sm">
-                          @
-                        </div>
-                        <Input
-                          placeholder="your_telegram_username"
-                          className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white placeholder:text-[#C0E6FF]/60 pl-8"
-                          {...field}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormDescription className="text-gray-400">
-                      Users will contact you directly via this Telegram username for personal messages
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </CardContent>
           </Card>
           )}
@@ -1313,7 +1281,7 @@ export function CreatorControlsInterface() {
             </CardHeader>
             <CardContent>
               {/* Show placeholder when no data */}
-              {!watchChannelName && !watchChannelDescription && !watchCreatorRole && !watchTelegramUsername && (
+              {!watchChannelName && !watchChannelDescription && !watchCreatorRole && (
                 <div className="text-center py-8 text-gray-400">
                   <Play className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p className="text-sm">Start filling the form to see your preview</p>
@@ -1321,7 +1289,7 @@ export function CreatorControlsInterface() {
               )}
 
               {/* Show preview when data exists */}
-              {(watchChannelName || watchChannelDescription || watchCreatorRole || watchTelegramUsername) && (
+              {(watchChannelName || watchChannelDescription || watchCreatorRole) && (
                 <div className="enhanced-card overflow-hidden">
                 {/* Banner with Avatar */}
                 <div
@@ -1469,7 +1437,7 @@ export function CreatorControlsInterface() {
               )}
 
               {/* Preview Notes - Only show when preview is visible */}
-              {(watchChannelName || watchChannelDescription || watchCreatorRole || watchTelegramUsername) && (
+              {(watchChannelName || watchChannelDescription || watchCreatorRole) && (
                 <div className="mt-4 p-3 bg-[#1a2f51] rounded-lg">
                   <h4 className="text-[#C0E6FF] text-sm font-medium mb-2">Preview Notes:</h4>
                   <ul className="text-xs text-gray-400 space-y-1">

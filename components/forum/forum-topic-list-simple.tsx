@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { CreateTopicModal } from "./create-topic-modal"
 import { ForumTopic, forumService } from "@/lib/forum-service"
 import { useSubscription } from "@/contexts/subscription-context"
@@ -15,13 +15,10 @@ import {
   MessageSquare,
   Plus,
   Clock,
+  Loader2,
   Crown,
   Star,
-  Loader2,
-  Pin,
-  User,
-  Users,
-  Reply
+  Users
 } from "lucide-react"
 
 interface ForumTopicListSimpleProps {
@@ -30,7 +27,7 @@ interface ForumTopicListSimpleProps {
   categoryIcon: React.ReactNode
   categoryColor: string
   categoryImage?: string
-  onTopicClick?: (topicId: string, topicName: string, categoryName: string) => void
+  onTopicClick?: (topicId: string, topicName: string, categoryName: string, isCreatorPost?: boolean, actualTopicId?: string) => void
   creatorContext?: {
     creatorId: string
     channelId: string
@@ -55,6 +52,21 @@ export function ForumTopicListSimple({
   const { user } = useSuiAuth()
   const { creators } = useCreatorsDatabase()
   const currentAccount = useCurrentAccount()
+
+  // Admin wallet address (from memories)
+  const ADMIN_WALLET_ADDRESS = "0x311479200d45ef0243b92dbcf9849b8f6b931d27ae885197ea73066724f2bcf4"
+
+  // Check if current user is admin
+  const isAdmin = () => {
+    if (!user?.address) return false
+    const isAdminUser = user.address.toLowerCase() === ADMIN_WALLET_ADDRESS.toLowerCase()
+    console.log('🔐 Admin check:', {
+      userAddress: user.address,
+      adminAddress: ADMIN_WALLET_ADDRESS,
+      isAdmin: isAdminUser
+    })
+    return isAdminUser
+  }
 
   // Get creator information when in creator context
   const currentCreator = creatorContext ? creators.find(creator => {
@@ -117,11 +129,19 @@ export function ForumTopicListSimple({
     try {
       let result: ForumTopic[]
       if (creatorContext) {
-        // Load only creator-specific channel posts
-        result = await forumService.getCreatorChannelPosts(creatorContext.creatorId, creatorContext.channelId)
+        // For creator channels, we don't load topics here since CreatorChannelPosts handles posts
+        // This component is only used for the header display in creator context
+        result = []
       } else {
         // Load all topics for general forum
         result = await forumService.getTopics(categoryId, tier)
+        console.log('📋 Loaded topics:', result.map(t => ({
+          name: t.name,
+          post_count: t.post_count,
+          posts: t.posts,
+          lastActivity: t.lastActivity,
+          last_post_at: t.last_post_at
+        })))
       }
       setTopics(result)
     } catch (error) {
@@ -295,16 +315,19 @@ export function ForumTopicListSimple({
                 <p className="text-white/80">
                   {filteredTopics.length} {filteredTopics.length === 1 ? 'topic' : 'topics'} • Create new discussions and reply to existing ones
                 </p>
-                <CreateTopicModal
-                  categoryId={categoryId}
-                  categoryName={categoryName}
-                  onTopicCreated={loadTopics}
-                >
-                  <Button className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white">
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Topic
-                  </Button>
-                </CreateTopicModal>
+                {/* New Topic Button - Only visible to admin */}
+                {isAdmin() && (
+                  <CreateTopicModal
+                    categoryId={categoryId}
+                    categoryName={categoryName}
+                    onTopicCreated={loadTopics}
+                  >
+                    <Button className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white">
+                      <Plus className="w-4 h-4 mr-2" />
+                      New Topic
+                    </Button>
+                  </CreateTopicModal>
+                )}
               </div>
             </CardHeader>
           </div>
@@ -321,83 +344,39 @@ export function ForumTopicListSimple({
             return (
               <Card
                 key={topic.id}
-                className={`border-[#C0E6FF]/10 hover:border-[#C0E6FF]/30 transition-colors cursor-pointer ${
-                  isCreatorTopic
-                    ? "bg-gradient-to-r from-[#9333EA]/10 to-[#1a2f51] border-l-4 border-l-[#9333EA]"
-                    : "bg-[#1a2f51]"
-                }`}
-                onClick={() => onTopicClick?.(topic.id, topic.name, categoryName)}
+                className="bg-[#1a2f51] border-[#C0E6FF]/10 hover:border-[#C0E6FF]/30 transition-colors cursor-pointer"
+                onClick={() => onTopicClick?.(topic.id, topic.name, categoryName, topic.isCreatorPost, topic.topicId)}
               >
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        {isCreatorTopic && (
-                          <Crown className="w-4 h-4 text-[#9333EA]" />
-                        )}
-                        <h3 className="text-white font-semibold hover:text-[#4DA2FF] transition-colors">
-                          {topic.name}
-                        </h3>
-                        {isCreatorPost && (
-                          <Badge className="bg-[#9333EA]/20 text-[#9333EA] border-[#9333EA]/30 text-xs">
-                            Creator Channel
-                          </Badge>
-                        )}
-                      </div>
+                      {/* Title */}
+                      <h3 className="text-white font-semibold hover:text-[#4DA2FF] transition-colors mb-2">
+                        {topic.name}
+                      </h3>
+
+                      {/* Description */}
                       {topic.description && (
-                        <p className="text-[#C0E6FF]/70 text-sm mb-2 line-clamp-2">
+                        <p className="text-[#C0E6FF]/70 text-sm mb-3 line-clamp-2">
                           {topic.description}
                         </p>
                       )}
-                      <div className="flex items-center gap-4 text-sm text-[#C0E6FF]/50">
-                        <div className="flex items-center gap-1">
-                          {isCreatorTopic ? (
-                            <>
-                              <User className="w-3 h-3" />
-                              <span>{topic.posts} {topic.posts === 1 ? 'post' : 'posts'}</span>
-                            </>
-                          ) : (
-                            <>
-                              <MessageSquare className="w-3 h-3" />
-                              <span>{topic.posts} {topic.posts === 1 ? 'reply' : 'replies'}</span>
-                            </>
-                          )}
-                        </div>
-                        {isCreatorTopic && (
-                          <div className="flex items-center gap-1">
-                            <Reply className="w-3 h-3 text-green-400" />
-                            <span className="text-green-400">Replies allowed</span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span>Last activity {formatDate(topic.lastActivity)}</span>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Topic Stats */}
-                    <div className="text-right flex-shrink-0 ml-4">
-                      <div className="text-lg font-bold text-white">
-                        {topic.posts}
-                      </div>
-                      <div className="text-xs text-[#C0E6FF]/50">
-                        {isCreatorTopic ? 'Posts' : 'Replies'}
-                      </div>
-                      {isCreatorTopic && (
-                        <div className="text-xs text-[#9333EA] mt-1">
-                          Creator Channel
+                      {/* Posts and Last Activity */}
+                      <div className="flex items-center gap-4 text-sm text-[#C0E6FF]/60">
+                        <div className="flex items-center gap-1">
+                          <MessageSquare className="w-4 h-4" />
+                          <span>{topic.post_count || topic.posts || 0} {(topic.post_count || topic.posts || 0) === 1 ? 'post' : 'posts'}</span>
                         </div>
-                      )}
-                      {topic.viewCount && (
-                        <div className="text-xs text-[#C0E6FF]/50 mt-1">
-                          {topic.viewCount} views
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          <span>{formatDate(topic.lastActivity || topic.last_post_at)}</span>
                         </div>
-                      )}
+                      </div>
                     </div>
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                </CardContent>
+              </Card>
             )
           })}
         </div>

@@ -145,8 +145,7 @@ function getSampleChannels(): UserChannel[] {
       color: '#10b981',
       joinedDate: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days ago
       isActive: true,
-      creatorAddress: 'sample-creator-1',
-      telegramUrl: 'https://t.me/daily_market_updates'
+      creatorAddress: 'sample-creator-1'
     },
     {
       id: 'premium-trading-signals',
@@ -159,8 +158,7 @@ function getSampleChannels(): UserChannel[] {
       expiryDate: futureDate.toISOString(),
       isActive: true,
       daysRemaining: 23,
-      creatorAddress: 'sample-creator-2',
-      telegramUrl: 'https://t.me/premium_trading_signals'
+      creatorAddress: 'sample-creator-2'
     },
     {
       id: 'defi-basics',
@@ -171,8 +169,7 @@ function getSampleChannels(): UserChannel[] {
       color: '#3b82f6',
       joinedDate: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
       isActive: true,
-      creatorAddress: 'sample-creator-3',
-      telegramUrl: 'https://t.me/defi_basics'
+      creatorAddress: 'sample-creator-3'
     },
     {
       id: 'advanced-bot-strategies',
@@ -185,8 +182,7 @@ function getSampleChannels(): UserChannel[] {
       expiryDate: futureDate.toISOString(),
       isActive: true,
       daysRemaining: 25,
-      creatorAddress: 'sample-creator-4',
-      telegramUrl: 'https://t.me/advanced_bot_strategies'
+      creatorAddress: 'sample-creator-4'
     },
     {
       id: 'nft-alpha-calls',
@@ -199,8 +195,7 @@ function getSampleChannels(): UserChannel[] {
       expiryDate: futureDate.toISOString(),
       isActive: true,
       daysRemaining: 27,
-      creatorAddress: 'sample-creator-5',
-      telegramUrl: 'https://t.me/nft_alpha_calls'
+      creatorAddress: 'sample-creator-5'
     },
     {
       id: 'sui-ecosystem-news',
@@ -211,8 +206,7 @@ function getSampleChannels(): UserChannel[] {
       color: '#06b6d4',
       joinedDate: new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000).toISOString(), // 20 days ago
       isActive: true,
-      creatorAddress: 'sample-creator-6',
-      telegramUrl: 'https://t.me/sui_ecosystem_news'
+      creatorAddress: 'sample-creator-6'
     }
   ]
 }
