@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { useSubscription } from "@/contexts/subscription-context"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, LineChart, ArrowUpRight, Crown, ArrowRight, Bot, Users, BookOpen, ChevronDown, ChevronRight, Dice6, Rocket, Share2, HelpCircle, Globe, Settings, Trophy, MessageSquare } from "lucide-react"
+import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, LineChart, ArrowUpRight, Crown, ArrowRight, Bot, Users, BookOpen, ChevronDown, ChevronRight, Dice6, Rocket, Share2, HelpCircle, Globe, Settings, Trophy, MessageSquare, UserCheck } from "lucide-react"
 
 export const Sidebar = memo(function Sidebar() {
   const pathname = usePathname()
@@ -14,6 +14,7 @@ export const Sidebar = memo(function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [copyTradingExpanded, setCopyTradingExpanded] = useState(false)
+  const [aioConnectExpanded, setAioConnectExpanded] = useState(false)
 
   // RESTORED: Using stable subscription context
   const { canAccessCryptoBots, canAccessForexBots, tier } = useSubscription()
@@ -61,13 +62,22 @@ export const Sidebar = memo(function Sidebar() {
         { name: "Forex Bots", href: "/forex-bots", icon: BarChart, restricted: !canAccessForexBots },
       ]
     },
-    { name: "AIO Connect", href: "/community", icon: Globe, restricted: false },
-    { name: "AIO Creators", href: "/aio-creators", icon: Users, restricted: false },
+    {
+      name: "AIO Connect",
+      href: "/community",
+      icon: Globe,
+      restricted: false,
+      hasDropdown: true,
+      subItems: [
+        { name: "Members", href: "/community", icon: UserCheck },
+        { name: "Creators", href: "/aio-creators", icon: Users },
+        { name: "Forum", href: "/forum", icon: MessageSquare },
+      ]
+    },
     { name: "RaffleQuiz", href: "/dapps/rafflecraft", icon: Dice6, restricted: false },
     { name: "Dewhale", href: "/dapps/dewhale-launchpad", icon: Rocket, restricted: false },
     { name: "E-Learning", href: "/metago-academy", icon: BookOpen, restricted: false },
     { name: "Leaderboard", href: "/leaderboard", icon: Trophy, restricted: false },
-    { name: "Forum", href: "/forum", icon: MessageSquare, restricted: false },
   ]
 
   const bottomNavigation = [
@@ -93,7 +103,7 @@ export const Sidebar = memo(function Sidebar() {
       ? item.subItems?.some(subItem => pathname === subItem.href) || pathname === item.href
       : pathname === item.href
 
-    const isExpanded = (item.name === "Copy Trading" && copyTradingExpanded)
+    const isExpanded = (item.name === "Copy Trading" && copyTradingExpanded) || (item.name === "AIO Connect" && aioConnectExpanded)
 
     if (item.hasDropdown && (!isCollapsed || isMobileOpen)) {
       return (
@@ -102,6 +112,8 @@ export const Sidebar = memo(function Sidebar() {
             onClick={() => {
               if (item.name === "Copy Trading") {
                 setCopyTradingExpanded(!copyTradingExpanded)
+              } else if (item.name === "AIO Connect") {
+                setAioConnectExpanded(!aioConnectExpanded)
               }
             }}
             className={cn(
