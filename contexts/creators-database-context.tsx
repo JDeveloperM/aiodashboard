@@ -193,7 +193,7 @@ function convertDecryptedCreatorToCreator(decryptedCreator: DecryptedCreator): C
     id: decryptedCreator.id,
     creatorAddress: decryptedCreator.creator_address, // Map the wallet address for ownership verification
     name: decryptedCreator.channel_name || 'Unnamed Creator',
-    username: `User ${decryptedCreator.creator_address?.slice(0, 6)}` || 'unknown',
+    username: decryptedCreator.channel_name?.toLowerCase().replace(/\s+/g, '') || decryptedCreator.creator_address?.slice(0, 8) || 'unknown',
     avatar,
     coverImage,
     role: decryptedCreator.creator_role,

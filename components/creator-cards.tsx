@@ -803,75 +803,72 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
                       )}
                     </div>
                     <p className="text-white/80 text-xs">@{creator.username}</p>
-                    <div className="mt-1">
-                      <span className="text-white/70 text-xs font-medium">
-                        {creator.role}
-                      </span>
-                    </div>
-
                   </div>
 
-                  {/* Chat Icon - Right Corner */}
+                  {/* Role Badge - Right Corner */}
                   <div className="flex items-center">
-                    {/* No direct messaging for now - removed Telegram */}
+                    <Badge className="bg-[#4DA2FF] text-white text-xs px-2 py-1">
+                      {creator.role}
+                    </Badge>
                   </div>
                 </div>
 
 
               </div>
 
-              <div className="p-3 space-y-3">
-                {/* Categories - 3 per line */}
-                <div className="grid grid-cols-3 gap-1">
-                  {/* Display all categories in a 3-column grid */}
-                  {(creator.categories || [creator.category]).slice(0, 6).map((category, index) => {
+              <div className="p-3 space-y-2">
+                {/* Categories - Top line */}
+                <div className="flex items-center gap-1 flex-wrap justify-center">
+                  {(creator.categories || [creator.category]).slice(0, 3).map((category, index) => {
                     const CategoryIcon = getCategoryIcon(category)
                     return (
-                      <Badge key={index} className={`text-xs px-1.5 py-1 ${getCategoryColor(category)} flex items-center justify-center`}>
+                      <Badge key={index} className={`text-xs px-1.5 py-0.5 ${getCategoryColor(category)} flex items-center`}>
                         <CategoryIcon className="w-3 h-3 mr-1" />
                         <span className="truncate">{category}</span>
                       </Badge>
                     )
                   })}
-                  {/* Show +X more if there are more than 6 categories */}
-                  {creator.categories && creator.categories.length > 6 && (
-                    <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 text-xs px-1.5 py-1 flex items-center justify-center">
-                      +{creator.categories.length - 6}
+                  {creator.categories && creator.categories.length > 3 && (
+                    <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 text-xs px-1.5 py-0.5">
+                      +{creator.categories.length - 3}
                     </Badge>
                   )}
                 </div>
 
-                {/* Line 2: Subscribers and Availability */}
-                <div className="flex items-center justify-center gap-4 text-xs text-[#C0E6FF]">
+                {/* Subscribers, Slots, Language - Bottom line */}
+                <div className="flex items-center justify-center gap-3 text-xs text-[#C0E6FF]">
+                  {/* Subscribers */}
                   <div className="flex items-center gap-1">
                     <Users className="w-3 h-3" />
                     <span>{creator.subscribers > 1000 ? `${(creator.subscribers/1000).toFixed(1)}k` : creator.subscribers} subscribers</span>
                   </div>
+
+                  {/* Slots/Availability */}
                   <div className="flex items-center gap-1">
                     {getAvailabilityIcon(creator.availability.status)}
                     <span>{getAvailabilityText(creator.availability)}</span>
                   </div>
-                </div>
 
-                {/* Line 3: Languages */}
-                <div className="flex flex-wrap gap-1 justify-center">
-                  {creator.languages.slice(0, 3).map((lang) => (
-                    <Badge
-                      key={lang}
-                      variant="outline"
-                      className="text-xs border-[#C0E6FF]/30 text-[#C0E6FF] px-1.5 py-0.5"
-                    >
-                      {lang}
-                    </Badge>
-                  ))}
-                  {creator.languages.length > 3 && (
-                    <Badge
-                      variant="outline"
-                      className="text-xs border-[#C0E6FF]/30 text-[#C0E6FF] px-1.5 py-0.5"
-                    >
-                      +{creator.languages.length - 3}
-                    </Badge>
-                  )}
+                  {/* Language */}
+                  <div className="flex items-center gap-1">
+                    {creator.languages.slice(0, 1).map((lang) => (
+                      <Badge
+                        key={lang}
+                        variant="outline"
+                        className="text-xs border-[#C0E6FF]/30 text-[#C0E6FF] px-1.5 py-0.5"
+                      >
+                        {lang}
+                      </Badge>
+                    ))}
+                    {creator.languages.length > 1 && (
+                      <Badge
+                        variant="outline"
+                        className="text-xs border-[#C0E6FF]/30 text-[#C0E6FF] px-1.5 py-0.5"
+                      >
+                        +{creator.languages.length - 1}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
 
                 {/* Channel Details - Full Width at Bottom */}
@@ -952,7 +949,12 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
                           </div>
                         </div>
 
-
+                        {/* Channel Description */}
+                        {channel.description && (
+                          <div className="text-[#C0E6FF]/80 text-xs leading-relaxed">
+                            {channel.description}
+                          </div>
+                        )}
 
                         {/* Show buttons based on user access and ownership */}
                         {isOwner(creator) ? (
