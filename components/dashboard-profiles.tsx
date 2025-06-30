@@ -672,19 +672,16 @@ function SocialMediaSection() {
 
   // Simple state for each platform
   const [discord, setDiscord] = useState('')
-  const [telegram, setTelegram] = useState('')
   const [twitter, setTwitter] = useState('')
 
   // Load existing data when profile changes
   useEffect(() => {
     if (profile?.social_links && Array.isArray(profile.social_links)) {
       setDiscord('')
-      setTelegram('')
       setTwitter('')
 
       profile.social_links.forEach((link: any) => {
         if (link.platform === 'discord') setDiscord(link.username || '')
-        if (link.platform === 'telegram') setTelegram(link.username || '')
         if (link.platform === 'x') setTwitter(link.username || '')
       })
     }
@@ -709,14 +706,7 @@ function SocialMediaSection() {
         })
       }
 
-      if (telegram.trim()) {
-        const telegramUsername = telegram.trim().startsWith('@') ? telegram.trim() : `@${telegram.trim()}`
-        socialLinks.push({
-          platform: 'telegram',
-          username: telegramUsername,
-          url: `https://t.me/${telegramUsername.slice(1)}`
-        })
-      }
+
 
       if (twitter.trim()) {
         const twitterUsername = twitter.trim().startsWith('@') ? twitter.trim() : `@${twitter.trim()}`
@@ -817,27 +807,7 @@ function SocialMediaSection() {
           )}
         </div>
 
-        {/* Telegram */}
-        <div className="p-4 bg-[#1a2f51]/30 rounded-lg border border-[#C0E6FF]/10">
-          <label className="text-white font-medium block mb-2">Telegram</label>
-          {isEditing ? (
-            <input
-              type="text"
-              value={telegram}
-              onChange={(e) => setTelegram(e.target.value)}
-              placeholder="@yourusername"
-              className="w-full px-3 py-2 bg-[#030F1C] border border-[#C0E6FF]/30 text-white rounded-md focus:ring-2 focus:ring-[#4DA2FF] focus:border-[#4DA2FF] focus:outline-none"
-            />
-          ) : (
-            <div>
-              {telegram ? (
-                <span className="text-[#C0E6FF]">{telegram}</span>
-              ) : (
-                <span className="text-[#C0E6FF]/50 text-sm">Not connected</span>
-              )}
-            </div>
-          )}
-        </div>
+
 
         {/* X (Twitter) */}
         <div className="p-4 bg-[#1a2f51]/30 rounded-lg border border-[#C0E6FF]/10">

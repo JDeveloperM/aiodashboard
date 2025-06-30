@@ -67,16 +67,18 @@ class ChannelSubscriptionsStorage {
 
   /**
    * Get all channels that a user has joined (only active channels that still exist)
+   * Excludes channels created by the user themselves - only shows channels from other creators
    */
   async getUserChannels(userAddress: string): Promise<UserChannel[]> {
     try {
       console.log('📺 Fetching user channels for address:', userAddress)
 
-      // First, get all subscriptions for the user
+      // First, get all subscriptions for the user (excluding channels they created)
       const { data: subscriptions, error } = await this.supabase
         .from('channel_subscriptions')
         .select('*')
         .eq('user_address', userAddress)
+        .neq('creator_address', userAddress) // Exclude channels where user is the creator
         .order('joined_date', { ascending: false })
 
       if (error) {
@@ -165,50 +167,35 @@ class ChannelSubscriptionsStorage {
           let avatarUrl: string | undefined
           let avatarBlobId: string | undefined
 
-          if (latestChannelData?.channelAvatarBlobId) {
-            // Use latest avatar from creators table
+          if (latestChannelData?.channelAvatarBlobId && latestChannelData.channelAvatarBlobId !== 'sample_avatar_blob_1') {
+            // Use latest avatar from creators table (skip sample blob IDs)
             avatarBlobId = latestChannelData.channelAvatarBlobId
-            try {
-              avatarUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${avatarBlobId}`
-              console.log(`🖼️ Using latest avatar for channel ${sub.channel_name}:`, avatarUrl)
-            } catch (error) {
-              console.warn('⚠️ Failed to get latest avatar URL for channel:', sub.channel_id, error)
-            }
-          } else if (sub.channel_avatar_blob_id) {
-            // Fallback to subscription snapshot if latest not available
+            avatarUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${avatarBlobId}`
+            console.log(`🖼️ Using latest avatar for channel ${sub.channel_name}:`, avatarUrl)
+          } else if (sub.channel_avatar_blob_id && sub.channel_avatar_blob_id !== 'sample_avatar_blob_1') {
+            // Fallback to subscription snapshot if latest not available (skip sample blob IDs)
             avatarBlobId = sub.channel_avatar_blob_id
-            try {
-              avatarUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${avatarBlobId}`
-              console.log(`🖼️ Using fallback avatar for channel ${sub.channel_name}:`, avatarUrl)
-            } catch (error) {
-              console.warn('⚠️ Failed to get fallback avatar URL for channel:', sub.channel_id, error)
-            }
+            avatarUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${avatarBlobId}`
+            console.log(`🖼️ Using fallback avatar for channel ${sub.channel_name}:`, avatarUrl)
           } else {
-            console.log(`⚠️ No avatar blob ID found for channel ${sub.channel_name}`)
+            console.log(`⚠️ No valid avatar blob ID found for channel ${sub.channel_name}`)
+            // Don't set avatarUrl, let the UI component handle the fallback
           }
 
           // Get cover URL from latest channel data (prioritize latest over subscription snapshot)
           let coverUrl: string | undefined
           let coverBlobId: string | undefined
 
-          if (latestChannelData?.channelCoverBlobId) {
-            // Use latest cover from creators table
+          if (latestChannelData?.channelCoverBlobId && !latestChannelData.channelCoverBlobId.startsWith('sample_')) {
+            // Use latest cover from creators table (skip sample blob IDs)
             coverBlobId = latestChannelData.channelCoverBlobId
-            try {
-              coverUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${coverBlobId}`
-              console.log(`🖼️ Using latest cover for channel ${sub.channel_name}:`, coverUrl)
-            } catch (error) {
-              console.warn('⚠️ Failed to get latest cover URL for channel:', sub.channel_id, error)
-            }
-          } else if (sub.channel_cover_blob_id) {
-            // Fallback to subscription snapshot if latest not available
+            coverUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${coverBlobId}`
+            console.log(`🖼️ Using latest cover for channel ${sub.channel_name}:`, coverUrl)
+          } else if (sub.channel_cover_blob_id && !sub.channel_cover_blob_id.startsWith('sample_')) {
+            // Fallback to subscription snapshot if latest not available (skip sample blob IDs)
             coverBlobId = sub.channel_cover_blob_id
-            try {
-              coverUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${coverBlobId}`
-              console.log(`🖼️ Using fallback cover for channel ${sub.channel_name}:`, coverUrl)
-            } catch (error) {
-              console.warn('⚠️ Failed to get fallback cover URL for channel:', sub.channel_id, error)
-            }
+            coverUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${coverBlobId}`
+            console.log(`🖼️ Using fallback cover for channel ${sub.channel_name}:`, coverUrl)
           }
 
           // Calculate subscription status
@@ -516,6 +503,7 @@ export const channelSubscriptionsStorage = new ChannelSubscriptionsStorage()
 
 // Helper functions for React components
 export async function getUserJoinedChannels(userAddress: string): Promise<UserChannel[]> {
+  // Returns channels the user has joined from other creators (excludes own channels)
   return channelSubscriptionsStorage.getUserChannels(userAddress)
 }
 

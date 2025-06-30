@@ -38,25 +38,14 @@ export function useChannelSubscriptions(): UseChannelSubscriptionsReturn {
 
       console.log(`✅ Loaded ${userChannels.length} channels from database`)
 
-      // If no channels found in database, check if we should show sample data
-      if (userChannels.length === 0) {
-        console.log('📺 No channels found in database')
-
-        // For demo purposes, show sample data for any connected user
-        // In production, you might want to remove this or only show for specific test addresses
-        console.log('📺 Using sample data for demo purposes')
-        setChannels(getSampleChannels())
-      } else {
-        setChannels(userChannels)
-      }
+      // Set the actual channels from database (empty array if none found)
+      setChannels(userChannels)
+      console.log(`📺 Set ${userChannels.length} actual user channels`)
 
     } catch (err) {
       console.error('❌ Failed to fetch channels:', err)
       setError(err instanceof Error ? err.message : 'Failed to load channels')
-
-      // Fallback to sample data on error for better UX
-      console.log('📺 Using sample data as fallback due to error')
-      setChannels(getSampleChannels())
+      setChannels([]) // Show empty state on error instead of sample data
 
     } finally {
       setIsLoading(false)
@@ -130,86 +119,7 @@ export function useChannelSubscriptions(): UseChannelSubscriptionsReturn {
   }
 }
 
-// Sample channels for demo purposes
-function getSampleChannels(): UserChannel[] {
-  const now = new Date()
-  const futureDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
 
-  return [
-    {
-      id: 'daily-market-updates',
-      name: 'Daily Market Updates',
-      type: 'free',
-      description: 'Get daily cryptocurrency market analysis and updates',
-      subscribers: 8500,
-      color: '#10b981',
-      joinedDate: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days ago
-      isActive: true,
-      creatorAddress: 'sample-creator-1'
-    },
-    {
-      id: 'premium-trading-signals',
-      name: 'Premium Trading Signals',
-      type: 'premium',
-      description: 'Exclusive trading signals and market insights',
-      subscribers: 2100,
-      color: '#f59e0b',
-      joinedDate: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
-      expiryDate: futureDate.toISOString(),
-      isActive: true,
-      daysRemaining: 23,
-      creatorAddress: 'sample-creator-2'
-    },
-    {
-      id: 'defi-basics',
-      name: 'DeFi Basics',
-      type: 'free',
-      description: 'Learn the fundamentals of decentralized finance',
-      subscribers: 9200,
-      color: '#3b82f6',
-      joinedDate: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
-      isActive: true,
-      creatorAddress: 'sample-creator-3'
-    },
-    {
-      id: 'advanced-bot-strategies',
-      name: 'Advanced Bot Strategies',
-      type: 'premium',
-      description: 'Advanced cryptocurrency trading bot strategies',
-      subscribers: 2100,
-      color: '#f97316',
-      joinedDate: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
-      expiryDate: futureDate.toISOString(),
-      isActive: true,
-      daysRemaining: 25,
-      creatorAddress: 'sample-creator-4'
-    },
-    {
-      id: 'nft-alpha-calls',
-      name: 'NFT Alpha Calls',
-      type: 'vip',
-      description: 'Exclusive NFT project alpha and early access',
-      subscribers: 850,
-      color: '#8b5cf6',
-      joinedDate: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
-      expiryDate: futureDate.toISOString(),
-      isActive: true,
-      daysRemaining: 27,
-      creatorAddress: 'sample-creator-5'
-    },
-    {
-      id: 'sui-ecosystem-news',
-      name: 'Sui Ecosystem News',
-      type: 'free',
-      description: 'Latest news and updates from the Sui blockchain ecosystem',
-      subscribers: 5600,
-      color: '#06b6d4',
-      joinedDate: new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000).toISOString(), // 20 days ago
-      isActive: true,
-      creatorAddress: 'sample-creator-6'
-    }
-  ]
-}
 
 // Helper function to get channel type badge color
 export function getChannelTypeBadgeColor(type: 'free' | 'premium' | 'vip'): string {

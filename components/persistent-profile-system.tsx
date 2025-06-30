@@ -30,7 +30,7 @@ import {
   ExternalLink,
   Users,
   Settings,
-  Bot,
+
   Hash,
   Star,
   Lock,
@@ -50,7 +50,8 @@ import {
   Target,
   Unlock,
   Gift,
-  Coins
+  Coins,
+  Activity
 } from 'lucide-react'
 
 // Social media image paths
@@ -215,9 +216,9 @@ export function PersistentProfileSystem() {
 
       // Crypto Bot Activities Category - Updated with new names and XP values
       { name: "Automate Your Trades", icon: Link, color: "#F7931A", xp: 150, category: "Crypto Bot Activities", tooltip: "Link your Bybit account" },
-      { name: "APLN Trading Signals", icon: Bot, color: "#9333EA", xp: 100, category: "Crypto Bot Activities", tooltip: "Subscribe to the APLN Bot" },
-      { name: "HRMS Trading Insights", icon: Bot, color: "#06B6D4", xp: 100, category: "Crypto Bot Activities", tooltip: "Subscribe to the HRMS Bot" },
-      { name: "ATHN Trading Edge", icon: Bot, color: "#8B5CF6", xp: 100, category: "Crypto Bot Activities", tooltip: "Subscribe to the ATHN Bot" },
+      { name: "APLN Trading Signals", icon: Activity, color: "#9333EA", xp: 100, category: "Crypto Bot Activities", tooltip: "Subscribe to the APLN Bot" },
+      { name: "HRMS Trading Insights", icon: Activity, color: "#06B6D4", xp: 100, category: "Crypto Bot Activities", tooltip: "Subscribe to the HRMS Bot" },
+      { name: "ATHN Trading Edge", icon: Activity, color: "#8B5CF6", xp: 100, category: "Crypto Bot Activities", tooltip: "Subscribe to the ATHN Bot" },
       { name: "Master Trading Cycles", icon: Repeat, color: "#10B981", xp: 200, category: "Crypto Bot Activities", tooltip: "Finish at least 3 trading cycles with platform bots" },
 
       // User Upgrades Category - Updated with new names and XP values
@@ -1591,30 +1592,7 @@ function ChannelsJoinedSection() {
               </div>
             )}
 
-            {/* Telegram Controls Button - PRO and ROYAL only */}
-            {(tier === 'PRO' || tier === 'ROYAL') ? (
-              <div className="flex-1">
-                <Button
-                  onClick={() => router.push('/telegram-admin')}
-                  className="bg-[#0088cc] hover:bg-[#0088cc]/80 text-white px-2 py-2 text-xs font-semibold w-full"
-                >
-                  <Bot className="w-3 h-3 mr-1" />
-                  <span className="hidden sm:inline">Telegram Controls</span>
-                  <span className="sm:hidden">Telegram</span>
-                </Button>
-              </div>
-            ) : (
-              <div className="flex-1">
-                <Button
-                  disabled
-                  className="bg-gray-600 text-gray-400 px-2 py-2 text-xs font-semibold w-full cursor-not-allowed"
-                >
-                  <Bot className="w-3 h-3 mr-1" />
-                  <span className="hidden sm:inline">Telegram Controls</span>
-                  <span className="sm:hidden">Telegram</span>
-                </Button>
-              </div>
-            )}
+
           </div>
         </div>
       </div>
@@ -1629,7 +1607,7 @@ function ChannelsJoinedSection() {
           <Hash className="w-8 h-8 text-[#C0E6FF]/50 mx-auto mb-2" />
           <p className="text-[#C0E6FF]/70 text-sm mb-4">No channels joined yet</p>
           <p className="text-[#C0E6FF]/50 text-xs mb-4">
-            Join channels from the AIO Creators page to see them here
+            Visit AIO Creators to join channels, or use the button below to add test data
           </p>
           <Button
             onClick={addSampleChannels}
@@ -1642,7 +1620,7 @@ function ChannelsJoinedSection() {
             ) : (
               <Hash className="w-4 h-4 mr-2" />
             )}
-            Add Sample Channels
+            Add Demo Channels (Testing)
           </Button>
         </div>
 
@@ -1674,30 +1652,7 @@ function ChannelsJoinedSection() {
               </div>
             )}
 
-            {/* Telegram Controls Button - PRO and ROYAL only */}
-            {(tier === 'PRO' || tier === 'ROYAL') ? (
-              <div className="flex-1">
-                <Button
-                  onClick={() => router.push('/telegram-admin')}
-                  className="bg-[#0088cc] hover:bg-[#0088cc]/80 text-white px-2 py-2 text-xs font-semibold w-full"
-                >
-                  <Bot className="w-3 h-3 mr-1" />
-                  <span className="hidden sm:inline">Telegram Controls</span>
-                  <span className="sm:hidden">Telegram</span>
-                </Button>
-              </div>
-            ) : (
-              <div className="flex-1">
-                <Button
-                  disabled
-                  className="bg-gray-600 text-gray-400 px-2 py-2 text-xs font-semibold w-full cursor-not-allowed"
-                >
-                  <Bot className="w-3 h-3 mr-1" />
-                  <span className="hidden sm:inline">Telegram Controls</span>
-                  <span className="sm:hidden">Telegram</span>
-                </Button>
-              </div>
-            )}
+
           </div>
         </div>
       </div>
@@ -1802,30 +1757,7 @@ function ChannelsJoinedSection() {
             </div>
           )}
 
-          {/* Telegram Controls Button - PRO and ROYAL only */}
-          {(tier === 'PRO' || tier === 'ROYAL') ? (
-            <div className="flex-1">
-              <Button
-                onClick={() => router.push('/telegram-admin')}
-                className="bg-[#0088cc] hover:bg-[#0088cc]/80 text-white px-2 py-2 text-xs font-semibold w-full"
-              >
-                <Bot className="w-3 h-3 mr-1" />
-                <span className="hidden sm:inline">Telegram Controls</span>
-                <span className="sm:hidden">Telegram</span>
-              </Button>
-            </div>
-          ) : (
-            <div className="flex-1">
-              <Button
-                disabled
-                className="bg-gray-600 text-gray-400 px-2 py-2 text-xs font-semibold w-full cursor-not-allowed"
-              >
-                <Bot className="w-3 h-3 mr-1" />
-                <span className="hidden sm:inline">Telegram Controls</span>
-                <span className="sm:hidden">Telegram</span>
-              </Button>
-            </div>
-          )}
+
         </div>
       </div>
     </div>

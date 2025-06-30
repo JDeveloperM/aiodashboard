@@ -39,7 +39,7 @@ import {
   CheckCircle2,
   XCircle,
   User,
-  Bot,
+
   Repeat,
   ArrowUp,
   Link,
@@ -52,7 +52,8 @@ import {
   MoreHorizontal,
   History,
   AlertTriangle,
-  Settings
+  Settings,
+  Activity
 } from "lucide-react"
 
 // Social media image paths
@@ -232,8 +233,8 @@ export function ProfileSystem() {
 
       // Trading & Bots Achievements
       { name: "Connect Bybit", icon: Link, color: "#F7931A", unlocked: true, claimed: false, xp: 25, tooltip: "Connect your Bybit account to start automated trading" },
-      { name: "Follow Apollon Bot", icon: Bot, color: "#9333EA", unlocked: false, claimed: false, xp: 25, tooltip: "Follow the Apollon Bot for advanced crypto trading signals" },
-      { name: "Follow Hermes Bot", icon: Bot, color: "#06B6D4", unlocked: false, claimed: false, xp: 25, tooltip: "Follow the Hermes Bot for high-frequency trading strategies" },
+      { name: "Follow Apollon Bot", icon: Activity, color: "#9333EA", unlocked: false, claimed: false, xp: 25, tooltip: "Follow the Apollon Bot for advanced crypto trading signals" },
+      { name: "Follow Hermes Bot", icon: Activity, color: "#06B6D4", unlocked: false, claimed: false, xp: 25, tooltip: "Follow the Hermes Bot for high-frequency trading strategies" },
       { name: "Make 3 Cycles", icon: Repeat, color: "#10B981", unlocked: false, claimed: false, xp: 50, tooltip: "Complete at least 3 trading cycles with crypto bots" },
 
       // Upgrade Achievements
@@ -832,30 +833,7 @@ export function ProfileSystem() {
                     </div>
                   )}
 
-                  {/* Telegram Controls Button - PRO and ROYAL only */}
-                  {(tier === 'PRO' || tier === 'ROYAL') ? (
-                    <div className="flex flex-col items-center">
-                      <Button
-                        onClick={() => router.push('/telegram-admin')}
-                        className="bg-[#0088cc] hover:bg-[#0088cc]/80 text-white px-4 py-3 text-sm font-semibold w-full"
-                      >
-                        <Bot className="w-4 h-4 mr-2" />
-                        Telegram Controls
-                      </Button>
-                      <p className="text-[#C0E6FF] text-xs mt-2 text-center">Monitor channel access</p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <Button
-                        disabled
-                        className="bg-gray-600 text-gray-400 px-4 py-3 text-sm font-semibold w-full cursor-not-allowed"
-                      >
-                        <Bot className="w-4 h-4 mr-2" />
-                        Telegram Controls
-                      </Button>
-                      <p className="text-gray-500 text-xs mt-2 text-center">PRO/ROYAL only</p>
-                    </div>
-                  )}
+
                 </div>
               </div>
 

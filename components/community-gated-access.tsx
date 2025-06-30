@@ -23,25 +23,13 @@ const DiscordIcon = ({ className, style }: { className?: string; style?: React.C
   </svg>
 )
 
-// Official Telegram icon component
-const TelegramIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
-  <svg
-    className={className}
-    style={style}
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-  </svg>
-)
+
 
 export function CommunityGatedAccess() {
   const { tier } = useSubscription()
   const { user } = useSuiAuth()
   const [discordSynced, setDiscordSynced] = useState(false)
-  const [telegramSynced, setTelegramSynced] = useState(false)
-  const [isConnecting, setIsConnecting] = useState<'discord' | 'telegram' | null>(null)
+  const [isConnecting, setIsConnecting] = useState<'discord' | null>(null)
 
   const hasNFT = tier === "PRO" || tier === "ROYAL"
 
@@ -116,24 +104,12 @@ export function CommunityGatedAccess() {
     }, 2000)
   }
 
-  const handleTelegramJoin = () => {
-    window.open('https://t.me/aionet', '_blank')
-  }
 
-  const handleTelegramSync = () => {
-    if (!hasNFT) return
-    setIsConnecting('telegram')
-    // Simulate role sync
-    setTimeout(() => {
-      setTelegramSynced(true)
-      setIsConnecting(null)
-    }, 2000)
-  }
 
   return (
     <div className="space-y-6">
-      {/* Discord and Telegram Cards */}
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+      {/* Discord Card */}
+      <div className="grid gap-6 grid-cols-1">
         {/* Discord Access Card */}
         <div className="enhanced-card">
           <div className="enhanced-card-content">
@@ -202,73 +178,7 @@ export function CommunityGatedAccess() {
           </div>
         </div>
 
-        {/* Telegram Access Card */}
-        <div className="enhanced-card">
-          <div className="enhanced-card-content">
-            <div className="flex items-center gap-2 text-white mb-4">
-              <TelegramIcon className="w-5 h-5 text-[#0088CC]" />
-              <h3 className="font-semibold">Telegram Access</h3>
-            </div>
-            <div className="space-y-4">
-              <p className="text-[#C0E6FF] text-sm">
-                Access our Telegram channel for real-time updates, AI signals, and community discussions.
-              </p>
 
-              <div className="space-y-3">
-                <Button
-                  onClick={handleTelegramJoin}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Join Telegram Channel
-                </Button>
-
-                {hasNFT && (
-                  <Button
-                    onClick={handleTelegramSync}
-                    disabled={telegramSynced || isConnecting === 'telegram'}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
-                  >
-                    {isConnecting === 'telegram' ? (
-                      <>
-                        <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        Syncing Role...
-                      </>
-                    ) : telegramSynced ? (
-                      <>
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Role Synced
-                      </>
-                    ) : (
-                      <>
-                        <Users className="w-4 h-4 mr-2" />
-                        Sync {tier} Role
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-
-              {!hasNFT && (
-                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
-                  <p className="text-yellow-400 text-sm">
-                    <Shield className="w-4 h-4 inline mr-1" />
-                    NFT required for role sync
-                  </p>
-                </div>
-              )}
-
-              {telegramSynced && (
-                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
-                  <p className="text-green-400 text-sm">
-                    <CheckCircle className="w-4 h-4 inline mr-1" />
-                    Your {tier} role has been synced successfully!
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Access Information */}
