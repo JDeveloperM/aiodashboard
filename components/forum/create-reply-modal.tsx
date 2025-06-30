@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge"
 import { forumService, ForumPost } from "@/lib/forum-service"
 import { useSubscription } from "@/contexts/subscription-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
+import { useCurrentAccount } from "@mysten/dapp-kit"
 import { toast } from "sonner"
 import { MessageSquare, Loader2 } from "lucide-react"
 
@@ -48,7 +49,8 @@ export function CreateReplyModal({ topicId, topicName, onReplyCreated, children,
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { tier } = useSubscription()
-  const { user } = useSuiAuth()
+  const { user, isSignedIn } = useSuiAuth()
+  const currentAccount = useCurrentAccount()
 
   const form = useForm<CreateReplyForm>({
     resolver: zodResolver(createReplySchema),
@@ -59,8 +61,14 @@ export function CreateReplyModal({ topicId, topicName, onReplyCreated, children,
   })
 
   const onSubmit = async (data: CreateReplyForm) => {
-    if (!user?.address) {
-      toast.error("Please connect your wallet to create a post")
+    if (!isSignedIn) {
+      toast.error("Please connect your wallet to create a reply")
+      return
+    }
+
+    const userAddress = user?.address || currentAccount?.address
+    if (!userAddress) {
+      toast.error("Please connect your wallet to continue")
       return
     }
 
@@ -72,13 +80,14 @@ export function CreateReplyModal({ topicId, topicName, onReplyCreated, children,
 
     setIsSubmitting(true)
     try {
-      const result = await forumService.createPost(
-        user.address,
+      // Use createUserReply for replies instead of createPost
+      const result = await forumService.createUserReply(
+        userAddress,
         {
           topic_id: topicId,
           title: `Re: ${replyToPost.title || 'Post'}`,
           content: data.content,
-          content_type: data.content_type
+          parent_post_id: replyToPost.id
         },
         tier
       )

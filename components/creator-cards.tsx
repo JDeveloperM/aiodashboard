@@ -195,7 +195,7 @@ async function addFreeChannelToDatabase(creator: Creator, channel: Channel, user
 }
 
 export function CreatorCards({ creators }: CreatorCardsProps) {
-  const { user } = useSuiAuth()
+  const { user, isSignedIn } = useSuiAuth()
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null)
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
@@ -242,6 +242,12 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
   }, [creators])
 
   const handleChannelAccess = async (creator: Creator, channel: Channel) => {
+    // Check authentication first
+    if (!isSignedIn) {
+      toast.error('Please connect your wallet to continue')
+      return
+    }
+
     // Use creator address for consistency (wallet address is more reliable than ID)
     const creatorIdentifier = creator.creatorAddress || creator.id
 
@@ -252,10 +258,7 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
       return // Stop here for free channels
     }
 
-    // For premium channels, continue with the existing logic
-    const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creatorIdentifier)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}`
-    window.location.href = forumUrl
-
+    // For premium channels, handle database recording BEFORE redirect
     // PRO and ROYAL users have limited free access to premium channels
     if (tier === 'PRO' || tier === 'ROYAL') {
       if (canAccessPremiumForFree(creator.id, channel.id)) {
@@ -263,10 +266,12 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
         console.log(`[CreatorCards] Recording premium access for ${tier} user: ${creator.id}_${channel.id}`)
         recordPremiumAccess(creator.id, channel.id)
 
-        // Add free premium access to database for profile tracking
-        if (user?.address) {
+        // Add free premium access to database for profile tracking BEFORE redirect
+        // Check for any valid user address (wallet or zkLogin)
+        const userAddress = user?.address || currentAccount?.address
+        if (userAddress) {
           try {
-            console.log('💾 Adding free premium channel subscription to database...')
+            console.log('💾 Adding free premium channel subscription to database for user:', userAddress)
 
             // Get the actual profile image blob ID from the creator's database record
             const avatarBlobId = await getCreatorProfileImageBlobIdDirect(creator.creatorAddress || creator.id)
@@ -276,7 +281,7 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
             const fallbackBlobId = avatarBlobId || extractBlobIdFromCreatorAvatar(creator.avatar)
             console.log('🔄 Final blob ID for premium access (with fallback):', fallbackBlobId)
 
-            await addUserChannelSubscription(user.address, {
+            await addUserChannelSubscription(userAddress, {
               creatorAddress: creator.creatorAddress || creator.id,
               channelId: channel.id,
               channelName: channel.name,
@@ -294,22 +299,21 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
 
             // Trigger a custom event to notify profile page to refresh
             window.dispatchEvent(new CustomEvent('channelAdded', {
-              detail: { channelId: channel.id, userAddress: user.address }
+              detail: { channelId: channel.id, userAddress }
             }))
 
           } catch (error) {
             console.error('❌ Failed to add free premium channel subscription to database:', error)
             // Don't prevent access, just log the error
           }
+        } else {
+          console.error('❌ No user address available for database recording')
+          toast.error('Please connect your wallet to continue')
+          return
         }
 
-        // Get channel-specific images with proper fallbacks
-        const channelAvatar = (channel as any).channelAvatar || creator.avatar || ''
-        const channelCover = (channel as any).channelCover || creator.coverImage || ''
-
-        // Redirect to Forum Creators category with creator context including channel images
-        const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creator.id)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}&channelAvatar=${encodeURIComponent(channelAvatar)}&channelCover=${encodeURIComponent(channelCover)}`
-
+        // Redirect to forum immediately after recording free premium access
+        const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creatorIdentifier)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}`
         window.location.href = forumUrl
         return
       } else {
@@ -321,23 +325,21 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
       }
     }
 
+    // Check if user has paid access to this premium channel
     const accessKey = `${creator.id}_${channel.id}`
     if (userAccess[accessKey]) {
-      // Get channel-specific images with proper fallbacks
-      const channelAvatar = (channel as any).channelAvatar || creator.avatar || ''
-      const channelCover = (channel as any).channelCover || creator.coverImage || ''
-
-      // Redirect to Forum Creators category with creator context including channel images
-      const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creator.id)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}&channelAvatar=${encodeURIComponent(channelAvatar)}&channelCover=${encodeURIComponent(channelCover)}`
-
-      window.location.href = forumUrl
+      // User has paid access, redirect to forum
+    } else {
+      // Show payment modal for premium/vip channels (NOMAD users or users without access)
+      setSelectedCreator(creator)
+      setSelectedChannel(channel)
+      setShowPaymentModal(true)
       return
     }
 
-    // Show payment modal for premium/vip channels (NOMAD users only)
-    setSelectedCreator(creator)
-    setSelectedChannel(channel)
-    setShowPaymentModal(true)
+    // Redirect to forum (for both free tier access and paid access)
+    const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creatorIdentifier)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}`
+    window.location.href = forumUrl
   }
 
   const handleLeaveChannel = async (creator: Creator, channel: Channel, event: React.MouseEvent) => {
@@ -354,17 +356,18 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
     if (!confirmed) return
 
     // Remove from database
-    if (user?.address) {
+    const userAddress = user?.address || currentAccount?.address
+    if (userAddress) {
       try {
         console.log('🗑️ Removing channel subscription from database...')
 
-        await channelSubscriptionsStorage.removeChannelSubscription(user.address, channel.id)
+        await channelSubscriptionsStorage.removeChannelSubscription(userAddress, channel.id)
 
         console.log('✅ Channel subscription removed from database')
 
         // Trigger a custom event to notify profile page to refresh
         window.dispatchEvent(new CustomEvent('channelRemoved', {
-          detail: { channelId: channel.id, userAddress: user.address }
+          detail: { channelId: channel.id, userAddress }
         }))
 
       } catch (error) {
@@ -466,7 +469,7 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
   const handleReportChannel = (creator: Creator, channel: Channel, event: React.MouseEvent) => {
     event.stopPropagation() // Prevent triggering the access button
 
-    if (!user?.address) {
+    if (!isSignedIn) {
       toast.error('Please connect your wallet to report a channel')
       return
     }
@@ -539,7 +542,8 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
     const channel = creator?.channels.find(ch => ch.id === channelId)
 
     // Add subscription to database if user is connected and channel exists
-    if (user?.address && creator && channel) {
+    const userAddress = user?.address || currentAccount?.address
+    if (userAddress && creator && channel) {
       try {
         console.log('💾 Adding channel subscription to database...')
 
@@ -551,7 +555,7 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
         const fallbackBlobId = avatarBlobId || extractBlobIdFromCreatorAvatar(creator.avatar)
         console.log('🔄 Final blob ID for payment success (with fallback):', fallbackBlobId)
 
-        await addUserChannelSubscription(user.address, {
+        await addUserChannelSubscription(userAddress, {
           creatorAddress: creator.creatorAddress || creator.id, // Use creatorAddress if available, fallback to id
           channelId: channel.id,
           channelName: channel.name,
@@ -569,7 +573,7 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
 
         // Trigger a custom event to notify profile page to refresh
         window.dispatchEvent(new CustomEvent('channelAdded', {
-          detail: { channelId: channel.id, userAddress: user.address }
+          detail: { channelId: channel.id, userAddress }
         }))
 
       } catch (error) {
