@@ -38,6 +38,8 @@ export default function ForumPage() {
   const channelId = searchParams.get('channel')
   const creatorName = searchParams.get('creatorName')
   const channelName = searchParams.get('channelName')
+  const channelAvatar = searchParams.get('channelAvatar')
+  const channelCover = searchParams.get('channelCover')
 
   const [activeTab, setActiveTab] = useState(urlTab || "general")
   const [categories, setCategories] = useState<ForumCategory[]>([])
@@ -64,19 +66,24 @@ export default function ForumPage() {
   // Handle URL parameters for creator context
   useEffect(() => {
     if (creatorId && channelId && creatorName && channelName) {
-      setCreatorContext({
+      const context = {
         creatorId,
         channelId,
         creatorName,
         channelName,
-        channelDescription: `Channel content from ${creatorName}`
-      })
+        channelDescription: `Channel content from ${creatorName}`,
+        channelAvatar: channelAvatar || undefined,
+        channelCover: channelCover || undefined
+      }
+
+      setCreatorContext(context)
+
       // Set active tab to creators if coming from AIO Creators
       if (urlTab === 'creators') {
         setActiveTab('creators')
       }
     }
-  }, [creatorId, channelId, creatorName, channelName, urlTab])
+  }, [creatorId, channelId, creatorName, channelName, channelAvatar, channelCover, urlTab])
 
   const loadForumData = async () => {
     setIsLoading(true)

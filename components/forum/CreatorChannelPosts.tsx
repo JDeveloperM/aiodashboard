@@ -120,70 +120,58 @@ export default function CreatorChannelPosts({ creatorContext, categoryImage, onC
     try {
       console.log('🔍 Loading creator data for:', creatorContext.creatorId)
 
-      // Load creator profile data
-      const profile = await getCreatorProfile(creatorContext.creatorId)
-      if (profile) {
-        setCreatorData(profile)
-        console.log('✅ Creator profile loaded:', profile.channel_name)
-      }
+      // Fetch creator data directly from API
+      const response = await fetch('/api/creators')
+      const result = await response.json()
 
-      // Try to get channel-specific images from creators context first
-      const creator = creators.find(c => c.id === creatorContext.creatorId || c.creatorAddress === creatorContext.creatorId)
-      const channel = creator?.channels.find(ch => ch.id === creatorContext.channelId)
+      if (result.success && result.data) {
+        // Normalize creator ID - handle wallet addresses and malformed IDs
+        const normalizedCreatorId = creatorContext.creatorId.split('_')[0] // Remove any appended parts
 
-      console.log('🔍 Debug channel images:', {
-        creatorId: creatorContext.creatorId,
-        channelId: creatorContext.channelId,
-        foundCreator: !!creator,
-        foundChannel: !!channel,
-        channelAvatar: channel?.channelAvatar,
-        channelCover: channel?.channelCover,
-        contextAvatar: creatorContext.channelAvatar,
-        contextCover: creatorContext.channelCover
-      })
+        // Find the creator by matching multiple possible formats
+        const dbCreator = result.data.find((c: any) =>
+          c.id === creatorContext.creatorId || // Exact match
+          c.creator_address === creatorContext.creatorId || // Wallet address match
+          c.id === normalizedCreatorId || // Normalized ID match
+          c.creator_address === normalizedCreatorId // Normalized wallet address match
+        )
 
-      // Priority order for avatar: context > channel data > creator profile
-      let avatarToUse = ''
-      let coverToUse = ''
+        console.log('🔍 Creator search:', {
+          searchingFor: creatorContext.creatorId,
+          normalized: normalizedCreatorId,
+          foundCreator: !!dbCreator,
+          creatorName: dbCreator?.channel_name_encrypted
+        })
 
-      // Avatar priority
-      if (creatorContext.channelAvatar) {
-        avatarToUse = creatorContext.channelAvatar
-        console.log('✅ Using channel-specific avatar from context:', creatorContext.channelAvatar)
-      } else if (channel?.channelAvatar) {
-        avatarToUse = channel.channelAvatar
-        console.log('✅ Using channel-specific avatar from creators context:', channel.channelAvatar)
-      } else {
-        // Fallback to creator profile avatar
-        const avatarUrl = await getCreatorAvatarUrl(creatorContext.creatorId)
-        if (avatarUrl) {
-          avatarToUse = avatarUrl
-          console.log('✅ Creator profile avatar loaded:', avatarUrl)
+        if (dbCreator) {
+          console.log('✅ Found creator in database:', dbCreator.channel_name_encrypted)
+
+          // Find the specific channel in channels_data
+          const channelData = dbCreator.channels_data?.find((ch: any) => ch.id === creatorContext.channelId)
+
+          if (channelData) {
+            console.log('✅ Found channel data:', channelData.name)
+            console.log('🖼️ Channel images:', {
+              channelAvatar: channelData.channelAvatar,
+              channelCover: channelData.channelCover
+            })
+
+            // Use channel-specific images directly from database
+            if (channelData.channelAvatar) {
+              setCreatorAvatar(channelData.channelAvatar)
+              console.log('✅ Set channel avatar:', channelData.channelAvatar)
+            }
+
+            if (channelData.channelCover) {
+              setCreatorCover(channelData.channelCover)
+              console.log('✅ Set channel cover:', channelData.channelCover)
+            }
+          } else {
+            console.log('❌ Channel not found in database')
+          }
+        } else {
+          console.log('❌ Creator not found in database')
         }
-      }
-
-      // Cover priority
-      if (creatorContext.channelCover) {
-        coverToUse = creatorContext.channelCover
-        console.log('✅ Using channel-specific cover from context:', creatorContext.channelCover)
-      } else if (channel?.channelCover) {
-        coverToUse = channel.channelCover
-        console.log('✅ Using channel-specific cover from creators context:', channel.channelCover)
-      } else {
-        // Fallback to creator profile cover
-        const coverUrl = await getCreatorCoverUrl(creatorContext.creatorId)
-        if (coverUrl) {
-          coverToUse = coverUrl
-          console.log('✅ Creator profile cover loaded:', coverUrl)
-        }
-      }
-
-      // Set the images (only once per creator/channel combination)
-      if (avatarToUse) {
-        setCreatorAvatar(avatarToUse)
-      }
-      if (coverToUse) {
-        setCreatorCover(coverToUse)
       }
 
       // Mark images as loaded to prevent further updates

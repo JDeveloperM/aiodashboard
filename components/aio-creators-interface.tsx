@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { CreatorCards } from "./creator-cards"
 import { useCreatorsDatabase } from "@/contexts/creators-database-context"
+import { useSuiAuth } from "@/contexts/sui-auth-context"
+import { useCurrentAccount } from "@mysten/dapp-kit"
 import { Search, Filter, Users, TrendingUp, BookOpen, FileText, Coins, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,9 +23,14 @@ import type { Creator, Channel } from "@/contexts/creators-context"
 
 export function AIOCreatorsInterface() {
   const { creators, isLoading, error, refreshCreators } = useCreatorsDatabase()
+  const { user } = useSuiAuth()
+  const currentAccount = useCurrentAccount()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [sortBy, setSortBy] = useState<'subscribers' | 'name' | 'category'>('subscribers')
+
+  // Get current user's wallet address for filtering
+  const userAddress = currentAccount?.address || user?.address
 
   const categories = [
     { value: "all", label: "All Categories", icon: Users },
@@ -35,7 +42,15 @@ export function AIOCreatorsInterface() {
   ]
 
   // Convert creators to individual channel cards (flatten channels into separate creator cards)
+  // Filter out user's own channels from display
   const channelCards = creators.flatMap(creator => {
+    // Skip creators owned by current user
+    if (userAddress && creator.creatorAddress &&
+        creator.creatorAddress.toLowerCase() === userAddress.toLowerCase()) {
+      console.log('🚫 Skipping own creator:', creator.name, 'for user:', userAddress)
+      return []
+    }
+
     console.log('🔄 Processing creator:', creator.name, 'with', creator.channels.length, 'channels')
     console.log('📊 Creator channels:', creator.channels.map(ch => ({ name: ch.name, subscribers: ch.subscribers })))
 
@@ -100,18 +115,7 @@ export function AIOCreatorsInterface() {
     }
   })
 
-  const handleAccessChannel = (creatorId: string, channelId: string) => {
-    const creator = creators.find(c => c.id === creatorId)
-    const channel = creator?.channels.find(ch => ch.id === channelId)
 
-    if (creator && channel) {
-      toast.success(`Accessing ${channel.name} by ${creator.name}`)
-
-      // Redirect to Forum Creators category with creator context
-      const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creatorId)}&channel=${encodeURIComponent(channelId)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}`
-      window.location.href = forumUrl
-    }
-  }
 
   // Show loading state
   if (isLoading) {
@@ -162,12 +166,29 @@ export function AIOCreatorsInterface() {
   }
 
   const getTotalStats = () => {
+    // Calculate stats from filtered creators (excluding user's own channels)
     const totalCreators = filteredCreators.length
-    // Fixed values as requested
-    const totalSubscribers = 340
-    const totalChannels = 8
+
+    // Calculate total channels from filtered creators
+    const totalChannels = filteredCreators.reduce((sum, creator) =>
+      sum + creator.channels.length, 0)
+
+    // Calculate free channels from filtered creators
     const freeChannels = filteredCreators.reduce((sum, creator) =>
       sum + creator.channels.filter(ch => ch.type === 'free').length, 0)
+
+    // Calculate total subscribers from filtered creators
+    const totalSubscribers = filteredCreators.reduce((sum, creator) =>
+      sum + creator.subscribers, 0)
+
+    console.log('📊 AIO Creators Stats:', {
+      totalCreators,
+      totalChannels,
+      freeChannels,
+      totalSubscribers,
+      userAddress,
+      excludedOwnChannels: userAddress ? 'Yes' : 'No'
+    })
 
     return { totalCreators, totalSubscribers, totalChannels, freeChannels }
   }
@@ -281,15 +302,17 @@ export function AIOCreatorsInterface() {
                 No creators found
               </h3>
               <p className="text-[#C0E6FF] max-w-md mx-auto">
-                Try adjusting your search criteria or filters to find more creators.
+                {userAddress
+                  ? "No other creators match your search criteria. Your own channels are managed in Creator Controls."
+                  : "Try adjusting your search criteria or filters to find more creators."
+                }
               </p>
             </div>
           </div>
         </div>
       ) : (
-        <CreatorCards 
+        <CreatorCards
           creators={filteredCreators}
-          onAccessChannel={handleAccessChannel}
         />
       )}
     </div>

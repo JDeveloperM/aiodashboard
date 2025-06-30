@@ -39,13 +39,54 @@ export function MyChannelsList({ onChannelClick }: MyChannelsListProps) {
 
     setIsLoading(true)
     try {
+      // Get user subscriptions
       const userChannels = await getUserJoinedChannels(user.address)
+
       // Filter for active subscriptions only
       const activeChannels = userChannels.filter(channel =>
         channel.isActive &&
         (!channel.expiryDate || new Date(channel.expiryDate) > new Date())
       )
-      setChannels(activeChannels)
+
+      // Fetch creator data to get correct channel images (same as successful forum pages)
+      const response = await fetch('/api/creators')
+      const result = await response.json()
+
+      if (result.success && result.data) {
+        // Update channels with correct images from database
+        const updatedChannels = activeChannels.map(channel => {
+          // Find the creator in database
+          const dbCreator = result.data.find((c: any) =>
+            c.creator_address === channel.creatorAddress ||
+            c.id === channel.creatorAddress
+          )
+
+          if (dbCreator) {
+            // Find the specific channel in channels_data
+            const channelData = dbCreator.channels_data?.find((ch: any) => ch.id === channel.id)
+
+            if (channelData) {
+              console.log('✅ Found channel images for:', channel.name, {
+                channelAvatar: channelData.channelAvatar,
+                channelCover: channelData.channelCover
+              })
+
+              // Use channel-specific images from database (same as successful forum pages)
+              return {
+                ...channel,
+                avatarUrl: channelData.channelAvatar || channel.avatarUrl,
+                coverUrl: channelData.channelCover || channel.coverUrl
+              }
+            }
+          }
+
+          return channel
+        })
+
+        setChannels(updatedChannels)
+      } else {
+        setChannels(activeChannels)
+      }
     } catch (error) {
       console.error('Failed to load user channels:', error)
       setChannels([])

@@ -52,11 +52,16 @@ import {
   BookOpen,
   TrendingUp,
   MessageCircle,
-  Lock
+  Lock,
+  UserCheck,
+  Clock,
+  UserX,
+  Settings
 } from "lucide-react"
 import { toast } from "sonner"
 import { EditChannelModal } from "./edit-channel-modal"
 import { CreatorContentDashboard } from "./creator-content-dashboard"
+import { usePersistentProfile } from "@/hooks/use-persistent-profile"
 
 // Form validation schema
 const creatorFormSchema = z.object({
@@ -115,12 +120,15 @@ export function CreatorControlsInterface() {
   const router = useRouter()
   const currentAccount = useCurrentAccount()
   const { user } = useSuiAuth()
+  const { profile } = usePersistentProfile()
   const { mutate: signAndExecute } = useSignAndExecuteTransaction()
   // Image states - using Walrus integration like profile page
   const [profileImage, setProfileImage] = useState<string>("")
   const [coverImage, setCoverImage] = useState<string>("")
   const [profileImageBlobId, setProfileImageBlobId] = useState<string>("")
   const [coverImageBlobId, setCoverImageBlobId] = useState<string>("")
+  // Stats state
+  const [totalPosts, setTotalPosts] = useState<number>(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Progressive card display states
@@ -163,6 +171,38 @@ export function CreatorControlsInterface() {
   const watchChannelLanguage = form.watch("channelLanguage")
   const watchCreatorRole = form.watch("creatorRole")
   const watchMaxSubscribers = form.watch("maxSubscribers")
+
+  // Load total posts count
+  useEffect(() => {
+    const loadTotalPosts = async () => {
+      if (!user?.address) {
+        setTotalPosts(0)
+        return
+      }
+
+      try {
+        const { createClient } = await import('@supabase/supabase-js')
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+
+        const { count } = await supabase
+          .from('forum_posts')
+          .select('*', { count: 'exact', head: true })
+          .eq('author_address', user.address)
+          .eq('is_deleted', false)
+          .eq('post_type', 'creator_post')
+
+        setTotalPosts(count || 0)
+      } catch (error) {
+        console.error('Failed to load total posts:', error)
+        setTotalPosts(0)
+      }
+    }
+
+    loadTotalPosts()
+  }, [user?.address])
 
   // Progressive card visibility logic
   useEffect(() => {
@@ -516,6 +556,73 @@ export function CreatorControlsInterface() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* Overall Stats Cards - Moved to top */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-[#1a2f51] border-[#C0E6FF]/20">
+          <CardContent className="p-4 h-full">
+            <div className="flex flex-col justify-center items-center h-full space-y-3 text-center">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-[#4DA2FF]" />
+                <p className="text-[#C0E6FF]/70 text-sm font-medium">Total Channels</p>
+              </div>
+              <div>
+                <p className="text-white font-bold text-2xl">{userChannels.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[#1a2f51] border-[#C0E6FF]/20">
+          <CardContent className="p-4 h-full">
+            <div className="flex flex-col justify-center items-center h-full space-y-3 text-center">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-green-400" />
+                <p className="text-[#C0E6FF]/70 text-sm font-medium">Total Posts</p>
+              </div>
+              <div>
+                <p className="text-white font-bold text-2xl">{totalPosts}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[#1a2f51] border-[#C0E6FF]/20 md:col-span-2">
+          <CardContent className="p-4">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-3">
+                <Settings className="w-5 h-5 text-[#4DA2FF]" />
+                <p className="text-white font-medium">Channel Creation Limits</p>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-[#030f1c] rounded-lg">
+                <div>
+                  <p className="text-white font-medium">Your Tier: {tier}</p>
+                  <p className="text-[#C0E6FF] text-sm">
+                    {tier === 'ROYAL' ? 'Maximum 3 channels allowed' : 'Maximum 2 channels allowed'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className={`font-medium ${currentChannelCount >= maxChannels ? 'text-red-400' : 'text-white'}`}>
+                    {currentChannelCount} / {maxChannels}
+                  </p>
+                  <p className="text-[#C0E6FF] text-sm">Channels Created</p>
+                </div>
+              </div>
+
+              {/* Warning messages */}
+              {currentChannelCount >= maxChannels && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <p className="text-red-400 text-sm font-medium">⚠️ Channel limit reached!</p>
+                  <p className="text-red-300 text-xs mt-1">
+                    You have reached the maximum number of channels for {tier} tier.
+                    {tier === 'PRO' && ' Upgrade to ROYAL to create up to 3 channels.'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Tabs defaultValue="manage" className="w-full">
         <TabsList className="grid w-full grid-cols-2 bg-[#1a2f51] border-[#C0E6FF]/20">
           <TabsTrigger
@@ -544,119 +651,251 @@ export function CreatorControlsInterface() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Channels Grid */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {userChannels.map((channel) => (
-                <div key={channel.id} className="enhanced-card overflow-hidden">
-                  {/* Banner with Avatar */}
-                  <div
-                    className="relative h-20 flex items-center p-3 rounded-t-lg overflow-hidden"
-                    style={{
-                      background: (() => {
-                        // Use channel-specific cover only (no creator profile cover)
-                        const channelData = channel as any
-                        const channelCover = channelData.channelCover
+            {/* Channels Grid - Using AIO Creators style cards - Made wider */}
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+              {userChannels.map((channel) => {
+                // Transform channel data to match AIO Creators card format
+                const channelCard = {
+                  id: userCreator!.id,
+                  name: channel.name,
+                  username: profile?.username || user?.username || userCreator!.username || userCreator!.name,
+                  subscribers: channel.subscribers,
+                  channels: [channel],
+                  originalCreatorId: userCreator!.id,
+                  channelId: channel.id,
+                  bannerColor: userCreator!.bannerColor || '#4DA2FF',
+                  avatar: (channel as any).channelAvatar,
+                  coverImage: (channel as any).channelCover,
+                  availability: channel.availability,
+                  category: (channel as any).channelCategories?.[0] || userCreator!.category || 'General',
+                  categories: (channel as any).channelCategories || [userCreator!.category || 'General'],
+                  role: (channel as any).channelRole || userCreator!.role || 'NOMAD',
+                  languages: (channel as any).channelLanguage ? [(channel as any).channelLanguage] : ['English'],
+                  creatorAddress: userCreator!.creatorAddress,
+                  verified: userCreator!.verified || false
+                }
 
-                        return channelCover
-                          ? `url(${channelCover})`
-                          : `linear-gradient(135deg, ${userCreator?.bannerColor || '#4DA2FF'}40, ${userCreator?.bannerColor || '#4DA2FF'}20)`
-                      })(),
-                      backgroundSize: (() => {
-                        const channelData = channel as any
-                        const channelCover = channelData.channelCover
-                        return channelCover ? 'cover' : 'auto'
-                      })(),
-                      backgroundPosition: (() => {
-                        const channelData = channel as any
-                        const channelCover = channelData.channelCover
-                        return channelCover ? 'center' : 'auto'
-                      })(),
-                      borderBottom: `2px solid ${userCreator?.bannerColor || '#4DA2FF'}60`
-                    }}
-                  >
-                    {/* Cover Image Overlay for better text readability */}
-                    {(() => {
-                      const channelData = channel as any
-                      const channelCover = channelData.channelCover
-                      return channelCover && (
+                // Helper functions for card styling
+                const getCategoryIcon = (category: string) => {
+                  switch (category.toLowerCase()) {
+                    case 'trading': return TrendingUp
+                    case 'education': return BookOpen
+                    case 'entertainment': return Play
+                    case 'technology': return FileText
+                    case 'finance': return Coins
+                    default: return Users
+                  }
+                }
+
+                const getCategoryColor = (category: string) => {
+                  // Standardized grey background with blue hover for all categories
+                  return 'bg-gray-500/20 text-gray-400 hover:bg-blue-500/20 hover:text-blue-400 transition-colors'
+                }
+
+                const getChannelTypeColor = (type: string) => {
+                  switch (type) {
+                    case 'premium': return 'bg-yellow-500/20 text-yellow-400'
+                    case 'vip': return 'bg-purple-500/20 text-purple-400'
+                    default: return 'bg-green-500/20 text-green-400'
+                  }
+                }
+
+                const CategoryIcon = getCategoryIcon(channelCard.category)
+
+                // Helper functions for availability display
+                const getAvailabilityIcon = (status: string) => {
+                  switch (status) {
+                    case 'available':
+                      return <UserCheck className="w-3 h-3 text-green-400" />
+                    case 'limited':
+                      return <Clock className="w-3 h-3 text-orange-400" />
+                    case 'full':
+                      return <UserX className="w-3 h-3 text-red-400" />
+                    default:
+                      return <UserCheck className="w-3 h-3 text-green-400" />
+                  }
+                }
+
+                const getAvailabilityText = (availability: any) => {
+                  if (!availability?.hasLimit) return 'Open'
+
+                  switch (availability.status) {
+                    case 'available':
+                      return `${availability.currentSlots}/${availability.maxSlots} slots`
+                    case 'limited':
+                      return `${availability.currentSlots}/${availability.maxSlots} slots`
+                    case 'full':
+                      return 'Full'
+                    default:
+                      return 'Open'
+                  }
+                }
+
+                return (
+                  <div key={channel.id} className="enhanced-card overflow-hidden">
+                    {/* Banner with Avatar and Channel Icons */}
+                    <div
+                      className="relative h-20 flex items-center p-3 rounded-t-lg overflow-hidden"
+                      style={{
+                        background: (() => {
+                          const channelCover = (channel as any).channelCover
+                          return channelCover
+                            ? `url(${channelCover})`
+                            : `linear-gradient(135deg, ${channelCard.bannerColor}40, ${channelCard.bannerColor}20)`
+                        })(),
+                        backgroundSize: (channel as any).channelCover ? 'cover' : 'auto',
+                        backgroundPosition: (channel as any).channelCover ? 'center' : 'auto',
+                        borderBottom: `2px solid ${channelCard.bannerColor}60`
+                      }}
+                    >
+                      {/* Cover Image Overlay for better text readability */}
+                      {(channel as any).channelCover && (
                         <div className="absolute inset-0 bg-black bg-opacity-40 rounded-t-lg"></div>
-                      )
-                    })()}
+                      )}
 
-                    {/* Main Banner Content */}
-                    <div className="banner-main-content flex items-center gap-3 w-full relative z-10">
-                      <Avatar className="h-16 w-16 border-2 border-white/20">
-                        <AvatarImage
-                          src={(() => {
-                            // Use channel-specific avatar only (no creator profile avatar)
-                            const channelData = channel as any
-                            const channelAvatar = channelData.channelAvatar
-                            return channelAvatar
-                          })()}
-                          alt={channel.name}
-                        />
-                        <AvatarFallback className="bg-[#4DA2FF] text-white text-lg">
-                          {channel.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-white font-semibold text-base truncate">{channel.name}</h3>
+                      {/* Main Banner Content */}
+                      <div className="banner-main-content flex items-center gap-2 w-full relative z-10">
+                        <Avatar className="h-16 w-16 border-2 border-white/20">
+                          <AvatarImage
+                            src={(channel as any).channelAvatar}
+                            alt={channel.name}
+                          />
+                          <AvatarFallback className="bg-[#4DA2FF] text-white text-xl">
+                            {channel.name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1">
+                            <h3 className="text-white font-semibold text-sm truncate">{channel.name}</h3>
+                            {channelCard.verified && (
+                              <CheckCircle className="w-3 h-3 text-blue-400 flex-shrink-0" />
+                            )}
                           </div>
-                          <Badge className={`ml-2 ${
-                            channel.type === 'premium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
-                          }`}>
-                            {channel.type}
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="text-[#C0E6FF] text-xs">{channelCard.username}</span>
+                          </div>
+                        </div>
+
+                        {/* Role Label - Top Right Corner */}
+                        <div className="absolute top-2 right-2">
+                          <Badge className="bg-gray-800/80 text-white hover:bg-blue-600/80 hover:text-white transition-colors text-xs px-2 py-1 border-0">
+                            {channelCard.role}
                           </Badge>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Card Content */}
-                  <div className="p-4 space-y-3">
+                    <div className="p-3 space-y-3">
+                      {/* Categories - 3 per line */}
+                      <div className="grid grid-cols-3 gap-1">
+                        {channelCard.categories.slice(0, 6).map((category: string, index: number) => {
+                          const CategoryIcon = getCategoryIcon(category)
+                          return (
+                            <Badge key={index} className={`text-xs px-1.5 py-1 ${getCategoryColor(category)} flex items-center justify-center`}>
+                              <CategoryIcon className="w-3 h-3 mr-1" />
+                              <span className="truncate">{category}</span>
+                            </Badge>
+                          )
+                        })}
+                      </div>
 
-                    <div className="space-y-2">
-                      <p className="text-gray-400 text-sm line-clamp-2">{channel.description}</p>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-[#C0E6FF]">{channel.subscribers} subscribers</span>
-                        {channel.type === 'premium' && (
-                          <span className="text-yellow-400">{channel.price} SUI</span>
-                        )}
+                      {/* Line 2: Subscribers, Availability, and Languages */}
+                      <div className="flex items-center justify-center gap-3 text-xs text-[#C0E6FF] flex-wrap">
+                        <div className="flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          <span>{channelCard.subscribers > 1000 ? `${(channelCard.subscribers/1000).toFixed(1)}k` : channelCard.subscribers} subscribers</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {getAvailabilityIcon(channelCard.availability?.status || 'available')}
+                          <span>{getAvailabilityText(channelCard.availability)}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {channelCard.languages.slice(0, 2).map((lang) => (
+                            <Badge
+                              key={lang}
+                              variant="outline"
+                              className="text-xs border-[#C0E6FF]/30 text-[#C0E6FF] px-1.5 py-0.5"
+                            >
+                              {lang}
+                            </Badge>
+                          ))}
+                          {channelCard.languages.length > 2 && (
+                            <Badge
+                              variant="outline"
+                              className="text-xs border-[#C0E6FF]/30 text-[#C0E6FF] px-1.5 py-0.5"
+                            >
+                              +{channelCard.languages.length - 2}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Channel Details - Full Width at Bottom */}
+                      <div className="space-y-1.5">
+                        <div className="bg-[#1a2f51] rounded p-2 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1">
+                              <span className="text-white text-xs font-medium">{channel.name}</span>
+                              <Badge className={`text-xs ${getChannelTypeColor(channel.type)} px-1 py-0`}>
+                                {channel.type[0].toUpperCase()}
+                              </Badge>
+                            </div>
+                            {channel.type === 'premium' && (
+                              <div className="flex items-center gap-1">
+                                <Coins className="w-3 h-3 text-yellow-400" />
+                                <span className="text-yellow-400 text-xs font-medium">{channel.price} SUI</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <p className="text-[#C0E6FF] text-xs line-clamp-2">{channel.description}</p>
+
+                          {/* Owner view: Show Preview and Delete buttons */}
+                          <div className="flex gap-1">
+                            <Button
+                              onClick={() => {
+                                // Navigate to forum to preview the channel
+                                const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(userCreator!.creatorAddress || userCreator!.id)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(userCreator!.name)}&channelName=${encodeURIComponent(channel.name)}`
+                                window.location.href = forumUrl
+                              }}
+                              size="sm"
+                              className="flex-1 h-6 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                              Preview
+                            </Button>
+                            <Button
+                              onClick={() => handleEditChannel(channel, userCreator!.id)}
+                              size="sm"
+                              className="h-6 text-xs bg-green-600 hover:bg-green-700 text-white px-2"
+                              title="Edit Channel"
+                            >
+                              <FileText className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              onClick={async () => {
+                                if (window.confirm(`Are you sure you want to delete "${channel.name}"?`)) {
+                                  try {
+                                    await deleteChannel(userCreator!.id, channel.id)
+                                    toast.success('Channel deleted successfully')
+                                  } catch (error) {
+                                    console.error('Failed to delete channel:', error)
+                                    toast.error('Failed to delete channel')
+                                  }
+                                }
+                              }}
+                              size="sm"
+                              className="h-6 text-xs bg-red-600 hover:bg-red-700 text-white px-2"
+                              title={`Delete "${channel.name}"`}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="flex gap-2 pt-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleEditChannel(channel, userCreator!.id)}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                      >
-                        <FileText className="w-4 h-4 mr-1" />
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={async () => {
-                          if (window.confirm(`Are you sure you want to delete "${channel.name}"?`)) {
-                            try {
-                              await deleteChannel(userCreator!.id, channel.id)
-                              toast.success('Channel deleted successfully')
-                            } catch (error) {
-                              console.error('Failed to delete channel:', error)
-                              toast.error('Failed to delete channel')
-                            }
-                          }
-                        }}
-                        className="bg-red-600 hover:bg-red-700 text-white px-3"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             {/* Content Management Section */}

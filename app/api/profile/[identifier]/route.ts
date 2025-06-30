@@ -199,10 +199,49 @@ export async function GET(
     // Add social links (always public for profile discovery)
     publicProfile.socialLinks = socialLinks
 
-    // Add channels joined (public information)
+    // Add channels joined (public information) with correct images
     try {
       const userChannels = await getUserJoinedChannels(profileData.address)
-      publicProfile.channelsJoined = userChannels
+
+      // Fetch creator data to get correct channel images (same as successful forum pages)
+      const creatorsResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/creators`)
+      const creatorsResult = await creatorsResponse.json()
+
+      if (creatorsResult.success && creatorsResult.data) {
+        // Update channels with correct images from database (same as forum)
+        const updatedChannels = userChannels.map(channel => {
+          // Find the creator in database
+          const dbCreator = creatorsResult.data.find((c: any) =>
+            c.creator_address === channel.creatorAddress ||
+            c.id === channel.creatorAddress
+          )
+
+          if (dbCreator) {
+            // Find the specific channel in channels_data
+            const channelData = dbCreator.channels_data?.find((ch: any) => ch.id === channel.id)
+
+            if (channelData) {
+              console.log('✅ Public Profile: Found channel images for:', channel.name, {
+                channelAvatar: channelData.channelAvatar,
+                channelCover: channelData.channelCover
+              })
+
+              // Use channel-specific images from database (same as successful forum pages)
+              return {
+                ...channel,
+                avatarUrl: channelData.channelAvatar || channel.avatarUrl,
+                coverUrl: channelData.channelCover || channel.coverUrl
+              }
+            }
+          }
+
+          return channel
+        })
+
+        publicProfile.channelsJoined = updatedChannels
+      } else {
+        publicProfile.channelsJoined = userChannels
+      }
     } catch (error) {
       console.warn('Could not fetch channels for profile:', profileData.address, error)
       publicProfile.channelsJoined = []

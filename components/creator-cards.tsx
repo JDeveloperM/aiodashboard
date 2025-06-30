@@ -99,7 +99,6 @@ interface Creator {
 
 interface CreatorCardsProps {
   creators: Creator[]
-  onAccessChannel: (creatorId: string, channelId: string) => void
 }
 
 // Helper function to extract blob ID from creator avatar URL
@@ -149,7 +148,53 @@ async function getCreatorProfileImageBlobIdDirect(creatorAddress: string): Promi
   }
 }
 
-export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
+// Background function to add free channel to database
+async function addFreeChannelToDatabase(creator: Creator, channel: Channel, userAddress: string) {
+  try {
+    console.log('💾 Adding free channel subscription to database...')
+    console.log('🔍 Creator data:', {
+      id: creator.id,
+      name: creator.name,
+      avatar: creator.avatar,
+      creatorAddress: creator.creatorAddress
+    })
+
+    // Get the actual profile image blob ID from the creator's database record
+    const avatarBlobId = await getCreatorProfileImageBlobIdDirect(creator.creatorAddress || creator.id)
+    console.log('🖼️ Retrieved creator profile image blob ID:', avatarBlobId)
+
+    // If no blob ID found, try extracting from avatar URL as fallback
+    const fallbackBlobId = avatarBlobId || extractBlobIdFromCreatorAvatar(creator.avatar)
+    console.log('🔄 Final blob ID (with fallback):', fallbackBlobId)
+
+    await addUserChannelSubscription(userAddress, {
+      creatorAddress: creator.creatorAddress || creator.id,
+      channelId: channel.id,
+      channelName: channel.name,
+      channelType: channel.type,
+      channelDescription: channel.description,
+      pricePaid: 0,
+      subscriptionTier: channel.type,
+      expiryDate: undefined, // Free channels don't expire
+      // Use the actual blob ID from database (with fallback)
+      channelAvatarBlobId: fallbackBlobId
+    })
+
+    console.log('✅ Free channel subscription added to database')
+    toast.success(`Joined ${channel.name}! Check your profile to see all joined channels.`)
+
+    // Trigger a custom event to notify profile page to refresh
+    window.dispatchEvent(new CustomEvent('channelAdded', {
+      detail: { channelId: channel.id, userAddress }
+    }))
+
+  } catch (error) {
+    console.error('❌ Failed to add free channel subscription to database:', error)
+    // Don't show error to user since they already got access
+  }
+}
+
+export function CreatorCards({ creators }: CreatorCardsProps) {
   const { user } = useSuiAuth()
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null)
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null)
@@ -197,61 +242,19 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
   }, [creators])
 
   const handleChannelAccess = async (creator: Creator, channel: Channel) => {
+    // Use creator address for consistency (wallet address is more reliable than ID)
+    const creatorIdentifier = creator.creatorAddress || creator.id
+
+    // For free channels, redirect immediately without any other processing
     if (channel.type === 'free') {
-      // Add free channel to database for profile tracking
-      if (user?.address) {
-        try {
-          console.log('💾 Adding free channel subscription to database...')
-          console.log('🔍 Creator data:', {
-            id: creator.id,
-            name: creator.name,
-            avatar: creator.avatar,
-            creatorAddress: creator.creatorAddress
-          })
-
-          // Get the actual profile image blob ID from the creator's database record
-          const avatarBlobId = await getCreatorProfileImageBlobIdDirect(creator.creatorAddress || creator.id)
-          console.log('🖼️ Retrieved creator profile image blob ID:', avatarBlobId)
-
-          // If no blob ID found, try extracting from avatar URL as fallback
-          const fallbackBlobId = avatarBlobId || extractBlobIdFromCreatorAvatar(creator.avatar)
-          console.log('🔄 Final blob ID (with fallback):', fallbackBlobId)
-
-          await addUserChannelSubscription(user.address, {
-            creatorAddress: creator.creatorAddress || creator.id,
-            channelId: channel.id,
-            channelName: channel.name,
-            channelType: channel.type,
-            channelDescription: channel.description,
-            pricePaid: 0,
-            subscriptionTier: channel.type,
-            expiryDate: undefined, // Free channels don't expire
-            // Use the actual blob ID from database (with fallback)
-            channelAvatarBlobId: fallbackBlobId
-          })
-
-          console.log('✅ Free channel subscription added to database')
-          toast.success(`Joined ${channel.name}! Check your profile to see all joined channels.`)
-
-          // Trigger a custom event to notify profile page to refresh
-          window.dispatchEvent(new CustomEvent('channelAdded', {
-            detail: { channelId: channel.id, userAddress: user.address }
-          }))
-
-        } catch (error) {
-          console.error('❌ Failed to add free channel subscription to database:', error)
-          // Don't prevent access, just log the error
-        }
-      }
-
-      // Access free channel and redirect to forum
-      onAccessChannel(creator.id, channel.id)
-
-      // Redirect to Forum Creators category with creator context
-      const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creator.id)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}`
+      const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creatorIdentifier)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}`
       window.location.href = forumUrl
-      return
+      return // Stop here for free channels
     }
+
+    // For premium channels, continue with the existing logic
+    const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creatorIdentifier)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}`
+    window.location.href = forumUrl
 
     // PRO and ROYAL users have limited free access to premium channels
     if (tier === 'PRO' || tier === 'ROYAL') {
@@ -300,11 +303,13 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
           }
         }
 
-        // Access premium channel and redirect to forum
-        onAccessChannel(creator.id, channel.id)
+        // Get channel-specific images with proper fallbacks
+        const channelAvatar = (channel as any).channelAvatar || creator.avatar || ''
+        const channelCover = (channel as any).channelCover || creator.coverImage || ''
 
-        // Redirect to Forum Creators category with creator context
-        const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creator.id)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}`
+        // Redirect to Forum Creators category with creator context including channel images
+        const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creator.id)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}&channelAvatar=${encodeURIComponent(channelAvatar)}&channelCover=${encodeURIComponent(channelCover)}`
+
         window.location.href = forumUrl
         return
       } else {
@@ -318,11 +323,13 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
 
     const accessKey = `${creator.id}_${channel.id}`
     if (userAccess[accessKey]) {
-      // User has access, redirect to forum
-      onAccessChannel(creator.id, channel.id)
+      // Get channel-specific images with proper fallbacks
+      const channelAvatar = (channel as any).channelAvatar || creator.avatar || ''
+      const channelCover = (channel as any).channelCover || creator.coverImage || ''
 
-      // Redirect to Forum Creators category with creator context
-      const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creator.id)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}`
+      // Redirect to Forum Creators category with creator context including channel images
+      const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creator.id)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}&channelAvatar=${encodeURIComponent(channelAvatar)}&channelCover=${encodeURIComponent(channelCover)}`
+
       window.location.href = forumUrl
       return
     }
@@ -572,7 +579,17 @@ export function CreatorCards({ creators, onAccessChannel }: CreatorCardsProps) {
       }
     }
 
-    onAccessChannel(creatorId, channelId)
+    // Redirect to forum using the creator and channel already found above
+    if (creator && channel) {
+      // Get channel-specific images with proper fallbacks
+      const channelAvatar = (channel as any).channelAvatar || creator.avatar || ''
+      const channelCover = (channel as any).channelCover || creator.coverImage || ''
+
+      // Redirect to Forum Creators category with creator context including channel images
+      const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creator.id)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}&channelAvatar=${encodeURIComponent(channelAvatar)}&channelCover=${encodeURIComponent(channelCover)}`
+
+      window.location.href = forumUrl
+    }
   }
 
   const getCategoryIcon = (category: string) => {

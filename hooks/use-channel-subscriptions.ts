@@ -38,9 +38,47 @@ export function useChannelSubscriptions(): UseChannelSubscriptionsReturn {
 
       console.log(`✅ Loaded ${userChannels.length} channels from database`)
 
-      // Set the actual channels from database (empty array if none found)
-      setChannels(userChannels)
-      console.log(`📺 Set ${userChannels.length} actual user channels`)
+      // Fetch creator data to get correct channel images (same as successful forum pages)
+      const response = await fetch('/api/creators')
+      const result = await response.json()
+
+      if (result.success && result.data) {
+        // Update channels with correct images from database (same as forum)
+        const updatedChannels = userChannels.map(channel => {
+          // Find the creator in database
+          const dbCreator = result.data.find((c: any) =>
+            c.creator_address === channel.creatorAddress ||
+            c.id === channel.creatorAddress
+          )
+
+          if (dbCreator) {
+            // Find the specific channel in channels_data
+            const channelData = dbCreator.channels_data?.find((ch: any) => ch.id === channel.id)
+
+            if (channelData) {
+              console.log('✅ Profile: Found channel images for:', channel.name, {
+                channelAvatar: channelData.channelAvatar,
+                channelCover: channelData.channelCover
+              })
+
+              // Use channel-specific images from database (same as successful forum pages)
+              return {
+                ...channel,
+                avatarUrl: channelData.channelAvatar || channel.avatarUrl,
+                coverUrl: channelData.channelCover || channel.coverUrl
+              }
+            }
+          }
+
+          return channel
+        })
+
+        setChannels(updatedChannels)
+        console.log(`📺 Set ${updatedChannels.length} channels with updated images`)
+      } else {
+        setChannels(userChannels)
+        console.log(`📺 Set ${userChannels.length} channels without image updates`)
+      }
 
     } catch (err) {
       console.error('❌ Failed to fetch channels:', err)
