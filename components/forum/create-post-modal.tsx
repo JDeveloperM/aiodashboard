@@ -40,7 +40,7 @@ const createPostSchema = z.object({
   topic_id: z.string().min(1, "Please select a topic"),
   title: z.string().min(5, "Title must be at least 5 characters").max(200, "Title must be less than 200 characters"),
   content: z.string().min(10, "Content must be at least 10 characters").max(5000, "Content must be less than 5000 characters"),
-  content_type: z.enum(["text", "markdown"]).default("text")
+  content_type: z.enum(["text", "markdown", "html"]).default("html")
 })
 
 // Schema for context-aware posts (when topic is pre-selected)
@@ -48,7 +48,7 @@ const createContextPostSchema = z.object({
   topic_id: z.string().optional(),
   title: z.string().min(5, "Title must be at least 5 characters").max(200, "Title must be less than 200 characters"),
   content: z.string().min(10, "Content must be at least 10 characters").max(5000, "Content must be less than 5000 characters"),
-  content_type: z.enum(["text", "markdown"]).default("text")
+  content_type: z.enum(["text", "markdown", "html"]).default("html")
 })
 
 type CreatePostForm = z.infer<typeof createPostSchema>
@@ -82,7 +82,7 @@ export function CreatePostModal({
       topic_id: currentTopicId || "",
       title: "",
       content: "",
-      content_type: "text"
+      content_type: "html"
     }
   })
 

@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { CreateReplyModal } from "./create-reply-modal"
 import { CreatePostModal } from "./create-post-modal"
+import { CreateChannelPostModal } from "../create-channel-post-modal"
+import { RichContentDisplay } from "@/components/ui/rich-content-display"
 import { ForumUserTooltip } from "./forum-user-tooltip"
 import { ForumPost, ForumTopic, forumService } from "@/lib/forum-service"
 import { forumUserService, ForumUserData } from "@/lib/forum-user-service"
@@ -49,6 +51,7 @@ export function ForumThreadView({
   const [isLoading, setIsLoading] = useState(true)
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set())
   const [userDataCache, setUserDataCache] = useState<Map<string, ForumUserData>>(new Map())
+  const [showCreateModal, setShowCreateModal] = useState(false)
   const { tier } = useSubscription()
   const { user } = useSuiAuth()
 
@@ -134,9 +137,16 @@ export function ForumThreadView({
   const isCreatorChannel = currentTopic?.contentType === 'creator_post' || currentTopic?.creatorId
   const isTopicOwner = user?.address === currentTopic?.creatorId
 
-  // Function to redirect to creator controls for post creation
-  const redirectToCreatorControls = () => {
-    window.location.href = '/creator-controls?tab=manage&action=create-post'
+  // Function to handle create post modal
+  const handleCreatePost = () => {
+    console.log('🎯 Opening create post modal for creator channel')
+    setShowCreateModal(true)
+  }
+
+  const handleChannelPostCreated = () => {
+    console.log('✅ Channel post created successfully, closing modal and refreshing posts')
+    setShowCreateModal(false)
+    loadPosts() // Refresh posts
   }
 
   const getTierBadgeColor = (tier: string) => {
@@ -289,7 +299,7 @@ export function ForumThreadView({
                 // For creator channels, show different UI based on user role
                 isTopicOwner ? (
                   <Button
-                    onClick={redirectToCreatorControls}
+                    onClick={handleCreatePost}
                     className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white"
                   >
                     <Plus className="w-4 h-4 mr-2" />
@@ -377,8 +387,12 @@ export function ForumThreadView({
                         )}
 
                         {/* Post Content */}
-                        <div className="text-[#C0E6FF] whitespace-pre-wrap mb-3 text-sm">
-                          {post.content}
+                        <div className="mb-3 text-sm">
+                          <RichContentDisplay
+                            content={post.content}
+                            contentType={post.content_type || 'text'}
+                            className="text-[#C0E6FF]"
+                          />
                         </div>
 
                         {/* Action Buttons */}
@@ -499,7 +513,7 @@ export function ForumThreadView({
               // For creator channels, show different UI based on user role
               isTopicOwner ? (
                 <Button
-                  onClick={redirectToCreatorControls}
+                  onClick={handleCreatePost}
                   className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white h-8 text-sm"
                 >
                   <Plus className="w-3 h-3 mr-2" />
@@ -527,6 +541,22 @@ export function ForumThreadView({
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Create Channel Post Modal - Only for creator channels */}
+      {isCreatorChannel && currentTopic && (
+        <CreateChannelPostModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          channel={{
+            id: currentTopic.channelId || currentTopic.id,
+            name: topicName,
+            creatorName: user?.username || user?.address || 'Creator',
+            creatorAvatar: user?.profileImage || '',
+            type: 'free' // Default type since we don't have this info in forum context
+          }}
+          onPostCreated={handleChannelPostCreated}
+        />
       )}
       </div>
     </TooltipProvider>

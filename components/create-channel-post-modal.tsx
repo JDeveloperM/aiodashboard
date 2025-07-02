@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { RichTextEditor } from "@/components/ui/rich-text-editor"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { forumService } from "@/lib/forum-service"
 import { 
@@ -205,17 +206,12 @@ export function CreateChannelPostModal({
             <Label htmlFor="content" className="text-white">
               Post Content *
             </Label>
-            <Textarea
-              id="content"
-              value={formData.content}
-              onChange={(e) => handleInputChange('content', e.target.value)}
+            <RichTextEditor
+              content={formData.content}
+              onChange={(content) => handleInputChange('content', content)}
               placeholder="Write your post content here... You can include insights, analysis, trading signals, or any valuable content for your subscribers."
-              className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white placeholder:text-[#C0E6FF]/50 min-h-[200px]"
               maxLength={5000}
             />
-            <p className="text-[#C0E6FF]/70 text-xs">
-              {formData.content.length}/5000 characters
-            </p>
           </div>
 
           {/* Post Options */}

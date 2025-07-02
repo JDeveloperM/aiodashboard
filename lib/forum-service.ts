@@ -55,7 +55,7 @@ export interface ForumPost {
   author_address: string
   title: string
   content: string
-  content_type: 'text' | 'markdown'
+  content_type: 'text' | 'markdown' | 'html'
   is_pinned: boolean
   is_locked: boolean
   is_deleted: boolean
@@ -85,7 +85,7 @@ export interface ForumReply {
   parent_reply_id?: string
   author_address: string
   content: string
-  content_type: 'text' | 'markdown'
+  content_type: 'text' | 'markdown' | 'html'
   is_deleted: boolean
   like_count: number
   created_at: string
@@ -113,7 +113,7 @@ export interface CreatePostData {
   topic_id: string
   title: string
   content: string
-  content_type?: 'text' | 'markdown'
+  content_type?: 'text' | 'markdown' | 'html'
 }
 
 export interface CreateReplyData {
@@ -701,7 +701,7 @@ class ForumService {
           channel_id: channelId,
           post_type: 'creator_post',
           is_pinned: postData.isPinned || false,
-          content_type: 'text'
+          content_type: 'html'
         })
         .select('id')
         .single()
@@ -757,7 +757,7 @@ class ForumService {
           title: postData.title.startsWith('Re:') ? postData.title : `Re: ${postData.title}`,
           content: postData.content,
           post_type: 'user_reply',
-          content_type: 'text'
+          content_type: 'html'
         })
         .select('id')
         .single()

@@ -182,7 +182,7 @@ export function MyChannelsList({ onChannelClick }: MyChannelsListProps) {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-white font-semibold">My Channels ({channels.length})</h3>
+        <h3 className="text-white font-semibold">Channels Joined ({channels.length})</h3>
         <Button
           onClick={() => window.location.href = '/aio-creators'}
           variant="outline"

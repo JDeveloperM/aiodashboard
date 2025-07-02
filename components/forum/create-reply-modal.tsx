@@ -32,7 +32,7 @@ import { MessageSquare, Loader2 } from "lucide-react"
 
 const createReplySchema = z.object({
   content: z.string().min(10, "Reply must be at least 10 characters").max(5000, "Reply must be less than 5000 characters"),
-  content_type: z.enum(["text", "markdown"]).default("text")
+  content_type: z.enum(["text", "markdown", "html"]).default("html")
 })
 
 type CreateReplyForm = z.infer<typeof createReplySchema>
@@ -56,7 +56,7 @@ export function CreateReplyModal({ topicId, topicName, onReplyCreated, children,
     resolver: zodResolver(createReplySchema),
     defaultValues: {
       content: "",
-      content_type: "text"
+      content_type: "html"
     }
   })
 
@@ -129,13 +129,12 @@ export function CreateReplyModal({ topicId, topicName, onReplyCreated, children,
           </DialogTitle>
           {replyToPost && (
             <div className="bg-[#1a2f51] border-l-4 border-[#4DA2FF] p-3 mt-2 rounded-r-md">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2">
                 <p className="text-sm text-[#C0E6FF]/70">Replying to:</p>
                 <Badge className="bg-gradient-to-r from-blue-400 to-blue-600 text-white text-xs">
                   {replyToPost.author_username || `User ${replyToPost.author_address.slice(0, 6)}`}
                 </Badge>
               </div>
-              <p className="text-[#C0E6FF] text-sm line-clamp-3 italic">"{replyToPost.content}"</p>
             </div>
           )}
         </DialogHeader>

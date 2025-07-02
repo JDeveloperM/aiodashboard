@@ -60,7 +60,6 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { EditChannelModal } from "./edit-channel-modal"
-import { CreatorContentDashboard } from "./creator-content-dashboard"
 import { usePersistentProfile } from "@/hooks/use-persistent-profile"
 
 // Form validation schema
@@ -898,14 +897,7 @@ export function CreatorControlsInterface() {
               })}
             </div>
 
-            {/* Content Management Section */}
-            <div className="border-t border-gray-700 pt-6">
-              <CreatorContentDashboard
-                tier={tier}
-                currentChannelCount={currentChannelCount}
-                maxChannels={maxChannels}
-              />
-            </div>
+
           </CardContent>
         </Card>
       )}

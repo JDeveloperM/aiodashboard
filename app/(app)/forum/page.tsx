@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ForumTopicListSimple } from "@/components/forum/forum-topic-list-simple"
 import { ForumThreadView } from "@/components/forum/forum-thread-view"
 import { MyChannelsList } from "@/components/forum/my-channels-list"
+import { MyCreatedChannelsList } from "@/components/forum/my-created-channels-list"
 import { ForumUserActivity } from "@/components/forum/forum-user-activity"
 import CreatorChannelPosts from "@/components/forum/CreatorChannelPosts"
 import { ForumCategory, ForumTopic, forumService } from "@/lib/forum-service"
@@ -347,13 +348,7 @@ export default function ForumPage() {
                     </CardTitle>
                     <div className="flex items-center justify-between">
                       <p className="text-white/80">
-                        The Creator Hub content can be accessed from{" "}
-                        <a
-                          href="/aio-creators"
-                          className="text-[#4DA2FF] hover:text-[#4DA2FF]/80 underline font-medium"
-                        >
-                          AIO Creators page
-                        </a>
+                        View and manage your channels and view channels joined
                       </p>
                     </div>
                   </CardHeader>
@@ -361,13 +356,31 @@ export default function ForumPage() {
               </Card>
             )}
 
-            {/* My Channels Section - Show when no specific creator context */}
+            {/* My Channels Section - Show channels user has created */}
+            {!creatorContext && (
+              <Card className="bg-[#1a2f51] border-[#C0E6FF]/20">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5" />
+                    My Channels
+                  </CardTitle>
+                  <p className="text-[#C0E6FF]/70 text-sm">
+                    Channels you've created and manage
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <MyCreatedChannelsList onChannelClick={handleMyChannelClick} />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Channels Joined Section - Show when no specific creator context */}
             {!creatorContext && (
               <Card className="bg-[#1a2f51] border-[#C0E6FF]/20">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
                     <Users className="w-5 h-5" />
-                    My Channels
+                    Channels Joined
                   </CardTitle>
                   <p className="text-[#C0E6FF]/70 text-sm">
                     Channels you've joined and have access to
@@ -401,10 +414,6 @@ export default function ForumPage() {
             <CreatorChannelPosts
               creatorContext={creatorContext}
               categoryImage="/images/creatorsF.png"
-              onCreatePost={() => {
-                // Navigate to creator controls to create a post
-                window.location.href = '/creator-controls'
-              }}
             />
           )}
         </div>

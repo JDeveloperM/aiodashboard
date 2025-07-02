@@ -16,6 +16,8 @@ import { ForumPost, forumService } from "@/lib/forum-service"
 import { formatDistanceToNow } from "date-fns"
 import { getCreatorProfile, getCreatorAvatarUrl, getCreatorCoverUrl } from "@/lib/creator-storage"
 import { CreateReplyModal } from "./create-reply-modal"
+import { CreateChannelPostModal } from "../create-channel-post-modal"
+import { RichContentDisplay } from "@/components/ui/rich-content-display"
 import { useCreatorsDatabase } from "@/contexts/creators-database-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 
@@ -59,7 +61,7 @@ interface CreatorContext {
 interface CreatorChannelPostsProps {
   creatorContext: CreatorContext
   categoryImage: string
-  onCreatePost?: () => void
+  onCreatePost?: () => void // Keep for backward compatibility but not used
 }
 
 
@@ -72,6 +74,7 @@ export default function CreatorChannelPosts({ creatorContext, categoryImage, onC
   const [creatorCover, setCreatorCover] = useState<string>("")
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set())
   const [imagesLoaded, setImagesLoaded] = useState<boolean>(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
 
   // Get creators context to access channel-specific images
   const { creators } = useCreatorsDatabase()
@@ -207,6 +210,17 @@ export default function CreatorChannelPosts({ creatorContext, categoryImage, onC
     }, 500)
   }
 
+  const handleCreatePost = () => {
+    console.log('🎯 Opening create post modal for channel:', creatorContext.channelName)
+    setShowCreateModal(true)
+  }
+
+  const handlePostCreated = () => {
+    console.log('✅ Post created successfully, closing modal and refreshing posts')
+    setShowCreateModal(false)
+    loadPosts() // Refresh posts
+  }
+
   // Helper function to organize posts and replies (same as forum-thread-view)
   const organizePostsAndReplies = () => {
     const standalonePosts = posts.filter(post => !post.title.startsWith('Re:'))
@@ -320,9 +334,9 @@ export default function CreatorChannelPosts({ creatorContext, categoryImage, onC
           </div>
 
           {/* Create Post Button - Only visible to channel creator */}
-          {onCreatePost && isCreator() && (
+          {isCreator() && (
             <Button
-              onClick={onCreatePost}
+              onClick={handleCreatePost}
               className="bg-[#9333EA] hover:bg-[#9333EA]/80 text-white px-4 py-2 text-sm"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -365,8 +379,12 @@ export default function CreatorChannelPosts({ creatorContext, categoryImage, onC
                         </div>
 
                         {/* Post Content */}
-                        <div className="text-[#C0E6FF] whitespace-pre-wrap mb-3 text-sm">
-                          {post.content}
+                        <div className="mb-3 text-sm">
+                          <RichContentDisplay
+                            content={post.content}
+                            contentType={(post as any).content_type || 'text'}
+                            className="text-[#C0E6FF]"
+                          />
                         </div>
 
                         {/* Action Buttons */}
@@ -465,6 +483,20 @@ export default function CreatorChannelPosts({ creatorContext, categoryImage, onC
           })
         )}
       </div>
+
+      {/* Create Post Modal */}
+      <CreateChannelPostModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        channel={{
+          id: creatorContext.channelId,
+          name: creatorContext.channelName,
+          creatorName: creatorContext.creatorName,
+          creatorAvatar: creatorAvatar,
+          type: 'free' // Default type since we don't have this info in forum context
+        }}
+        onPostCreated={handlePostCreated}
+      />
     </div>
   )
 }
