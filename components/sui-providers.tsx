@@ -30,11 +30,11 @@ export function SuiProviders({ children }: { children: React.ReactNode }) {
   }))
 
   // Create SuiClient for zkLogin
-  const [suiClient] = useState(() => new SuiClient({ url: getFullnodeUrl('devnet') }))
+  const [suiClient] = useState(() => new SuiClient({ url: getFullnodeUrl('testnet') }))
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SuiClientProvider networks={networks} defaultNetwork="devnet">
+      <SuiClientProvider networks={networks} defaultNetwork="testnet">
         <WalletProvider
           autoConnect={true}
           enableUnsafeBurner={false}

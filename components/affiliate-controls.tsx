@@ -17,6 +17,7 @@ import { useRaffleCraftIntegration } from "@/hooks/use-rafflecraft-integration"
 import { CommissionTracking } from "@/components/commission-tracking"
 import { ContactSponsorModal } from "@/components/contact-sponsor-modal"
 import { UsernameDisplay } from "@/components/profile-link"
+import Image from "next/image"
 import {
   Users,
   Search,
@@ -183,6 +184,19 @@ export function AffiliateControls() {
     if (profileLevel >= 2) return 2  // Profile Level 2 → Affiliate Level 2
     if (profileLevel >= 1) return 1  // Profile Level 1 → Affiliate Level 1
     return 1  // Default/fallback
+  }
+
+  // Helper function to get tier image based on user's tier
+  const getTierImage = (tier: string): string => {
+    switch (tier) {
+      case 'ROYAL':
+        return '/images/royal.png'
+      case 'PRO':
+        return '/images/pro.png'
+      case 'NOMAD':
+      default:
+        return '/images/nomad.png'
+    }
   }
 
   // Helper function to format SUI amounts with USD conversion
@@ -384,34 +398,46 @@ export function AffiliateControls() {
                 <Users className="w-5 h-5 text-[#4DA2FF]" />
                 Affiliate Overview
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {/* Personal Members */}
-                <div className="border-b border-[#C0E6FF]/10 pb-3">
-                  <h4 className="text-sm font-medium text-[#C0E6FF] mb-2">Personal Members</h4>
-                  <div className="space-y-2">
+                <div className="border-b border-[#C0E6FF]/10 pb-4">
+                  <h4 className="text-sm font-medium text-[#C0E6FF] mb-3">Personal Members</h4>
+                  <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
-                        <div className="bg-blue-600/20 p-2 rounded-full">
-                          <Award className="w-4 h-4 text-blue-400" />
-                        </div>
+                        <Image
+                          src="/images/nomad.png"
+                          alt="NOMAD tier"
+                          width={32}
+                          height={32}
+                          className="w-8 h-8 object-contain"
+                        />
                         <span className="text-white text-sm">NOMAD</span>
                       </div>
                       <span className="text-white font-semibold">{networkMetrics.personalNomadUsers}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
-                        <div className="bg-purple-600/20 p-2 rounded-full">
-                          <Award className="w-4 h-4 text-purple-400" />
-                        </div>
+                        <Image
+                          src="/images/pro.png"
+                          alt="PRO tier"
+                          width={32}
+                          height={32}
+                          className="w-8 h-8 object-contain"
+                        />
                         <span className="text-white text-sm">PRO</span>
                       </div>
                       <span className="text-white font-semibold">{networkMetrics.personalProUsers}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
-                        <div className="bg-yellow-600/20 p-2 rounded-full">
-                          <Award className="w-4 h-4 text-yellow-400" />
-                        </div>
+                        <Image
+                          src="/images/royal.png"
+                          alt="ROYAL tier"
+                          width={32}
+                          height={32}
+                          className="w-8 h-8 object-contain"
+                        />
                         <span className="text-white text-sm">ROYAL</span>
                       </div>
                       <span className="text-white font-semibold">{networkMetrics.personalRoyalUsers}</span>
@@ -421,31 +447,43 @@ export function AffiliateControls() {
 
                 {/* Network Members */}
                 <div>
-                  <h4 className="text-sm font-medium text-[#C0E6FF] mb-2">Network Members</h4>
-                  <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-[#C0E6FF] mb-3">Network Members</h4>
+                  <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
-                        <div className="bg-blue-600/20 p-2 rounded-full">
-                          <Award className="w-4 h-4 text-blue-400" />
-                        </div>
+                        <Image
+                          src="/images/nomad.png"
+                          alt="NOMAD tier"
+                          width={32}
+                          height={32}
+                          className="w-8 h-8 object-contain"
+                        />
                         <span className="text-white text-sm">NOMAD</span>
                       </div>
                       <span className="text-white font-semibold">{networkMetrics.networkNomadUsers}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
-                        <div className="bg-purple-600/20 p-2 rounded-full">
-                          <Award className="w-4 h-4 text-purple-400" />
-                        </div>
+                        <Image
+                          src="/images/pro.png"
+                          alt="PRO tier"
+                          width={32}
+                          height={32}
+                          className="w-8 h-8 object-contain"
+                        />
                         <span className="text-white text-sm">PRO</span>
                       </div>
                       <span className="text-white font-semibold">{networkMetrics.networkProUsers}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
-                        <div className="bg-yellow-600/20 p-2 rounded-full">
-                          <Award className="w-4 h-4 text-yellow-400" />
-                        </div>
+                        <Image
+                          src="/images/royal.png"
+                          alt="ROYAL tier"
+                          width={32}
+                          height={32}
+                          className="w-8 h-8 object-contain"
+                        />
                         <span className="text-white text-sm">ROYAL</span>
                       </div>
                       <span className="text-white font-semibold">{networkMetrics.networkRoyalUsers}</span>
@@ -463,60 +501,60 @@ export function AffiliateControls() {
                 <Trophy className="w-5 h-5 text-yellow-400" />
                 Network Overview
               </h3>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-green-600/20 p-2 rounded-full">
-                      <Award className="w-4 h-4 text-green-400" />
+              <div className="space-y-4">
+                <div className="flex justify-between items-center py-1">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-green-600/20 p-3 rounded-full">
+                      <Award className="w-5 h-5 text-green-400" />
                     </div>
-                    <span className="text-white text-sm">Profile Level 5</span>
+                    <span className="text-white text-base">Profile Level 5</span>
                   </div>
-                  <span className="text-white font-semibold">{networkMetrics.networkLevel5Users}</span>
+                  <span className="text-white font-semibold text-lg">{networkMetrics.networkLevel5Users}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-blue-600/20 p-2 rounded-full">
-                      <Award className="w-4 h-4 text-blue-400" />
+                <div className="flex justify-between items-center py-1">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-600/20 p-3 rounded-full">
+                      <Award className="w-5 h-5 text-blue-400" />
                     </div>
-                    <span className="text-white text-sm">Profile Level 6</span>
+                    <span className="text-white text-base">Profile Level 6</span>
                   </div>
-                  <span className="text-white font-semibold">{networkMetrics.networkLevel6Users}</span>
+                  <span className="text-white font-semibold text-lg">{networkMetrics.networkLevel6Users}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-purple-600/20 p-2 rounded-full">
-                      <Award className="w-4 h-4 text-purple-400" />
+                <div className="flex justify-between items-center py-1">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-purple-600/20 p-3 rounded-full">
+                      <Award className="w-5 h-5 text-purple-400" />
                     </div>
-                    <span className="text-white text-sm">Profile Level 7</span>
+                    <span className="text-white text-base">Profile Level 7</span>
                   </div>
-                  <span className="text-white font-semibold">{networkMetrics.networkLevel7Users}</span>
+                  <span className="text-white font-semibold text-lg">{networkMetrics.networkLevel7Users}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-yellow-600/20 p-2 rounded-full">
-                      <Award className="w-4 h-4 text-yellow-400" />
+                <div className="flex justify-between items-center py-1">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-yellow-600/20 p-3 rounded-full">
+                      <Award className="w-5 h-5 text-yellow-400" />
                     </div>
-                    <span className="text-white text-sm">Profile Level 8</span>
+                    <span className="text-white text-base">Profile Level 8</span>
                   </div>
-                  <span className="text-white font-semibold">{networkMetrics.networkLevel8Users}</span>
+                  <span className="text-white font-semibold text-lg">{networkMetrics.networkLevel8Users}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-orange-600/20 p-2 rounded-full">
-                      <Award className="w-4 h-4 text-orange-400" />
+                <div className="flex justify-between items-center py-1">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-orange-600/20 p-3 rounded-full">
+                      <Award className="w-5 h-5 text-orange-400" />
                     </div>
-                    <span className="text-white text-sm">Profile Level 9</span>
+                    <span className="text-white text-base">Profile Level 9</span>
                   </div>
-                  <span className="text-white font-semibold">{networkMetrics.networkLevel9Users}</span>
+                  <span className="text-white font-semibold text-lg">{networkMetrics.networkLevel9Users}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-red-600/20 p-2 rounded-full">
-                      <Award className="w-4 h-4 text-red-400" />
+                <div className="flex justify-between items-center py-1">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-red-600/20 p-3 rounded-full">
+                      <Award className="w-5 h-5 text-red-400" />
                     </div>
-                    <span className="text-white text-sm">Profile Level 10</span>
+                    <span className="text-white text-base">Profile Level 10</span>
                   </div>
-                  <span className="text-white font-semibold">{networkMetrics.networkLevel10Users}</span>
+                  <span className="text-white font-semibold text-lg">{networkMetrics.networkLevel10Users}</span>
                 </div>
               </div>
             </div>

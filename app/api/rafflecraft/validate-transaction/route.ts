@@ -6,8 +6,8 @@ import { SuiClient, getFullnodeUrl } from '@mysten/sui/client'
 import { SuiRaffleServerService } from '@/lib/services/sui-raffle-server'
 
 // Initialize SUI client
-const suiClient = new SuiClient({ 
-  url: process.env.NEXT_PUBLIC_SUI_RPC_URL || getFullnodeUrl('devnet') 
+const suiClient = new SuiClient({
+  url: process.env.NEXT_PUBLIC_SUI_RPC_URL || getFullnodeUrl('testnet')
 })
 
 const raffleService = new SuiRaffleServerService(suiClient)
