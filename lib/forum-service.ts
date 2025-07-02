@@ -316,7 +316,8 @@ class ForumService {
    */
   async getCreatorChannelPosts(creatorId: string, channelId: string): Promise<ForumPost[]> {
     try {
-      console.log('🔍 Fetching posts for creator:', creatorId, 'channel:', channelId)
+      const timestamp = new Date().toISOString()
+      console.log('🔍 Fetching posts for creator:', creatorId, 'channel:', channelId, 'at:', timestamp)
 
       // First, get the topic ID for this creator's channel
       const { data: topic } = await supabase
@@ -345,6 +346,7 @@ class ForumService {
           author_address,
           post_type,
           is_pinned,
+          is_deleted,
           view_count,
           topic_id,
           reply_count,
@@ -353,6 +355,7 @@ class ForumService {
         `)
         .eq('topic_id', topic.id)
         .eq('is_deleted', false)
+        .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false })
 
       if (postsError) {
@@ -367,7 +370,7 @@ class ForumService {
 
       console.log('📊 Found posts:', postsData.length, 'posts')
       postsData.forEach(post => {
-        console.log(`  - ${post.title} (${post.post_type})`)
+        console.log(`  - ${post.title} (${post.post_type}) [deleted: ${post.is_deleted}] [pinned: ${post.is_pinned}]`)
       })
 
       // Get user profiles separately for the authors
@@ -576,6 +579,85 @@ class ForumService {
     } catch (error) {
       console.error('Failed to get creator posts:', error)
       return { posts: [], totalCount: 0 }
+    }
+  }
+
+  /**
+   * Update a creator channel post
+   */
+  async updateCreatorChannelPost(
+    postId: string,
+    authorAddress: string,
+    updateData: {
+      title?: string
+      content?: string
+      isPinned?: boolean
+    }
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log('🔄 Updating creator channel post via API:', {
+        postId,
+        authorAddress,
+        title: updateData.title
+      })
+
+      const response = await fetch(`/api/forum/posts/${postId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...updateData,
+          userAddress: authorAddress
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        console.error('❌ API update failed:', result)
+        return { success: false, error: result.error || 'Failed to update post' }
+      }
+
+      console.log('✅ Post updated successfully via API:', result)
+      return { success: true }
+
+    } catch (error) {
+      console.error('Failed to update creator channel post:', error)
+      return { success: false, error: 'Internal server error' }
+    }
+  }
+
+  /**
+   * Delete a creator channel post
+   */
+  async deleteCreatorChannelPost(
+    postId: string,
+    authorAddress: string
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log('🗑️ Deleting creator channel post via API:', {
+        postId,
+        authorAddress
+      })
+
+      const response = await fetch(`/api/forum/posts/${postId}?userAddress=${encodeURIComponent(authorAddress)}`, {
+        method: 'DELETE',
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        console.error('❌ API delete failed:', result)
+        return { success: false, error: result.error || 'Failed to delete post' }
+      }
+
+      console.log('✅ Post deleted successfully via API:', result)
+      return { success: true }
+
+    } catch (error) {
+      console.error('Failed to delete creator channel post:', error)
+      return { success: false, error: 'Internal server error' }
     }
   }
 
@@ -1342,6 +1424,39 @@ class ForumService {
         })
     } catch (error) {
       console.error('Failed to record user activity:', error)
+    }
+  }
+
+  /**
+   * Increment post view count
+   */
+  async incrementPostView(postId: string, userAddress?: string): Promise<{ success: boolean; newViewCount?: number; error?: string }> {
+    try {
+      console.log('👁️ Incrementing view count via API for post:', postId)
+
+      const response = await fetch(`/api/forum/posts/${postId}/view`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userAddress
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        console.error('❌ API view increment failed:', result)
+        return { success: false, error: result.error || 'Failed to increment view count' }
+      }
+
+      console.log('✅ View count incremented successfully via API:', result)
+      return { success: true, newViewCount: result.newViewCount }
+
+    } catch (error) {
+      console.error('Failed to increment post view:', error)
+      return { success: false, error: 'Internal server error' }
     }
   }
 

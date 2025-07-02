@@ -10,16 +10,28 @@ import {
   Eye,
   Plus,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Edit,
+  Trash2,
+  MoreVertical,
+  Pin
 } from "lucide-react"
 import { ForumPost, forumService } from "@/lib/forum-service"
 import { formatDistanceToNow } from "date-fns"
 import { getCreatorProfile, getCreatorAvatarUrl, getCreatorCoverUrl } from "@/lib/creator-storage"
 import { CreateReplyModal } from "./create-reply-modal"
 import { CreateChannelPostModal } from "../create-channel-post-modal"
+import { EditChannelPostModal } from "../edit-channel-post-modal"
+import { DeleteChannelPostModal } from "../delete-channel-post-modal"
 import { RichContentDisplay } from "@/components/ui/rich-content-display"
 import { useCreatorsDatabase } from "@/contexts/creators-database-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 // Helper function to get avatar URL from blob ID
 const getAvatarUrl = (blobId: string | null | undefined): string | undefined => {
@@ -75,6 +87,10 @@ export default function CreatorChannelPosts({ creatorContext, categoryImage, onC
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set())
   const [imagesLoaded, setImagesLoaded] = useState<boolean>(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [selectedPost, setSelectedPost] = useState<ForumPost | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   // Get creators context to access channel-specific images
   const { creators } = useCreatorsDatabase()
@@ -186,18 +202,77 @@ export default function CreatorChannelPosts({ creatorContext, categoryImage, onC
     }
   }
 
-  const loadPosts = async () => {
+  const loadPosts = async (forceRefresh = false) => {
     try {
       setIsLoading(true)
-      console.log('Loading posts for creator:', creatorContext.creatorId, 'channel:', creatorContext.channelId)
+      console.log('🔄 Loading posts for creator:', creatorContext.creatorId, 'channel:', creatorContext.channelId, forceRefresh ? '(FORCE REFRESH)' : '')
+
+      // Clear current posts if force refresh
+      if (forceRefresh) {
+        setPosts([])
+      }
+
       const postsData = await forumService.getCreatorChannelPosts(
         creatorContext.creatorId,
         creatorContext.channelId
       )
-      console.log('Loaded posts:', postsData)
+      console.log('📋 Loaded posts:', postsData.length, 'posts')
+      console.log('📋 Posts data:', postsData.map(p => ({
+        id: p.id,
+        title: p.title,
+        updated_at: p.updated_at,
+        is_deleted: p.is_deleted
+      })))
       setPosts(postsData)
+
+      // Track views for all posts when they're loaded (simulate viewing the channel)
+      if (user?.address && postsData.length > 0) {
+        console.log('👁️ Tracking views for loaded posts', {
+          userAddress: user.address,
+          postsCount: postsData.length,
+          postsToTrack: postsData.filter(p => p.author_address !== user.address).length
+        })
+
+        // Track views for posts not authored by current user
+        for (const post of postsData) {
+          if (post.author_address !== user.address) {
+            console.log('👁️ Tracking view for post:', post.id, post.title)
+            try {
+              const result = await forumService.incrementPostView(post.id, user.address)
+              console.log('👁️ View tracking result:', result)
+
+              // Update local state with new view count
+              if (result.success && result.newViewCount) {
+                setPosts(currentPosts =>
+                  currentPosts.map(p =>
+                    p.id === post.id
+                      ? { ...p, view_count: result.newViewCount! }
+                      : p
+                  )
+                )
+                console.log('✅ Updated local view count for post:', post.id, 'to:', result.newViewCount)
+              }
+            } catch (error) {
+              console.error('❌ View tracking failed:', error)
+            }
+          } else {
+            console.log('👁️ Skipping own post:', post.id, post.title)
+          }
+        }
+      } else {
+        console.log('👁️ Not tracking views:', {
+          hasUser: !!user?.address,
+          postsCount: postsData.length
+        })
+      }
+
+      // Force component re-render
+      if (forceRefresh) {
+        setRefreshKey(prev => prev + 1)
+        console.log('🔄 Forced component refresh, key:', refreshKey + 1)
+      }
     } catch (error) {
-      console.error('Error loading creator posts:', error)
+      console.error('❌ Error loading creator posts:', error)
     } finally {
       setIsLoading(false)
     }
@@ -219,6 +294,65 @@ export default function CreatorChannelPosts({ creatorContext, categoryImage, onC
     console.log('✅ Post created successfully, closing modal and refreshing posts')
     setShowCreateModal(false)
     loadPosts() // Refresh posts
+  }
+
+  const handleEditPost = (post: ForumPost) => {
+    console.log('✏️ Opening edit modal for post:', post.title)
+    setSelectedPost(post)
+    setShowEditModal(true)
+  }
+
+  const handleDeletePost = (post: ForumPost) => {
+    console.log('🗑️ Opening delete modal for post:', post.title)
+    setSelectedPost(post)
+    setShowDeleteModal(true)
+  }
+
+  const handlePostUpdated = () => {
+    console.log('✅ Post updated successfully, closing modal and refreshing posts')
+    setShowEditModal(false)
+    setSelectedPost(null)
+
+    // Immediately refresh from database
+    console.log('🔄 Immediate refresh after update...')
+    loadPosts(true)
+
+    // Also add a delayed refresh as backup
+    setTimeout(() => {
+      console.log('🔄 Delayed refresh after update...')
+      loadPosts(true)
+    }, 1000)
+  }
+
+  const handlePostDeleted = () => {
+    console.log('✅ Post deleted successfully, closing modal and refreshing posts')
+    const deletedPostId = selectedPost?.id
+
+    setShowDeleteModal(false)
+    setSelectedPost(null)
+
+    // Immediately remove the post from the UI
+    if (deletedPostId) {
+      console.log('🗑️ Removing post from UI immediately:', deletedPostId)
+      setPosts(currentPosts => {
+        const filteredPosts = currentPosts.filter(p => p.id !== deletedPostId)
+        console.log('📋 Posts after immediate removal:', filteredPosts.length, 'posts')
+        return filteredPosts
+      })
+      setRefreshKey(prev => prev + 1)
+    }
+
+    // Also refresh from database as backup
+    setTimeout(() => {
+      console.log('🔄 Database refresh after delete...')
+      loadPosts(true)
+    }, 500)
+  }
+
+  // Check if current user owns a specific post
+  const isPostOwner = (post: ForumPost) => {
+    if (!user?.address) return false
+    return post.author_address === user.address
   }
 
   // Helper function to organize posts and replies (same as forum-thread-view)
@@ -250,13 +384,33 @@ export default function CreatorChannelPosts({ creatorContext, categoryImage, onC
 
 
 
-  const togglePostExpansion = (postId: string) => {
+  const togglePostExpansion = async (postId: string) => {
     setExpandedPosts(prev => {
       const newSet = new Set(prev)
       if (newSet.has(postId)) {
         newSet.delete(postId)
       } else {
         newSet.add(postId)
+
+        // Track view when post is expanded (user is engaging with content)
+        if (user?.address) {
+          const post = posts.find(p => p.id === postId)
+          if (post && post.author_address !== user.address) {
+            console.log('👁️ Tracking view for expanded post:', postId)
+            forumService.incrementPostView(postId, user.address).then(result => {
+              if (result.success && result.newViewCount) {
+                setPosts(currentPosts =>
+                  currentPosts.map(p =>
+                    p.id === postId
+                      ? { ...p, view_count: result.newViewCount! }
+                      : p
+                  )
+                )
+                console.log('✅ Updated local view count for expanded post:', postId, 'to:', result.newViewCount)
+              }
+            })
+          }
+        }
       }
       return newSet
     })
@@ -271,7 +425,7 @@ export default function CreatorChannelPosts({ creatorContext, categoryImage, onC
   }
 
   return (
-    <div className="space-y-6">
+    <div key={refreshKey} className="space-y-6">
       {/* Channel Header - Enhanced Banner */}
       <div
         className="relative h-32 flex items-center p-4 rounded-lg overflow-hidden"
@@ -337,7 +491,7 @@ export default function CreatorChannelPosts({ creatorContext, categoryImage, onC
           {isCreator() && (
             <Button
               onClick={handleCreatePost}
-              className="bg-[#9333EA] hover:bg-[#9333EA]/80 text-white px-4 py-2 text-sm"
+              className="bg-[#007acc] hover:bg-[#007acc]/80 text-white px-4 py-2 text-sm"
             >
               <Plus className="w-4 h-4 mr-2" />
               Create Channel Post
@@ -369,13 +523,53 @@ export default function CreatorChannelPosts({ creatorContext, categoryImage, onC
                       {/* Post Content */}
                       <div className="flex-1 min-w-0">
                         {/* Post Header */}
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-lg font-bold text-white">
-                            {post.title}
-                          </span>
-                          <span className="text-xs text-[#C0E6FF]/40">
-                            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                          </span>
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            {/* Pin Icon for Pinned Posts */}
+                            {post.is_pinned && (
+                              <Pin className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+                            )}
+                            <span className="text-lg font-bold text-white">
+                              {post.title}
+                            </span>
+                            <span className="text-xs text-[#C0E6FF]/40">
+                              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                            </span>
+                          </div>
+
+                          {/* Edit/Delete Buttons - Only show for post owner */}
+                          {isPostOwner(post) && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 text-[#C0E6FF]/60 hover:text-white hover:bg-[#C0E6FF]/10"
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align="end"
+                                className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white"
+                              >
+                                <DropdownMenuItem
+                                  onClick={() => handleEditPost(post)}
+                                  className="hover:bg-[#C0E6FF]/10 cursor-pointer"
+                                >
+                                  <Edit className="w-4 h-4 mr-2" />
+                                  Edit Post
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeletePost(post)}
+                                  className="hover:bg-red-500/10 text-red-400 hover:text-red-300 cursor-pointer"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete Post
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </div>
 
                         {/* Post Content */}
@@ -496,6 +690,28 @@ export default function CreatorChannelPosts({ creatorContext, categoryImage, onC
           type: 'free' // Default type since we don't have this info in forum context
         }}
         onPostCreated={handlePostCreated}
+      />
+
+      {/* Edit Post Modal */}
+      <EditChannelPostModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setSelectedPost(null)
+        }}
+        post={selectedPost}
+        onPostUpdated={handlePostUpdated}
+      />
+
+      {/* Delete Post Modal */}
+      <DeleteChannelPostModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false)
+          setSelectedPost(null)
+        }}
+        post={selectedPost}
+        onPostDeleted={handlePostDeleted}
       />
     </div>
   )

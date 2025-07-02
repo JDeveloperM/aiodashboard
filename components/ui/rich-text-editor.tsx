@@ -90,7 +90,10 @@ export function RichTextEditor({
       Image.configure({
         HTMLAttributes: {
           class: 'max-w-full h-auto rounded-lg',
+          style: 'display: block !important; visibility: visible !important;',
         },
+        inline: false,
+        allowBase64: true,
       }),
       Link.configure({
         openOnClick: false,
@@ -106,6 +109,7 @@ export function RichTextEditor({
       }),
     ],
     content,
+    immediatelyRender: false, // Fix SSR hydration issues
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML())
     },
@@ -117,11 +121,25 @@ export function RichTextEditor({
           'prose-headings:text-white prose-p:text-white prose-strong:text-white',
           'prose-em:text-white prose-code:text-white prose-pre:bg-[#1a2f51]',
           'prose-blockquote:text-white prose-blockquote:border-l-[#4DA2FF]',
-          'prose-ul:text-white prose-ol:text-white prose-li:text-white'
+          'prose-ul:text-white prose-ol:text-white prose-li:text-white',
+          'prose-img:block prose-img:max-w-full prose-img:h-auto prose-img:rounded-lg prose-img:my-4'
         ),
       },
     },
   })
+
+  // Update editor content when content prop changes
+  useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      console.log('🔄 Updating editor content:', {
+        newContentLength: content?.length,
+        currentContentLength: editor.getHTML()?.length,
+        hasImages: content?.includes('<img') || content?.includes('data:image')
+      })
+      editor.commands.setContent(content)
+      // Don't manipulate focus here as it interferes with typing
+    }
+  }, [editor, content])
 
   const addEmoji = useCallback((emoji: string) => {
     if (editor) {
@@ -144,6 +162,7 @@ export function RichTextEditor({
       reader.onload = (e) => {
         const src = e.target?.result as string
         editor.chain().focus().setImage({ src }).run()
+        console.log('📷 Image added successfully')
       }
       reader.readAsDataURL(file)
     }

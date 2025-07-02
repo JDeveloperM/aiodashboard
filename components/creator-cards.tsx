@@ -16,7 +16,7 @@ import { useCurrentAccount } from "@mysten/dapp-kit"
 import { useChannelReports } from "@/hooks/use-channel-reports"
 import { Filter, FilterX } from "lucide-react"
 import { toast } from "sonner"
-import { addUserChannelSubscription, channelSubscriptionsStorage } from "@/lib/channel-subscriptions-storage"
+import { addUserChannelSubscription, channelSubscriptionsStorage, getUserJoinedChannels } from "@/lib/channel-subscriptions-storage"
 import { createClient } from '@supabase/supabase-js'
 import {
   Users,
@@ -205,6 +205,7 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
   const [reportCreatorAddress, setReportCreatorAddress] = useState<string>('')
   const [reportCreatorName, setReportCreatorName] = useState<string>('')
   const [userAccess, setUserAccess] = useState<Record<string, string>>({})
+  const [userChannelSubscriptions, setUserChannelSubscriptions] = useState<Record<string, boolean>>({})
   const [showOnlyJoined, setShowOnlyJoined] = useState(false)
   const { tier } = useSubscription()
   const { canAccessPremiumForFree, recordPremiumAccess, removePremiumAccess, getRemainingFreeAccess, premiumAccessRecords } = usePremiumAccess()
@@ -240,6 +241,33 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
     })
     setUserAccess(access)
   }, [creators])
+
+  // Load user channel subscriptions from database
+  useEffect(() => {
+    const loadChannelSubscriptions = async () => {
+      if (!currentAccount?.address) return
+
+      try {
+        console.log('📺 Loading channel subscriptions for user:', currentAccount.address)
+        const userChannels = await getUserJoinedChannels(currentAccount.address)
+
+        const subscriptions: Record<string, boolean> = {}
+        userChannels.forEach(channel => {
+          // Create key using creator address and channel ID
+          const key = `${channel.creatorAddress}_${channel.id}`
+          subscriptions[key] = channel.isActive
+          console.log('📺 Found subscription:', key, channel.name)
+        })
+
+        setUserChannelSubscriptions(subscriptions)
+        console.log('📺 Loaded', Object.keys(subscriptions).length, 'channel subscriptions')
+      } catch (error) {
+        console.error('❌ Failed to load channel subscriptions:', error)
+      }
+    }
+
+    loadChannelSubscriptions()
+  }, [currentAccount?.address, creators])
 
   const handleChannelAccess = async (creator: Creator, channel: Channel) => {
     // Check authentication first
@@ -383,14 +411,29 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
     // Remove from premium access records (free access for PRO/ROYAL users)
     removePremiumAccess(creator.id, channel.id)
 
+    // Remove from database subscriptions (free channels and other subscriptions)
+    if (currentAccount?.address) {
+      try {
+        await channelSubscriptionsStorage.removeChannelSubscription(currentAccount.address, channel.id)
+        console.log(`[CreatorCards] Removed database subscription for channel: ${channel.id}`)
+      } catch (error) {
+        console.error('❌ Failed to remove database subscription:', error)
+      }
+    }
+
     // Update local state
     const newUserAccess = { ...userAccess }
     delete newUserAccess[`${creator.id}_${channel.id}`]
     setUserAccess(newUserAccess)
 
+    const newSubscriptions = { ...userChannelSubscriptions }
+    delete newSubscriptions[`${creator.id}_${channel.id}`]
+    setUserChannelSubscriptions(newSubscriptions)
+
     // Show success message
     console.log(`[CreatorCards] User left channel: ${channelName} by ${creatorName}`)
-    toast.success(`Successfully left "${channelName}". You no longer have access to this premium channel.`)
+    const channelType = channel.type === 'free' ? 'free channel' : 'premium channel'
+    toast.success(`Successfully left "${channelName}". You no longer have access to this ${channelType}.`)
   }
 
   const handleDeleteChannel = async (creator: Creator, channel: Channel, event: React.MouseEvent) => {
@@ -656,7 +699,18 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
       record => record.creatorId === creatorId && record.channelId === channelId
     )
 
-    return alreadyAccessedForFree
+    if (alreadyAccessedForFree) {
+      return true
+    }
+
+    // Check if user has an active subscription to this channel (from database)
+    // This covers free channels and any other subscriptions
+    const subscriptionKey = `${creatorId}_${channelId}`
+    if (userChannelSubscriptions[subscriptionKey]) {
+      return true
+    }
+
+    return false
   }
 
   const getAccessExpiry = (creatorId: string, channelId: string) => {
@@ -976,8 +1030,8 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
                               <Trash2 className="w-3 h-3" />
                             </Button>
                           </div>
-                        ) : (hasChannelAccess && channel.type !== 'free') ? (
-                          // User has access: Show Access and Leave buttons
+                        ) : hasChannelAccess ? (
+                          // User has access: Show Access and Leave buttons (for both free and premium)
                           <div className="flex gap-1">
                             <Button
                               onClick={() => handleChannelAccess(creator, channel)}

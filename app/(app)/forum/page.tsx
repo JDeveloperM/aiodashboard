@@ -256,15 +256,14 @@ export default function ForumPage() {
                 setActiveTab('creators')
                 window.history.replaceState({}, '', '/forum?tab=creators')
               }}
-              className="text-[#9333EA] hover:text-[#9333EA]/80 text-sm flex items-center gap-1"
+              className="text-green-400 hover:text-green-300 text-sm flex items-center gap-1"
             >
               <MessageSquare className="w-3 h-3" />
               View My Channels
             </button>
             <button
               onClick={() => {
-                setCreatorContext(null)
-                window.history.replaceState({}, '', '/forum?tab=creators')
+                window.location.href = '/aio-creators'
               }}
               className="text-[#4DA2FF] hover:text-[#4DA2FF]/80 text-sm flex items-center gap-1"
             >
