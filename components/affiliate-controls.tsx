@@ -1,17 +1,19 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RoleImage } from "@/components/ui/role-image"
 import { affiliateService, AffiliateUser, AffiliateMetrics, CommissionData, NetworkMetrics, UserProfileLevel } from "@/lib/affiliate-service"
+import { affiliateSubscriptionService, SubscriptionStatus } from "@/lib/affiliate-subscription-service"
+import { AffiliateSubscriptionPayment } from "@/components/affiliate-subscription-payment"
+import { SubscriptionGuard } from "@/components/subscription-guard"
 import { useCurrentAccount } from "@mysten/dapp-kit"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
-
+import { useRaffleCraftIntegration } from "@/hooks/use-rafflecraft-integration"
 import { CommissionTracking } from "@/components/commission-tracking"
 import { ContactSponsorModal } from "@/components/contact-sponsor-modal"
 import { UsernameDisplay } from "@/components/profile-link"
@@ -28,12 +30,18 @@ import {
   MoreHorizontal,
   DollarSign,
   Gift,
-  Loader2
+  Loader2,
+  Clock,
+  Zap,
+  AlertTriangle,
+  CheckCircle,
+  RefreshCw
 } from "lucide-react"
 
 export function AffiliateControls() {
   const account = useCurrentAccount()
   const { user, isSignedIn } = useSuiAuth()
+  const { isListening, startListening, stopListening } = useRaffleCraftIntegration()
 
   // State for search and filters
   const [searchTerm, setSearchTerm] = useState("")
@@ -43,7 +51,11 @@ export function AffiliateControls() {
   const [showLatestOnly, setShowLatestOnly] = useState(false)
   const [displayedCount, setDisplayedCount] = useState(5)
 
-  // State for new redesigned data
+  // Subscription state
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null)
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false)
+
+  // State for data
   const [userProfileLevel, setUserProfileLevel] = useState<UserProfileLevel | null>(null)
   const [userAffiliateLevel, setUserAffiliateLevel] = useState<number>(1)
   const [networkMetrics, setNetworkMetrics] = useState<NetworkMetrics>({
@@ -58,8 +70,11 @@ export function AffiliateControls() {
     networkLevel7Users: 0,
     networkLevel8Users: 0,
     networkLevel9Users: 0,
-    networkLevel10Users: 0
+    networkLevel10Users: 0,
   })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [commissionLoading, setCommissionLoading] = useState(false)
   const [totalAllUsers, setTotalAllUsers] = useState(0)
 
   // State for affiliate users list
@@ -68,7 +83,7 @@ export function AffiliateControls() {
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set())
   const [hoveredUsers, setHoveredUsers] = useState<Set<string>>(new Set())
 
-  // Commission tracking state (keeping this at the bottom)
+  // Commission tracking state
   const [commissionData, setCommissionData] = useState<CommissionData>({
     totalCommissions: 0,
     tierBreakdown: {
@@ -86,27 +101,12 @@ export function AffiliateControls() {
     recentTransactions: []
   })
 
-  const [loading, setLoading] = useState(true)
-  const [commissionLoading, setCommissionLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
   // Get the current user address from either traditional wallet or zkLogin
   const userAddress = user?.address || account?.address
 
-  // Load data on component mount and when user changes
-  useEffect(() => {
-    if (userAddress) {
-      loadAffiliateData()
-    }
-  }, [userAddress, selectedRoleFilter, selectedLevelFilter, selectedProfileLevelFilter])
-
   // Load affiliate data from database
-  const loadAffiliateData = async () => {
-    if (!userAddress) {
-      setError('Please connect your wallet or sign in')
-      setLoading(false)
-      return
-    }
+  const loadAffiliateData = useCallback(async () => {
+    if (!userAddress) return
 
     try {
       setLoading(true)
@@ -114,6 +114,12 @@ export function AffiliateControls() {
       setError(null)
 
       console.log('🔄 Loading affiliate data for address:', userAddress)
+
+      // Load subscription status
+      setSubscriptionLoading(true)
+      const subStatus = await affiliateSubscriptionService.getSubscriptionStatus(userAddress)
+      setSubscriptionStatus(subStatus)
+      setSubscriptionLoading(false)
 
       // Load user's own profile level
       const profileLevel = await affiliateService.getUserProfileLevel(userAddress)
@@ -123,15 +129,14 @@ export function AffiliateControls() {
       const affiliateLevel = profileLevel ? calculateAffiliateLevel(profileLevel.profileLevel) : 1
       setUserAffiliateLevel(affiliateLevel)
 
-      // Load network metrics (personal + network breakdown)
+      // Load network metrics
       const networkData = await affiliateService.getNetworkMetrics(userAddress)
       setNetworkMetrics(networkData)
 
-      // Calculate total users (direct + network)
-      const totalDirect = networkData.personalNomadUsers + networkData.personalProUsers + networkData.personalRoyalUsers
-      const totalNetwork = networkData.networkNomadUsers + networkData.networkProUsers + networkData.networkRoyalUsers
-      const totalAll = totalDirect + totalNetwork
-      setTotalAllUsers(totalAll)
+      // Calculate total users from network metrics
+      const totalUsers = networkData.personalNomadUsers + networkData.personalProUsers + networkData.personalRoyalUsers +
+                        networkData.networkNomadUsers + networkData.networkProUsers + networkData.networkRoyalUsers
+      setTotalAllUsers(totalUsers)
 
       // Load affiliate users with current filters (including network)
       const { users, totalCount: count } = await affiliateService.getAffiliateUsers(userAddress, {
@@ -154,53 +159,23 @@ export function AffiliateControls() {
       console.log('📊 Network metrics:', networkData)
       console.log('💰 Commission data:', commissionInfo)
 
-      // If no data found, try with admin address for testing
-      if (totalDirect === 0 && !profileLevel) {
-        console.log('🧪 No data found for current wallet, trying admin address for testing...')
-        const adminAddress = '0x311479200d45ef0243b92dbcf9849b8f6b931d27ae885197ea73066724f2bcf4'
-
-        const adminProfileLevel = await affiliateService.getUserProfileLevel(adminAddress)
-        const adminNetworkData = await affiliateService.getNetworkMetrics(adminAddress)
-        const { users: adminUsers } = await affiliateService.getAffiliateUsers(adminAddress, {
-          roleFilter: selectedRoleFilter,
-          levelFilter: selectedLevelFilter,
-          limit: 50,
-          includeNetwork: true // Include multi-level referrals for admin test data
-        })
-        const adminCommissionData = await affiliateService.getCommissionData(adminAddress)
-
-        if (adminProfileLevel || adminNetworkData.personalNomadUsers > 0) {
-          console.log('🧪 Using admin test data')
-          setUserProfileLevel(adminProfileLevel)
-          setNetworkMetrics(adminNetworkData)
-
-          // Calculate admin's affiliate level
-          const adminAffiliateLevel = adminProfileLevel ? calculateAffiliateLevel(adminProfileLevel.profileLevel) : 1
-          setUserAffiliateLevel(adminAffiliateLevel)
-
-          // Calculate total users for admin (direct + network)
-          const adminTotalDirect = adminNetworkData.personalNomadUsers + adminNetworkData.personalProUsers + adminNetworkData.personalRoyalUsers
-          const adminTotalNetwork = adminNetworkData.networkNomadUsers + adminNetworkData.networkProUsers + adminNetworkData.networkRoyalUsers
-          const adminTotalAll = adminTotalDirect + adminTotalNetwork
-          setTotalAllUsers(adminTotalAll)
-
-          setAffiliateUsers(adminUsers)
-          setTotalCount(adminUsers.length)
-          setCommissionData(adminCommissionData)
-        }
-      }
-
     } catch (error) {
       console.error('❌ Failed to load affiliate data:', error)
-      setError('Failed to load affiliate data')
+      setError(error instanceof Error ? error.message : 'Failed to load affiliate data')
+      setCommissionLoading(false)
     } finally {
       setLoading(false)
     }
-  }
+  }, [userAddress])
+
+  // Load data on component mount and when user changes
+  useEffect(() => {
+    if (userAddress) {
+      loadAffiliateData()
+    }
+  }, [userAddress, selectedRoleFilter, selectedLevelFilter, selectedProfileLevelFilter, loadAffiliateData])
 
   // Helper function to calculate affiliate level from profile level
-  // Profile levels 1-5 map directly to affiliate levels 1-5
-  // Profile levels 6-10 are capped at affiliate level 5
   const calculateAffiliateLevel = (profileLevel: number): number => {
     if (profileLevel >= 5) return 5  // Profile Level 5-10 → Affiliate Level 5 (capped)
     if (profileLevel >= 4) return 4  // Profile Level 4 → Affiliate Level 4
@@ -208,34 +183,6 @@ export function AffiliateControls() {
     if (profileLevel >= 2) return 2  // Profile Level 2 → Affiliate Level 2
     if (profileLevel >= 1) return 1  // Profile Level 1 → Affiliate Level 1
     return 1  // Default/fallback
-  }
-
-  // Helper functions
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'NOMAD': return 'bg-gray-600 text-white'
-      case 'PRO': return 'bg-blue-600 text-white'
-      case 'ROYAL': return 'bg-yellow-600 text-white'
-      default: return 'bg-gray-600 text-white'
-    }
-  }
-
-  const getKycStatusColor = (status: string) => {
-    switch (status) {
-      case 'verified': return 'text-green-400'
-      case 'pending': return 'text-yellow-400'
-      case 'not_verified': return 'text-red-400'
-      default: return 'text-gray-400'
-    }
-  }
-
-  const getKycStatusText = (status: string) => {
-    switch (status) {
-      case 'verified': return '✓'
-      case 'pending': return '⏳'
-      case 'not_verified': return '✗'
-      default: return '?'
-    }
   }
 
   // Helper function to format SUI amounts with USD conversion
@@ -246,109 +193,6 @@ export function AffiliateControls() {
       sui: amount.toLocaleString(),
       usd: usdValue.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
     }
-  }
-
-  // Filter users based on search term and affiliate level
-  const filteredUsers = affiliateUsers.filter(user => {
-    // Search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase()
-      const matchesSearch = user.username.toLowerCase().includes(searchLower) ||
-                           user.email.toLowerCase().includes(searchLower)
-      if (!matchesSearch) return false
-    }
-
-    // Affiliate level filter
-    if (selectedLevelFilter !== 'ALL') {
-      const targetLevel = parseInt(selectedLevelFilter.replace('Lv. ', ''))
-      if (user.affiliateLevel !== targetLevel) return false
-    }
-
-    // Profile level filter
-    if (selectedProfileLevelFilter !== 'ALL') {
-      const targetProfileLevel = parseInt(selectedProfileLevelFilter.replace('PL. ', ''))
-      if (user.profileLevel !== targetProfileLevel) return false
-    }
-
-    return true
-  })
-
-  // Sort by join date (newest first) and get latest 5 or paginated results
-  const sortedUsers = [...filteredUsers].sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
-
-  // Get latest 5 affiliates for the "Latest Affiliates" section
-  const latestAffiliates = sortedUsers.slice(0, 5)
-
-  // Get displayed users based on pagination
-  const displayedUsers = showLatestOnly ? latestAffiliates : sortedUsers.slice(0, displayedCount)
-
-  // Show more functionality
-  const handleShowMore = () => {
-    setDisplayedCount(prev => prev + 5)
-  }
-
-  // Handle user expansion
-  const toggleUserExpansion = (userId: string) => {
-    setExpandedUsers(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(userId)) {
-        newSet.delete(userId)
-      } else {
-        newSet.add(userId)
-      }
-      return newSet
-    })
-  }
-
-  // Handle user hover
-  const handleUserHover = (userId: string, isHovering: boolean) => {
-    setHoveredUsers(prev => {
-      const newSet = new Set(prev)
-      if (isHovering) {
-        newSet.add(userId)
-      } else {
-        newSet.delete(userId)
-      }
-      return newSet
-    })
-  }
-
-  const handleToggleLatest = () => {
-    setShowLatestOnly(!showLatestOnly)
-    setDisplayedCount(5) // Reset pagination when switching views
-  }
-
-  // Handle filter changes
-  const handleRoleFilterChange = (value: 'ALL' | 'NOMAD' | 'PRO' | 'ROYAL') => {
-    setSelectedRoleFilter(value)
-    setDisplayedCount(5) // Reset pagination
-  }
-
-  const handleLevelFilterChange = (value: 'ALL' | 'Lv. 1' | 'Lv. 2' | 'Lv. 3' | 'Lv. 4' | 'Lv. 5') => {
-    setSelectedLevelFilter(value)
-    setDisplayedCount(5) // Reset pagination
-  }
-
-  const handleProfileLevelFilterChange = (value: 'ALL' | 'PL. 1' | 'PL. 2' | 'PL. 3' | 'PL. 4' | 'PL. 5' | 'PL. 6' | 'PL. 7' | 'PL. 8' | 'PL. 9' | 'PL. 10') => {
-    setSelectedProfileLevelFilter(value)
-    setDisplayedCount(5) // Reset pagination
-  }
-
-  // Action handlers
-  const handleDirectMessage = (user: AffiliateUser) => {
-    console.log('Direct message to:', user.username)
-  }
-
-  const handleSendEmail = (user: AffiliateUser) => {
-    console.log('Send email to:', user.email)
-  }
-
-  const handleSubscriptionReminder = (user: AffiliateUser) => {
-    console.log('Send subscription reminder to:', user.username)
-  }
-
-  const handleSpecialBonusOffer = (user: AffiliateUser) => {
-    console.log('Send special bonus offer to:', user.username)
   }
 
   // Show authentication requirement
@@ -408,8 +252,8 @@ export function AffiliateControls() {
 
   return (
     <div className="space-y-6">
-      {/* Top Section - Summary Cards (3 cards in a row) */}
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
+      {/* Top Section - Summary Cards (4 cards in a row) */}
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         {/* Total Users Card */}
         <div className="enhanced-card">
           <div className="enhanced-card-content">
@@ -452,746 +296,458 @@ export function AffiliateControls() {
             </div>
           </div>
         </div>
+
+        {/* Subscription Status Card */}
+        <div className="enhanced-card">
+          <div className="enhanced-card-content">
+            {subscriptionLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-6 h-6 animate-spin text-[#4DA2FF]" />
+              </div>
+            ) : subscriptionStatus ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-[#C0E6FF]">SUBSCRIPTION</p>
+                    <div className="flex items-center gap-2">
+                      {subscriptionStatus.isActive ? (
+                        <CheckCircle className="w-4 h-4 text-green-400" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 text-orange-400" />
+                      )}
+                      <p className="text-lg font-bold text-[#FFFFFF] capitalize">
+                        {subscriptionStatus.status}
+                      </p>
+                    </div>
+                  </div>
+                  <div className={`p-3 rounded-full ${
+                    subscriptionStatus.isActive 
+                      ? 'bg-green-600/20' 
+                      : subscriptionStatus.status === 'trial' 
+                        ? 'bg-orange-600/20' 
+                        : 'bg-red-600/20'
+                  }`}>
+                    {subscriptionStatus.isActive ? (
+                      <Zap className={`w-6 h-6 ${
+                        subscriptionStatus.status === 'trial' ? 'text-orange-400' : 'text-green-400'
+                      }`} />
+                    ) : (
+                      <Clock className="w-6 h-6 text-red-400" />
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[#C0E6FF]">
+                    {subscriptionStatus.isActive ? 'Days Remaining:' : 'Expired'}
+                  </span>
+                  <span className={`font-semibold ${
+                    subscriptionStatus.daysRemaining > 7 
+                      ? 'text-green-400' 
+                      : subscriptionStatus.daysRemaining > 0 
+                        ? 'text-orange-400' 
+                        : 'text-red-400'
+                  }`}>
+                    {subscriptionStatus.isActive ? `${subscriptionStatus.daysRemaining} days` : '0 days'}
+                  </span>
+                </div>
+
+                {!subscriptionStatus.isActive && (
+                  <AffiliateSubscriptionPayment
+                    userAddress={userAddress}
+                    onPaymentSuccess={() => loadAffiliateData()}
+                    trigger={
+                      <Button className="w-full bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white text-xs py-2">
+                        <Zap className="w-3 h-3 mr-1" />
+                        Renew Now
+                      </Button>
+                    }
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-[#C0E6FF] text-sm">Unable to load subscription status</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Middle Section - Two-Column Table Layout */}
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
-        {/* Left Column - Affiliate Overview Table */}
-        <div className="enhanced-card">
-          <div className="enhanced-card-content">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5 text-[#4DA2FF]" />
-              Affiliate Overview
-            </h3>
-            <div className="space-y-3">
-              {/* Personal Members */}
-              <div className="border-b border-[#C0E6FF]/10 pb-3">
-                <h4 className="text-sm font-medium text-[#C0E6FF] mb-2">Personal Members</h4>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <RoleImage role="NOMAD" size="sm" />
-                      <span className="text-white text-sm">Personal Nomad Members</span>
+      <SubscriptionGuard feature="affiliate overview and network metrics" showUpgrade={false}>
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+          {/* Left Column - Affiliate Overview Table */}
+          <div className="enhanced-card">
+            <div className="enhanced-card-content">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Users className="w-5 h-5 text-[#4DA2FF]" />
+                Affiliate Overview
+              </h3>
+              <div className="space-y-3">
+                {/* Personal Members */}
+                <div className="border-b border-[#C0E6FF]/10 pb-3">
+                  <h4 className="text-sm font-medium text-[#C0E6FF] mb-2">Personal Members</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="bg-blue-600/20 p-2 rounded-full">
+                          <Award className="w-4 h-4 text-blue-400" />
+                        </div>
+                        <span className="text-white text-sm">NOMAD</span>
+                      </div>
+                      <span className="text-white font-semibold">{networkMetrics.personalNomadUsers}</span>
                     </div>
-                    <span className="text-white font-semibold">{networkMetrics.personalNomadUsers}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <RoleImage role="PRO" size="sm" />
-                      <span className="text-white text-sm">Personal Pro Members</span>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="bg-purple-600/20 p-2 rounded-full">
+                          <Award className="w-4 h-4 text-purple-400" />
+                        </div>
+                        <span className="text-white text-sm">PRO</span>
+                      </div>
+                      <span className="text-white font-semibold">{networkMetrics.personalProUsers}</span>
                     </div>
-                    <span className="text-white font-semibold">{networkMetrics.personalProUsers}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <RoleImage role="ROYAL" size="sm" />
-                      <span className="text-white text-sm">Personal Royal Members</span>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="bg-yellow-600/20 p-2 rounded-full">
+                          <Award className="w-4 h-4 text-yellow-400" />
+                        </div>
+                        <span className="text-white text-sm">ROYAL</span>
+                      </div>
+                      <span className="text-white font-semibold">{networkMetrics.personalRoyalUsers}</span>
                     </div>
-                    <span className="text-white font-semibold">{networkMetrics.personalRoyalUsers}</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Network Members */}
-              <div>
-                <h4 className="text-sm font-medium text-[#C0E6FF] mb-2">Total Network Members</h4>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <RoleImage role="NOMAD" size="sm" />
-                      <span className="text-white text-sm">Network Nomad Members</span>
+                {/* Network Members */}
+                <div>
+                  <h4 className="text-sm font-medium text-[#C0E6FF] mb-2">Network Members</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="bg-blue-600/20 p-2 rounded-full">
+                          <Award className="w-4 h-4 text-blue-400" />
+                        </div>
+                        <span className="text-white text-sm">NOMAD</span>
+                      </div>
+                      <span className="text-white font-semibold">{networkMetrics.networkNomadUsers}</span>
                     </div>
-                    <span className="text-white font-semibold">{networkMetrics.networkNomadUsers}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <RoleImage role="PRO" size="sm" />
-                      <span className="text-white text-sm">Network Pro Members</span>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="bg-purple-600/20 p-2 rounded-full">
+                          <Award className="w-4 h-4 text-purple-400" />
+                        </div>
+                        <span className="text-white text-sm">PRO</span>
+                      </div>
+                      <span className="text-white font-semibold">{networkMetrics.networkProUsers}</span>
                     </div>
-                    <span className="text-white font-semibold">{networkMetrics.networkProUsers}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <RoleImage role="ROYAL" size="sm" />
-                      <span className="text-white text-sm">Network Royal Members</span>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="bg-yellow-600/20 p-2 rounded-full">
+                          <Award className="w-4 h-4 text-yellow-400" />
+                        </div>
+                        <span className="text-white text-sm">ROYAL</span>
+                      </div>
+                      <span className="text-white font-semibold">{networkMetrics.networkRoyalUsers}</span>
                     </div>
-                    <span className="text-white font-semibold">{networkMetrics.networkRoyalUsers}</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Right Column - Network Overview Table (Profile Levels) */}
-        <div className="enhanced-card">
-          <div className="enhanced-card-content">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Award className="w-5 h-5 text-[#4DA2FF]" />
-              Network Overview (Profile Levels)
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div className="bg-purple-600/20 p-2 rounded-full">
-                    <Award className="w-4 h-4 text-purple-400" />
+          {/* Right Column - Network Overview Table */}
+          <div className="enhanced-card">
+            <div className="enhanced-card-content">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-yellow-400" />
+                Network Overview
+              </h3>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-green-600/20 p-2 rounded-full">
+                      <Award className="w-4 h-4 text-green-400" />
+                    </div>
+                    <span className="text-white text-sm">Profile Level 5</span>
                   </div>
-                  <span className="text-white text-sm">Profile Level 5+</span>
+                  <span className="text-white font-semibold">{networkMetrics.networkLevel5Users}</span>
                 </div>
-                <span className="text-white font-semibold">{networkMetrics.networkLevel5Users}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div className="bg-indigo-600/20 p-2 rounded-full">
-                    <Award className="w-4 h-4 text-indigo-400" />
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-blue-600/20 p-2 rounded-full">
+                      <Award className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <span className="text-white text-sm">Profile Level 6</span>
                   </div>
-                  <span className="text-white text-sm">Profile Level 6+</span>
+                  <span className="text-white font-semibold">{networkMetrics.networkLevel6Users}</span>
                 </div>
-                <span className="text-white font-semibold">{networkMetrics.networkLevel6Users}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div className="bg-pink-600/20 p-2 rounded-full">
-                    <Award className="w-4 h-4 text-pink-400" />
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-purple-600/20 p-2 rounded-full">
+                      <Award className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <span className="text-white text-sm">Profile Level 7</span>
                   </div>
-                  <span className="text-white text-sm">Profile Level 7+</span>
+                  <span className="text-white font-semibold">{networkMetrics.networkLevel7Users}</span>
                 </div>
-                <span className="text-white font-semibold">{networkMetrics.networkLevel7Users}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div className="bg-emerald-600/20 p-2 rounded-full">
-                    <Award className="w-4 h-4 text-emerald-400" />
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-yellow-600/20 p-2 rounded-full">
+                      <Award className="w-4 h-4 text-yellow-400" />
+                    </div>
+                    <span className="text-white text-sm">Profile Level 8</span>
                   </div>
-                  <span className="text-white text-sm">Profile Level 8+</span>
+                  <span className="text-white font-semibold">{networkMetrics.networkLevel8Users}</span>
                 </div>
-                <span className="text-white font-semibold">{networkMetrics.networkLevel8Users}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div className="bg-orange-600/20 p-2 rounded-full">
-                    <Award className="w-4 h-4 text-orange-400" />
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-orange-600/20 p-2 rounded-full">
+                      <Award className="w-4 h-4 text-orange-400" />
+                    </div>
+                    <span className="text-white text-sm">Profile Level 9</span>
                   </div>
-                  <span className="text-white text-sm">Profile Level 9+</span>
+                  <span className="text-white font-semibold">{networkMetrics.networkLevel9Users}</span>
                 </div>
-                <span className="text-white font-semibold">{networkMetrics.networkLevel9Users}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div className="bg-red-600/20 p-2 rounded-full">
-                    <Award className="w-4 h-4 text-red-400" />
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-red-600/20 p-2 rounded-full">
+                      <Award className="w-4 h-4 text-red-400" />
+                    </div>
+                    <span className="text-white text-sm">Profile Level 10</span>
                   </div>
-                  <span className="text-white text-sm">Profile Level 10</span>
+                  <span className="text-white font-semibold">{networkMetrics.networkLevel10Users}</span>
                 </div>
-                <span className="text-white font-semibold">{networkMetrics.networkLevel10Users}</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </SubscriptionGuard>
 
       {/* Commission Tracking */}
-      <CommissionTracking
-        commissionData={commissionData}
-        loading={commissionLoading}
-      />
+      <SubscriptionGuard feature="commission tracking" showUpgrade={false}>
+        <CommissionTracking
+          commissionData={commissionData}
+          loading={commissionLoading}
+        />
+      </SubscriptionGuard>
 
-      {/* Affiliate Users Table */}
-      <div className="enhanced-card">
-        <div className="enhanced-card-content">
-          {/* Header with Search and Filter Controls */}
-          <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-6">
-            {/* Title and View Toggle */}
-            <div className="flex items-center gap-4 text-[#FFFFFF]">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-[#4DA2FF]" />
-                <h3 className="text-xl font-semibold">Affiliates</h3>
+      {/* Enhanced Affiliate Users Table */}
+      <SubscriptionGuard feature="affiliate users management">
+        <div className="enhanced-card">
+          <div className="enhanced-card-content">
+            {/* Header with Search and Filter Controls */}
+            <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-6">
+              {/* Title and View Toggle */}
+              <div className="flex items-center gap-4 text-[#FFFFFF]">
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-[#4DA2FF]" />
+                  <h3 className="text-xl font-semibold">Affiliates</h3>
+                </div>
+
+                {/* View Toggle */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => setShowLatestOnly(false)}
+                    variant={!showLatestOnly ? "default" : "outline"}
+                    size="sm"
+                    className={!showLatestOnly
+                      ? "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
+                      : "border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
+                    }
+                  >
+                    All Affiliates
+                  </Button>
+                  <Button
+                    onClick={() => setShowLatestOnly(true)}
+                    variant={showLatestOnly ? "default" : "outline"}
+                    size="sm"
+                    className={showLatestOnly
+                      ? "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
+                      : "border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
+                    }
+                  >
+                    Latest 5
+                  </Button>
+                </div>
               </div>
 
-              {/* View Toggle Buttons */}
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleToggleLatest}
-                  size="sm"
-                  variant={showLatestOnly ? "default" : "outline"}
-                  className={showLatestOnly
-                    ? "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white text-xs h-7 px-3"
-                    : "border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 text-xs h-7 px-3"
-                  }
-                >
-                  Latest 5
-                </Button>
-                <Button
-                  onClick={handleToggleLatest}
-                  size="sm"
-                  variant={!showLatestOnly ? "default" : "outline"}
-                  className={!showLatestOnly
-                    ? "bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white text-xs h-7 px-3"
-                    : "border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 text-xs h-7 px-3"
-                  }
-                >
-                  All Affiliates
-                </Button>
-              </div>
-            </div>
+              {/* Search and Filter Controls */}
+              <div className="flex flex-col sm:flex-row gap-3 lg:ml-auto">
+                {/* Search Input */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#C0E6FF]" />
+                  <Input
+                    placeholder="Search by username or email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 w-full sm:w-64 bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF] placeholder:text-[#C0E6FF]/60"
+                  />
+                </div>
 
-            {/* Search and Filter Controls */}
-            <div className="flex flex-col sm:flex-row gap-3 lg:ml-auto">
-              {/* Search Input */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#C0E6FF]" />
-                <Input
-                  placeholder="Search by username or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full sm:w-64 bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF] placeholder:text-[#C0E6FF]/60"
-                />
-              </div>
-
-              {/* Role Filter */}
-              <div className="w-full sm:w-48">
-                <Select value={selectedRoleFilter} onValueChange={handleRoleFilterChange}>
-                  <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF]">
-                    <div className="flex items-center gap-2">
-                      <Filter className="w-4 h-4 text-[#C0E6FF]" />
-                      <SelectValue placeholder="Filter by role" />
-                    </div>
+                {/* Role Filter */}
+                <Select value={selectedRoleFilter} onValueChange={(value: 'ALL' | 'NOMAD' | 'PRO' | 'ROYAL') => setSelectedRoleFilter(value)}>
+                  <SelectTrigger className="w-full sm:w-32 bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF]">
+                    <SelectValue placeholder="Role" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#1a2f51] border-[#C0E6FF]/30">
-                    <SelectItem value="ALL" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">All Roles</SelectItem>
-                    <SelectItem value="NOMAD" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <RoleImage role="NOMAD" size="sm" />
-                        NOMAD
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="PRO" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <RoleImage role="PRO" size="sm" />
-                        PRO
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="ROYAL" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <RoleImage role="ROYAL" size="sm" />
-                        ROYAL
-                      </div>
-                    </SelectItem>
+                    <SelectItem value="ALL" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">All Roles</SelectItem>
+                    <SelectItem value="NOMAD" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">NOMAD</SelectItem>
+                    <SelectItem value="PRO" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">PRO</SelectItem>
+                    <SelectItem value="ROYAL" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">ROYAL</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
 
-              {/* Affiliate Level Filter */}
-              <div className="w-full sm:w-48">
-                <Select value={selectedLevelFilter} onValueChange={handleLevelFilterChange}>
-                  <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF]">
-                    <div className="flex items-center gap-2">
-                      <Award className="w-4 h-4 text-[#C0E6FF]" />
-                      <SelectValue placeholder="Affiliate Levels" />
-                    </div>
+                {/* Level Filter */}
+                <Select value={selectedLevelFilter} onValueChange={(value: 'ALL' | 'Lv. 1' | 'Lv. 2' | 'Lv. 3' | 'Lv. 4' | 'Lv. 5') => setSelectedLevelFilter(value)}>
+                  <SelectTrigger className="w-full sm:w-32 bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF]">
+                    <SelectValue placeholder="Level" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#1a2f51] border-[#C0E6FF]/30">
-                    <SelectItem value="ALL" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">All Affiliate Levels</SelectItem>
-                    <SelectItem value="Lv. 1" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Award className="w-3 h-3 text-gray-400" />
-                        Affiliate Level 1
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="Lv. 2" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Award className="w-3 h-3 text-blue-400" />
-                        Affiliate Level 2
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="Lv. 3" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Award className="w-3 h-3 text-green-400" />
-                        Affiliate Level 3
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="Lv. 4" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Award className="w-3 h-3 text-yellow-400" />
-                        Affiliate Level 4
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="Lv. 5" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Award className="w-3 h-3 text-purple-400" />
-                        Affiliate Level 5 (Max)
-                      </div>
-                    </SelectItem>
+                    <SelectItem value="ALL" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">All Levels</SelectItem>
+                    <SelectItem value="Lv. 1" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Level 1</SelectItem>
+                    <SelectItem value="Lv. 2" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Level 2</SelectItem>
+                    <SelectItem value="Lv. 3" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Level 3</SelectItem>
+                    <SelectItem value="Lv. 4" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Level 4</SelectItem>
+                    <SelectItem value="Lv. 5" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Level 5</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
 
-              {/* Profile Level Filter */}
-              <div className="w-full sm:w-48">
-                <Select value={selectedProfileLevelFilter} onValueChange={handleProfileLevelFilterChange}>
-                  <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF]">
-                    <div className="flex items-center gap-2">
-                      <Trophy className="w-4 h-4 text-[#C0E6FF]" />
-                      <SelectValue placeholder="Profile Levels" />
-                    </div>
+                {/* Profile Level Filter */}
+                <Select value={selectedProfileLevelFilter} onValueChange={(value: 'ALL' | 'PL. 1' | 'PL. 2' | 'PL. 3' | 'PL. 4' | 'PL. 5' | 'PL. 6' | 'PL. 7' | 'PL. 8' | 'PL. 9' | 'PL. 10') => setSelectedProfileLevelFilter(value)}>
+                  <SelectTrigger className="w-full sm:w-36 bg-[#1a2f51] border-[#C0E6FF]/30 text-[#FFFFFF]">
+                    <SelectValue placeholder="Profile" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#1a2f51] border-[#C0E6FF]/30">
-                    <SelectItem value="ALL" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">All Profile Levels</SelectItem>
-                    <SelectItem value="PL. 1" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="w-3 h-3 text-gray-400" />
-                        Profile Level 1
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="PL. 2" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="w-3 h-3 text-blue-400" />
-                        Profile Level 2
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="PL. 3" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="w-3 h-3 text-green-400" />
-                        Profile Level 3
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="PL. 4" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="w-3 h-3 text-yellow-400" />
-                        Profile Level 4
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="PL. 5" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="w-3 h-3 text-orange-400" />
-                        Profile Level 5
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="PL. 6" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="w-3 h-3 text-red-400" />
-                        Profile Level 6
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="PL. 7" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="w-3 h-3 text-purple-400" />
-                        Profile Level 7
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="PL. 8" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="w-3 h-3 text-pink-400" />
-                        Profile Level 8
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="PL. 9" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="w-3 h-3 text-indigo-400" />
-                        Profile Level 9
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="PL. 10" className="text-[#FFFFFF] hover:bg-[#4DA2FF]/20">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="w-3 h-3 text-emerald-400" />
-                        Profile Level 10
-                      </div>
-                    </SelectItem>
+                    <SelectItem value="ALL" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">All Profiles</SelectItem>
+                    <SelectItem value="PL. 1" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Profile 1</SelectItem>
+                    <SelectItem value="PL. 2" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Profile 2</SelectItem>
+                    <SelectItem value="PL. 3" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Profile 3</SelectItem>
+                    <SelectItem value="PL. 4" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Profile 4</SelectItem>
+                    <SelectItem value="PL. 5" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Profile 5</SelectItem>
+                    <SelectItem value="PL. 6" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Profile 6</SelectItem>
+                    <SelectItem value="PL. 7" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Profile 7</SelectItem>
+                    <SelectItem value="PL. 8" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Profile 8</SelectItem>
+                    <SelectItem value="PL. 9" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Profile 9</SelectItem>
+                    <SelectItem value="PL. 10" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Profile 10</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-          </div>
 
-          {/* Mobile Card View */}
-          <div className="md:hidden space-y-3">
-            {displayedUsers.length > 0 ? (
-              displayedUsers.map((user) => {
-                const isExpanded = expandedUsers.has(user.id)
+            {/* Users List */}
+            {affiliateUsers.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="w-16 h-16 text-[#C0E6FF]/50 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-white mb-2">No Affiliate Users Found</h3>
+                <p className="text-[#C0E6FF] mb-4">
+                  {searchTerm || selectedRoleFilter !== 'ALL' || selectedLevelFilter !== 'ALL' || selectedProfileLevelFilter !== 'ALL'
+                    ? 'Try adjusting your search filters to find users.'
+                    : 'Start referring users to see them appear here.'
+                  }
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Filter and display users */}
+                {(() => {
+                  // Apply filters
+                  const filteredUsers = affiliateUsers.filter(user => {
+                    // Search filter
+                    if (searchTerm) {
+                      const searchLower = searchTerm.toLowerCase()
+                      const matchesSearch = user.username.toLowerCase().includes(searchLower) ||
+                                           user.email.toLowerCase().includes(searchLower)
+                      if (!matchesSearch) return false
+                    }
 
-                return (
-                  <div key={user.id} className="bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg overflow-hidden">
-                    {/* Main User Info */}
-                    <div
-                      className="p-4 cursor-pointer"
-                      onClick={() => toggleUserExpansion(user.id)}
-                    >
-                      {/* Header Row */}
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <UsernameDisplay
-                            address={user.address}
-                            username={user.username}
-                            className="text-white font-semibold text-base"
-                            variant="subtle"
-                            showIcon={false}
-                          />
-                          <Badge className={`${getKycStatusColor(user.kycStatus)} bg-transparent border-0 text-xs font-semibold px-1 py-0`}>
-                            {getKycStatusText(user.kycStatus)}
-                          </Badge>
-                        </div>
-                        <MoreHorizontal className={`w-4 h-4 text-[#C0E6FF] transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-                      </div>
+                    // Role filter
+                    if (selectedRoleFilter !== 'ALL') {
+                      if (user.status !== selectedRoleFilter) return false
+                    }
 
-                      {/* Email */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <Mail className="w-3 h-3 text-[#C0E6FF]" />
-                        <span className="text-[#C0E6FF] text-sm">{user.email}</span>
-                      </div>
+                    // Affiliate level filter
+                    if (selectedLevelFilter !== 'ALL') {
+                      const targetLevel = parseInt(selectedLevelFilter.replace('Lv. ', ''))
+                      if (user.affiliateLevel !== targetLevel) return false
+                    }
 
-                      {/* Sponsor Info */}
-                      <div className="flex items-center gap-2 mb-3">
-                        {user.isDirect ? (
-                          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-                            Direct Referral
-                          </Badge>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <Users className="w-3 h-3 text-[#C0E6FF]" />
-                            <span className="text-[#C0E6FF] text-sm">Invited by: </span>
-                            <UsernameDisplay
-                              address={user.sponsorAddress}
-                              username={user.sponsorUsername}
-                              className="text-[#C0E6FF] text-sm"
-                              variant="subtle"
-                              showIcon={false}
-                            />
-                          </div>
-                        )}
-                      </div>
+                    // Profile level filter
+                    if (selectedProfileLevelFilter !== 'ALL') {
+                      const targetProfileLevel = parseInt(selectedProfileLevelFilter.replace('PL. ', ''))
+                      if (user.profileLevel !== targetProfileLevel) return false
+                    }
 
-                      {/* Stats Row */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <Award className="w-3 h-3 text-[#4DA2FF]" />
-                            <span className="text-[#C0E6FF] text-sm">Profile Lv. {user.profileLevel}</span>
-                          </div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <Award className="w-3 h-3 text-[#C0E6FF]" />
-                            <span className="text-[#C0E6FF] text-sm">Affiliate Lv. {user.affiliateLevel}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-3 h-3 text-[#C0E6FF]" />
-                            <span className="text-[#C0E6FF] text-xs">{new Date(user.joinDate).toLocaleDateString()}</span>
+                    return true
+                  })
+
+                  // Sort by join date (newest first)
+                  const sortedUsers = [...filteredUsers].sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
+
+                  // Get displayed users based on view toggle
+                  const displayedUsers = showLatestOnly ? sortedUsers.slice(0, 5) : sortedUsers.slice(0, displayedCount)
+
+                  return displayedUsers.map((user) => (
+                    <div key={user.id} className="bg-[#1a2f51]/30 rounded-lg p-4 border border-[#C0E6FF]/10 hover:border-[#4DA2FF]/30 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <RoleImage role={user.status} size="sm" />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <UsernameDisplay username={user.username} />
+                              <Badge className={`text-xs ${
+                                user.status === 'ROYAL' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                                user.status === 'PRO' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' :
+                                'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                              }`}>
+                                {user.status}
+                              </Badge>
+                            </div>
+                            <p className="text-[#C0E6FF] text-sm">
+                              Profile Level {user.profileLevel} • Affiliate Level {user.affiliateLevel}
+                            </p>
+                            <p className="text-[#C0E6FF]/70 text-xs">
+                              Joined {new Date(user.joinDate).toLocaleDateString()}
+                            </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <Badge className={`${getStatusColor(user.status)} mb-2`}>
-                            <div className="flex items-center gap-1">
-                              <RoleImage role={user.status as "NOMAD" | "PRO" | "ROYAL"} size="sm" />
-                              <span className="text-xs">{user.status}</span>
-                            </div>
-                          </Badge>
-                          <div className="text-[#4DA2FF] font-bold text-lg">
-                            {user.commission.toLocaleString()}
-                            <span className="text-xs ml-1">SUI</span>
+                          <p className="text-white font-semibold">{formatSuiAmount(user.commission).sui} SUI</p>
+                          <p className="text-[#C0E6FF] text-sm">{formatSuiAmount(user.commission).usd}</p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 px-2 text-xs border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
+                              onClick={() => console.log('Contact user:', user.username)}
+                            >
+                              <Mail className="w-3 h-3 mr-1" />
+                              Contact
+                            </Button>
                           </div>
                         </div>
                       </div>
                     </div>
+                  ))
+                })()}
 
-                    {/* Expanded Action Buttons */}
-                    {isExpanded && (
-                      <div className="bg-[#0a1628] p-4 border-t border-[#C0E6FF]/20">
-                        <div className="grid grid-cols-2 gap-3">
-                          {/* Direct Message Button */}
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDirectMessage(user)
-                            }}
-                            size="sm"
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm h-10 w-full"
-                          >
-                            <MessageCircle className="w-4 h-4 mr-2" />
-                            Message
-                          </Button>
-
-                          {/* Send Email Button */}
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleSendEmail(user)
-                            }}
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700 text-white text-sm h-10 w-full"
-                          >
-                            <Mail className="w-4 h-4 mr-2" />
-                            Email
-                          </Button>
-
-                          {/* Subscription Reminder Button */}
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleSubscriptionReminder(user)
-                            }}
-                            size="sm"
-                            className="bg-orange-600 hover:bg-orange-700 text-white text-sm h-10 w-full"
-                          >
-                            <Bell className="w-4 h-4 mr-2" />
-                            Remind
-                          </Button>
-
-                          {/* Special Bonus Offer Button */}
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleSpecialBonusOffer(user)
-                            }}
-                            size="sm"
-                            className="bg-purple-600 hover:bg-purple-700 text-white text-sm h-10 w-full"
-                          >
-                            <Gift className="w-4 h-4 mr-2" />
-                            Bonus
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+                {/* Show More Button */}
+                {!showLatestOnly && affiliateUsers.length > displayedCount && (
+                  <div className="text-center pt-4">
+                    <Button
+                      onClick={() => setDisplayedCount(prev => prev + 5)}
+                      variant="outline"
+                      className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
+                    >
+                      Show More ({affiliateUsers.length - displayedCount} remaining)
+                    </Button>
                   </div>
-                )
-              })
-            ) : (
-              <div className="bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg p-8 text-center">
-                <Search className="w-8 h-8 text-[#C0E6FF]/50 mx-auto mb-2" />
-                <p className="text-sm text-[#C0E6FF]">No affiliates found matching your criteria</p>
-                <p className="text-xs text-[#C0E6FF]/70">Try adjusting your search or filter settings</p>
+                )}
               </div>
             )}
-          </div>
-
-          {/* Desktop Table View */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[#C0E6FF]/20">
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[140px]">Username</th>
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[120px]">Sponsor</th>
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[180px]">Email</th>
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[100px]">Join Date</th>
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[80px]">Profile Lv.</th>
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[80px]">Affiliate Lv.</th>
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[100px]">Status</th>
-                  <th className="text-left py-3 px-2 text-[#C0E6FF] text-sm font-medium min-w-[80px]">SUI</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayedUsers.length > 0 ? (
-                  displayedUsers.map((user) => {
-                    const isHovered = hoveredUsers.has(user.id)
-
-                    return (
-                      <tr
-                        key={user.id}
-                        className="border-b border-[#C0E6FF]/10 hover:bg-[#4DA2FF]/5 transition-colors cursor-pointer"
-                        onMouseEnter={() => handleUserHover(user.id, true)}
-                        onMouseLeave={() => handleUserHover(user.id, false)}
-                      >
-                        {!isHovered ? (
-                          // Normal row content
-                          <>
-                            <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm">
-                              <div className="flex items-center gap-2">
-                                <UsernameDisplay
-                                  address={user.address}
-                                  username={user.username}
-                                  className="truncate text-[#FFFFFF] text-sm"
-                                  variant="subtle"
-                                  showIcon={false}
-                                />
-                                <Badge className={`${getKycStatusColor(user.kycStatus)} bg-transparent border-0 text-xs font-semibold px-1 py-0`}>
-                                  {getKycStatusText(user.kycStatus)}
-                                </Badge>
-                                <MoreHorizontal className="w-3 h-3 text-[#C0E6FF]/60 ml-auto" />
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 text-left text-[#C0E6FF] text-sm">
-                              <div className="flex items-center gap-2">
-                                {user.isDirect ? (
-                                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-                                    Direct
-                                  </Badge>
-                                ) : (
-                                  <div className="flex items-center gap-1">
-                                    <Users className="w-3 h-3 flex-shrink-0" />
-                                    <UsernameDisplay
-                                      address={user.sponsorAddress}
-                                      username={user.sponsorUsername}
-                                      className="truncate text-xs text-[#C0E6FF]"
-                                      variant="subtle"
-                                      showIcon={false}
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 text-left text-[#C0E6FF] text-sm">
-                              <div className="flex items-center gap-2">
-                                <Mail className="w-3 h-3 flex-shrink-0" />
-                                <span className="truncate">{user.email}</span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 text-left text-[#C0E6FF] text-sm">
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-3 h-3 flex-shrink-0" />
-                                <span className="text-xs">{new Date(user.joinDate).toLocaleDateString()}</span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm">
-                              <div className="flex items-center gap-2">
-                                <Award className="w-3 h-3 flex-shrink-0 text-[#4DA2FF]" />
-                                <span className="font-semibold">{user.profileLevel}</span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm">
-                              <div className="flex items-center gap-2">
-                                <Badge className={user.isDirect ? "bg-blue-500/20 text-blue-400 border-blue-500/30" : "bg-orange-500/20 text-orange-400 border-orange-500/30"}>
-                                  L{user.affiliateLevel}
-                                </Badge>
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 text-left">
-                              <Badge className={getStatusColor(user.status)}>
-                                <div className="flex items-center gap-1">
-                                  <RoleImage role={user.status as "NOMAD" | "PRO" | "ROYAL"} size="sm" />
-                                  <span className="text-xs">{user.status}</span>
-                                </div>
-                              </Badge>
-                            </td>
-                            <td className="py-3 px-2 text-left text-[#FFFFFF] text-sm font-semibold">
-                              {user.commission.toLocaleString()}
-                            </td>
-                          </>
-                        ) : (
-                          // Action buttons row spanning all columns
-                          <td colSpan={8} className="py-3 px-4 bg-[#0a1628] border border-[#C0E6FF]/30">
-                            <div className="flex items-center justify-between flex-wrap gap-3">
-                              <div className="flex items-center gap-3">
-                                <div className="text-left">
-                                  <UsernameDisplay
-                                    address={user.address}
-                                    username={user.username}
-                                    className="text-white font-semibold text-sm"
-                                    variant="subtle"
-                                    showIcon={false}
-                                  />
-                                  <p className="text-[#C0E6FF] text-xs">{user.email}</p>
-                                </div>
-                              </div>
-
-                              <div className="flex gap-2 flex-wrap">
-                                {/* Direct Message Button */}
-                                <Button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleDirectMessage(user)
-                                  }}
-                                  size="sm"
-                                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8 px-2 lg:px-3"
-                                >
-                                  <MessageCircle className="w-3 h-3 mr-1" />
-                                  <span className="hidden lg:inline">Message</span>
-                                  <span className="lg:hidden">Msg</span>
-                                </Button>
-
-                                {/* Send Email Button */}
-                                <Button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleSendEmail(user)
-                                  }}
-                                  size="sm"
-                                  className="bg-green-600 hover:bg-green-700 text-white text-xs h-8 px-2 lg:px-3"
-                                >
-                                  <Mail className="w-3 h-3 mr-1" />
-                                  <span className="hidden lg:inline">Email</span>
-                                  <span className="lg:hidden">Mail</span>
-                                </Button>
-
-                                {/* Subscription Reminder Button */}
-                                <Button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleSubscriptionReminder(user)
-                                  }}
-                                  size="sm"
-                                  className="bg-orange-600 hover:bg-orange-700 text-white text-xs h-8 px-2 lg:px-3"
-                                >
-                                  <Bell className="w-3 h-3 mr-1" />
-                                  <span className="hidden lg:inline">Remind</span>
-                                  <span className="lg:hidden">Rem</span>
-                                </Button>
-
-                                {/* Special Bonus Offer Button */}
-                                <Button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleSpecialBonusOffer(user)
-                                  }}
-                                  size="sm"
-                                  className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8 px-2 lg:px-3"
-                                >
-                                  <Gift className="w-3 h-3 mr-1" />
-                                  <span className="hidden lg:inline">Bonus</span>
-                                  <span className="lg:hidden">Bon</span>
-                                </Button>
-                              </div>
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    )
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={8} className="py-8 text-center text-[#C0E6FF]">
-                      <div className="flex flex-col items-center gap-2">
-                        <Search className="w-8 h-8 text-[#C0E6FF]/50" />
-                        <p className="text-sm">No affiliates found matching your criteria</p>
-                        <p className="text-xs text-[#C0E6FF]/70">Try adjusting your search or filter settings</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Show More Button and Results Count */}
-          <div className="mt-4 space-y-3">
-            {/* Show More Button */}
-            {!showLatestOnly && displayedUsers.length < filteredUsers.length && (
-              <div className="text-center">
-                <Button
-                  onClick={handleShowMore}
-                  variant="outline"
-                  size="sm"
-                  className="border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
-                >
-                  Show More ({Math.min(5, filteredUsers.length - displayedUsers.length)} more)
-                </Button>
-              </div>
-            )}
-
-            {/* Results Count */}
-            <div className="text-center">
-              <p className="text-[#C0E6FF] text-sm">
-                {showLatestOnly ? (
-                  <>Showing latest {displayedUsers.length} of {filteredUsers.length} affiliates</>
-                ) : (
-                  <>Showing {displayedUsers.length} of {filteredUsers.length} affiliates</>
-                )}
-                {searchTerm && ` matching "${searchTerm}"`}
-                {selectedRoleFilter !== 'ALL' && ` with ${selectedRoleFilter} role`}
-                {selectedLevelFilter !== 'ALL' && ` at affiliate ${selectedLevelFilter}`}
-                {selectedProfileLevelFilter !== 'ALL' && ` at profile ${selectedProfileLevelFilter}`}
-              </p>
-            </div>
           </div>
         </div>
-      </div>
-
+      </SubscriptionGuard>
     </div>
   )
 }
