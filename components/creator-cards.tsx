@@ -17,6 +17,7 @@ import { useChannelReports } from "@/hooks/use-channel-reports"
 import { Filter, FilterX } from "lucide-react"
 import { toast } from "sonner"
 import { addUserChannelSubscription, channelSubscriptionsStorage, getUserJoinedChannels } from "@/lib/channel-subscriptions-storage"
+import { channelAccessStorage, getUserChannelAccess, grantChannelAccess, hasChannelAccess, type UserChannelAccess } from "@/lib/channel-access-storage"
 import { createClient } from '@supabase/supabase-js'
 import {
   Users,
@@ -199,16 +200,18 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null)
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showFreeAccessModal, setShowFreeAccessModal] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
   const [reportChannelId, setReportChannelId] = useState<string>('')
   const [reportChannelName, setReportChannelName] = useState<string>('')
   const [reportCreatorAddress, setReportCreatorAddress] = useState<string>('')
   const [reportCreatorName, setReportCreatorName] = useState<string>('')
   const [userAccess, setUserAccess] = useState<Record<string, string>>({})
+  const [userChannelAccess, setUserChannelAccess] = useState<UserChannelAccess[]>([])
   const [userChannelSubscriptions, setUserChannelSubscriptions] = useState<Record<string, boolean>>({})
   const [showOnlyJoined, setShowOnlyJoined] = useState(false)
   const { tier } = useSubscription()
-  const { canAccessPremiumForFree, recordPremiumAccess, removePremiumAccess, getRemainingFreeAccess, premiumAccessRecords } = usePremiumAccess()
+  const { canAccessPremiumForFree, recordPremiumAccess, removePremiumAccess, getRemainingFreeAccess, premiumAccessRecords, refreshPremiumAccess } = usePremiumAccess()
   const { deleteChannel } = useCreatorsDatabase()
   const currentAccount = useCurrentAccount()
 
@@ -227,47 +230,155 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
     refreshStats
   } = useChannelReports(channelIds)
 
-  // Load user access from localStorage
+  // Load user access from database
   useEffect(() => {
-    const access: Record<string, string> = {}
-    creators.forEach(creator => {
-      creator.channels.forEach(channel => {
-        const accessKey = `channel_access_${creator.id}_${channel.id}`
-        const expiry = localStorage.getItem(accessKey)
-        if (expiry && new Date(expiry) > new Date()) {
-          access[`${creator.id}_${channel.id}`] = expiry
-        }
-      })
-    })
-    setUserAccess(access)
-  }, [creators])
+    const loadUserChannelAccess = async () => {
+      if (!currentAccount?.address) {
+        setUserChannelAccess([])
+        setUserAccess({})
+        return
+      }
+
+      try {
+        // Get channel access from database
+        const channelAccess = await getUserChannelAccess(currentAccount.address)
+        setUserChannelAccess(channelAccess)
+
+        // Convert to legacy format for backward compatibility
+        const access: Record<string, string> = {}
+        channelAccess.forEach(accessRecord => {
+          const accessKey = `${accessRecord.creatorId}_${accessRecord.channelId}`
+          access[accessKey] = accessRecord.expiryDate.toISOString()
+        })
+        setUserAccess(access)
+
+        console.log(`✅ Loaded ${channelAccess.length} channel access records from database`)
+      } catch (error) {
+        console.error('❌ Failed to load channel access:', error)
+        setUserChannelAccess([])
+        setUserAccess({})
+      }
+    }
+
+    loadUserChannelAccess()
+  }, [currentAccount?.address])
 
   // Load user channel subscriptions from database
   useEffect(() => {
     const loadChannelSubscriptions = async () => {
-      if (!currentAccount?.address) return
+      // Try multiple sources for user address
+      const userAddress = user?.address || currentAccount?.address
+
+      console.log('🔍 Checking user addresses:')
+      console.log('  user?.address:', user?.address)
+      console.log('  currentAccount?.address:', currentAccount?.address)
+      console.log('  Selected userAddress:', userAddress)
+
+      if (!userAddress) {
+        console.log('❌ No user address available from any source')
+        return
+      }
 
       try {
-        console.log('📺 Loading channel subscriptions for user:', currentAccount.address)
-        const userChannels = await getUserJoinedChannels(currentAccount.address)
+        console.log('📺 Loading channel subscriptions for user:', userAddress)
+        const userChannels = await getUserJoinedChannels(userAddress)
+        console.log('📺 Raw user channels from database:', userChannels)
 
         const subscriptions: Record<string, boolean> = {}
         userChannels.forEach(channel => {
           // Create key using creator address and channel ID
           const key = `${channel.creatorAddress}_${channel.id}`
           subscriptions[key] = channel.isActive
-          console.log('📺 Found subscription:', key, channel.name)
+          console.log('📺 Found subscription:', key, channel.name, `(${channel.type})`)
+          console.log('📺 Channel details:', {
+            id: channel.id,
+            creatorAddress: channel.creatorAddress,
+            type: channel.type,
+            isActive: channel.isActive
+          })
         })
 
         setUserChannelSubscriptions(subscriptions)
         console.log('📺 Loaded', Object.keys(subscriptions).length, 'channel subscriptions')
+        console.log('📺 All subscription keys:', Object.keys(subscriptions))
+
+        // Force a re-render to update hasAccess calls
+        console.log('📺 Subscriptions state updated, components should re-render')
       } catch (error) {
         console.error('❌ Failed to load channel subscriptions:', error)
+        console.error('❌ Error details:', error)
       }
     }
 
     loadChannelSubscriptions()
-  }, [currentAccount?.address, creators])
+  }, [user?.address, currentAccount?.address, creators])
+
+  const handleFreeAccessConfirm = async () => {
+    if (!selectedCreator || !selectedChannel) return
+
+    const creator = selectedCreator
+    const channel = selectedChannel
+    const creatorIdentifier = creator.creatorAddress || creator.id
+
+    try {
+      // Record premium access using creator address for consistency
+      const creatorIdentifierForDb = creator.creatorAddress || creator.id
+      console.log(`[CreatorCards] Recording premium access for ${tier} user: ${creatorIdentifierForDb}_${channel.id}`)
+      await recordPremiumAccess(creatorIdentifierForDb, channel.id)
+
+      // Add free premium access to database for profile tracking
+      const userAddress = user?.address || currentAccount?.address
+      if (userAddress) {
+        console.log('💾 Adding free premium channel subscription to database...')
+
+        // Get the actual profile image blob ID from the creator's database record
+        const avatarBlobId = await getCreatorProfileImageBlobIdDirect(creator.creatorAddress || creator.id)
+        const fallbackBlobId = avatarBlobId || extractBlobIdFromCreatorAvatar(creator.avatar)
+
+        // Check if subscription already exists to avoid duplicate key error
+        try {
+          await addUserChannelSubscription(userAddress, {
+            creatorAddress: creator.creatorAddress || creator.id,
+            channelId: channel.id,
+            channelName: channel.name,
+            channelType: channel.type,
+            channelDescription: channel.description,
+            pricePaid: 0, // Free for PRO/ROYAL users
+            subscriptionTier: channel.type,
+            expiryDate: undefined, // Free access doesn't expire
+            channelAvatarBlobId: fallbackBlobId
+          })
+        } catch (subscriptionError: any) {
+          if (subscriptionError.code === '23505') {
+            // Subscription already exists - this is actually good!
+            console.log('✅ Subscription already exists - user already has access')
+          } else {
+            throw subscriptionError // Re-throw if it's a different error
+          }
+        }
+
+        console.log('✅ Free premium channel subscription added to database')
+        toast.success(`Joined ${channel.name} using your ${tier} free access!`)
+
+        // Update local state to reflect the new subscription
+        const newSubscriptions = { ...userChannelSubscriptions }
+        newSubscriptions[`${creator.creatorAddress || creator.id}_${channel.id}`] = true
+        setUserChannelSubscriptions(newSubscriptions)
+
+        // Refresh premium access records to update the counter
+        await refreshPremiumAccess()
+      }
+
+      // Close modal and redirect
+      setShowFreeAccessModal(false)
+      const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creatorIdentifier)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}`
+      window.location.href = forumUrl
+
+    } catch (error) {
+      console.error('❌ Failed to process free premium access:', error)
+      toast.error('Failed to access channel. Please try again.')
+    }
+  }
 
   const handleChannelAccess = async (creator: Creator, channel: Channel) => {
     // Check authentication first
@@ -279,8 +390,43 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
     // Use creator address for consistency (wallet address is more reliable than ID)
     const creatorIdentifier = creator.creatorAddress || creator.id
 
-    // For free channels, redirect immediately without any other processing
+    // For free channels, record subscription and then redirect
     if (channel.type === 'free') {
+      // Record free channel subscription in database for profile page integration
+      const userAddress = user?.address || currentAccount?.address
+      if (userAddress && !hasAccess(creator.id, channel.id)) {
+        try {
+          console.log('💾 Adding free channel subscription to database...')
+
+          // Get the actual profile image blob ID from the creator's database record
+          const avatarBlobId = await getCreatorProfileImageBlobIdDirect(creator.creatorAddress || creator.id)
+          const fallbackBlobId = avatarBlobId || extractBlobIdFromCreatorAvatar(creator.avatar)
+
+          await addUserChannelSubscription(userAddress, {
+            creatorAddress: creator.creatorAddress || creator.id,
+            channelId: channel.id,
+            channelName: channel.name,
+            channelType: channel.type,
+            channelDescription: channel.description,
+            pricePaid: 0,
+            subscriptionTier: channel.type,
+            expiryDate: undefined, // Free channels don't expire
+            channelAvatarBlobId: fallbackBlobId
+          })
+
+          console.log('✅ Free channel subscription added to database')
+          toast.success(`Joined ${channel.name}! Check your profile to see all joined channels.`)
+
+          // Update local state to show leave button immediately
+          const newSubscriptions = { ...userChannelSubscriptions }
+          newSubscriptions[`${creator.creatorAddress || creator.id}_${channel.id}`] = true
+          setUserChannelSubscriptions(newSubscriptions)
+
+        } catch (error) {
+          console.error('❌ Failed to add free channel subscription:', error)
+        }
+      }
+
       const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creatorIdentifier)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}`
       window.location.href = forumUrl
       return // Stop here for free channels
@@ -289,63 +435,28 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
     // For premium channels, handle database recording BEFORE redirect
     // PRO and ROYAL users have limited free access to premium channels
     if (tier === 'PRO' || tier === 'ROYAL') {
-      if (canAccessPremiumForFree(creator.id, channel.id)) {
-        // User can access this premium channel for free
-        console.log(`[CreatorCards] Recording premium access for ${tier} user: ${creator.id}_${channel.id}`)
-        recordPremiumAccess(creator.id, channel.id)
+      const creatorIdentifierForAccess = creator.creatorAddress || creator.id
 
-        // Add free premium access to database for profile tracking BEFORE redirect
-        // Check for any valid user address (wallet or zkLogin)
-        const userAddress = user?.address || currentAccount?.address
-        if (userAddress) {
-          try {
-            console.log('💾 Adding free premium channel subscription to database for user:', userAddress)
-
-            // Get the actual profile image blob ID from the creator's database record
-            const avatarBlobId = await getCreatorProfileImageBlobIdDirect(creator.creatorAddress || creator.id)
-            console.log('🖼️ Retrieved creator profile image blob ID for premium access:', avatarBlobId)
-
-            // If no blob ID found, try extracting from avatar URL as fallback
-            const fallbackBlobId = avatarBlobId || extractBlobIdFromCreatorAvatar(creator.avatar)
-            console.log('🔄 Final blob ID for premium access (with fallback):', fallbackBlobId)
-
-            await addUserChannelSubscription(userAddress, {
-              creatorAddress: creator.creatorAddress || creator.id,
-              channelId: channel.id,
-              channelName: channel.name,
-              channelType: channel.type,
-              channelDescription: channel.description,
-              pricePaid: 0, // Free for PRO/ROYAL users
-              subscriptionTier: channel.type,
-              expiryDate: undefined, // Free access doesn't expire
-              // Use the actual blob ID from database (with fallback)
-              channelAvatarBlobId: fallbackBlobId
-            })
-
-            console.log('✅ Free premium channel subscription added to database')
-            toast.success(`Joined ${channel.name}! Check your profile to see all joined channels.`)
-
-            // Trigger a custom event to notify profile page to refresh
-            window.dispatchEvent(new CustomEvent('channelAdded', {
-              detail: { channelId: channel.id, userAddress }
-            }))
-
-          } catch (error) {
-            console.error('❌ Failed to add free premium channel subscription to database:', error)
-            // Don't prevent access, just log the error
-          }
-        } else {
-          console.error('❌ No user address available for database recording')
-          toast.error('Please connect your wallet to continue')
-          return
-        }
-
-        // Redirect to forum immediately after recording free premium access
+      // First check if user already has access to this channel
+      if (hasAccess(creator.id, channel.id)) {
+        // User already has access - redirect directly without showing modal
+        console.log(`[CreatorCards] User already has access to this channel, redirecting directly`)
         const forumUrl = `/forum?tab=creators&creator=${encodeURIComponent(creatorIdentifier)}&channel=${encodeURIComponent(channel.id)}&creatorName=${encodeURIComponent(creator.name)}&channelName=${encodeURIComponent(channel.name)}`
         window.location.href = forumUrl
         return
+      }
+
+      // User doesn't have access yet - check if they can get free access
+      if (canAccessPremiumForFree(creatorIdentifierForAccess, channel.id)) {
+        // User can access this premium channel for free - show modal
+        console.log(`[CreatorCards] Showing free access modal for new premium channel`)
+        setSelectedCreator(creator)
+        setSelectedChannel(channel)
+        setShowFreeAccessModal(true)
+        return
       } else {
         // User has exceeded their free premium channel limit, show payment modal
+        console.log(`[CreatorCards] User exceeded free limit, showing payment modal`)
         setSelectedCreator(creator)
         setSelectedChannel(channel)
         setShowPaymentModal(true)
@@ -404,12 +515,19 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
       }
     }
 
-    // Remove from localStorage (paid access)
-    const accessKey = `channel_access_${creator.id}_${channel.id}`
-    localStorage.removeItem(accessKey)
+    // Remove from database (paid access)
+    if (currentAccount?.address) {
+      try {
+        await channelAccessStorage.removeChannelAccess(currentAccount.address, creator.id, channel.id)
+        console.log(`✅ Removed channel access from database for: ${creator.id}_${channel.id}`)
+      } catch (error) {
+        console.error('❌ Failed to remove channel access from database:', error)
+      }
+    }
 
     // Remove from premium access records (free access for PRO/ROYAL users)
-    removePremiumAccess(creator.id, channel.id)
+    const creatorIdentifierForRemoval = creator.creatorAddress || creator.id
+    removePremiumAccess(creatorIdentifierForRemoval, channel.id)
 
     // Remove from database subscriptions (free channels and other subscriptions)
     if (currentAccount?.address) {
@@ -486,10 +604,19 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
 
       await deleteChannel(creator.id, channel.id)
 
-      // Clean up local access records for this channel
-      const accessKey = `channel_access_${creator.id}_${channel.id}`
-      localStorage.removeItem(accessKey)
-      removePremiumAccess(creator.id, channel.id)
+      // Clean up database access records for this channel
+      if (currentAccount?.address) {
+        try {
+          await channelAccessStorage.removeChannelAccess(currentAccount.address, creator.id, channel.id)
+          console.log('✅ Removed channel access from database during deletion')
+        } catch (error) {
+          console.error('❌ Failed to remove channel access from database during deletion:', error)
+        }
+      }
+
+      // Clean up premium access records
+      const creatorIdentifierForCleanup = creator.creatorAddress || creator.id
+      removePremiumAccess(creatorIdentifierForCleanup, channel.id)
 
       // Update local state
       const newUserAccess = { ...userAccess }
@@ -575,6 +702,8 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
     const accessKey = `${creatorId}_${channelId}`
     const expiry = new Date()
     expiry.setMonth(expiry.getMonth() + 1)
+
+    // Update local state for immediate UI feedback
     setUserAccess(prev => ({
       ...prev,
       [accessKey]: expiry.toISOString()
@@ -584,10 +713,14 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
     const creator = creators.find(c => c.id === creatorId)
     const channel = creator?.channels.find(ch => ch.id === channelId)
 
-    // Add subscription to database if user is connected and channel exists
+    // Grant access in database and add subscription if user is connected and channel exists
     const userAddress = user?.address || currentAccount?.address
     if (userAddress && creator && channel) {
       try {
+        // Grant channel access in database
+        await grantChannelAccess(userAddress, creatorId, channelId, 'paid', expiry, channel.price || 0)
+        console.log('✅ Channel access granted in database')
+
         console.log('💾 Adding channel subscription to database...')
 
         // Get the actual profile image blob ID from the creator's database record
@@ -687,7 +820,24 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
   }
 
   const hasAccess = (creatorId: string, channelId: string) => {
-    // Check if user has paid access (NOMAD users or premium users who exceeded limit)
+    // Find the creator to get the wallet address
+    const creator = creators.find(c => c.id === creatorId)
+    const creatorAddress = creator?.creatorAddress || creatorId
+
+    // Debug logging (can be removed in production)
+    if (Object.keys(userChannelSubscriptions).length === 0) {
+      console.log(`⚠️ No subscriptions loaded yet for hasAccess check`)
+    }
+
+    // Check if user has paid access from database (using creator address)
+    const hasDbAccess = userChannelAccess.some(
+      access => access.creatorId === creatorAddress && access.channelId === channelId && access.isActive
+    )
+    if (hasDbAccess) {
+      return true
+    }
+
+    // Check legacy localStorage access for backward compatibility
     const accessKey = `${creatorId}_${channelId}`
     if (userAccess[accessKey]) {
       return true
@@ -705,8 +855,17 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
 
     // Check if user has an active subscription to this channel (from database)
     // This covers free channels and any other subscriptions
-    const subscriptionKey = `${creatorId}_${channelId}`
+    // Use creator address for consistency with how subscriptions are stored
+    const subscriptionKey = `${creatorAddress}_${channelId}`
+
     if (userChannelSubscriptions[subscriptionKey]) {
+      return true
+    }
+
+    // Also try with creator ID as fallback
+    const fallbackKey = `${creatorId}_${channelId}`
+
+    if (userChannelSubscriptions[fallbackKey]) {
       return true
     }
 
@@ -714,6 +873,19 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
   }
 
   const getAccessExpiry = (creatorId: string, channelId: string) => {
+    // Find the creator to get the wallet address
+    const creator = creators.find(c => c.id === creatorId)
+    const creatorAddress = creator?.creatorAddress || creatorId
+
+    // Check database access first (using creator address)
+    const dbAccess = userChannelAccess.find(
+      access => access.creatorId === creatorAddress && access.channelId === channelId && access.isActive
+    )
+    if (dbAccess) {
+      return dbAccess.expiryDate
+    }
+
+    // Fallback to legacy localStorage access
     const accessKey = `${creatorId}_${channelId}`
     const expiry = userAccess[accessKey]
     return expiry ? new Date(expiry) : null
@@ -761,6 +933,20 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
       channel.type === 'free' || hasAccess(creator.id, channel.id)
     ).length
   }, 0)
+
+  // Debug function - expose to window for testing
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).debugHasAccess = (creatorId: string, channelId: string) => {
+        console.log('🧪 Manual hasAccess test:')
+        return hasAccess(creatorId, channelId)
+      }
+      (window as any).debugSubscriptions = () => {
+        console.log('🧪 Current subscriptions:', userChannelSubscriptions)
+        console.log('🧪 Current creators:', creators.map(c => ({ id: c.id, address: c.creatorAddress, name: c.name })))
+      }
+    }
+  }, [userChannelSubscriptions, creators])
 
   return (
     <>
@@ -1159,6 +1345,41 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
         creatorName={reportCreatorName}
         onReportSubmitted={handleReportSubmitted}
       />
+
+      {/* Free Access Modal for PRO/ROYAL users */}
+      {showFreeAccessModal && selectedCreator && selectedChannel && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-[#0A1628] border border-[#1E3A8A] rounded-lg p-6 max-w-md mx-4">
+            <h3 className="text-xl font-bold text-white mb-4">
+              🎉 Free Premium Access!
+            </h3>
+            <p className="text-[#C0E6FF] mb-4">
+              As a <span className="text-yellow-400 font-semibold">{tier}</span> member, you get free access to this premium channel!
+            </p>
+            <div className="bg-[#1a2f51] rounded-lg p-4 mb-4">
+              <h4 className="text-white font-semibold">{selectedChannel.name}</h4>
+              <p className="text-[#C0E6FF] text-sm">by {selectedCreator.name}</p>
+              <p className="text-green-400 text-sm mt-2">
+                ✅ Free access ({getRemainingFreeAccess() - 1} remaining after this)
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setShowFreeAccessModal(false)}
+                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleFreeAccessConfirm}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              >
+                Access Channel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

@@ -11,6 +11,7 @@ import { useSubscription } from "@/contexts/subscription-context"
 import { Coins, Calendar, Shield, CheckCircle, AlertCircle, Wallet } from "lucide-react"
 import { toast } from "sonner"
 import { addUserChannelSubscription } from "@/lib/channel-subscriptions-storage"
+import { grantChannelAccess } from "@/lib/channel-access-storage"
 import { createClient } from '@supabase/supabase-js'
 
 
@@ -242,9 +243,16 @@ export function TipPaymentModal({
       const durationDays = parseInt(selectedDuration)
       accessExpiry.setDate(accessExpiry.getDate() + durationDays)
 
-      // Store access in localStorage (in production, this would be on-chain or backend)
-      const accessKey = `channel_access_${creator.id}_${channel.id}`
-      localStorage.setItem(accessKey, accessExpiry.toISOString())
+      // Store access in database
+      const userAddress = user?.address
+      if (userAddress) {
+        try {
+          await grantChannelAccess(userAddress, creator.id, channel.id, 'paid', accessExpiry, currentPrice)
+          console.log('✅ Channel access granted in database')
+        } catch (error) {
+          console.error('❌ Failed to grant channel access in database:', error)
+        }
+      }
 
       // Also add to database for profile page integration
       try {

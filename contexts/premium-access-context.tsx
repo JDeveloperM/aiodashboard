@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { useSubscription } from "./subscription-context"
+import { useSuiAuth } from "./sui-auth-context"
+import { getUserPremiumAccess, recordPremiumAccess as dbRecordPremiumAccess, channelAccessStorage, type UserPremiumAccess } from "@/lib/channel-access-storage"
 
 interface PremiumAccessRecord {
   creatorId: string
@@ -15,51 +17,54 @@ interface PremiumAccessContextType {
   premiumAccessLimit: number
   premiumAccessRecords: PremiumAccessRecord[]
   canAccessPremiumForFree: (creatorId: string, channelId: string) => boolean
-  recordPremiumAccess: (creatorId: string, channelId: string) => void
-  removePremiumAccess: (creatorId: string, channelId: string) => void
+  recordPremiumAccess: (creatorId: string, channelId: string) => Promise<void>
+  removePremiumAccess: (creatorId: string, channelId: string) => Promise<void>
   getRemainingFreeAccess: () => number
-  resetPremiumAccess: () => void
+  resetPremiumAccess: () => Promise<void>
+  refreshPremiumAccess: () => Promise<void>
 }
 
 const PremiumAccessContext = createContext<PremiumAccessContextType | undefined>(undefined)
 
 export function PremiumAccessProvider({ children }: { children: React.ReactNode }) {
   const { tier } = useSubscription()
+  const { user } = useSuiAuth()
   const [premiumAccessRecords, setPremiumAccessRecords] = useState<PremiumAccessRecord[]>([])
   const [isLoaded, setIsLoaded] = useState(false)
 
   // Define limits based on tier
   const premiumAccessLimit = tier === 'ROYAL' ? 9 : tier === 'PRO' ? 3 : 0
 
-  // Load premium access records from localStorage
+  // Load premium access records from database
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedRecords = localStorage.getItem("premiumAccessRecords")
-      if (savedRecords) {
-        try {
-          const parsedRecords = JSON.parse(savedRecords).map((record: any) => ({
-            ...record,
-            accessedAt: new Date(record.accessedAt)
-          }))
-          setPremiumAccessRecords(parsedRecords)
-          console.log(`[PremiumAccess] Loaded ${parsedRecords.length} premium access records:`, parsedRecords)
-        } catch (error) {
-          console.error("Failed to parse premium access records:", error)
-          setPremiumAccessRecords([])
-        }
-      } else {
-        console.log(`[PremiumAccess] No saved records found - fresh start`)
+    const loadPremiumAccessRecords = async () => {
+      if (!user?.address) {
+        setPremiumAccessRecords([])
+        setIsLoaded(true)
+        return
       }
+
+      try {
+        const dbRecords = await getUserPremiumAccess(user.address)
+        const records: PremiumAccessRecord[] = dbRecords.map((record: UserPremiumAccess) => ({
+          creatorId: record.creatorId,
+          channelId: record.channelId,
+          accessedAt: record.accessedDate,
+          tier: record.tier
+        }))
+
+        setPremiumAccessRecords(records)
+        console.log(`[PremiumAccess] Loaded ${records.length} premium access records from database`)
+      } catch (error) {
+        console.error('[PremiumAccess] Failed to load premium access records from database:', error)
+        setPremiumAccessRecords([])
+      }
+
       setIsLoaded(true)
     }
-  }, [])
 
-  // Save premium access records to localStorage when they change
-  useEffect(() => {
-    if (isLoaded && typeof window !== 'undefined') {
-      localStorage.setItem("premiumAccessRecords", JSON.stringify(premiumAccessRecords))
-    }
-  }, [premiumAccessRecords, isLoaded])
+    loadPremiumAccessRecords()
+  }, [user?.address])
 
   // Filter records for current tier (in case user upgraded/downgraded)
   const currentTierRecords = premiumAccessRecords.filter(record => record.tier === tier)
@@ -88,9 +93,9 @@ export function PremiumAccessProvider({ children }: { children: React.ReactNode 
     return hasRemainingSlots
   }
 
-  const recordPremiumAccess = (creatorId: string, channelId: string) => {
+  const recordPremiumAccess = async (creatorId: string, channelId: string) => {
     // Only record if it's a new access and user has a premium tier
-    if (tier === 'NOMAD') return
+    if (tier === 'NOMAD' || !user?.address) return
 
     const alreadyAccessed = currentTierRecords.some(
       record => record.creatorId === creatorId && record.channelId === channelId
@@ -104,31 +109,75 @@ export function PremiumAccessProvider({ children }: { children: React.ReactNode 
         tier: tier as 'PRO' | 'ROYAL'
       }
 
+      // Update local state immediately for UI feedback
       setPremiumAccessRecords(prev => [...prev, newRecord])
       console.log(`[PremiumAccess] Used free slot: ${premiumAccessCount + 1}/${premiumAccessLimit} for ${tier} user`)
+
+      // Save to database
+      try {
+        await dbRecordPremiumAccess(user.address, creatorId, channelId, tier as 'PRO' | 'ROYAL')
+        console.log(`[PremiumAccess] Saved premium access record to database`)
+      } catch (error) {
+        console.error('[PremiumAccess] Failed to save premium access record to database:', error)
+        // Revert local state on database error
+        setPremiumAccessRecords(prev =>
+          prev.filter(record =>
+            !(record.creatorId === creatorId && record.channelId === channelId)
+          )
+        )
+      }
     }
   }
 
-  const removePremiumAccess = (creatorId: string, channelId: string) => {
-    // Remove the specific premium access record
+  const removePremiumAccess = async (creatorId: string, channelId: string) => {
+    if (!user?.address) return
+
+    // Update local state immediately
     setPremiumAccessRecords(prev =>
       prev.filter(record =>
         !(record.creatorId === creatorId && record.channelId === channelId)
       )
     )
     console.log(`[PremiumAccess] Removed premium access for ${creatorId}_${channelId}`)
+
+    // Remove from database
+    try {
+      await channelAccessStorage.removePremiumAccess(user.address, creatorId, channelId)
+      console.log(`[PremiumAccess] Removed premium access record from database`)
+    } catch (error) {
+      console.error('[PremiumAccess] Failed to remove premium access record from database:', error)
+    }
   }
 
   const getRemainingFreeAccess = () => {
     return Math.max(0, premiumAccessLimit - premiumAccessCount)
   }
 
-  const resetPremiumAccess = () => {
+  const resetPremiumAccess = async () => {
     setPremiumAccessRecords([])
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem("premiumAccessRecords")
-    }
     console.log(`[PremiumAccess] Reset premium access records`)
+
+    // Note: We don't clear database records here as they should persist
+    // This function is mainly for tier downgrades and testing
+  }
+
+  const refreshPremiumAccess = async () => {
+    if (!user?.address) return
+
+    try {
+      const dbRecords = await getUserPremiumAccess(user.address)
+      const records: PremiumAccessRecord[] = dbRecords.map((record: UserPremiumAccess) => ({
+        creatorId: record.creatorId,
+        channelId: record.channelId,
+        accessedAt: record.accessedDate,
+        tier: record.tier
+      }))
+
+      setPremiumAccessRecords(records)
+      console.log(`[PremiumAccess] Refreshed ${records.length} premium access records from database`)
+    } catch (error) {
+      console.error('[PremiumAccess] Failed to refresh premium access records:', error)
+    }
   }
 
   // Reset records when tier changes to NOMAD (downgrade)
@@ -156,6 +205,7 @@ export function PremiumAccessProvider({ children }: { children: React.ReactNode 
         removePremiumAccess,
         getRemainingFreeAccess,
         resetPremiumAccess,
+        refreshPremiumAccess,
       }}
     >
       {children}

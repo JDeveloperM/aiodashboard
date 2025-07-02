@@ -3,25 +3,30 @@
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { 
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { 
-  Copy, 
-  Send, 
+import {
+  Copy,
+  Send,
   ArrowDownToLine,
   User,
   Settings,
   CreditCard,
   LogOut,
-  Wallet
+  Wallet,
+  Users,
+  Plus
 } from 'lucide-react'
 import { useCurrentAccount, useDisconnectWallet, useSuiClientQuery } from '@mysten/dapp-kit'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { useAvatar } from '@/contexts/avatar-context'
 import { usePersistentProfile } from '@/hooks/use-persistent-profile'
+import { useChannelCounts } from '@/hooks/use-channel-counts'
+import { useSubscription } from '@/contexts/subscription-context'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DepositModal } from './deposit-modal'
 import { SendModal } from './send-modal'
@@ -35,6 +40,8 @@ export function TraditionalWalletDisplay() {
   const { user, signOut, formatAddress } = useSuiAuth()
   const { profile } = usePersistentProfile()
   const { getAvatarUrl, getFallbackText } = useAvatar()
+  const { tier } = useSubscription()
+  const { joinedChannels, maxJoinedChannels, createdChannels, maxCreatedChannels, isLoading: channelCountsLoading } = useChannelCounts()
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [showDepositModal, setShowDepositModal] = useState(false)
@@ -215,6 +222,47 @@ export function TraditionalWalletDisplay() {
             <span className="mr-2">+</span>
             Create Channel
           </Button>
+
+          <Separator className="bg-[#1e3a8a]" />
+
+          {/* Channel Counters */}
+          <TooltipProvider>
+            <div className="space-y-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-between p-3 bg-[#1a2f51]/50 rounded-lg hover:bg-[#1a2f51]/70 transition-colors cursor-help">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-[#4DA2FF]" />
+                      <span className="text-[#C0E6FF] text-sm">Free Premium Channels</span>
+                    </div>
+                    <span className="text-white font-medium">
+                      {channelCountsLoading ? '...' : `${joinedChannels}/${maxJoinedChannels}`}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Premium channels you've joined (limit: {maxJoinedChannels} for {tier} tier)</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-between p-3 bg-[#1a2f51]/50 rounded-lg hover:bg-[#1a2f51]/70 transition-colors cursor-help">
+                    <div className="flex items-center gap-2">
+                      <Plus className="w-4 h-4 text-[#4DA2FF]" />
+                      <span className="text-[#C0E6FF] text-sm">My Channels Created</span>
+                    </div>
+                    <span className={`font-medium ${createdChannels >= maxCreatedChannels ? 'text-yellow-400' : 'text-white'}`}>
+                      {channelCountsLoading ? '...' : `${createdChannels}/${maxCreatedChannels}`}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Channels you've created (limit based on your {tier} tier)</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
 
           <Separator className="bg-[#1e3a8a]" />
 
