@@ -82,6 +82,11 @@ interface CreatorsContextType {
   deleteChannel: (creatorId: string, channelId: string) => Promise<void>
   refreshCreators: () => Promise<void>
   getUserCreators: (walletAddress: string) => Creator[]
+  // New subscriber count functions
+  syncSubscriberCounts: () => Promise<void>
+  syncCreatorSubscriberCount: (creatorAddress: string) => Promise<number>
+  toggleRealTimeSubscriberCounts: (enabled: boolean) => void
+  useRealTimeSubscriberCounts: boolean
   isLoading: boolean
   error: string | null
 }
@@ -121,7 +126,9 @@ function convertDecryptedCreatorToCreator(decryptedCreator: DecryptedCreator): C
       pricing: channelData.pricing || decryptedCreator.tip_pricing,
       availability: channelData.availability || {
         hasLimit: decryptedCreator.max_subscribers > 0,
-        currentSlots: Math.floor(decryptedCreator.max_subscribers * 0.7),
+        currentSlots: decryptedCreator.max_subscribers > 0
+          ? Math.max(0, decryptedCreator.max_subscribers - decryptedCreator.subscribers_count)
+          : undefined,
         maxSlots: decryptedCreator.max_subscribers > 0 ? decryptedCreator.max_subscribers : undefined,
         status: decryptedCreator.max_subscribers > 0 ? 'limited' : 'available'
       },
@@ -150,7 +157,9 @@ function convertDecryptedCreatorToCreator(decryptedCreator: DecryptedCreator): C
       pricing: channelData.pricing || decryptedCreator.tip_pricing,
       availability: channelData.availability || {
         hasLimit: decryptedCreator.max_subscribers > 0,
-        currentSlots: Math.floor(decryptedCreator.max_subscribers * 0.7),
+        currentSlots: decryptedCreator.max_subscribers > 0
+          ? Math.max(0, decryptedCreator.max_subscribers - decryptedCreator.subscribers_count)
+          : undefined,
         maxSlots: decryptedCreator.max_subscribers > 0 ? decryptedCreator.max_subscribers : undefined,
         status: decryptedCreator.max_subscribers > 0 ? 'limited' : 'available'
       },
@@ -178,7 +187,9 @@ function convertDecryptedCreatorToCreator(decryptedCreator: DecryptedCreator): C
       pricing: decryptedCreator.tip_pricing,
       availability: {
         hasLimit: decryptedCreator.max_subscribers > 0,
-        currentSlots: Math.floor(decryptedCreator.max_subscribers * 0.7),
+        currentSlots: decryptedCreator.max_subscribers > 0
+          ? Math.max(0, decryptedCreator.max_subscribers - decryptedCreator.subscribers_count)
+          : undefined,
         maxSlots: decryptedCreator.max_subscribers > 0 ? decryptedCreator.max_subscribers : undefined,
         status: decryptedCreator.max_subscribers > 0 ? 'limited' : 'available'
       },
@@ -207,7 +218,9 @@ function convertDecryptedCreatorToCreator(decryptedCreator: DecryptedCreator): C
     languages: [decryptedCreator.channel_language],
     availability: {
       hasLimit: decryptedCreator.max_subscribers > 0,
-      currentSlots: Math.floor(decryptedCreator.max_subscribers * 0.7),
+      currentSlots: decryptedCreator.max_subscribers > 0
+        ? Math.max(0, decryptedCreator.max_subscribers - decryptedCreator.subscribers_count)
+        : undefined,
       maxSlots: decryptedCreator.max_subscribers > 0 ? decryptedCreator.max_subscribers : undefined,
       status: decryptedCreator.max_subscribers > 0 ? 'limited' : 'available'
     },
@@ -220,6 +233,7 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
   const [creators, setCreators] = useState<Creator[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [useRealTimeSubscriberCounts, setUseRealTimeSubscriberCounts] = useState(true) // Enable real-time counts by default
   const { user } = useSuiAuth()
   const currentAccount = useCurrentAccount()
 
@@ -228,6 +242,81 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
+
+  // Function to get real-time subscriber count for a creator
+  const getRealTimeSubscriberCount = async (creatorAddress: string): Promise<number> => {
+    try {
+      const { data, error } = await supabase
+        .rpc('calculate_creator_subscriber_count', {
+          creator_addr: creatorAddress
+        })
+
+      if (error) {
+        console.warn(`⚠️ Failed to get real-time subscriber count for ${creatorAddress}:`, error)
+        return 0
+      }
+
+      return data || 0
+    } catch (err) {
+      console.warn(`⚠️ Error getting real-time subscriber count for ${creatorAddress}:`, err)
+      return 0
+    }
+  }
+
+  // Function to update subscriber counts for all creators
+  const updateAllSubscriberCounts = async (creatorList: Creator[]): Promise<Creator[]> => {
+    if (!useRealTimeSubscriberCounts) {
+      return creatorList
+    }
+
+    console.log('🔄 Updating real-time subscriber counts...')
+
+    const updatedCreators = await Promise.all(
+      creatorList.map(async (creator) => {
+        try {
+          const realTimeCount = await getRealTimeSubscriberCount(creator.creatorAddress)
+
+          // Calculate correct available slots
+          const updatedAvailability = {
+            ...creator.availability,
+            currentSlots: creator.availability.hasLimit && creator.availability.maxSlots
+              ? Math.max(0, creator.availability.maxSlots - realTimeCount)
+              : creator.availability.currentSlots
+          }
+
+          // Update the creator's subscriber count and availability
+          const updatedCreator = {
+            ...creator,
+            subscribers: realTimeCount,
+            availability: updatedAvailability
+          }
+
+          // Also update individual channel subscriber counts and availability
+          const updatedChannels = creator.channels.map(channel => ({
+            ...channel,
+            subscribers: realTimeCount, // For now, use the same count for all channels of a creator
+            availability: channel.availability ? {
+              ...channel.availability,
+              currentSlots: channel.availability.hasLimit && channel.availability.maxSlots
+                ? Math.max(0, channel.availability.maxSlots - realTimeCount)
+                : channel.availability.currentSlots
+            } : channel.availability
+          }))
+
+          return {
+            ...updatedCreator,
+            channels: updatedChannels
+          }
+        } catch (err) {
+          console.warn(`⚠️ Failed to update subscriber count for creator ${creator.name}:`, err)
+          return creator // Return original creator if update fails
+        }
+      })
+    )
+
+    console.log('✅ Updated real-time subscriber counts and availability slots')
+    return updatedCreators
+  }
 
   // Load creators from database
   const refreshCreators = async () => {
@@ -272,8 +361,11 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
         })
       }
 
-      setCreators(convertedCreators)
-      console.log(`✅ Loaded ${convertedCreators.length} creators from database`)
+      // Update subscriber counts with real-time data
+      const creatorsWithRealTimeCounts = await updateAllSubscriberCounts(convertedCreators)
+
+      setCreators(creatorsWithRealTimeCounts)
+      console.log(`✅ Loaded ${creatorsWithRealTimeCounts.length} creators from database with real-time subscriber counts`)
     } catch (err) {
       console.error('Failed to load creators:', err)
       const errorMessage = err instanceof Error ? err.message : 'Failed to load creators'
@@ -826,6 +918,88 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
     }
   }
 
+  // Function to manually sync all subscriber counts
+  const syncSubscriberCounts = async () => {
+    try {
+      console.log('🔄 Manually syncing all subscriber counts...')
+      const response = await fetch('/api/sync-subscriber-counts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          force_recalculate: true
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        console.log('✅ Subscriber counts synced:', result.summary)
+        toast.success(`Synced subscriber counts for ${result.summary.total_creators} creators`)
+        // Refresh creators to show updated counts
+        await refreshCreators()
+      } else {
+        console.error('❌ Failed to sync subscriber counts:', result.error)
+        toast.error('Failed to sync subscriber counts')
+      }
+    } catch (err) {
+      console.error('❌ Error syncing subscriber counts:', err)
+      toast.error('Error syncing subscriber counts')
+    }
+  }
+
+  // Function to sync subscriber count for a specific creator
+  const syncCreatorSubscriberCount = async (creatorAddress: string): Promise<number> => {
+    try {
+      console.log(`🔄 Syncing subscriber count for creator: ${creatorAddress}`)
+      const response = await fetch('/api/sync-subscriber-counts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          creator_address: creatorAddress
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success && result.results?.[0]) {
+        const newCount = result.results[0].new_count
+        console.log(`✅ Updated subscriber count for ${creatorAddress}: ${newCount}`)
+
+        // Update the local state
+        setCreators(prevCreators =>
+          prevCreators.map(creator =>
+            creator.creatorAddress === creatorAddress
+              ? { ...creator, subscribers: newCount }
+              : creator
+          )
+        )
+
+        return newCount
+      } else {
+        console.error('❌ Failed to sync creator subscriber count:', result.error)
+        return 0
+      }
+    } catch (err) {
+      console.error('❌ Error syncing creator subscriber count:', err)
+      return 0
+    }
+  }
+
+  // Function to toggle real-time subscriber counts
+  const toggleRealTimeSubscriberCounts = (enabled: boolean) => {
+    setUseRealTimeSubscriberCounts(enabled)
+    console.log(`🔄 Real-time subscriber counts ${enabled ? 'enabled' : 'disabled'}`)
+
+    if (enabled) {
+      // Refresh creators to get real-time counts
+      refreshCreators()
+    }
+  }
+
   const value: CreatorsContextType = {
     creators,
     addCreator,
@@ -835,6 +1009,11 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
     deleteChannel,
     refreshCreators,
     getUserCreators,
+    // New subscriber count functions
+    syncSubscriberCounts,
+    syncCreatorSubscriberCount,
+    toggleRealTimeSubscriberCounts,
+    useRealTimeSubscriberCounts,
     isLoading,
     error
   }

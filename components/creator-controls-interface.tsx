@@ -512,7 +512,7 @@ export function CreatorControlsInterface() {
     languages: watchChannelLanguage ? [watchChannelLanguage] : ["Language"],
     availability: {
       hasLimit: watchMaxSubscribers > 0,
-      currentSlots: watchMaxSubscribers > 0 ? Math.floor(watchMaxSubscribers * 0.7) : undefined,
+      currentSlots: watchMaxSubscribers > 0 ? watchMaxSubscribers : undefined, // Show full slots available for preview
       maxSlots: watchMaxSubscribers > 0 ? watchMaxSubscribers : undefined,
       status: 'available' as const
     },
@@ -720,9 +720,9 @@ export function CreatorControlsInterface() {
 
                   switch (availability.status) {
                     case 'available':
-                      return `${availability.currentSlots}/${availability.maxSlots} slots`
+                      return `${availability.currentSlots} out of ${availability.maxSlots} slots`
                     case 'limited':
-                      return `${availability.currentSlots}/${availability.maxSlots} slots`
+                      return `${availability.currentSlots} out of ${availability.maxSlots} slots`
                     case 'full':
                       return 'Full'
                     default:
@@ -1595,7 +1595,7 @@ export function CreatorControlsInterface() {
                     {previewData.availability.hasLimit && (
                       <div className="flex items-center gap-1">
                         <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                        <span>{previewData.availability.currentSlots}/{previewData.availability.maxSlots} slots</span>
+                        <span>{previewData.availability.currentSlots} out of {previewData.availability.maxSlots} slots</span>
                       </div>
                     )}
                   </div>
@@ -1630,7 +1630,7 @@ export function CreatorControlsInterface() {
                         {channel.availability && (
                           <div className="flex items-center justify-between text-xs">
                             <span className="text-[#C0E6FF]">
-                              {channel.availability.currentSlots}/{channel.availability.maxSlots} slots
+                              {channel.availability.currentSlots} out of {channel.availability.maxSlots} slots
                             </span>
                             <div className="flex items-center gap-1">
                               <div className="w-2 h-2 bg-green-400 rounded-full"></div>

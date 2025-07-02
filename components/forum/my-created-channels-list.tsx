@@ -219,7 +219,7 @@ export function MyCreatedChannelsList({ onChannelClick }: MyCreatedChannelsListP
                           <div className="flex items-center gap-1 text-white/80 text-sm">
                             <Clock className="w-4 h-4" />
                             <span>
-                              {channel.availability.currentSlots || 0}/{channel.availability.maxSlots || 0} slots
+                              {channel.availability.currentSlots || 0} out of {channel.availability.maxSlots || 0} slots
                             </span>
                           </div>
                         )}

@@ -909,9 +909,9 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
 
     switch (availability.status) {
       case 'available':
-        return `${availability.currentSlots}/${availability.maxSlots} slots`
+        return `${availability.currentSlots} out of ${availability.maxSlots} slots`
       case 'limited':
-        return `${availability.currentSlots}/${availability.maxSlots} slots`
+        return `${availability.currentSlots} out of ${availability.maxSlots} slots`
       case 'full':
         return 'Full'
       default:
