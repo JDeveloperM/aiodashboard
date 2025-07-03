@@ -58,8 +58,15 @@ export function ZkLoginWalletDisplay() {
   const [showDepositModal, setShowDepositModal] = useState(false)
   const [showSendModal, setShowSendModal] = useState(false)
 
-  // USDC contract address on Sui testnet
-  const USDC_COIN_TYPE = '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC'
+  // USDC contract addresses for different networks
+  const USDC_COIN_TYPES = {
+    devnet: '0x2::sui::SUI', // For devnet, we'll use SUI as USDC equivalent for testing
+    testnet: '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC',
+    mainnet: '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN'
+  }
+
+  const currentNetwork = (process.env.NEXT_PUBLIC_SUI_NETWORK as keyof typeof USDC_COIN_TYPES) || 'devnet'
+  const USDC_COIN_TYPE = USDC_COIN_TYPES[currentNetwork]
 
   // Query for SUI balance
   const { data: suiBalance } = useSuiClientQuery(

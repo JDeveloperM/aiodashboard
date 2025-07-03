@@ -9,7 +9,11 @@ import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { useRaffleCraft } from "@/hooks/use-rafflecraft"
 import { useSuiRaffleTransactions } from "@/lib/services/sui-raffle-service"
+import { useEnokiRaffleTransactions, useEnokiStatus } from "@/lib/services/enoki-raffle-service"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
+import { ZkLoginDiagnostics } from "@/components/zklogin-diagnostics"
+import { ZkLoginServiceNotice } from "@/components/zklogin-service-notice"
+
 import { toast } from "sonner"
 import {
   Brain,
@@ -310,30 +314,50 @@ interface TicketMintingProps {
 }
 
 function TicketMinting({ ticketPrice, onMintSuccess, isLoading }: TicketMintingProps) {
-  const { purchaseTicket, getUserBalance, estimateGasFees } = useSuiRaffleTransactions()
+  // Try Enoki first, fallback to traditional zkLogin
+  const enokiService = useEnokiRaffleTransactions()
+  const traditionalService = useSuiRaffleTransactions()
+  const { checkStatus } = useEnokiStatus()
+
   const [userBalance, setUserBalance] = useState(0)
   const [estimatedGas, setEstimatedGas] = useState(0)
   const [isMinting, setIsMinting] = useState(false)
+  const [useEnoki, setUseEnoki] = useState(true)
+  const [enokiStatus, setEnokiStatus] = useState<any>(null)
+
+  // Check Enoki status on mount
+  useEffect(() => {
+    const checkEnokiStatus = async () => {
+      const status = await checkStatus()
+      setEnokiStatus(status)
+      // For now, always use traditional service since Enoki is not fully implemented
+      setUseEnoki(false)
+    }
+    checkEnokiStatus()
+  }, [])
 
   useEffect(() => {
     const loadBalanceAndFees = async () => {
-      const balance = await getUserBalance()
-      const gas = await estimateGasFees(ticketPrice)
+      const service = useEnoki ? enokiService : traditionalService
+      const balance = await service.getUserBalance()
+      const gas = await service.estimateGasFees(ticketPrice)
       setUserBalance(balance)
       setEstimatedGas(gas)
     }
     loadBalanceAndFees()
-  }, [getUserBalance, estimateGasFees, ticketPrice])
+  }, [useEnoki, enokiService, traditionalService, ticketPrice])
 
   const handleMintTicket = async () => {
     setIsMinting(true)
     try {
-      const result = await purchaseTicket(ticketPrice)
+      const service = useEnoki ? enokiService : traditionalService
+      const result = await service.purchaseTicket(ticketPrice)
+
       if (result.success && result.transactionHash) {
         // Generate ticket number (in real implementation, this would come from blockchain)
         const ticketNumber = Math.floor(Math.random() * 999) + 1
         onMintSuccess(ticketNumber)
-        toast.success(`Ticket #${ticketNumber} minted successfully!`)
+        toast.success(`Ticket #${ticketNumber} minted successfully using ${useEnoki ? 'Enoki' : 'traditional zkLogin'}!`)
       } else {
         toast.error(result.error || 'Failed to mint ticket')
       }
@@ -461,6 +485,7 @@ export default function RaffleCraftPage() {
   const [quizTimeRemaining, setQuizTimeRemaining] = useState(300) // 5 minutes
   const [isAdmin, setIsAdmin] = useState(true) // For demo purposes
   const [showAdminControls, setShowAdminControls] = useState(false)
+  const [showDiagnostics, setShowDiagnostics] = useState(false)
 
   // Use the RaffleCraft hook
   const {
@@ -546,9 +571,31 @@ export default function RaffleCraftPage() {
     <div className="min-h-screen">
       <div className="p-4 md:p-8">
         {/* Page Title */}
-        <div className="mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <h1 className="text-3xl font-bold text-white">RaffleQuiz</h1>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDiagnostics(!showDiagnostics)}
+            className="text-white border-[#1a2f51] hover:bg-[#1a2f51]"
+          >
+            {showDiagnostics ? 'Hide' : 'Show'} Wallet Diagnostics
+          </Button>
         </div>
+
+        {/* zkLogin Service Notice */}
+        <div className="mb-6">
+          <ZkLoginServiceNotice />
+        </div>
+
+
+
+        {/* Diagnostics Panel */}
+        {showDiagnostics && (
+          <div className="mb-6">
+            <ZkLoginDiagnostics />
+          </div>
+        )}
 
         {/* Dashboard Style Layout */}
         <div className="space-y-6">

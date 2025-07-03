@@ -128,71 +128,98 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
         // Check for active wallet or zkLogin connection first
         if (currentSuiAddress) {
           // Check if this is a new user by looking for existing profile
+          let existingProfile = null
           try {
-            const existingProfile = await encryptedStorage.getDecryptedProfile(currentSuiAddress)
+            existingProfile = await encryptedStorage.getDecryptedProfile(currentSuiAddress)
             // User is new if no profile exists OR onboarding is not completed
             const profileExists = !!existingProfile
             const onboardingCompleted = existingProfile?.onboarding_completed === true
             userIsNew = !profileExists || !onboardingCompleted
 
           } catch (error) {
+            console.error('Error checking existing profile:', error)
             userIsNew = true
           }
 
-          // Wallet connection
+          // Wallet connection - preserve existing profile data if available
           currentUser = {
             id: currentSuiAddress,
             address: currentSuiAddress,
             connectionType: 'wallet',
-            username: `User ${currentSuiAddress.slice(0, 6)}`,
-            createdAt: new Date(),
+            username: existingProfile?.username || `User ${currentSuiAddress.slice(0, 6)}`,
+            email: existingProfile?.email,
+            profileImage: existingProfile?.profile_image_blob_id ?
+              `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${existingProfile.profile_image_blob_id}` : undefined,
+            profileImageBlobId: existingProfile?.profile_image_blob_id,
+            createdAt: existingProfile?.join_date ? new Date(existingProfile.join_date) : new Date(),
             lastLoginAt: new Date(),
             isNewUser: userIsNew,
-            onboardingCompleted: !userIsNew,
-            profileSetupCompleted: !userIsNew,
-            kycCompleted: false
+            onboardingCompleted: existingProfile?.onboarding_completed || !userIsNew,
+            profileSetupCompleted: !!existingProfile,
+            kycCompleted: existingProfile?.kyc_status === 'verified'
           }
         } else if (currentZkLoginAddress) {
           // Check if this is a new user by looking for existing profile
+          let existingProfile = null
           try {
-            const existingProfile = await encryptedStorage.getDecryptedProfile(currentZkLoginAddress)
+            existingProfile = await encryptedStorage.getDecryptedProfile(currentZkLoginAddress)
             // User is new if no profile exists OR onboarding is not completed
             const profileExists = !!existingProfile
             const onboardingCompleted = existingProfile?.onboarding_completed === true
             userIsNew = !profileExists || !onboardingCompleted
 
           } catch (error) {
+            console.error('Error checking existing profile:', error)
             userIsNew = true
           }
 
-          // zkLogin connection
+          // zkLogin connection - preserve existing profile data if available
           currentUser = {
             id: currentZkLoginAddress,
             address: currentZkLoginAddress,
             connectionType: 'zklogin',
-            username: `User ${currentZkLoginAddress.slice(0, 6)}`,
-            createdAt: new Date(),
+            username: existingProfile?.username || `User ${currentZkLoginAddress.slice(0, 6)}`,
+            email: existingProfile?.email,
+            profileImage: existingProfile?.profile_image_blob_id ?
+              `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${existingProfile.profile_image_blob_id}` : undefined,
+            profileImageBlobId: existingProfile?.profile_image_blob_id,
+            createdAt: existingProfile?.join_date ? new Date(existingProfile.join_date) : new Date(),
             lastLoginAt: new Date(),
             isNewUser: userIsNew,
-            onboardingCompleted: !userIsNew,
-            profileSetupCompleted: !userIsNew,
-            kycCompleted: false
+            onboardingCompleted: existingProfile?.onboarding_completed || !userIsNew,
+            profileSetupCompleted: !!existingProfile,
+            kycCompleted: existingProfile?.kyc_status === 'verified'
           }
         } else {
           // No active connection, try to restore from cookie session
           const existingSession = getAuthSession()
           if (existingSession) {
+            // Also check database for latest profile data to prevent resets
+            let latestProfile = null
+            try {
+              latestProfile = await encryptedStorage.getDecryptedProfile(existingSession.address)
+            } catch (error) {
+              console.warn('Could not load latest profile data:', error)
+            }
+
             // Restore user from cookie session (keep user logged in even if wallet temporarily disconnects)
+            // Use latest profile data if available to prevent resets
             currentUser = {
               id: existingSession.address,
               address: existingSession.address,
               connectionType: existingSession.connectionType,
-              username: existingSession.username,
-              email: existingSession.email,
-              profileImage: existingSession.profileImage,
-              profileImageBlobId: existingSession.profileImageBlobId,
-              createdAt: new Date(existingSession.createdAt),
-              lastLoginAt: new Date(existingSession.lastLoginAt)
+              username: latestProfile?.username || existingSession.username,
+              email: latestProfile?.email || existingSession.email,
+              profileImage: latestProfile?.profile_image_blob_id ?
+                `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${latestProfile.profile_image_blob_id}` :
+                existingSession.profileImage,
+              profileImageBlobId: latestProfile?.profile_image_blob_id || existingSession.profileImageBlobId,
+              createdAt: latestProfile?.join_date ? new Date(latestProfile.join_date) : new Date(existingSession.createdAt),
+              lastLoginAt: new Date(existingSession.lastLoginAt),
+              isNewUser: latestProfile ? !latestProfile.onboarding_completed : false,
+              onboardingCompleted: latestProfile?.onboarding_completed || true,
+              profileSetupCompleted: !!latestProfile,
+              kycCompleted: latestProfile?.kyc_status === 'verified'
             }
 
           }

@@ -162,7 +162,7 @@ export function SendModal({
         // Execute transaction with traditional wallet
         const result = await new Promise<{digest: string}>((resolve, reject) => {
           signAndExecuteTransaction(
-            { transaction },
+            { transaction: transaction as any },
             {
               onSuccess: (result) => resolve({ digest: result.digest }),
               onError: (error) => reject(error)

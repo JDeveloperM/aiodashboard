@@ -201,10 +201,17 @@ class LeaderboardService {
   }
 
   /**
-   * Get Walrus image URL from blob ID
+   * Get image URL from blob ID (handles both default avatars and Walrus blobs)
    */
-  private getWalrusImageUrl(blobId: string | null): string | null {
+  private getImageUrl(blobId: string | null): string | null {
     if (!blobId) return null
+
+    // Check if it's a default avatar path (starts with /images/animepfp/)
+    if (blobId.startsWith('/images/animepfp/')) {
+      return blobId // Return the path directly for default avatars
+    }
+
+    // Otherwise it's a Walrus blob ID
     return `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${blobId}`
   }
 
@@ -365,7 +372,7 @@ class LeaderboardService {
       const processedUsers: LeaderboardUser[] = filteredUsers.map((user, index) => {
         const username = this.decrypt(user.username_encrypted, user.address)
         const location = user.location_encrypted ? this.decrypt(user.location_encrypted, user.address) : null
-        const profileImageUrl = this.getWalrusImageUrl(user.profile_image_blob_id)
+        const profileImageUrl = this.getImageUrl(user.profile_image_blob_id)
         
         // Calculate scores based on category
         const affiliateScore = this.calculateAffiliateScore(user.referral_data)
@@ -671,24 +678,8 @@ class LeaderboardService {
         }
       })
 
-      // Sort countries based on category
-      countries.sort((a, b) => {
-        switch (category) {
-          case 'affiliates':
-            return b.totalVolume - a.totalVolume
-          case 'traders':
-            return b.totalActivity - a.totalActivity
-          case 'xp':
-            return b.avgLevel - a.avgLevel
-          case 'quiz':
-            return b.totalActivity - a.totalActivity
-          case 'creators':
-            return b.totalVolume - a.totalVolume
-          case 'all':
-          default:
-            return b.members - a.members // Default: sort by member count
-        }
-      })
+      // Sort countries by member count (highest first) for all categories
+      countries.sort((a, b) => b.members - a.members)
 
       // Reassign ranks after sorting
       countries.forEach((country, index) => {

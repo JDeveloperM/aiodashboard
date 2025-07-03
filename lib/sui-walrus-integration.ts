@@ -127,7 +127,7 @@ export function useSuiWalrusIntegration() {
       // Step 3: Execute transaction
       return new Promise<SuiWalrusResult>((resolve, reject) => {
         signAndExecute(
-          { transaction: tx },
+          { transaction: tx as any },
           {
             onSuccess: (result) => {
               toast.success('Successfully stored on Walrus and registered on SUI!')

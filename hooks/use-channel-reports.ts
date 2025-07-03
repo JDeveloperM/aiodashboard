@@ -126,7 +126,7 @@ export function useChannelReports(initialChannelIds: string[] = []): UseChannelR
         fetchStatistics(initialChannelIds)
       }
     }
-  }, [initialChannelIds.join(','), fetchStatistics]) // Use join to prevent unnecessary re-renders
+  }, [initialChannelIds.join(',')]) // Use join to prevent unnecessary re-renders
 
   return {
     statistics,

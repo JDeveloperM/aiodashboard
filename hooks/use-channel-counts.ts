@@ -28,7 +28,7 @@ export function useChannelCounts(): ChannelCounts {
     const subscription = useSubscription()
     tier = subscription.tier
     subscriptionAvailable = true
-    console.log('📊 User tier:', tier)
+
   } catch (error) {
     // Subscription context not available, use default
     console.warn('⚠️ Subscription context not available, using NOMAD tier')

@@ -50,6 +50,7 @@ export class ZkLoginProofService {
   private static instance: ZkLoginProofService
   private proofCache = new Map<string, { proof: ZkProofResponse; timestamp: number }>()
   private readonly CACHE_DURATION = 30 * 60 * 1000 // 30 minutes
+  private readonly USE_BACKEND_PROXY = true // Use backend proxy to avoid CORS issues
   private readonly PROVING_SERVICE_URL = process.env.NEXT_PUBLIC_ZKLOGIN_PROVING_SERVICE_URL || 'https://prover-dev.mystenlabs.com/v1'
 
   private constructor() {}
@@ -78,8 +79,13 @@ export class ZkLoginProofService {
 
       console.log('Generating new ZK proof...')
 
-      // Call Mysten Labs proving service
-      const response = await fetch(`${this.PROVING_SERVICE_URL}/prove`, {
+      // Choose endpoint based on configuration
+      const endpoint = this.USE_BACKEND_PROXY
+        ? '/api/zklogin/prove'  // Use our backend proxy
+        : `${this.PROVING_SERVICE_URL}/prove`  // Direct call (may have CORS issues)
+
+      // Call proving service (either our proxy or Mysten Labs directly)
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,10 +102,22 @@ export class ZkLoginProofService {
 
       if (!response.ok) {
         const errorText = await response.text()
+
+        // Check if this is the 404 error indicating service deprecation
+        if (response.status === 404 && errorText.includes('Cannot POST')) {
+          throw new Error(`zkLogin proving service has been deprecated. Please use Enoki (https://docs.enoki.mystenlabs.com/) or set up a self-hosted proving service. See: https://docs.sui.io/guides/developer/cryptography/zklogin-integration#run-the-proving-service-in-your-backend`)
+        }
+
         throw new Error(`Proof generation failed: ${response.status} ${errorText}`)
       }
 
       const proof: ZkProofResponse = await response.json()
+
+      // Validate proof structure
+      if (!proof || !proof.proofPoints || !proof.proofPoints.a) {
+        console.error('Invalid proof response:', proof)
+        throw new Error('Invalid proof response: missing proofPoints.a. The zkLogin proving service may be deprecated or misconfigured.')
+      }
 
       // Cache the proof
       this.proofCache.set(cacheKey, {

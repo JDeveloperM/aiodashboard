@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { CreatorCards } from "./creator-cards"
 import { useCreatorsDatabase } from "@/contexts/creators-database-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
@@ -47,12 +47,8 @@ export function AIOCreatorsInterface() {
     // Skip creators owned by current user
     if (userAddress && creator.creatorAddress &&
         creator.creatorAddress.toLowerCase() === userAddress.toLowerCase()) {
-      console.log('🚫 Skipping own creator:', creator.name, 'for user:', userAddress)
       return []
     }
-
-    console.log('🔄 Processing creator:', creator.name, 'with', creator.channels.length, 'channels')
-    console.log('📊 Creator channels:', creator.channels.map(ch => ({ name: ch.name, subscribers: ch.subscribers })))
 
     return creator.channels.map((channel, index) => {
       const channelCard = {
@@ -81,39 +77,33 @@ export function AIOCreatorsInterface() {
       }
 
       // Debug: Log channel-specific data
-      console.log(`📋 Channel card ${index + 1}:`, {
-        name: channelCard.name,
-        categories: channelCard.categories,
-        role: channelCard.role,
-        languages: channelCard.languages,
-        availability: channelCard.availability
-      })
-
       return channelCard
     })
   })
 
-  // Filter and sort channel cards
-  const filteredCreators = channelCards.filter(creator => {
-    const matchesSearch = creator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         creator.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         creator.category.toLowerCase().includes(searchTerm.toLowerCase())
+  // Memoize filtering and sorting for performance
+  const filteredCreators = useMemo(() => {
+    return channelCards.filter(creator => {
+      const matchesSearch = creator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           creator.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           creator.category.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesCategory = selectedCategory === "all" ||
-                           creator.category.toLowerCase() === selectedCategory.toLowerCase()
+      const matchesCategory = selectedCategory === "all" ||
+                             creator.category.toLowerCase() === selectedCategory.toLowerCase()
 
-    return matchesSearch && matchesCategory
-  }).sort((a, b) => {
-    switch (sortBy) {
-      case 'name':
-        return a.name.localeCompare(b.name)
-      case 'category':
-        return a.category.localeCompare(b.category)
-      case 'subscribers':
-      default:
-        return b.subscribers - a.subscribers
-    }
-  })
+      return matchesSearch && matchesCategory
+    }).sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name)
+        case 'category':
+          return a.category.localeCompare(b.category)
+        case 'subscribers':
+        default:
+          return b.subscribers - a.subscribers
+      }
+    })
+  }, [channelCards, searchTerm, selectedCategory, sortBy])
 
 
 
@@ -181,14 +171,7 @@ export function AIOCreatorsInterface() {
     const totalSubscribers = filteredCreators.reduce((sum, creator) =>
       sum + creator.subscribers, 0)
 
-    console.log('📊 AIO Creators Stats:', {
-      totalCreators,
-      totalChannels,
-      freeChannels,
-      totalSubscribers,
-      userAddress,
-      excludedOwnChannels: userAddress ? 'Yes' : 'No'
-    })
+
 
     return { totalCreators, totalSubscribers, totalChannels, freeChannels }
   }

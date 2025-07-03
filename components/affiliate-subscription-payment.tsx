@@ -143,7 +143,7 @@ export function AffiliateSubscriptionPayment({
 
       // Execute transaction
       signAndExecuteTransaction(
-        { transaction: tx },
+        { transaction: tx as any },
         {
           onSuccess: async (result) => {
             console.log('✅ Payment transaction successful:', result)

@@ -7,7 +7,7 @@ import {
   getCreatorProfile,
   type DecryptedCreator
 } from "@/lib/creator-storage"
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase-client'
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { useCurrentAccount } from "@mysten/dapp-kit"
 import { toast } from "sonner"
@@ -237,11 +237,7 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
   const { user } = useSuiAuth()
   const currentAccount = useCurrentAccount()
 
-  // Initialize Supabase client for cleanup operations
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  // Use singleton Supabase client
 
   // Function to get real-time subscriber count for a creator
   const getRealTimeSubscriberCount = async (creatorAddress: string): Promise<number> => {

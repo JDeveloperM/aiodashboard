@@ -9,11 +9,6 @@ import {
   Medal,
   Award,
   Users,
-  BarChart3,
-  TrendingUp,
-  Zap,
-  Brain,
-  Video,
   ChevronDown,
   ChevronUp
 } from 'lucide-react'
@@ -95,20 +90,8 @@ export function CountriesSidebar({
   }
 
   const getCountryMetric = (country: CountryStats) => {
-    switch (category.id) {
-      case 'affiliates':
-        return { value: country.totalVolume.toLocaleString(), label: 'SUI', icon: <img src="/images/logo-sui.png" alt="SUI" className="w-6 h-6" /> }
-      case 'traders':
-        return { value: country.totalVolume.toLocaleString(), label: 'SUI', icon: <img src="/images/logo-sui.png" alt="SUI" className="w-6 h-6" /> }
-      case 'xp':
-        return { value: country.totalVolume.toLocaleString(), label: 'Total XP', icon: <Zap className="w-3 h-3" /> }
-      case 'quiz':
-        return { value: country.totalVolume.toLocaleString(), label: 'Quiz Score', icon: <Brain className="w-3 h-3" /> }
-      case 'creators':
-        return { value: Math.round(country.totalVolume / 1000), label: 'Channels', icon: <Video className="w-3 h-3" /> }
-      default:
-        return { value: country.members.toLocaleString(), label: 'Members', icon: <Users className="w-3 h-3" /> }
-    }
+    // Always show member count regardless of category
+    return { value: country.members.toLocaleString(), label: 'Members', icon: <Users className="w-3 h-3" /> }
   }
 
   if (isLoading) {
@@ -220,9 +203,7 @@ export function CountriesSidebar({
                         <span className="text-green-400 text-xs font-semibold">ACTIVE</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-[#C0E6FF]">
-                      <span>{country.members} members</span>
-                    </div>
+
                   </div>
 
                   {/* Metric */}

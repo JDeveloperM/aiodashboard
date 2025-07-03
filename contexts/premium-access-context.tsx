@@ -27,10 +27,13 @@ interface PremiumAccessContextType {
 const PremiumAccessContext = createContext<PremiumAccessContextType | undefined>(undefined)
 
 export function PremiumAccessProvider({ children }: { children: React.ReactNode }) {
-  const { tier } = useSubscription()
+  const subscriptionContext = useSubscription()
+  const { tier } = subscriptionContext
   const { user } = useSuiAuth()
   const [premiumAccessRecords, setPremiumAccessRecords] = useState<PremiumAccessRecord[]>([])
   const [isLoaded, setIsLoaded] = useState(false)
+
+
 
   // Define limits based on tier
   const premiumAccessLimit = tier === 'ROYAL' ? 9 : tier === 'PRO' ? 3 : 0
@@ -54,7 +57,6 @@ export function PremiumAccessProvider({ children }: { children: React.ReactNode 
         }))
 
         setPremiumAccessRecords(records)
-        console.log(`[PremiumAccess] Loaded ${records.length} premium access records from database`)
       } catch (error) {
         console.error('[PremiumAccess] Failed to load premium access records from database:', error)
         setPremiumAccessRecords([])
@@ -73,7 +75,6 @@ export function PremiumAccessProvider({ children }: { children: React.ReactNode 
   const canAccessPremiumForFree = (creatorId: string, channelId: string) => {
     // NOMAD users never get free premium access
     if (tier === 'NOMAD') {
-      console.log(`[PremiumAccess] NOMAD user - no free access`)
       return false
     }
 
@@ -83,13 +84,11 @@ export function PremiumAccessProvider({ children }: { children: React.ReactNode 
     )
 
     if (alreadyAccessed) {
-      console.log(`[PremiumAccess] Already accessed ${channelId} - returning true`)
       return true // Already used a slot for this channel
     }
 
     // Check if user has remaining free access slots
     const hasRemainingSlots = premiumAccessCount < premiumAccessLimit
-    console.log(`[PremiumAccess] ${tier} user: ${premiumAccessCount}/${premiumAccessLimit} used, can access: ${hasRemainingSlots}`)
     return hasRemainingSlots
   }
 
@@ -183,16 +182,24 @@ export function PremiumAccessProvider({ children }: { children: React.ReactNode 
   // Reset records when tier changes to NOMAD (downgrade)
   useEffect(() => {
     if (tier === 'NOMAD' && premiumAccessRecords.length > 0) {
-      resetPremiumAccess()
+      setPremiumAccessRecords([])
+      console.log(`[PremiumAccess] Reset premium access records for NOMAD tier`)
     }
-  }, [tier])
+  }, [tier, premiumAccessRecords.length])
 
-  // Add global reset function for testing
+  // Add global debug function
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      (window as any).resetPremiumAccess = resetPremiumAccess
+      (window as any).debugPremiumAccess = () => {
+        console.log('Premium Access Debug:')
+        console.log('- Tier:', tier)
+        console.log('- Limit:', premiumAccessLimit)
+        console.log('- Used:', premiumAccessCount)
+        console.log('- Remaining:', getRemainingFreeAccess())
+        console.log('- Records:', currentTierRecords)
+      }
     }
-  }, [resetPremiumAccess])
+  }, [])
 
   return (
     <PremiumAccessContext.Provider

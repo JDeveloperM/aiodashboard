@@ -398,19 +398,43 @@ class EncryptedDatabaseStorage {
    */
   async getDecryptedProfile(address: string): Promise<DecryptedProfile | null> {
     try {
+      console.log('🔍 Fetching profile for address:', address)
+
       const { data, error } = await this.supabase
         .from('user_profiles')
         .select('*')
         .eq('address', address)
         .single()
 
-      if (error && error.code !== 'PGRST116') throw error
-      if (!data) return null
+      if (error && error.code !== 'PGRST116') {
+        console.error('Database error fetching profile:', error)
+        throw error
+      }
+
+      if (!data) {
+        console.log('📭 No profile found for address:', address)
+        return null
+      }
+
+      console.log('📄 Profile data found, decrypting...', {
+        address: data.address,
+        hasUsername: !!data.username_encrypted,
+        profileLevel: data.profile_level,
+        onboardingCompleted: data.onboarding_completed
+      })
 
       const encryptionKey = this.generateEncryptionKey(address)
-      return this.decryptProfile(data, encryptionKey)
+      const decryptedProfile = this.decryptProfile(data, encryptionKey)
+
+      console.log('✅ Profile decrypted successfully:', {
+        username: decryptedProfile.username,
+        profileLevel: decryptedProfile.profile_level,
+        onboardingCompleted: decryptedProfile.onboarding_completed
+      })
+
+      return decryptedProfile
     } catch (error) {
-      console.error('Failed to get decrypted profile:', error)
+      console.error('❌ Failed to get decrypted profile for', address, ':', error)
       return null
     }
   }

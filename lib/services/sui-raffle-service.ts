@@ -18,7 +18,7 @@ export function useSuiRaffleTransactions() {
   const { wallet: zkWallet, isConnected: isZkConnected } = useZkLoginWallet()
   const { user } = useSuiAuth()
 
-  const raffleService = new SuiRaffleServerService(suiClient)
+  const raffleService = new SuiRaffleServerService(suiClient as any)
   const isZkLogin = user?.connectionType === 'zklogin'
 
   /**
@@ -50,13 +50,27 @@ export function useSuiRaffleTransactions() {
 
       if (isZkLogin && zkWallet && isZkConnected) {
         // zkLogin transaction
-        const result = await zkWallet.signAndExecuteTransaction(transaction)
-        transactionHash = result.digest
+        try {
+          const result = await zkWallet.signAndExecuteTransaction(transaction)
+          transactionHash = result.digest
+        } catch (zkError) {
+          console.error('zkLogin transaction failed:', zkError)
+
+          // Check if it's a proving service error
+          if (zkError instanceof Error && zkError.message.includes('proving service')) {
+            throw new BlockchainError(
+              'zkLogin proving service is deprecated. Please use Enoki for social login or connect a traditional wallet. See: https://docs.enoki.mystenlabs.com/'
+            )
+          }
+
+          // Re-throw other zkLogin errors
+          throw new BlockchainError(`zkLogin transaction failed: ${zkError instanceof Error ? zkError.message : 'Unknown error'}`)
+        }
       } else {
         // Traditional wallet transaction
         const result = await new Promise<{ digest: string }>((resolve, reject) => {
           signAndExecute(
-            { transaction },
+            { transaction: transaction as any },
             {
               onSuccess: (result) => resolve({ digest: result.digest }),
               onError: (error) => reject(error)

@@ -11,6 +11,21 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+/**
+ * Get image URL from blob ID (handles both default avatars and Walrus blobs)
+ */
+function getImageUrl(blobId: string | null): string | null {
+  if (!blobId) return null
+
+  // Check if it's a default avatar path (starts with /images/animepfp/)
+  if (blobId.startsWith('/images/animepfp/')) {
+    return blobId // Return the path directly for default avatars
+  }
+
+  // Otherwise it's a Walrus blob ID
+  return `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${blobId}`
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { identifier: string } }
@@ -154,12 +169,8 @@ export async function GET(
       address: profileData.address,
       username: decryptedUsername,
       location: decryptedLocation,
-      profileImageUrl: profileData.profile_image_blob_id
-        ? `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${profileData.profile_image_blob_id}`
-        : null,
-      bannerImageUrl: profileData.banner_image_blob_id
-        ? `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${profileData.banner_image_blob_id}`
-        : null,
+      profileImageUrl: getImageUrl(profileData.profile_image_blob_id),
+      bannerImageUrl: getImageUrl(profileData.banner_image_blob_id),
       roleTier: profileData.role_tier,
       isVerified: profileData.kyc_status === 'verified'
     }

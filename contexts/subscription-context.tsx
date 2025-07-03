@@ -4,6 +4,7 @@ import type React from "react"
 
 import { createContext, useContext, useState, useEffect, useMemo, useRef } from "react"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
+import { useCurrentAccount } from "@mysten/dapp-kit"
 import { encryptedStorage } from "@/lib/encrypted-database-storage"
 import { toast } from "sonner"
 
@@ -23,6 +24,7 @@ const SubscriptionContext = createContext<SubscriptionContextType | undefined>(u
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const { user } = useSuiAuth()
+  const currentAccount = useCurrentAccount()
 
   // Initialize with NOMAD as default tier
   const [tier, setTierState] = useState<SubscriptionTier>("NOMAD")
@@ -31,7 +33,11 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const [isUpdatingTier, setIsUpdatingTier] = useState(false)
 
   // Prevent infinite re-renders with stable references
-  const stableUserAddress = useMemo(() => user?.address, [user?.address])
+  // Get user address from either SuiAuth context or current account
+  const stableUserAddress = useMemo(() =>
+    user?.address || currentAccount?.address,
+    [user?.address, currentAccount?.address]
+  )
   const lastLoadedAddress = useRef<string | undefined>(undefined)
 
   // Determine access based on AIONET tier system
@@ -48,8 +54,9 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       setTierState(newTier)
 
       // Save to database and Walrus if user is connected
-      if (user?.address) {
-        await encryptedStorage.updateUserTier(user.address, newTier)
+      const userAddress = user?.address || currentAccount?.address
+      if (userAddress) {
+        await encryptedStorage.updateUserTier(userAddress, newTier)
         toast.success(`🎉 Subscription upgraded to ${newTier}! Your tier is now saved permanently.`)
       } else {
         toast.error(`Please connect your wallet to upgrade your tier.`)

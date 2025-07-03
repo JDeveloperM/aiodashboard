@@ -25,7 +25,7 @@ import {
   Brain,
   Video
 } from 'lucide-react'
-import { LeaderboardUser, LeaderboardCategory, CountryStats } from '@/lib/leaderboard-service'
+import { LeaderboardUser, LeaderboardCategory } from '@/lib/leaderboard-service'
 import { getCountryCodeByName } from '@/lib/locations'
 import ReactCountryFlag from 'react-country-flag'
 import { cn } from '@/lib/utils'
@@ -164,8 +164,6 @@ export function LeaderboardTable({
     return labels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
   }
 
-
-
   if (isLoading) {
     return (
       <Card className="bg-transparent border-[#1a2f51]">
@@ -284,14 +282,6 @@ export function LeaderboardTable({
                     </div>
                   </div>
 
-                  {/* Points */}
-                  <div className="text-right mr-4">
-                    <div className="text-lg font-bold text-white flex items-center justify-end gap-2">
-                      <span className="text-xs text-[#C0E6FF] font-normal">Points</span>
-                      {user.points.toLocaleString()}
-                    </div>
-                  </div>
-
                   {/* Metrics */}
                   <div className="flex gap-3">
                     {Object.entries(user.metrics).slice(0, 3).map(([key, value]) => (
@@ -350,15 +340,7 @@ export function LeaderboardTable({
                     <span className="text-sm text-[#C0E6FF]">{user.totalXp.toLocaleString()} XP</span>
                   </div>
 
-                  {/* Row 3: Points */}
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-white flex items-center justify-center gap-2">
-                      <span className="text-xs text-[#C0E6FF] font-normal">Points</span>
-                      {user.points.toLocaleString()}
-                    </div>
-                  </div>
-
-                  {/* Row 4: Metrics */}
+                  {/* Row 3: Metrics */}
                   <div className="flex gap-2 overflow-x-auto justify-center">
                     {Object.entries(user.metrics).slice(0, 3).map(([key, value]) => (
                       <div key={key} className="bg-transparent rounded-lg px-2 py-2 min-w-[60px] text-center flex-shrink-0">

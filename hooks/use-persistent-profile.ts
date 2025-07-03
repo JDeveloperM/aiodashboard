@@ -49,6 +49,10 @@ export function usePersistentProfile(): ProfileState & ProfileActions {
 
     try {
       console.log('🔄 Loading persistent profile for:', user.address)
+
+      // Add a small delay to prevent race conditions
+      await new Promise(resolve => setTimeout(resolve, 100))
+
       const profileData = await encryptedStorage.getDecryptedProfile(user.address)
 
       if (profileData) {
@@ -64,51 +68,60 @@ export function usePersistentProfile(): ProfileState & ProfileActions {
         }
         console.log('✅ Profile loaded from database')
       } else {
-        // Create default profile if none exists (new user)
-        console.log('📝 Creating default profile for new user...')
-        const defaultProfile: Partial<DecryptedProfile> = {
-          username: user.username || `User ${user.address.slice(0, 6)}`,
-          role_tier: 'NOMAD',
-          profile_level: 1,
-          current_xp: 0,
-          total_xp: 0,
-          points: 0, // New users start with 0 points
-          kyc_status: 'not_verified',
-          join_date: new Date().toISOString(),
-          achievements_data: [],
-          social_links: [], // Will be stored in encrypted format
-          referral_data: {},
-          display_preferences: {
-            language: 'en',
-            performance_mode: false,
-            email_notifications: true,
-            push_notifications: true,
-            browser_notifications: false,
-            trade_notifications: true,
-            news_notifications: true,
-            promo_notifications: true,
-            privacy_settings: {
-              profile_visibility: 'public',
-              show_achievements: true,
-              show_level: true,
-              show_join_date: true,
-              show_last_active: false,
-              allow_profile_search: true
-            }
-          },
-          // payment_preferences: { // Column doesn't exist in current schema
-          //   payment_methods: [],
-          //   points_auto_renewal: true
-          // },
-          walrus_metadata: {}
+        // Double-check if profile exists before creating new one (prevent duplicates)
+        console.log('🔍 Double-checking profile existence before creating new one...')
+        const doubleCheckProfile = await encryptedStorage.getDecryptedProfile(user.address)
+
+        if (doubleCheckProfile) {
+          console.log('✅ Profile found on double-check, using existing profile')
+          setProfile(doubleCheckProfile)
+        } else {
+          // Create default profile if none exists (new user)
+          console.log('📝 Creating default profile for new user...')
+          const defaultProfile: Partial<DecryptedProfile> = {
+            username: user.username || `User ${user.address.slice(0, 6)}`,
+            role_tier: 'NOMAD',
+            profile_level: 1,
+            current_xp: 0,
+            total_xp: 0,
+            points: 0, // New users start with 0 points
+            kyc_status: 'not_verified',
+            join_date: new Date().toISOString(),
+            achievements_data: [],
+            social_links: [], // Will be stored in encrypted format
+            referral_data: {},
+            display_preferences: {
+              language: 'en',
+              performance_mode: false,
+              email_notifications: true,
+              push_notifications: true,
+              browser_notifications: false,
+              trade_notifications: true,
+              news_notifications: true,
+              promo_notifications: true,
+              privacy_settings: {
+                profile_visibility: 'public',
+                show_achievements: true,
+                show_level: true,
+                show_join_date: true,
+                show_last_active: false,
+                allow_profile_search: true
+              }
+            },
+            // payment_preferences: { // Column doesn't exist in current schema
+            //   payment_methods: [],
+            //   points_auto_renewal: true
+            // },
+            walrus_metadata: {}
+          }
+
+          const createdProfile = await encryptedStorage.upsertEncryptedProfile(
+            user.address,
+            defaultProfile
+          )
+          setProfile(createdProfile)
+          console.log('✅ Default profile created for new user with starting points')
         }
-        
-        const createdProfile = await encryptedStorage.upsertEncryptedProfile(
-          user.address,
-          defaultProfile
-        )
-        setProfile(createdProfile)
-        console.log('✅ Default profile created for new user with starting points')
       }
     } catch (error) {
       console.error('❌ Failed to load profile:', error)

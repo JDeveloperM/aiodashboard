@@ -8,6 +8,8 @@ import { SuiAuthProvider } from '@/contexts/sui-auth-context'
 import { WalletReconnection } from './wallet-reconnection'
 import { WalrusProvider } from './walrus-provider'
 import { AvatarProvider } from '@/contexts/avatar-context'
+import { EnokiWalletRegistration } from './enoki-provider'
+import { EnokiFlowProvider } from '@mysten/enoki/react'
 import '@mysten/dapp-kit/dist/index.css'
 import { useState } from 'react'
 
@@ -29,28 +31,38 @@ export function SuiProviders({ children }: { children: React.ReactNode }) {
     },
   }))
 
-  // Create SuiClient for zkLogin
-  const [suiClient] = useState(() => new SuiClient({ url: getFullnodeUrl('testnet') }))
+  // Create SuiClient for zkLogin using environment variable
+  const [suiClient] = useState(() => new SuiClient({
+    url: process.env.NEXT_PUBLIC_SUI_RPC_URL || getFullnodeUrl('devnet')
+  }))
+
+  // Get default network from environment
+  const defaultNetwork = (process.env.NEXT_PUBLIC_SUI_NETWORK as 'devnet' | 'testnet' | 'mainnet') || 'devnet'
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SuiClientProvider networks={networks} defaultNetwork="testnet">
-        <WalletProvider
-          autoConnect={true}
-          enableUnsafeBurner={false}
-          storageKey="sui-wallet-connection"
+      <SuiClientProvider networks={networks} defaultNetwork={defaultNetwork}>
+        <EnokiFlowProvider
+          apiKey={process.env.NEXT_PUBLIC_ENOKI_API_KEY!}
         >
-          <ZkLoginProvider suiClient={suiClient}>
-            <SuiAuthProvider>
-              <WalrusProvider enableToasts={true} autoRetry={true}>
-                <AvatarProvider>
-                  <WalletReconnection />
-                  {children}
-                </AvatarProvider>
-              </WalrusProvider>
-            </SuiAuthProvider>
-          </ZkLoginProvider>
-        </WalletProvider>
+          <EnokiWalletRegistration />
+          <WalletProvider
+            autoConnect={true}
+            enableUnsafeBurner={false}
+            storageKey="sui-wallet-connection"
+          >
+              <ZkLoginProvider suiClient={suiClient}>
+                <SuiAuthProvider>
+                  <WalrusProvider enableToasts={true} autoRetry={true}>
+                    <AvatarProvider>
+                      <WalletReconnection />
+                      {children}
+                    </AvatarProvider>
+                  </WalrusProvider>
+                </SuiAuthProvider>
+              </ZkLoginProvider>
+          </WalletProvider>
+        </EnokiFlowProvider>
       </SuiClientProvider>
     </QueryClientProvider>
   )

@@ -183,17 +183,19 @@ export function getAuthSession(): AuthSession | null {
  * Clear authentication session
  */
 export function clearAuthSession(): void {
+  console.log('🧹 Clearing authentication session...')
+
   deleteCookie(COOKIE_CONFIG.AUTH_SESSION)
   deleteCookie(COOKIE_CONFIG.ZKLOGIN_SESSION)
   deleteCookie(COOKIE_CONFIG.SESSION_REFRESH)
-  
+
   // Also clear localStorage
   if (typeof localStorage !== 'undefined') {
     localStorage.removeItem(COOKIE_CONFIG.AUTH_SESSION)
     localStorage.removeItem(COOKIE_CONFIG.ZKLOGIN_SESSION)
   }
-  
-  console.log('Auth session cleared')
+
+  console.log('✅ Auth session cleared')
 }
 
 /**

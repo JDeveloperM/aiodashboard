@@ -3,6 +3,7 @@
 import { ConnectButton, useCurrentAccount } from '@mysten/dapp-kit'
 import { useZkLogin } from './zklogin-provider'
 import { ZkLoginSocialLogin } from './zklogin-social-login'
+import { EnhancedSocialLogin } from './enhanced-social-login'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -225,7 +226,14 @@ export function SuiWalletModal() {
                 </p>
               </CardHeader>
               <CardContent>
-                <ZkLoginSocialLogin />
+                <EnhancedSocialLogin
+                  onSuccess={(address, method) => {
+                    console.log(`Connected via ${method}:`, address)
+                  }}
+                  onError={(error) => {
+                    console.error('Social login error:', error)
+                  }}
+                />
               </CardContent>
             </Card>
           </TabsContent>
