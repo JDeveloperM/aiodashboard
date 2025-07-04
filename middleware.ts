@@ -14,6 +14,8 @@ const publicRoutes = [
 const protectedRoutes = [
   '/dashboard',
   '/aio-dashboard',
+  '/admin-dashboard',
+  '/admin-reports',
   '/profile',
   '/subscriptions',
   '/settings',

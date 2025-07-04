@@ -4,9 +4,10 @@ import { useState, useEffect, MouseEvent, memo } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useSubscription } from "@/contexts/subscription-context"
+import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, LineChart, ArrowUpRight, Crown, ArrowRight, Bot, Users, BookOpen, ChevronDown, ChevronRight, Dice6, Rocket, Share2, HelpCircle, Globe, Settings, Trophy, MessageSquare, UserCheck } from "lucide-react"
+import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, LineChart, ArrowUpRight, Crown, ArrowRight, Bot, Users, BookOpen, ChevronDown, ChevronRight, Dice6, Rocket, Share2, HelpCircle, Globe, Settings, Trophy, MessageSquare, UserCheck, Shield } from "lucide-react"
 
 export const Sidebar = memo(function Sidebar() {
   const pathname = usePathname()
@@ -18,6 +19,10 @@ export const Sidebar = memo(function Sidebar() {
 
   // RESTORED: Using stable subscription context
   const { canAccessCryptoBots, canAccessForexBots, tier } = useSubscription()
+
+  // Admin authentication
+  const { user } = useSuiAuth()
+  const isAdmin = user?.address === '0x311479200d45ef0243b92dbcf9849b8f6b931d27ae885197ea73066724f2bcf4'
 
   // Close mobile sidebar when route changes
   useEffect(() => {
@@ -49,6 +54,7 @@ export const Sidebar = memo(function Sidebar() {
 
   const navigation = [
     { name: "Dashboard", href: "/aio-dashboard", icon: LayoutDashboard, restricted: false },
+    { name: "Admin Dashboard", href: "/admin-dashboard", icon: Shield, restricted: !isAdmin, adminOnly: true },
     {
       name: "Copy Trading",
       href: "/copy-trading",
@@ -89,6 +95,7 @@ export const Sidebar = memo(function Sidebar() {
     href: string
     icon: React.ComponentType<{ className?: string }>
     restricted?: boolean
+    adminOnly?: boolean
     hasDropdown?: boolean
     subItems?: Array<{
       name: string

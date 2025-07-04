@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
@@ -9,14 +10,14 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Bell, Globe, Zap, AlertTriangle, User, CreditCard, Coins, Plus, Trash2, Shield, Eye, EyeOff } from "lucide-react"
+import { Bell, Globe, Zap, AlertTriangle, User, CreditCard, Coins, Plus, Trash2, Shield, Eye, EyeOff, Settings, Flag } from "lucide-react"
 import { useNotifications } from "@/hooks/use-notifications"
 import { usePersistentProfile } from "@/hooks/use-persistent-profile"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { DashboardProfiles } from "@/components/dashboard-profiles"
 import { NewUserOnboarding } from "@/components/new-user-onboarding"
 import { KYCVerificationFlow } from "@/components/kyc-verification-flow"
-import { AdminNotifications } from "@/components/admin/admin-notifications"
+
 import { toast } from "sonner"
 import {
   Dialog,
@@ -904,8 +905,36 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Admin Notification Panel */}
-          <AdminNotifications isAdmin={isAdmin} />
+          {/* Admin Dashboard Link */}
+          {isAdmin && (
+            <div className="enhanced-card">
+              <div className="enhanced-card-content p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-[#4da2ff]/20 p-3 rounded-full">
+                    <Shield className="w-6 h-6 text-[#4da2ff]" />
+                  </div>
+                  <div>
+                    <h3 className="text-white text-lg font-semibold">Admin Functions</h3>
+                    <p className="text-gray-400 text-sm">Access admin dashboard for platform management</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Link href="/admin-dashboard">
+                    <Button className="bg-[#4da2ff] hover:bg-[#4da2ff]/80 text-white">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Open Admin Dashboard
+                    </Button>
+                  </Link>
+                  <Link href="/admin-reports">
+                    <Button variant="outline" className="border-[#C0E6FF]/30 text-white hover:bg-[#C0E6FF]/10">
+                      <Flag className="w-4 h-4 mr-2" />
+                      View Reports
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
         </TabsContent>
 
       </Tabs>

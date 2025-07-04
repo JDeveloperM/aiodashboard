@@ -290,17 +290,43 @@ class CourseService {
     this.validateAdminAccess(userAddress)
 
     try {
+      console.log('🎓 Creating lesson with data:', lessonData)
+
+      // First, let's check if the course exists
+      const { data: course, error: courseError } = await supabase
+        .from('courses')
+        .select('id, title')
+        .eq('id', lessonData.course_id)
+        .single()
+
+      if (courseError) {
+        console.error('❌ Course not found:', courseError)
+        throw new Error(`Course not found: ${lessonData.course_id}`)
+      }
+
+      console.log('📚 Course found:', course)
+
       const { data: lesson, error } = await supabase
         .from('lessons')
         .insert([lessonData])
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ Database error creating lesson:', error)
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        })
+        throw new Error(`Database error: ${error.message}`)
+      }
 
+      console.log('✅ Lesson created successfully:', lesson)
       return lesson
     } catch (error) {
-      console.error('Failed to create lesson:', error)
+      console.error('💥 Failed to create lesson:', error)
       throw error
     }
   }

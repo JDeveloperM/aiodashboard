@@ -286,7 +286,7 @@ export function AddLessonModal({ isOpen, onClose, onSuccess, userAddress, course
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validateForm()) return
 
     setIsLoading(true)
@@ -296,10 +296,14 @@ export function AddLessonModal({ isOpen, onClose, onSuccess, userAddress, course
         course_id: courseId
       }
 
+      console.log('📝 Submitting lesson form with data:', lessonData)
+      console.log('👤 User address:', userAddress)
+      console.log('📚 Course ID:', courseId)
+
       await courseService.createLesson(userAddress, lessonData)
       toast.success('Lesson created successfully!')
       onSuccess()
-      
+
       // Reset form
       setFormData({
         title: '',
@@ -309,8 +313,8 @@ export function AddLessonModal({ isOpen, onClose, onSuccess, userAddress, course
         order_index: nextOrderIndex
       })
     } catch (error) {
-      console.error('Failed to create lesson:', error)
-      toast.error('Failed to create lesson. Please try again.')
+      console.error('❌ Failed to create lesson:', error)
+      toast.error(`Failed to create lesson: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsLoading(false)
     }
