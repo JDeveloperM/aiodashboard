@@ -311,7 +311,7 @@ export function PersistentProfileSystem() {
     socialMedia: convertSocialLinksToUI(profile?.social_links || []),
     levelInfo: {
       currentLevel: profile?.profile_level || 1,
-      nextLevel: (profile?.profile_level || 1) + 1,
+      nextLevel: (profile?.profile_level || 1) >= 10 ? 10 : (profile?.profile_level || 1) + 1,
       currentXP: profile?.current_xp || 0,
       nextLevelXP: profile?.profile_level === 1 ? 100 :
                    profile?.profile_level === 2 ? 250 :
@@ -999,13 +999,22 @@ export function PersistentProfileSystem() {
                   {/* Level Info Below Gauge */}
                   <div className="flex justify-between items-center w-full">
                     <div className="text-center">
-                      <div className="text-lg font-bold text-white">Next Level</div>
-                      <div className="text-2xl font-bold text-[#4DA2FF]">{profileData.levelInfo.nextLevel}</div>
+                      <div className="text-lg font-bold text-white">
+                        {profileData.levelInfo.currentLevel >= 10 ? "Status" : "Next Level"}
+                      </div>
+                      <div className="text-2xl font-bold text-[#4DA2FF]">
+                        {profileData.levelInfo.currentLevel >= 10 ? "MAX LEVEL" : profileData.levelInfo.nextLevel}
+                      </div>
                     </div>
                     <div className="text-center">
-                      <div className="text-lg font-bold text-white">XP Needed</div>
+                      <div className="text-lg font-bold text-white">
+                        {profileData.levelInfo.currentLevel >= 10 ? "Total XP" : "XP Needed"}
+                      </div>
                       <div className="text-2xl font-bold text-[#00D4AA]">
-                        {(profileData.levelInfo.nextLevelXP - profileData.levelInfo.currentXP).toLocaleString()}
+                        {profileData.levelInfo.currentLevel >= 10
+                          ? profileData.levelInfo.totalXP.toLocaleString()
+                          : (profileData.levelInfo.nextLevelXP - profileData.levelInfo.currentXP).toLocaleString()
+                        }
                       </div>
                     </div>
                   </div>

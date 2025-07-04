@@ -39,6 +39,7 @@ export interface AffiliateUser {
   sponsorUsername?: string // Username of the person who invited them
   referralCode?: string // The referral code used to join
   isDirect: boolean // True if this is a direct referral (Level 1)
+  avatarBlobId?: string // Avatar blob ID for displaying user avatar
 }
 
 export interface AffiliateMetrics {
@@ -432,7 +433,7 @@ class AffiliateService {
 
       let profileQuery = supabase
         .from('user_profiles')
-        .select('address, username_encrypted, email_encrypted, role_tier, profile_level, kyc_status, join_date, total_xp')
+        .select('address, username_encrypted, email_encrypted, role_tier, profile_level, kyc_status, join_date, total_xp, profile_image_blob_id')
         .in('address', allAddresses)
 
       // Apply role filter
@@ -521,7 +522,8 @@ class AffiliateService {
           sponsorAddress: relationshipInfo.referrer_address,
           sponsorUsername,
           referralCode: relationshipInfo.referral_code,
-          isDirect
+          isDirect,
+          avatarBlobId: profile.profile_image_blob_id
         })
       }
 

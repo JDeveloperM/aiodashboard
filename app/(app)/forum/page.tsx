@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -93,13 +93,9 @@ export default function ForumPage() {
       const categoriesData = await forumService.getCategories(tier)
       setCategories(categoriesData)
 
-      // Load all topics for create post modal
-      const topicsPromises = categoriesData.map(category =>
-        forumService.getTopics(category.id, tier)
-      )
-      const topicsArrays = await Promise.all(topicsPromises)
-      const flatTopics = topicsArrays.flat()
-      setAllTopics(flatTopics)
+      // Only load topics when needed (lazy loading)
+      // This significantly improves initial page load performance
+      setAllTopics([]) // Initialize empty, will be loaded when create post modal opens
     } catch (error) {
       console.error('Failed to load forum data:', error)
     } finally {
@@ -107,9 +103,25 @@ export default function ForumPage() {
     }
   }
 
-  const getCategoryByName = (name: string) => {
-    return categories.find(cat => cat.name.toLowerCase().includes(name.toLowerCase()))
+  // Lazy load all topics only when needed (e.g., when create post modal opens)
+  const loadAllTopicsLazy = async () => {
+    if (allTopics.length > 0) return // Already loaded
+
+    try {
+      const topicsPromises = categories.map(category =>
+        forumService.getTopics(category.id, tier)
+      )
+      const topicsArrays = await Promise.all(topicsPromises)
+      const flatTopics = topicsArrays.flat()
+      setAllTopics(flatTopics)
+    } catch (error) {
+      console.error('Failed to load all topics:', error)
+    }
   }
+
+  const getCategoryByName = useMemo(() => (name: string) => {
+    return categories.find(cat => cat.name.toLowerCase().includes(name.toLowerCase()))
+  }, [categories])
 
   const getTopicsForCategory = (categoryName: string) => {
     const category = getCategoryByName(categoryName)
@@ -178,7 +190,7 @@ export default function ForumPage() {
         case 'general':
           return { icon: <MessageCircle className="w-5 h-5" />, color: '#4DA2FF', name: 'General Discussion', image: '/images/generalF.png' }
         case 'creators':
-          return { icon: <Users className="w-5 h-5" />, color: '#9333EA', name: 'Creator Hub', image: '/images/creatorsF.png' }
+          return { icon: <Users className="w-5 h-5" />, color: '#2196f3', name: 'Creator Hub', image: '/images/creatorsF.png' }
         case 'affiliates':
           return { icon: <TrendingUp className="w-5 h-5" />, color: '#10B981', name: 'Affiliate Network', image: '/images/affiliatesF.png' }
         default:
@@ -289,7 +301,7 @@ export default function ForumPage() {
             </TabsTrigger>
             <TabsTrigger
               value="creators"
-              className={`text-[#C0E6FF] data-[state=active]:bg-[#9333EA] data-[state=active]:text-white flex items-center gap-2 ${
+              className={`text-[#C0E6FF] data-[state=active]:bg-[#2196f3] data-[state=active]:text-white flex items-center gap-2 ${
                 !canAccessTab("creators") ? "opacity-50 cursor-not-allowed" : ""
               }`}
               disabled={!canAccessTab("creators")}
@@ -334,7 +346,7 @@ export default function ForumPage() {
                   className="relative bg-cover bg-center bg-no-repeat"
                   style={{
                     backgroundImage: `url(/images/creatorsF.png)`,
-                    backgroundColor: '#9333EA'
+                    backgroundColor: '#2196f3'
                   }}
                 >
                   {/* Overlay for better text readability */}
@@ -355,24 +367,6 @@ export default function ForumPage() {
               </Card>
             )}
 
-            {/* My Channels Section - Show channels user has created */}
-            {!creatorContext && (
-              <Card className="bg-[#1a2f51] border-[#C0E6FF]/20">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5" />
-                    My Channels
-                  </CardTitle>
-                  <p className="text-[#C0E6FF]/70 text-sm">
-                    Channels you've created and manage
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <MyCreatedChannelsList onChannelClick={handleMyChannelClick} />
-                </CardContent>
-              </Card>
-            )}
-
             {/* Channels Joined Section - Show when no specific creator context */}
             {!creatorContext && (
               <Card className="bg-[#1a2f51] border-[#C0E6FF]/20">
@@ -387,6 +381,24 @@ export default function ForumPage() {
                 </CardHeader>
                 <CardContent>
                   <MyChannelsList onChannelClick={handleMyChannelClick} />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* My Channels Section - Show channels user has created */}
+            {!creatorContext && (
+              <Card className="bg-[#1a2f51] border-[#C0E6FF]/20">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5" />
+                    My Channels
+                  </CardTitle>
+                  <p className="text-[#C0E6FF]/70 text-sm">
+                    Channels you've created and manage
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <MyCreatedChannelsList onChannelClick={handleMyChannelClick} />
                 </CardContent>
               </Card>
             )}
@@ -407,7 +419,7 @@ export default function ForumPage() {
           {/* Creator Channel Content */}
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-[#9333EA]" />
+              <Loader2 className="w-8 h-8 animate-spin text-[#2196f3]" />
             </div>
           ) : (
             <CreatorChannelPosts

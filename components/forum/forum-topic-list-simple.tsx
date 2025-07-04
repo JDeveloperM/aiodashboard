@@ -253,7 +253,7 @@ export function ForumTopicListSimple({
                 {isCurrentUserCreator && (
                   <Button
                     onClick={() => window.location.href = '/creator-controls'}
-                    className="bg-[#9333EA] hover:bg-[#9333EA]/80 text-white"
+                    className="bg-[#2196f3] hover:bg-[#2196f3]/80 text-white"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Create Channel Post
@@ -277,7 +277,7 @@ export function ForumTopicListSimple({
           </div>
         ) : creatorContext ? (
           // Fallback for when creator context exists but data not found
-          <div className="relative bg-[#9333EA]">
+          <div className="relative bg-[#2196f3]">
             <div className="absolute inset-0 bg-black/60"></div>
             <CardHeader className="relative z-10">
               <CardTitle className="text-white flex items-center gap-2">
@@ -399,7 +399,7 @@ export function ForumTopicListSimple({
               isCurrentUserCreator && (
                 <Button
                   onClick={() => window.location.href = '/creator-controls'}
-                  className="bg-[#9333EA] hover:bg-[#9333EA]/80 text-white"
+                  className="bg-[#2196f3] hover:bg-[#2196f3]/80 text-white"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Create First Post

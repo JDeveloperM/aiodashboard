@@ -710,7 +710,7 @@ class ForumService {
             name: 'Creators',
             description: 'Creator channels and content',
             icon: 'Users',
-            color: '#9333EA',
+            color: '#2196f3',
             sort_order: 2
           })
           .select('id')

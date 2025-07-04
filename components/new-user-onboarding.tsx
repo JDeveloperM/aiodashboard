@@ -59,31 +59,83 @@ export function NewUserOnboarding() {
     country: '' // Add country selection
   })
 
-  // Check if user is zkLogin and extract email
-  const [isZkLoginUser, setIsZkLoginUser] = useState(false)
-  const [zkLoginEmail, setZkLoginEmail] = useState("")
+  // Check if user is zkLogin/Enoki and extract email
+  const [isSocialAuthUser, setIsSocialAuthUser] = useState(false)
+  const [socialAuthEmail, setSocialAuthEmail] = useState("")
 
   useEffect(() => {
     if (user?.connectionType === 'zklogin') {
-      setIsZkLoginUser(true)
+      setIsSocialAuthUser(true)
 
-      // Extract email from JWT if available
+      // Try to extract email from different sources
+      let extractedEmail = ""
+
+      // Method 1: Legacy zkLogin JWT from localStorage
       const jwt = localStorage.getItem('zklogin_jwt')
       if (jwt) {
         try {
           const payload = jwt.split('.')[1]
           const decodedPayload = JSON.parse(atob(payload))
           if (decodedPayload.email) {
-            setZkLoginEmail(decodedPayload.email)
-            setFormData(prev => ({ ...prev, email: decodedPayload.email }))
+            extractedEmail = decodedPayload.email
           }
         } catch (error) {
-          console.error('Failed to decode JWT for email:', error)
+          console.error('Failed to decode legacy zkLogin JWT for email:', error)
         }
       }
+
+      // Method 2: Check for Enoki session data
+      if (!extractedEmail) {
+        try {
+          // Check for Enoki session in localStorage or sessionStorage
+          const enokiSession = localStorage.getItem('enoki_session') || sessionStorage.getItem('enoki_session')
+          if (enokiSession) {
+            const sessionData = JSON.parse(enokiSession)
+            if (sessionData.email) {
+              extractedEmail = sessionData.email
+            }
+          }
+        } catch (error) {
+          console.error('Failed to extract email from Enoki session:', error)
+        }
+      }
+
+      // Method 3: Check for any JWT-like tokens that might contain email
+      if (!extractedEmail) {
+        try {
+          // Check all localStorage keys for potential JWT tokens
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i)
+            if (key && (key.includes('jwt') || key.includes('token') || key.includes('auth'))) {
+              const value = localStorage.getItem(key)
+              if (value && value.includes('.')) {
+                try {
+                  const parts = value.split('.')
+                  if (parts.length === 3) {
+                    const payload = JSON.parse(atob(parts[1]))
+                    if (payload.email) {
+                      extractedEmail = payload.email
+                      break
+                    }
+                  }
+                } catch (e) {
+                  // Skip invalid tokens
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Failed to search for email in tokens:', error)
+        }
+      }
+
+      if (extractedEmail) {
+        setSocialAuthEmail(extractedEmail)
+        setFormData(prev => ({ ...prev, email: extractedEmail }))
+      }
     } else {
-      setIsZkLoginUser(false)
-      setZkLoginEmail("")
+      setIsSocialAuthUser(false)
+      setSocialAuthEmail("")
     }
   }, [user?.connectionType])
 
@@ -189,7 +241,7 @@ export function NewUserOnboarding() {
       const profileData: any = {
         username: formData.username.trim(),
         // Handle email based on authentication method
-        email: isZkLoginUser ? zkLoginEmail : (formData.email.trim() || undefined),
+        email: isSocialAuthUser ? socialAuthEmail : (formData.email.trim() || undefined),
         // Add country if provided
         location: formData.country === 'unspecified' ? '' : formData.country.trim() || undefined,
         // Ensure we don't lose existing data
@@ -503,23 +555,23 @@ export function NewUserOnboarding() {
 
               <div>
                 <Label htmlFor="email" className="text-white text-sm sm:text-base">
-                  Email {isZkLoginUser ? "(From Google)" : "(Optional - Can only be set once)"}
+                  Email {isSocialAuthUser ? "(From Social Login)" : "(Optional - Can only be set once)"}
                 </Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder={isZkLoginUser ? "Email from Google account" : "Enter your email (can only be set once)"}
+                  placeholder={isSocialAuthUser ? "Email from social account" : "Enter your email (can only be set once)"}
                   className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white text-sm sm:text-base"
-                  disabled={isZkLoginUser}
+                  disabled={isSocialAuthUser}
                 />
-                {isZkLoginUser && (
+                {isSocialAuthUser && (
                   <p className="text-[#C0E6FF]/70 text-xs sm:text-sm mt-1">
-                    🔒 Email is automatically bound from your Google account
+                    🔒 Email is automatically bound from your social login account
                   </p>
                 )}
-                {!isZkLoginUser && (
+                {!isSocialAuthUser && (
                   <p className="text-[#C0E6FF]/70 text-xs sm:text-sm mt-1">
                     ⚠️ Email can only be set once and cannot be changed later
                   </p>

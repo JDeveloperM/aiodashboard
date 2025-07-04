@@ -13,6 +13,10 @@ const supabaseAdmin = createClient(
   }
 )
 
+// Simple in-memory cache for creators data
+let creatorsCache: { data: any[], timestamp: number } | null = null
+const CACHE_DURATION = 30 * 1000 // 30 seconds cache
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -68,6 +72,9 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ API: Creator created successfully:', data.id)
 
+    // Invalidate cache when new creator is added
+    creatorsCache = null
+
     return NextResponse.json({
       success: true,
       data: data
@@ -89,6 +96,17 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🔍 API: Getting all creators')
 
+    // Check cache first
+    const now = Date.now()
+    if (creatorsCache && (now - creatorsCache.timestamp) < CACHE_DURATION) {
+      console.log('✅ API: Returning cached creators data')
+      return NextResponse.json({
+        success: true,
+        data: creatorsCache.data,
+        cached: true
+      })
+    }
+
     // Get all creators using admin client
     const { data, error } = await supabaseAdmin
       .from('creators')
@@ -103,7 +121,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log(`✅ API: Retrieved ${data?.length || 0} creators`)
+    // Update cache
+    creatorsCache = {
+      data: data || [],
+      timestamp: now
+    }
+
+    console.log(`✅ API: Retrieved ${data?.length || 0} creators (fresh from DB)`)
 
     return NextResponse.json({
       success: true,

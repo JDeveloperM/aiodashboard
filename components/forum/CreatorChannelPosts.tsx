@@ -233,31 +233,31 @@ export default function CreatorChannelPosts({ creatorContext, categoryImage, onC
           postsToTrack: postsData.filter(p => p.author_address !== user.address).length
         })
 
-        // Track views for posts not authored by current user
-        for (const post of postsData) {
-          if (post.author_address !== user.address) {
-            console.log('👁️ Tracking view for post:', post.id, post.title)
-            try {
-              const result = await forumService.incrementPostView(post.id, user.address)
-              console.log('👁️ View tracking result:', result)
+        // Track views for posts not authored by current user (optimized - run in background)
+        const postsToTrack = postsData.filter(post => post.author_address !== user.address)
 
-              // Update local state with new view count
-              if (result.success && result.newViewCount) {
-                setPosts(currentPosts =>
-                  currentPosts.map(p =>
-                    p.id === post.id
-                      ? { ...p, view_count: result.newViewCount! }
-                      : p
+        if (postsToTrack.length > 0) {
+          // Process view tracking in background to avoid blocking UI
+          setTimeout(async () => {
+            for (const post of postsToTrack) {
+              try {
+                const result = await forumService.incrementPostView(post.id, user.address)
+
+                // Update local state with new view count
+                if (result.success && result.newViewCount) {
+                  setPosts(currentPosts =>
+                    currentPosts.map(p =>
+                      p.id === post.id
+                        ? { ...p, view_count: result.newViewCount! }
+                        : p
+                    )
                   )
-                )
-                console.log('✅ Updated local view count for post:', post.id, 'to:', result.newViewCount)
+                }
+              } catch (error) {
+                console.error('❌ View tracking failed for post:', post.id, error)
               }
-            } catch (error) {
-              console.error('❌ View tracking failed:', error)
             }
-          } else {
-            console.log('👁️ Skipping own post:', post.id, post.title)
-          }
+          }, 100) // Small delay to let UI render first
         }
       } else {
         console.log('👁️ Not tracking views:', {
@@ -419,7 +419,7 @@ export default function CreatorChannelPosts({ creatorContext, categoryImage, onC
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#9333EA]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2196f3]"></div>
       </div>
     )
   }

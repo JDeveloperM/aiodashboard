@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { RoleImage } from "@/components/ui/role-image"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { affiliateService, AffiliateUser, AffiliateMetrics, CommissionData, NetworkMetrics, UserProfileLevel } from "@/lib/affiliate-service"
 import { affiliateSubscriptionService, SubscriptionStatus } from "@/lib/affiliate-subscription-service"
 import { AffiliateSubscriptionPayment } from "@/components/affiliate-subscription-payment"
@@ -51,6 +52,32 @@ import {
   Target,
   ChevronDown
 } from "lucide-react"
+
+// Helper function to get avatar URL from blob ID
+const getAvatarUrl = (blobId: string | null | undefined): string | undefined => {
+  if (!blobId) {
+    return undefined
+  }
+
+  try {
+    // Check if it's a default avatar path (starts with /images/animepfp/)
+    if (blobId.startsWith('/images/animepfp/')) {
+      return blobId // Return the path directly for default avatars
+    }
+
+    // Check if it's already a full URL
+    if (blobId.startsWith('http')) {
+      return blobId
+    }
+
+    // Otherwise it's a Walrus blob ID
+    const walrusUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${blobId}`
+    return walrusUrl
+  } catch (error) {
+    console.error('Error generating avatar URL:', error)
+    return undefined
+  }
+}
 
 export function AffiliateControls() {
   const account = useCurrentAccount()
@@ -756,7 +783,12 @@ export function AffiliateControls() {
                           <TableRow key={user.id} className="border-b border-[#C0E6FF]/10 hover:bg-[#1a2f51]/20">
                             <TableCell className="py-4">
                               <div className="flex items-center gap-3">
-                                <RoleImage role={user.status} size="sm" />
+                                <Avatar className="h-8 w-8 bg-blue-100">
+                                  <AvatarImage src={getAvatarUrl(user.avatarBlobId)} alt={user.username} />
+                                  <AvatarFallback className="bg-[#4DA2FF] text-white text-sm font-semibold">
+                                    {user.username.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
                                 <div>
                                   <UsernameDisplay username={user.username} />
                                   <p className="text-[#C0E6FF]/70 text-xs">{user.email}</p>
@@ -764,13 +796,16 @@ export function AffiliateControls() {
                               </div>
                             </TableCell>
                             <TableCell className="py-4">
-                              <Badge className={`text-xs ${
-                                user.status === 'ROYAL' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
-                                user.status === 'PRO' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' :
-                                'bg-blue-500/20 text-blue-400 border-blue-500/30'
-                              }`}>
-                                {user.status}
-                              </Badge>
+                              <div className="flex items-center gap-2">
+                                <RoleImage role={user.status} size="sm" />
+                                <Badge className={`text-xs ${
+                                  user.status === 'ROYAL' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                                  user.status === 'PRO' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' :
+                                  'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                                }`}>
+                                  {user.status}
+                                </Badge>
+                              </div>
                             </TableCell>
                             <TableCell className="py-4 text-center">
                               <span className="text-white font-medium">{user.profileLevel}</span>
@@ -840,35 +875,11 @@ export function AffiliateControls() {
 
                                     {/* Management Actions */}
                                     <DropdownMenuItem
-                                      className="text-[#C0E6FF] hover:bg-[#C0E6FF]/10 cursor-pointer"
-                                      onClick={() => console.log('Edit user:', user.username)}
-                                    >
-                                      <Edit className="w-4 h-4 mr-2" />
-                                      Edit User
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
                                       className="text-green-400 hover:bg-green-400/10 cursor-pointer"
                                       onClick={() => console.log('Promote user:', user.username)}
                                     >
                                       <UserCheck className="w-4 h-4 mr-2" />
-                                      Promote User
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      className="text-yellow-400 hover:bg-yellow-400/10 cursor-pointer"
-                                      onClick={() => console.log('Demote user:', user.username)}
-                                    >
-                                      <UserX className="w-4 h-4 mr-2" />
-                                      Demote User
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator className="bg-[#C0E6FF]/20" />
-
-                                    {/* Security Actions */}
-                                    <DropdownMenuItem
-                                      className="text-red-400 hover:bg-red-400/10 cursor-pointer"
-                                      onClick={() => console.log('Block user:', user.username)}
-                                    >
-                                      <Ban className="w-4 h-4 mr-2" />
-                                      Block User
+                                      Promotion
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>

@@ -48,45 +48,48 @@ export function MyChannelsList({ onChannelClick }: MyChannelsListProps) {
         (!channel.expiryDate || new Date(channel.expiryDate) > new Date())
       )
 
-      // Fetch creator data to get correct channel images (same as successful forum pages)
-      const response = await fetch('/api/creators')
-      const result = await response.json()
+      // Set channels immediately for faster UI response
+      setChannels(activeChannels)
 
-      if (result.success && result.data) {
-        // Update channels with correct images from database
-        const updatedChannels = activeChannels.map(channel => {
-          // Find the creator in database
-          const dbCreator = result.data.find((c: any) =>
-            c.creator_address === channel.creatorAddress ||
-            c.id === channel.creatorAddress
-          )
+      // Fetch creator data in background to update images (non-blocking)
+      setTimeout(async () => {
+        try {
+          const response = await fetch('/api/creators')
+          const result = await response.json()
 
-          if (dbCreator) {
-            // Find the specific channel in channels_data
-            const channelData = dbCreator.channels_data?.find((ch: any) => ch.id === channel.id)
+          if (result.success && result.data) {
+            // Update channels with correct images from database
+            const updatedChannels = activeChannels.map(channel => {
+              // Find the creator in database
+              const dbCreator = result.data.find((c: any) =>
+                c.creator_address === channel.creatorAddress ||
+                c.id === channel.creatorAddress
+              )
 
-            if (channelData) {
-              console.log('✅ Found channel images for:', channel.name, {
-                channelAvatar: channelData.channelAvatar,
-                channelCover: channelData.channelCover
-              })
+              if (dbCreator) {
+                // Find the specific channel in channels_data
+                const channelData = dbCreator.channels_data?.find((ch: any) => ch.id === channel.id)
 
-              // Use channel-specific images from database (same as successful forum pages)
-              return {
-                ...channel,
-                avatarUrl: channelData.channelAvatar || channel.avatarUrl,
-                coverUrl: channelData.channelCover || channel.coverUrl
+                if (channelData) {
+                  // Use channel-specific images from database
+                  return {
+                    ...channel,
+                    avatarUrl: channelData.channelAvatar || channel.avatarUrl,
+                    coverUrl: channelData.channelCover || channel.coverUrl
+                  }
+                }
               }
-            }
+
+              return channel
+            })
+
+            setChannels(updatedChannels)
           }
-
-          return channel
-        })
-
-        setChannels(updatedChannels)
-      } else {
-        setChannels(activeChannels)
-      }
+        } catch (error) {
+          console.error('Failed to update channel images:', error)
+          // Keep existing channels without updated images
+        }
+      }, 100) // Small delay to let initial UI render
     } catch (error) {
       console.error('Failed to load user channels:', error)
       setChannels([])
@@ -278,7 +281,7 @@ export function MyChannelsList({ onChannelClick }: MyChannelsListProps) {
                 <div className="ml-4">
                   <Button
                     size="sm"
-                    className="bg-[#9333EA] hover:bg-[#9333EA]/80 text-white px-4"
+                    className="bg-[#2196f3] hover:bg-[#2196f3]/80 text-white px-4"
                     onClick={(e) => {
                       e.stopPropagation()
                       onChannelClick(channel.creatorAddress, channel.id, channel.name, channel.avatarUrl, channel.coverUrl)

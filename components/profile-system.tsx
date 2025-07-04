@@ -1055,7 +1055,10 @@ export function ProfileSystem() {
                   <div className="flex items-center justify-center gap-2">
                     <Star className="w-4 h-4 text-yellow-400" />
                     <span className="text-white font-bold text-sm">
-                      {(profileData.levelInfo.nextLevelXP - profileData.levelInfo.currentXP).toLocaleString()} XP needed for Level {profileData.levelInfo.nextLevel}
+                      {profileData.levelInfo.currentLevel >= 10
+                        ? `Maximum level reached! Total XP: ${profileData.levelInfo.totalXP.toLocaleString()}`
+                        : `${(profileData.levelInfo.nextLevelXP - profileData.levelInfo.currentXP).toLocaleString()} XP needed for Level ${profileData.levelInfo.nextLevel}`
+                      }
                     </span>
                   </div>
                 </div>

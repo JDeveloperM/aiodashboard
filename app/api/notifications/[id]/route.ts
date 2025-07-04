@@ -6,14 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { DatabaseNotification, UpdateNotificationRequest } from '@/types/notifications'
-
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { getSupabaseServer } from '@/lib/supabase-server'
 
 /**
  * GET /api/notifications/[id]
@@ -34,6 +28,9 @@ export async function GET(
         { status: 400 }
       )
     }
+
+    // Use server-side client
+    const supabase = getSupabaseServer()
 
     const { data: notification, error } = await supabase
       .from('notifications')
@@ -87,6 +84,9 @@ export async function PATCH(
         { status: 400 }
       )
     }
+
+    // Use server-side client
+    const supabase = getSupabaseServer()
 
     // Prepare update data
     const updateData: any = {}
@@ -157,6 +157,9 @@ export async function DELETE(
         { status: 400 }
       )
     }
+
+    // Use server-side client
+    const supabase = getSupabaseServer()
 
     const { data: notification, error } = await supabase
       .from('notifications')

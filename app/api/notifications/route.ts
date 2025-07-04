@@ -5,19 +5,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { 
-  DatabaseNotification, 
-  CreateNotificationRequest, 
+import {
+  DatabaseNotification,
+  CreateNotificationRequest,
   NotificationFilters,
-  NotificationStats 
+  NotificationStats
 } from '@/types/notifications'
-
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { getSupabaseServer, getUserAddressFromRequest } from '@/lib/supabase-server'
 
 /**
  * GET /api/notifications
@@ -27,7 +21,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const userAddress = searchParams.get('user_address')
-    
+
     if (!userAddress) {
       return NextResponse.json(
         { error: 'user_address is required' },
@@ -45,6 +39,9 @@ export async function GET(request: NextRequest) {
       offset: searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0,
       search: searchParams.get('search') || undefined
     }
+
+    // Use server-side client that bypasses RLS
+    const supabase = getSupabaseServer()
 
     // Build query
     let query = supabase
@@ -167,6 +164,9 @@ export async function POST(request: NextRequest) {
       expires_at: body.expires_at
     }
 
+    // Use server-side client for creating notifications
+    const supabase = getSupabaseServer()
+
     // Insert notification
     const { data: notification, error } = await supabase
       .from('notifications')
@@ -221,6 +221,9 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Use server-side client that bypasses RLS
+    const supabase = getSupabaseServer()
 
     let query = supabase
       .from('notifications')

@@ -1,11 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { getSupabaseServer } from '@/lib/supabase-server'
 
 interface SyncResult {
   creator_address: string
@@ -38,6 +32,8 @@ export async function POST(request: NextRequest) {
       creator_address,
       force_recalculate
     })
+
+    const supabase = getSupabaseServer()
 
     if (creator_address) {
       // Sync specific creator
@@ -126,6 +122,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const creator_address = searchParams.get('creator_address')
+
+    const supabase = getSupabaseServer()
 
     if (creator_address) {
       // Get breakdown for specific creator

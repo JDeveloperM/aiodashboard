@@ -5,14 +5,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { NotificationSettings } from '@/types/notifications'
-
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { getSupabaseServer } from '@/lib/supabase-server'
 
 /**
  * GET /api/notifications/settings
@@ -29,6 +23,9 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Use server-side client
+    const supabase = getSupabaseServer()
 
     const { data: settings, error } = await supabase
       .from('notification_settings')
@@ -96,6 +93,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Use server-side client
+    const supabase = getSupabaseServer()
 
     // Check if settings already exist
     const { data: existingSettings } = await supabase

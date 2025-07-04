@@ -145,7 +145,7 @@ export function MyCreatedChannelsList({ onChannelClick }: MyCreatedChannelsListP
           </p>
           <Button
             onClick={() => window.location.href = '/creator-controls'}
-            className="bg-[#9333EA] hover:bg-[#9333EA]/80 text-white"
+            className="bg-[#2196f3] hover:bg-[#2196f3]/80 text-white"
           >
             <Plus className="w-4 h-4 mr-2" />
             Create Channel
@@ -241,7 +241,7 @@ export function MyCreatedChannelsList({ onChannelClick }: MyCreatedChannelsListP
                   <div className="ml-4">
                     <Button
                       size="sm"
-                      className="bg-[#9333EA] hover:bg-[#9333EA]/80 text-white px-4"
+                      className="bg-[#2196f3] hover:bg-[#2196f3]/80 text-white px-4"
                       onClick={(e) => {
                         e.stopPropagation()
                         onChannelClick(channel.creatorAddress, channel.id, channel.name, channel.avatarUrl, channel.coverUrl)

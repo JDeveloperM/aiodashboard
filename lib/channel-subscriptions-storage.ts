@@ -158,9 +158,26 @@ class ChannelSubscriptionsStorage {
             .single()
 
           let latestChannelData: any = null
+          let subscriberCount = 0
+
           if (!creatorError && creator?.channels_data) {
             // Find the specific channel in the creator's channels
             latestChannelData = creator.channels_data.find((channel: any) => channel.id === sub.channel_id)
+          }
+
+          // Get real-time subscriber count using the same RPC function as AIO creators page
+          try {
+            const { data: rpcCount, error: rpcError } = await this.supabase
+              .rpc('calculate_creator_subscriber_count', {
+                creator_addr: sub.creator_address
+              })
+
+            if (!rpcError && rpcCount !== null) {
+              subscriberCount = rpcCount
+            }
+          } catch (err) {
+            console.warn(`⚠️ Failed to get subscriber count for ${sub.creator_address}:`, err)
+            subscriberCount = 0
           }
 
           // Get avatar URL from latest channel data (prioritize latest over subscription snapshot)
@@ -225,7 +242,7 @@ class ChannelSubscriptionsStorage {
             avatarBlobId, // Use latest blob ID, not subscription snapshot
             coverUrl,
             coverBlobId, // Use latest blob ID, not subscription snapshot
-            subscribers: 0, // TODO: Get from creators table or separate tracking
+            subscribers: subscriberCount, // Get actual subscriber count from creators table
             color: typeColors[sub.channel_type],
 
             // Subscription info

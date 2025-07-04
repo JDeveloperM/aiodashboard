@@ -66,32 +66,82 @@ export function DashboardProfiles() {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [hasExistingReferralCode, setHasExistingReferralCode] = useState(false)
-  const [isZkLoginUser, setIsZkLoginUser] = useState(false)
-  const [zkLoginEmail, setZkLoginEmail] = useState("")
+  const [isSocialAuthUser, setIsSocialAuthUser] = useState(false)
+  const [socialAuthEmail, setSocialAuthEmail] = useState("")
   const [emailSetOnce, setEmailSetOnce] = useState(false)
   const [appliedReferralCode, setAppliedReferralCode] = useState("")
 
-  // Check if user is zkLogin and extract email from JWT
+  // Check if user is zkLogin/Enoki and extract email
   useEffect(() => {
     if (user?.connectionType === 'zklogin') {
-      setIsZkLoginUser(true)
+      setIsSocialAuthUser(true)
 
-      // Extract email from JWT if available
+      // Try to extract email from different sources
+      let extractedEmail = ""
+
+      // Method 1: Legacy zkLogin JWT from localStorage
       const jwt = localStorage.getItem('zklogin_jwt')
       if (jwt) {
         try {
           const payload = jwt.split('.')[1]
           const decodedPayload = JSON.parse(atob(payload))
           if (decodedPayload.email) {
-            setZkLoginEmail(decodedPayload.email)
+            extractedEmail = decodedPayload.email
           }
         } catch (error) {
-          console.error('Failed to decode JWT for email:', error)
+          console.error('Failed to decode legacy zkLogin JWT for email:', error)
         }
       }
+
+      // Method 2: Check for Enoki session data
+      if (!extractedEmail) {
+        try {
+          const enokiSession = localStorage.getItem('enoki_session') || sessionStorage.getItem('enoki_session')
+          if (enokiSession) {
+            const sessionData = JSON.parse(enokiSession)
+            if (sessionData.email) {
+              extractedEmail = sessionData.email
+            }
+          }
+        } catch (error) {
+          console.error('Failed to extract email from Enoki session:', error)
+        }
+      }
+
+      // Method 3: Check for any JWT-like tokens that might contain email
+      if (!extractedEmail) {
+        try {
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i)
+            if (key && (key.includes('jwt') || key.includes('token') || key.includes('auth'))) {
+              const value = localStorage.getItem(key)
+              if (value && value.includes('.')) {
+                try {
+                  const parts = value.split('.')
+                  if (parts.length === 3) {
+                    const payload = JSON.parse(atob(parts[1]))
+                    if (payload.email) {
+                      extractedEmail = payload.email
+                      break
+                    }
+                  }
+                } catch (e) {
+                  // Skip invalid tokens
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Failed to search for email in tokens:', error)
+        }
+      }
+
+      if (extractedEmail) {
+        setSocialAuthEmail(extractedEmail)
+      }
     } else {
-      setIsZkLoginUser(false)
-      setZkLoginEmail("")
+      setIsSocialAuthUser(false)
+      setSocialAuthEmail("")
     }
   }, [user?.connectionType])
 
@@ -102,14 +152,14 @@ export function DashboardProfiles() {
       const [firstName = "", lastName = ""] = fullName.split(" ")
 
       // Check if email was set once for traditional wallet users
-      const hasEmailSet = !isZkLoginUser && !!profile.email && profile.email.trim() !== ""
+      const hasEmailSet = !isSocialAuthUser && !!profile.email && profile.email.trim() !== ""
       setEmailSetOnce(hasEmailSet)
 
       setProfileData({
         firstName,
         lastName: lastName || "",
         username: profile.username || "",
-        email: isZkLoginUser ? zkLoginEmail : (profile.email || ""),
+        email: isSocialAuthUser ? socialAuthEmail : (profile.email || ""),
         location: profile.location || "unspecified",
         walletAddress: user?.address || "",
         kycStatus: profile.kyc_status === 'verified' ? 'verified' :
@@ -121,10 +171,10 @@ export function DashboardProfiles() {
       setProfileData(prev => ({
         ...prev,
         walletAddress: user.address,
-        email: isZkLoginUser ? zkLoginEmail : prev.email
+        email: isSocialAuthUser ? socialAuthEmail : prev.email
       }))
     }
-  }, [profile, user?.address, isZkLoginUser, zkLoginEmail])
+  }, [profile, user?.address, isSocialAuthUser, socialAuthEmail])
 
   // Check if username needs to be synced with referral code
   useEffect(() => {
@@ -268,9 +318,9 @@ export function DashboardProfiles() {
       }
 
       // Handle email based on authentication method and immutability rules
-      if (isZkLoginUser) {
-        // zkLogin users: email is always from JWT, cannot be changed
-        profileUpdateData.email = zkLoginEmail
+      if (isSocialAuthUser) {
+        // Social auth users: email is always from social login, cannot be changed
+        profileUpdateData.email = socialAuthEmail
       } else {
         // Traditional wallet users: email can only be set once
         if (!emailSetOnce && profileData.email.trim()) {
@@ -496,34 +546,34 @@ export function DashboardProfiles() {
 
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-[#C0E6FF]">
-                  Email {isZkLoginUser ? "(From Google - Cannot be changed)" : emailSetOnce ? "(Set once - Cannot be changed)" : "(Can be set once)"}
+                  Email {isSocialAuthUser ? "(From Social Login - Cannot be changed)" : emailSetOnce ? "(Set once - Cannot be changed)" : "(Can be set once)"}
                 </Label>
                 <Input
                   id="email"
                   type="email"
                   value={profileData.email}
                   onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
-                  disabled={!isEditing || isZkLoginUser || emailSetOnce}
+                  disabled={!isEditing || isSocialAuthUser || emailSetOnce}
                   className="bg-[#030F1C] border-[#C0E6FF]/30 text-white"
                   placeholder={
-                    isZkLoginUser
-                      ? "Email from Google account"
+                    isSocialAuthUser
+                      ? "Email from social login account"
                       : emailSetOnce
                         ? "Email is set and cannot be changed"
                         : "Enter your email address (can only be set once)"
                   }
                 />
-                {isZkLoginUser && (
+                {isSocialAuthUser && (
                   <p className="text-[#C0E6FF]/70 text-sm">
-                    🔒 Email is automatically bound from your Google account and cannot be changed
+                    🔒 Email is automatically bound from your social login account and cannot be changed
                   </p>
                 )}
-                {!isZkLoginUser && emailSetOnce && (
+                {!isSocialAuthUser && emailSetOnce && (
                   <p className="text-[#C0E6FF]/70 text-sm">
                     🔒 Email can only be set once and cannot be changed for security
                   </p>
                 )}
-                {!isZkLoginUser && !emailSetOnce && (
+                {!isSocialAuthUser && !emailSetOnce && (
                   <p className="text-[#C0E6FF]/70 text-sm">
                     ⚠️ Email can only be set once. Choose carefully as it cannot be changed later
                   </p>

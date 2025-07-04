@@ -42,44 +42,46 @@ export function AIOCreatorsInterface() {
   ]
 
   // Convert creators to individual channel cards (flatten channels into separate creator cards)
-  // Filter out user's own channels from display
-  const channelCards = creators.flatMap(creator => {
-    // Skip creators owned by current user
-    if (userAddress && creator.creatorAddress &&
-        creator.creatorAddress.toLowerCase() === userAddress.toLowerCase()) {
-      return []
-    }
-
-    return creator.channels.map((channel, index) => {
-      const channelCard = {
-        ...creator,
-        id: `${creator.id}_${channel.id}`, // Unique ID for each channel card
-        name: channel.name, // Use channel name instead of creator name
-        username: creator.username, // Use creator username
-        subscribers: channel.subscribers, // Use channel subscribers instead of creator subscribers
-        channels: [channel], // Each card shows only one channel
-        originalCreatorId: creator.id, // Keep reference to original creator
-        channelId: channel.id, // Keep reference to channel
-
-        // Make each channel card visually distinct
-        bannerColor: index === 0 ? creator.bannerColor : (index === 1 ? '#FF6B6B' : '#4ECDC4'), // Different colors for different channels
-        avatar: (channel as any).channelAvatar, // Use channel-specific avatar only
-        coverImage: (channel as any).channelCover, // Use channel-specific cover only
-
-        // Use channel-specific data if available, fallback to creator data
-        availability: channel.availability || creator.availability,
-
-        // Use channel-specific categories, role, and language if available
-        category: (channel as any).channelCategories?.[0] || creator.category,
-        categories: (channel as any).channelCategories || creator.categories,
-        role: (channel as any).channelRole || creator.role,
-        languages: (channel as any).channelLanguage ? [(channel as any).channelLanguage] : creator.languages
+  // Filter out user's own channels from display - memoized for performance
+  const channelCards = useMemo(() => {
+    return creators.flatMap(creator => {
+      // Skip creators owned by current user
+      if (userAddress && creator.creatorAddress &&
+          creator.creatorAddress.toLowerCase() === userAddress.toLowerCase()) {
+        return []
       }
 
-      // Debug: Log channel-specific data
-      return channelCard
+      return creator.channels.map((channel, index) => {
+        const channelCard = {
+          ...creator,
+          id: `${creator.id}_${channel.id}`, // Unique ID for each channel card
+          name: channel.name, // Use channel name instead of creator name
+          username: creator.username, // Use creator username
+          subscribers: channel.subscribers, // Use channel subscribers instead of creator subscribers
+          channels: [channel], // Each card shows only one channel
+          originalCreatorId: creator.id, // Keep reference to original creator
+          channelId: channel.id, // Keep reference to channel
+
+          // Make each channel card visually distinct
+          bannerColor: index === 0 ? creator.bannerColor : (index === 1 ? '#FF6B6B' : '#4ECDC4'), // Different colors for different channels
+          avatar: (channel as any).channelAvatar, // Use channel-specific avatar only
+          coverImage: (channel as any).channelCover, // Use channel-specific cover only
+
+          // Use channel-specific data if available, fallback to creator data
+          availability: channel.availability || creator.availability,
+
+          // Use channel-specific categories, role, and language if available
+          category: (channel as any).channelCategories?.[0] || creator.category,
+          categories: (channel as any).channelCategories || creator.categories,
+          role: (channel as any).channelRole || creator.role,
+          languages: (channel as any).channelLanguage ? [(channel as any).channelLanguage] : creator.languages
+        }
+
+        // Debug: Log channel-specific data
+        return channelCard
+      })
     })
-  })
+  }, [creators, userAddress])
 
   // Memoize filtering and sorting for performance
   const filteredCreators = useMemo(() => {
