@@ -822,6 +822,100 @@ class AffiliateService {
   }
 
   /**
+   * Process admin default referral code (special handling for admin codes)
+   */
+  async processAdminDefaultReferral(referralCode: string, userAddress: string): Promise<boolean> {
+    try {
+      console.log('🔍 Processing admin default referral:', referralCode, 'for user:', userAddress)
+
+      // Step 1: Validate the admin referral code exists
+      const { data: adminCode, error: adminError } = await supabase
+        .from('extra_codes')
+        .select('owner_address, usage_limit, usage_count, is_active, expires_at')
+        .eq('code', referralCode)
+        .eq('is_active', true)
+        .single()
+
+      let codeData = adminCode
+
+      if (!adminCode) {
+        // Try personal referral codes as fallback
+        const { data: personalCode, error: personalError } = await supabase
+          .from('referral_codes')
+          .select('owner_address, usage_limit, usage_count, is_active, expires_at')
+          .eq('code', referralCode)
+          .eq('is_active', true)
+          .single()
+
+        if (personalCode) {
+          codeData = personalCode
+        }
+      }
+
+      if (!codeData) {
+        console.log('❌ Admin referral code not found or inactive')
+        return false
+      }
+
+      // Step 2: Check if user already has a referral relationship
+      const hasExisting = await this.checkExistingReferralRelationship(userAddress)
+
+      if (hasExisting) {
+        console.log('⚠️ User already has referral relationship - admin default will be stored in profile only')
+        // For admin default, we don't create duplicate relationships
+        // The referral_data is already stored in the profile
+        return true
+      }
+
+      // Step 3: No existing relationship, create new admin relationship
+      const relationshipSuccess = await this.createAffiliateRelationship(
+        codeData.owner_address,
+        userAddress,
+        referralCode
+      )
+
+      if (!relationshipSuccess) {
+        console.log('❌ Failed to create admin affiliate relationship')
+        return false
+      }
+
+      // Step 4: Update code usage count
+      if (adminCode) {
+        // Update admin extra code
+        const { error: updateError } = await supabase
+          .from('extra_codes')
+          .update({
+            usage_count: codeData.usage_count + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq('code', referralCode)
+
+        if (updateError) {
+          console.error('⚠️ Failed to update admin code usage count:', updateError)
+        }
+      } else {
+        // Update personal referral code
+        const { error: updateError } = await supabase
+          .rpc('increment_referral_usage', {
+            referral_code: referralCode,
+            increment_conversions: true
+          })
+
+        if (updateError) {
+          console.error('⚠️ Failed to update referral code usage count:', updateError)
+        }
+      }
+
+      console.log('✅ Admin default referral processed successfully')
+      return true
+
+    } catch (error) {
+      console.error('❌ Error processing admin default referral:', error)
+      return false
+    }
+  }
+
+  /**
    * Process and validate a referral code, creating the relationship if valid
    */
   async processReferralCode(referralCode: string, userAddress: string): Promise<boolean> {

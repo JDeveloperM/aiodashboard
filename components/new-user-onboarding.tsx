@@ -90,12 +90,14 @@ export function NewUserOnboarding() {
   // Referral options
   const [skipReferral, setSkipReferral] = useState(false)
 
+  // Admin default referral code
+  const ADMIN_DEFAULT_REFERRAL_CODE = 'U2FSDGVKX1VF'
+
   // Avatar selection state
   const [showAvatarSelection, setShowAvatarSelection] = useState(false)
 
-  // Form validation
-  const isFormValid = formData.username.trim().length >= 3 &&
-    (formData.referralCode.trim().length > 0 || skipReferral)
+  // Form validation - always valid if username is provided since we have admin default code
+  const isFormValid = formData.username.trim().length >= 3
 
   const steps: OnboardingStep[] = [
     {
@@ -199,14 +201,18 @@ export function NewUserOnboarding() {
         kyc_status: profile?.kyc_status || 'not_verified'
       }
 
-      // Add referral code to referral_data if provided
-      if (formData.referralCode.trim() && !skipReferral) {
+      // Add referral code to referral_data
+      // Use provided code, or admin default if user chose to skip
+      const finalReferralCode = skipReferral ? ADMIN_DEFAULT_REFERRAL_CODE : formData.referralCode.trim()
+
+      if (finalReferralCode) {
         profileData.referral_data = {
           ...profile?.referral_data,
-          referral_code: formData.referralCode.trim(),
-          referred_by: formData.referralCode.trim(),
+          referral_code: finalReferralCode,
+          referred_by: finalReferralCode,
           referral_date: new Date().toISOString()
         }
+        console.log('🔗 Applying referral code:', finalReferralCode, skipReferral ? '(admin default)' : '(user provided)')
       }
 
       // Update profile with form data
@@ -230,12 +236,37 @@ export function NewUserOnboarding() {
           }
         }
 
-        // Process referral if user came from referral link
-        if (trackedReferralCode && user?.address) {
-          console.log('🔗 Processing referral from session...')
-          const referralSuccess = await processReferralOnSignup(user.address)
-          if (referralSuccess) {
-            toast.success('✅ Referral processed successfully!')
+        // Process referral if user came from referral link OR if using admin default
+        const shouldProcessReferral = (trackedReferralCode || skipReferral) && user?.address
+        if (shouldProcessReferral) {
+          console.log('🔗 Processing referral...', trackedReferralCode ? 'from session' : 'admin default')
+
+          if (trackedReferralCode) {
+            // Process tracked referral from session
+            const referralSuccess = await processReferralOnSignup(user.address)
+            if (referralSuccess) {
+              toast.success('✅ Referral processed successfully!')
+            }
+          } else if (skipReferral) {
+            // Process admin default referral code using special admin method
+            try {
+              const { affiliateService } = await import('@/lib/affiliate-service')
+              const adminReferralSuccess = await affiliateService.processAdminDefaultReferral(
+                ADMIN_DEFAULT_REFERRAL_CODE,
+                user.address
+              )
+              if (adminReferralSuccess) {
+                console.log('✅ Admin default referral processed successfully')
+                toast.success('✅ Welcome! Admin referral applied.')
+              } else {
+                console.log('⚠️ Admin referral processing failed, but referral_data is stored')
+                toast.success('✅ Welcome! Admin referral applied to profile.')
+              }
+            } catch (error) {
+              console.error('❌ Failed to process admin default referral:', error)
+              // Don't fail onboarding for referral processing issues
+              toast.success('✅ Welcome! Profile setup complete.')
+            }
           }
         }
 
@@ -350,74 +381,74 @@ export function NewUserOnboarding() {
     switch (step.id) {
       case 'welcome':
         return (
-          <div className="text-center space-y-6">
-            <div className="w-20 h-20 bg-gradient-to-r from-[#4DA2FF] to-[#00D4AA] rounded-full flex items-center justify-center mx-auto">
-              <Star className="w-10 h-10 text-white" />
+          <div className="text-center space-y-4 sm:space-y-6">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-[#4DA2FF] to-[#00D4AA] rounded-full flex items-center justify-center mx-auto">
+              <Star className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white mb-2">Welcome to AIONET!</h2>
-              <p className="text-[#C0E6FF] mb-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Welcome to AIONET!</h2>
+              <p className="text-sm sm:text-base text-[#C0E6FF] mb-4">
                 Your wallet is connected and ready. Let's complete your profile to unlock all features.
               </p>
-              <div className="flex items-center justify-center gap-2 text-sm text-[#C0E6FF]">
-                <Wallet className="w-4 h-4" />
+              <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-[#C0E6FF]">
+                <Wallet className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span>Connected: {user?.address.slice(0, 6)}...{user?.address.slice(-4)}</span>
               </div>
             </div>
-            <Button 
+            <Button
               onClick={() => setCurrentStep(1)}
-              className="bg-gradient-to-r from-[#4DA2FF] to-[#00D4AA] text-white px-8"
+              className="bg-gradient-to-r from-[#4DA2FF] to-[#00D4AA] text-white px-6 sm:px-8 text-sm sm:text-base"
             >
               Get Started
-              <ArrowRight className="w-4 h-4 ml-2" />
+              <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
             </Button>
           </div>
         )
 
       case 'profile':
         return (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div className="text-center">
-              <User className="w-12 h-12 text-[#4DA2FF] mx-auto mb-4" />
-              <h2 className="text-xl font-bold text-white mb-2">Complete Your Profile</h2>
-              <p className="text-[#C0E6FF]">
+              <User className="w-10 h-10 sm:w-12 sm:h-12 text-[#4DA2FF] mx-auto mb-3" />
+              <h2 className="text-lg sm:text-xl font-bold text-white mb-2">Complete Your Profile</h2>
+              <p className="text-sm sm:text-base text-[#C0E6FF]">
                 Choose your avatar and add your information to personalize your AIONET experience
               </p>
             </div>
             
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Avatar Selection Section */}
               <div>
                 <button
                   onClick={() => setShowAvatarSelection(!showAvatarSelection)}
-                  className="flex items-center justify-between w-full text-left mb-3"
+                  className="flex items-center justify-between w-full text-left mb-2"
                 >
-                  <Label className="text-white">Choose Your Avatar</Label>
+                  <Label className="text-white text-sm sm:text-base">Choose Your Avatar</Label>
                   {showAvatarSelection ? (
-                    <ChevronUp className="w-5 h-5 text-[#C0E6FF]" />
+                    <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#C0E6FF]" />
                   ) : (
-                    <ChevronDown className="w-5 h-5 text-[#C0E6FF]" />
+                    <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-[#C0E6FF]" />
                   )}
                 </button>
 
                 {/* Current Avatar Preview */}
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-12 h-12 rounded-lg overflow-hidden border-2 border-[#4DA2FF]">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border-2 border-[#4DA2FF]">
                     <img
                       src={formData.selectedAvatar}
                       alt="Selected avatar"
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <span className="text-sm text-[#C0E6FF]/70">
+                  <span className="text-xs sm:text-sm text-[#C0E6FF]/70">
                     {showAvatarSelection ? 'Click an avatar below to change' : 'Click above to change avatar'}
                   </span>
                 </div>
 
                 {/* Collapsible Avatar Grid */}
                 {showAvatarSelection && (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-4 gap-3 p-4 bg-[#1a2f51]/30 rounded-lg border border-[#C0E6FF]/10">
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-4 gap-2 sm:gap-3 p-3 sm:p-4 bg-[#1a2f51]/30 rounded-lg border border-[#C0E6FF]/10 max-h-48 sm:max-h-none overflow-y-auto">
                       {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => {
                         const avatarPath = `/images/animepfp/default${num}.webp`
                         const isSelected = formData.selectedAvatar === avatarPath
@@ -426,7 +457,7 @@ export function NewUserOnboarding() {
                             key={num}
                             className={`relative cursor-pointer rounded-lg overflow-hidden transition-all duration-200 ${
                               isSelected
-                                ? 'ring-2 ring-[#4DA2FF] ring-offset-2 ring-offset-[#0A1628] scale-105'
+                                ? 'ring-2 ring-[#4DA2FF] ring-offset-1 ring-offset-[#0A1628] scale-105'
                                 : 'hover:scale-105 hover:ring-1 hover:ring-[#C0E6FF]/50'
                             }`}
                             onClick={() => {
@@ -437,18 +468,18 @@ export function NewUserOnboarding() {
                             <img
                               src={avatarPath}
                               alt={`Avatar ${num}`}
-                              className="w-full h-16 object-cover"
+                              className="w-full h-12 sm:h-16 object-cover"
                             />
                             {isSelected && (
                               <div className="absolute inset-0 bg-[#4DA2FF]/20 flex items-center justify-center">
-                                <CheckCircle className="w-6 h-6 text-[#4DA2FF]" />
+                                <CheckCircle className="w-4 h-4 sm:w-6 sm:h-6 text-[#4DA2FF]" />
                               </div>
                             )}
                           </div>
                         )
                       })}
                     </div>
-                    <p className="text-[#C0E6FF]/70 text-sm">
+                    <p className="text-[#C0E6FF]/70 text-xs sm:text-sm">
                       Select an avatar for your profile. You can upload a custom image later.
                     </p>
                   </div>
@@ -456,22 +487,22 @@ export function NewUserOnboarding() {
               </div>
 
               <div>
-                <Label htmlFor="username" className="text-white">Username *</Label>
+                <Label htmlFor="username" className="text-white text-sm sm:text-base">Username *</Label>
                 <Input
                   id="username"
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   placeholder="Enter your username"
-                  className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white"
+                  className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white text-sm sm:text-base"
                   required
                 />
                 {!formData.username.trim() && (
-                  <p className="text-red-400 text-sm mt-1">Username is required</p>
+                  <p className="text-red-400 text-xs sm:text-sm mt-1">Username is required</p>
                 )}
               </div>
 
               <div>
-                <Label htmlFor="email" className="text-white">
+                <Label htmlFor="email" className="text-white text-sm sm:text-base">
                   Email {isZkLoginUser ? "(From Google)" : "(Optional - Can only be set once)"}
                 </Label>
                 <Input
@@ -480,16 +511,16 @@ export function NewUserOnboarding() {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder={isZkLoginUser ? "Email from Google account" : "Enter your email (can only be set once)"}
-                  className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white"
+                  className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white text-sm sm:text-base"
                   disabled={isZkLoginUser}
                 />
                 {isZkLoginUser && (
-                  <p className="text-[#C0E6FF]/70 text-sm mt-1">
+                  <p className="text-[#C0E6FF]/70 text-xs sm:text-sm mt-1">
                     🔒 Email is automatically bound from your Google account
                   </p>
                 )}
                 {!isZkLoginUser && (
-                  <p className="text-[#C0E6FF]/70 text-sm mt-1">
+                  <p className="text-[#C0E6FF]/70 text-xs sm:text-sm mt-1">
                     ⚠️ Email can only be set once and cannot be changed later
                   </p>
                 )}
@@ -497,27 +528,27 @@ export function NewUserOnboarding() {
 
               {/* Country Selection */}
               <div>
-                <Label htmlFor="country" className="text-white flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
+                <Label htmlFor="country" className="text-white text-sm sm:text-base flex items-center gap-2">
+                  <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
                   Country (Optional)
                 </Label>
                 <Select value={formData.country} onValueChange={(value) => setFormData({ ...formData, country: value })}>
-                  <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white">
+                  <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white text-sm sm:text-base">
                     <SelectValue placeholder="Select your country" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#1a2f51] border-[#1a2f51] max-h-60 overflow-y-auto">
-                    <SelectItem value="unspecified" className="text-white hover:bg-[#2a3f61]">
+                  <SelectContent className="bg-[#1a2f51] border-[#1a2f51] max-h-48 sm:max-h-60 overflow-y-auto">
+                    <SelectItem value="unspecified" className="text-white hover:bg-[#2a3f61] text-sm">
                       🌍 Prefer not to say
                     </SelectItem>
                     {LOCATIONS.map((location) => (
-                      <SelectItem key={location.code} value={location.name} className="text-white hover:bg-[#2a3f61]">
+                      <SelectItem key={location.code} value={location.name} className="text-white hover:bg-[#2a3f61] text-sm">
                         <div className="flex items-center gap-2">
                           <ReactCountryFlag
                             countryCode={location.code}
                             svg
                             style={{
-                              width: '1.2em',
-                              height: '1.2em',
+                              width: '1em',
+                              height: '1em',
                             }}
                             title={location.name}
                           />
@@ -527,7 +558,7 @@ export function NewUserOnboarding() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[#C0E6FF]/70 text-sm mt-1">
+                <p className="text-[#C0E6FF]/70 text-xs sm:text-sm mt-1">
                   Help us show you relevant content and connect with users in your region
                 </p>
               </div>
@@ -535,8 +566,8 @@ export function NewUserOnboarding() {
 
 
               <div>
-                <Label htmlFor="referralCode" className="text-white flex items-center gap-2">
-                  <Users className="w-4 h-4" />
+                <Label htmlFor="referralCode" className="text-white text-sm sm:text-base flex items-center gap-2">
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4" />
                   Referral Code
                   {trackedReferralCode && (
                     <Badge className="bg-green-500/20 text-green-400 text-xs">
@@ -546,16 +577,22 @@ export function NewUserOnboarding() {
                 </Label>
                 <Input
                   id="referralCode"
-                  value={formData.referralCode}
+                  value={skipReferral ? ADMIN_DEFAULT_REFERRAL_CODE : formData.referralCode}
                   onChange={(e) => setFormData({ ...formData, referralCode: e.target.value })}
                   placeholder={trackedReferralCode ? "Referral code from link" : "Enter referral code (if you have one)"}
-                  className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white"
-                  disabled={skipReferral}
+                  className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white text-sm sm:text-base"
+                  disabled={skipReferral || !!trackedReferralCode}
                 />
                 {trackedReferralCode && (
-                  <p className="text-green-400 text-sm mt-1 flex items-center gap-1">
+                  <p className="text-green-400 text-xs sm:text-sm mt-1 flex items-center gap-1">
                     <CheckCircle className="w-3 h-3" />
                     Referral code automatically applied from your link
+                  </p>
+                )}
+                {skipReferral && !trackedReferralCode && (
+                  <p className="text-blue-400 text-xs sm:text-sm mt-1 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    Admin default referral code will be applied automatically
                   </p>
                 )}
                 <div className="flex items-center space-x-2 mt-2">
@@ -565,38 +602,43 @@ export function NewUserOnboarding() {
                     onCheckedChange={(checked) => {
                       setSkipReferral(checked as boolean)
                       if (checked) {
-                        setFormData({ ...formData, referralCode: '' })
+                        // When skipping, the admin default code will be shown in the input (read-only)
+                        // The actual processing happens in handleProfileSubmit
+                        console.log('🔗 User chose to continue without referral - admin default will be applied:', ADMIN_DEFAULT_REFERRAL_CODE)
+                      } else {
+                        // When unchecking, restore the original referral code or clear it
+                        setFormData({ ...formData, referralCode: trackedReferralCode || '' })
                       }
                     }}
                     disabled={!!trackedReferralCode} // Disable if we have a tracked referral
                   />
-                  <Label htmlFor="skipReferral" className="text-sm text-[#C0E6FF]">
-                    Continue without referral code
+                  <Label htmlFor="skipReferral" className="text-xs sm:text-sm text-[#C0E6FF]">
+                    Continue without referral code (admin default will be applied)
                   </Label>
                 </div>
                 {!formData.referralCode.trim() && !skipReferral && !trackedReferralCode && (
-                  <p className="text-yellow-400 text-sm mt-1">
-                    Enter a referral code or check the box to continue
+                  <p className="text-yellow-400 text-xs sm:text-sm mt-1">
+                    Enter a referral code or check the box to continue with admin default
                   </p>
                 )}
               </div>
             </div>
-            
-            <div className="flex gap-3">
-              <Button 
-                variant="outline" 
+
+            <div className="flex gap-2 sm:gap-3 pt-2">
+              <Button
+                variant="outline"
                 onClick={() => setCurrentStep(0)}
-                className="flex-1"
+                className="flex-1 text-sm sm:text-base"
               >
                 Back
               </Button>
               <Button
                 onClick={handleProfileSubmit}
                 disabled={isCompleting || !isFormValid}
-                className="flex-1 bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white"
+                className="flex-1 bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white text-sm sm:text-base"
               >
-                {isCompleting ? 'Saving Profile...' : 'Save & Continue'}
-                {!isCompleting && <ArrowRight className="w-4 h-4 ml-2" />}
+                {isCompleting ? 'Saving...' : 'Save & Continue'}
+                {!isCompleting && <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />}
               </Button>
             </div>
           </div>
@@ -604,52 +646,52 @@ export function NewUserOnboarding() {
 
       case 'kyc':
         return (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div className="text-center">
-              <Shield className="w-12 h-12 text-[#4DA2FF] mx-auto mb-4" />
-              <h2 className="text-xl font-bold text-white mb-2">Verify Your Identity</h2>
-              <p className="text-[#C0E6FF]">
+              <Shield className="w-10 h-10 sm:w-12 sm:h-12 text-[#4DA2FF] mx-auto mb-3" />
+              <h2 className="text-lg sm:text-xl font-bold text-white mb-2">Verify Your Identity</h2>
+              <p className="text-sm sm:text-base text-[#C0E6FF]">
                 Complete KYC verification to unlock premium features and enhanced security
               </p>
             </div>
-            
-            <div className="bg-[#1a2f51] rounded-lg p-4 space-y-3">
-              <h3 className="font-semibold text-white">Benefits of KYC Verification:</h3>
-              <ul className="space-y-2 text-[#C0E6FF] text-sm">
+
+            <div className="bg-[#1a2f51] rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3">
+              <h3 className="font-semibold text-white text-sm sm:text-base">Benefits of KYC Verification:</h3>
+              <ul className="space-y-1 sm:space-y-2 text-[#C0E6FF] text-xs sm:text-sm">
                 <li className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
                   Higher transaction limits
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
                   Access to premium features
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
                   Enhanced account security
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
                   Priority customer support
                 </li>
               </ul>
             </div>
-            
-            <div className="flex gap-3">
+
+            <div className="flex gap-2 sm:gap-3">
               <Button
                 variant="outline"
                 onClick={handleSkipKYC}
-                className="flex-1"
+                className="flex-1 text-sm sm:text-base"
               >
                 Skip for Now
               </Button>
               <Button
                 onClick={handleKYCStart}
                 disabled={isCompleting}
-                className="flex-1 bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white"
+                className="flex-1 bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white text-sm sm:text-base"
               >
                 {isCompleting ? 'Starting...' : 'Start KYC'}
-                <Shield className="w-4 h-4 ml-2" />
+                <Shield className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
               </Button>
             </div>
           </div>
@@ -657,16 +699,16 @@ export function NewUserOnboarding() {
 
       case 'complete':
         return (
-          <div className="text-center space-y-6">
-            <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto">
-              <Trophy className="w-10 h-10 text-white" />
+          <div className="text-center space-y-4 sm:space-y-6">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto">
+              <Trophy className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white mb-2">You're All Set!</h2>
-              <p className="text-[#C0E6FF] mb-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">You're All Set!</h2>
+              <p className="text-sm sm:text-base text-[#C0E6FF] mb-4">
                 Welcome to the AIONET community! Your account is now fully configured.
               </p>
-              <div className="flex items-center justify-center gap-4 text-sm">
+              <div className="flex items-center justify-center gap-2 sm:gap-4 text-xs sm:text-sm flex-wrap">
                 <Badge className="bg-green-500 text-white">
                   <CheckCircle className="w-3 h-3 mr-1" />
                   Profile Complete
@@ -679,13 +721,13 @@ export function NewUserOnboarding() {
                 )}
               </div>
             </div>
-            <Button 
+            <Button
               onClick={handleCompleteOnboarding}
               disabled={isCompleting}
-              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-8"
+              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 sm:px-8 text-sm sm:text-base"
             >
               {isCompleting ? 'Completing...' : 'Enter Dashboard'}
-              <Gift className="w-4 h-4 ml-2" />
+              <Gift className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
             </Button>
           </div>
         )
@@ -704,20 +746,20 @@ export function NewUserOnboarding() {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-[#0A1628] border-[#C0E6FF]/20">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-sm text-[#C0E6FF]">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+      <Card className="w-full max-w-md bg-[#0A1628] border-[#C0E6FF]/20 max-h-[95vh] sm:max-h-[90vh] flex flex-col">
+        <CardHeader className="text-center flex-shrink-0 pb-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-xs sm:text-sm text-[#C0E6FF]">
               Step {currentStep + 1} of {steps.length}
             </div>
-            <div className="text-sm text-[#C0E6FF]">
+            <div className="text-xs sm:text-sm text-[#C0E6FF]">
               {Math.round(progress)}% Complete
             </div>
           </div>
-          <div className="w-full bg-[#1a2f51] rounded-full h-3 mb-2">
+          <div className="w-full bg-[#1a2f51] rounded-full h-2 sm:h-3 mb-2">
             <div
-              className="bg-gradient-to-r from-[#4DA2FF] to-[#00D4AA] h-3 rounded-full transition-all duration-500 ease-out"
+              className="bg-gradient-to-r from-[#4DA2FF] to-[#00D4AA] h-2 sm:h-3 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -725,8 +767,10 @@ export function NewUserOnboarding() {
             {steps[currentStep]?.title}
           </div>
         </CardHeader>
-        <CardContent>
-          {renderStepContent()}
+        <CardContent className="flex-1 overflow-y-auto">
+          <div className="pb-4">
+            {renderStepContent()}
+          </div>
         </CardContent>
       </Card>
     </div>

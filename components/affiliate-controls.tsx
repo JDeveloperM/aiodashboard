@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { RoleImage } from "@/components/ui/role-image"
 import { affiliateService, AffiliateUser, AffiliateMetrics, CommissionData, NetworkMetrics, UserProfileLevel } from "@/lib/affiliate-service"
 import { affiliateSubscriptionService, SubscriptionStatus } from "@/lib/affiliate-subscription-service"
@@ -36,7 +38,18 @@ import {
   Zap,
   AlertTriangle,
   CheckCircle,
-  RefreshCw
+  RefreshCw,
+  Eye,
+  UserCheck,
+  UserX,
+  Ban,
+  Edit,
+  ExternalLink,
+  Settings,
+  Menu,
+  Wrench,
+  Target,
+  ChevronDown
 } from "lucide-react"
 
 export function AffiliateControls() {
@@ -642,7 +655,7 @@ export function AffiliateControls() {
                     <SelectValue placeholder="Level" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#1a2f51] border-[#C0E6FF]/30">
-                    <SelectItem value="ALL" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">All Levels</SelectItem>
+                    <SelectItem value="ALL" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">All Affiliates</SelectItem>
                     <SelectItem value="Lv. 1" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Level 1</SelectItem>
                     <SelectItem value="Lv. 2" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Level 2</SelectItem>
                     <SelectItem value="Lv. 3" className="text-[#FFFFFF] hover:bg-[#C0E6FF]/10">Level 3</SelectItem>
@@ -673,7 +686,7 @@ export function AffiliateControls() {
               </div>
             </div>
 
-            {/* Users List */}
+            {/* Users Table */}
             {affiliateUsers.length === 0 ? (
               <div className="text-center py-12">
                 <Users className="w-16 h-16 text-[#C0E6FF]/50 mx-auto mb-4" />
@@ -686,53 +699,71 @@ export function AffiliateControls() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {/* Filter and display users */}
-                {(() => {
-                  // Apply filters
-                  const filteredUsers = affiliateUsers.filter(user => {
-                    // Search filter
-                    if (searchTerm) {
-                      const searchLower = searchTerm.toLowerCase()
-                      const matchesSearch = user.username.toLowerCase().includes(searchLower) ||
-                                           user.email.toLowerCase().includes(searchLower)
-                      if (!matchesSearch) return false
-                    }
+              <div className="space-y-4">
+                <div className="rounded-lg border border-[#C0E6FF]/20 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-b border-[#C0E6FF]/20 hover:bg-transparent">
+                          <TableHead className="text-[#C0E6FF] font-semibold min-w-[200px]">User</TableHead>
+                          <TableHead className="text-[#C0E6FF] font-semibold min-w-[100px]">Role</TableHead>
+                          <TableHead className="text-[#C0E6FF] font-semibold min-w-[120px] text-center">Profile Level</TableHead>
+                          <TableHead className="text-[#C0E6FF] font-semibold min-w-[130px] text-center">Affiliate Level</TableHead>
+                          <TableHead className="text-[#C0E6FF] font-semibold min-w-[140px]">Commission</TableHead>
+                          <TableHead className="text-[#C0E6FF] font-semibold min-w-[120px]">Join Date</TableHead>
+                          <TableHead className="text-[#C0E6FF] font-semibold min-w-[100px] text-center">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                    <TableBody>
+                      {(() => {
+                        // Apply filters
+                        const filteredUsers = affiliateUsers.filter(user => {
+                          // Search filter
+                          if (searchTerm) {
+                            const searchLower = searchTerm.toLowerCase()
+                            const matchesSearch = user.username.toLowerCase().includes(searchLower) ||
+                                                 user.email.toLowerCase().includes(searchLower)
+                            if (!matchesSearch) return false
+                          }
 
-                    // Role filter
-                    if (selectedRoleFilter !== 'ALL') {
-                      if (user.status !== selectedRoleFilter) return false
-                    }
+                          // Role filter
+                          if (selectedRoleFilter !== 'ALL') {
+                            if (user.status !== selectedRoleFilter) return false
+                          }
 
-                    // Affiliate level filter
-                    if (selectedLevelFilter !== 'ALL') {
-                      const targetLevel = parseInt(selectedLevelFilter.replace('Lv. ', ''))
-                      if (user.affiliateLevel !== targetLevel) return false
-                    }
+                          // Affiliate level filter
+                          if (selectedLevelFilter !== 'ALL') {
+                            const targetLevel = parseInt(selectedLevelFilter.replace('Lv. ', ''))
+                            if (user.affiliateLevel !== targetLevel) return false
+                          }
 
-                    // Profile level filter
-                    if (selectedProfileLevelFilter !== 'ALL') {
-                      const targetProfileLevel = parseInt(selectedProfileLevelFilter.replace('PL. ', ''))
-                      if (user.profileLevel !== targetProfileLevel) return false
-                    }
+                          // Profile level filter
+                          if (selectedProfileLevelFilter !== 'ALL') {
+                            const targetProfileLevel = parseInt(selectedProfileLevelFilter.replace('PL. ', ''))
+                            if (user.profileLevel !== targetProfileLevel) return false
+                          }
 
-                    return true
-                  })
+                          return true
+                        })
 
-                  // Sort by join date (newest first)
-                  const sortedUsers = [...filteredUsers].sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
+                        // Sort by join date (newest first)
+                        const sortedUsers = [...filteredUsers].sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
 
-                  // Get displayed users based on view toggle
-                  const displayedUsers = showLatestOnly ? sortedUsers.slice(0, 5) : sortedUsers.slice(0, displayedCount)
+                        // Get displayed users based on view toggle
+                        const displayedUsers = showLatestOnly ? sortedUsers.slice(0, 5) : sortedUsers.slice(0, displayedCount)
 
-                  return displayedUsers.map((user) => (
-                    <div key={user.id} className="bg-[#1a2f51]/30 rounded-lg p-4 border border-[#C0E6FF]/10 hover:border-[#4DA2FF]/30 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <RoleImage role={user.status} size="sm" />
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <UsernameDisplay username={user.username} />
+                        return displayedUsers.map((user) => (
+                          <TableRow key={user.id} className="border-b border-[#C0E6FF]/10 hover:bg-[#1a2f51]/20">
+                            <TableCell className="py-4">
+                              <div className="flex items-center gap-3">
+                                <RoleImage role={user.status} size="sm" />
+                                <div>
+                                  <UsernameDisplay username={user.username} />
+                                  <p className="text-[#C0E6FF]/70 text-xs">{user.email}</p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-4">
                               <Badge className={`text-xs ${
                                 user.status === 'ROYAL' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
                                 user.status === 'PRO' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' :
@@ -740,34 +771,116 @@ export function AffiliateControls() {
                               }`}>
                                 {user.status}
                               </Badge>
-                            </div>
-                            <p className="text-[#C0E6FF] text-sm">
-                              Profile Level {user.profileLevel} • Affiliate Level {user.affiliateLevel}
-                            </p>
-                            <p className="text-[#C0E6FF]/70 text-xs">
-                              Joined {new Date(user.joinDate).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-white font-semibold">{formatSuiAmount(user.commission).sui} SUI</p>
-                          <p className="text-[#C0E6FF] text-sm">{formatSuiAmount(user.commission).usd}</p>
-                          <div className="flex items-center gap-1 mt-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 px-2 text-xs border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
-                              onClick={() => console.log('Contact user:', user.username)}
-                            >
-                              <Mail className="w-3 h-3 mr-1" />
-                              Contact
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                })()}
+                            </TableCell>
+                            <TableCell className="py-4 text-center">
+                              <span className="text-white font-medium">{user.profileLevel}</span>
+                            </TableCell>
+                            <TableCell className="py-4 text-center">
+                              <span className="text-white font-medium">{user.affiliateLevel}</span>
+                            </TableCell>
+                            <TableCell className="py-4">
+                              <div>
+                                <p className="text-white font-semibold">{formatSuiAmount(user.commission).sui} SUI</p>
+                                <p className="text-[#C0E6FF] text-sm">{formatSuiAmount(user.commission).usd}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-4">
+                              <span className="text-[#C0E6FF] text-sm">
+                                {new Date(user.joinDate).toLocaleDateString()}
+                              </span>
+                            </TableCell>
+                            <TableCell className="py-4 text-center">
+                              <div className="flex justify-center">
+                                {/* Actions Dropdown Menu */}
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 w-8 p-0 border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
+                                      title="User Actions"
+                                    >
+                                      <Settings className="w-4 h-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="bg-[#1a2f51] border-[#C0E6FF]/30">
+                                    {/* Primary Actions */}
+                                    <DropdownMenuItem
+                                      className="text-[#C0E6FF] hover:bg-[#C0E6FF]/10 cursor-pointer"
+                                      onClick={() => console.log('View profile:', user.username)}
+                                    >
+                                      <Eye className="w-4 h-4 mr-2" />
+                                      View Profile
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-[#C0E6FF] hover:bg-[#C0E6FF]/10 cursor-pointer"
+                                      onClick={() => console.log('Contact user:', user.username)}
+                                    >
+                                      <Mail className="w-4 h-4 mr-2" />
+                                      Contact User
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator className="bg-[#C0E6FF]/20" />
+
+                                    {/* Communication Actions */}
+                                    <DropdownMenuItem
+                                      className="text-[#C0E6FF] hover:bg-[#C0E6FF]/10 cursor-pointer"
+                                      onClick={() => console.log('Send message to:', user.username)}
+                                    >
+                                      <MessageCircle className="w-4 h-4 mr-2" />
+                                      Send Message
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-[#C0E6FF] hover:bg-[#C0E6FF]/10 cursor-pointer"
+                                      onClick={() => console.log('View external profile:', user.username)}
+                                    >
+                                      <ExternalLink className="w-4 h-4 mr-2" />
+                                      External Profile
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator className="bg-[#C0E6FF]/20" />
+
+                                    {/* Management Actions */}
+                                    <DropdownMenuItem
+                                      className="text-[#C0E6FF] hover:bg-[#C0E6FF]/10 cursor-pointer"
+                                      onClick={() => console.log('Edit user:', user.username)}
+                                    >
+                                      <Edit className="w-4 h-4 mr-2" />
+                                      Edit User
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-green-400 hover:bg-green-400/10 cursor-pointer"
+                                      onClick={() => console.log('Promote user:', user.username)}
+                                    >
+                                      <UserCheck className="w-4 h-4 mr-2" />
+                                      Promote User
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-yellow-400 hover:bg-yellow-400/10 cursor-pointer"
+                                      onClick={() => console.log('Demote user:', user.username)}
+                                    >
+                                      <UserX className="w-4 h-4 mr-2" />
+                                      Demote User
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator className="bg-[#C0E6FF]/20" />
+
+                                    {/* Security Actions */}
+                                    <DropdownMenuItem
+                                      className="text-red-400 hover:bg-red-400/10 cursor-pointer"
+                                      onClick={() => console.log('Block user:', user.username)}
+                                    >
+                                      <Ban className="w-4 h-4 mr-2" />
+                                      Block User
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      })()}
+                    </TableBody>
+                  </Table>
+                  </div>
+                </div>
 
                 {/* Show More Button */}
                 {!showLatestOnly && affiliateUsers.length > displayedCount && (
