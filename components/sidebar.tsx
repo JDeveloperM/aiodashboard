@@ -54,7 +54,7 @@ export const Sidebar = memo(function Sidebar() {
 
   const navigation = [
     { name: "Dashboard", href: "/aio-dashboard", icon: LayoutDashboard, restricted: false },
-    { name: "Admin Dashboard", href: "/admin-dashboard", icon: Shield, restricted: !isAdmin, adminOnly: true },
+    { name: "Admin Dashboard", href: "/admin-dashboard", icon: Shield, adminOnly: true },
     {
       name: "Copy Trading",
       href: "/copy-trading",
@@ -70,7 +70,7 @@ export const Sidebar = memo(function Sidebar() {
     },
     {
       name: "AIO Connect",
-      href: "/community",
+      href: "/forum",
       icon: Globe,
       restricted: false,
       hasDropdown: true,
@@ -80,7 +80,7 @@ export const Sidebar = memo(function Sidebar() {
         { name: "Forum", href: "/forum", icon: MessageSquare },
       ]
     },
-    { name: "RaffleQuiz", href: "/dapps/rafflecraft", icon: Dice6, restricted: false },
+    { name: "RaffleCraft", href: "/dapps/rafflecraft", icon: Dice6, restricted: false },
     { name: "Dewhale", href: "/dapps/dewhale-launchpad", icon: Rocket, restricted: false },
     { name: "E-Learning", href: "/metago-academy", icon: BookOpen, restricted: false },
     { name: "Leaderboard", href: "/leaderboard", icon: Trophy, restricted: false },
@@ -124,7 +124,7 @@ export const Sidebar = memo(function Sidebar() {
               }
             }}
             className={cn(
-              "flex items-center w-full rounded-md px-3 py-2 text-sm font-medium nav-item-hover",
+              "flex items-center w-full rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-[#00D4FF]",
               isActive
                 ? "nav-item-active"
                 : "text-white",
@@ -148,7 +148,7 @@ export const Sidebar = memo(function Sidebar() {
                   key={subItem.name}
                   href={subItem.restricted ? "#" : subItem.href}
                   className={cn(
-                    "flex items-center rounded-md px-3 py-2 text-sm font-medium nav-item-hover",
+                    "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-[#00D4FF]",
                     pathname === subItem.href
                       ? "nav-item-active"
                       : "text-white",
@@ -175,7 +175,7 @@ export const Sidebar = memo(function Sidebar() {
       <Link
         href={item.restricted ? "#" : item.href}
         className={cn(
-          "flex items-center rounded-md px-3 py-2 text-sm font-medium nav-item-hover",
+          "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-[#00D4FF]",
           isActive
             ? "nav-item-active"
             : "text-white",
@@ -242,10 +242,18 @@ export const Sidebar = memo(function Sidebar() {
               <Button
                 variant="ghost"
                 size="sm"
-                className={cn("ml-auto h-8 w-8 hidden lg:flex", isCollapsed && "ml-0")}
+                className={cn("ml-auto h-14 w-14 hidden lg:flex items-center justify-center", isCollapsed && "ml-0")}
                 onClick={() => setIsCollapsed(!isCollapsed)}
               >
-                <ChevronLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
+                {isCollapsed ? (
+                  <img
+                    src="/images/logo-icon.png"
+                    alt="AIONET"
+                    className="h-12 w-12 object-contain"
+                  />
+                ) : (
+                  <ChevronLeft className="h-4 w-4 transition-transform" />
+                )}
                 <span className="sr-only">{isCollapsed ? "Expand" : "Collapse"} Sidebar</span>
               </Button>
 
@@ -263,9 +271,11 @@ export const Sidebar = memo(function Sidebar() {
           </div>
           <div className="flex-1 overflow-auto scrollbar-thin">
             <nav className="flex-1 space-y-1 px-2 py-4">
-              {navigation.map((item) => (
-                <NavItem key={item.name} item={item} />
-              ))}
+              {navigation
+                .filter((item) => !item.adminOnly || isAdmin)
+                .map((item) => (
+                  <NavItem key={item.name} item={item} />
+                ))}
             </nav>
           </div>
 
@@ -278,7 +288,7 @@ export const Sidebar = memo(function Sidebar() {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "flex items-center rounded-md px-3 py-2 text-sm font-medium nav-item-hover mb-1",
+                  "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-[#00D4FF] mb-1",
                   pathname === item.href
                     ? "nav-item-active"
                     : "text-white",

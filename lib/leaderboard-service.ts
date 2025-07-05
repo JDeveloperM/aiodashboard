@@ -5,6 +5,9 @@
 
 import { createClient } from '@supabase/supabase-js'
 import CryptoJS from 'crypto-js'
+import { tradingService } from './trading-service'
+import { quizService } from './quiz-service'
+import { creatorService } from './creator-service'
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -217,65 +220,119 @@ class LeaderboardService {
 
   /**
    * Calculate affiliate score based on referrals and commissions
+   * Optimized scoring algorithm with balanced weights
    */
   private calculateAffiliateScore(referralData: any): number {
     const referralCount = referralData?.referral_count || 0
     const totalCommissions = referralData?.total_commissions || 0
     const conversionRate = referralData?.conversion_rate || 0
-    
-    // Weighted scoring: referrals (40%) + commissions (40%) + conversion rate (20%)
-    return Math.round(
-      (referralCount * 10) + 
-      (totalCommissions * 5) + 
-      (conversionRate * 100)
-    )
+
+    // Enhanced weighted scoring with logarithmic scaling for large numbers
+    const referralScore = referralCount * 15 + Math.log10(referralCount + 1) * 50 // Base + logarithmic bonus
+    const commissionScore = Math.min(totalCommissions * 3, 1000) // Capped at 1000 points
+    const conversionBonus = Math.min(conversionRate * 200, 500) // Capped at 500 points for 100% conversion
+    const consistencyBonus = (referralCount > 0 && conversionRate > 10) ? 100 : 0 // Bonus for active affiliates
+
+    return Math.round(referralScore + commissionScore + conversionBonus + consistencyBonus)
   }
 
   /**
-   * Calculate trading score (placeholder - would need actual trading data)
+   * Calculate trading score based on actual trading data
    */
-  private calculateTradingScore(userData: any): number {
-    // Placeholder calculation - would integrate with actual trading data
-    const level = userData.profile_level || 1
-    const xp = userData.total_xp || 0
-    return Math.round((level * 50) + (xp * 0.1))
+  private async calculateTradingScore(userData: any): Promise<number> {
+    try {
+      const tradingStats = await tradingService.getUserTradingStats(userData.address)
+      if (!tradingStats) {
+        // Fallback for users with no trading data
+        const level = userData.profile_level || 1
+        const xp = userData.total_xp || 0
+        return Math.round((level * 10) + (xp * 0.02))
+      }
+
+      return tradingService.calculateTradingScore(tradingStats)
+    } catch (error) {
+      console.error('Failed to calculate trading score:', error)
+      // Fallback calculation
+      const level = userData.profile_level || 1
+      const xp = userData.total_xp || 0
+      return Math.round((level * 10) + (xp * 0.02))
+    }
   }
 
   /**
    * Calculate quiz score based on RaffleQuiz participation
    */
-  private calculateQuizScore(userData: any): number {
-    // This would integrate with the quiz_questions and user_quiz_attempts tables
-    const level = userData.profile_level || 1
-    const xp = userData.total_xp || 0
-    return Math.round((level * 30) + (xp * 0.05))
+  private async calculateQuizScore(userData: any): Promise<number> {
+    try {
+      const quizStats = await quizService.getUserQuizStats(userData.address)
+      if (!quizStats) {
+        // Fallback for users with no quiz data
+        const level = userData.profile_level || 1
+        const xp = userData.total_xp || 0
+        return Math.round((level * 5) + (xp * 0.01))
+      }
+
+      return quizService.calculateQuizScore(quizStats)
+    } catch (error) {
+      console.error('Failed to calculate quiz score:', error)
+      // Fallback calculation
+      const level = userData.profile_level || 1
+      const xp = userData.total_xp || 0
+      return Math.round((level * 5) + (xp * 0.01))
+    }
   }
 
   /**
-   * Calculate creator score (placeholder - would need creator data)
+   * Calculate creator score based on actual creator data
    */
-  private calculateCreatorScore(userData: any): number {
-    // Placeholder - would integrate with creators table
-    const level = userData.profile_level || 1
-    const xp = userData.total_xp || 0
-    return Math.round((level * 40) + (xp * 0.08))
+  private async calculateCreatorScore(userData: any): Promise<number> {
+    try {
+      const creatorStats = await creatorService.getUserCreatorStats(userData.address)
+      if (!creatorStats) {
+        // Fallback for users who are not creators
+        const level = userData.profile_level || 1
+        const xp = userData.total_xp || 0
+        return Math.round((level * 2) + (xp * 0.005))
+      }
+
+      return creatorService.calculateCreatorScore(creatorStats)
+    } catch (error) {
+      console.error('Failed to calculate creator score:', error)
+      // Fallback calculation
+      const level = userData.profile_level || 1
+      const xp = userData.total_xp || 0
+      return Math.round((level * 2) + (xp * 0.005))
+    }
   }
 
   /**
    * Calculate overall score combining all activities
+   * Enhanced algorithm with balanced weights and tier bonuses
    */
   private calculateOverallScore(userData: any, affiliateScore: number, tradingScore: number, quizScore: number, creatorScore: number): number {
     const xp = userData.total_xp || 0
     const level = userData.profile_level || 1
-    
-    return Math.round(
-      (xp * 0.3) + 
-      (level * 100) + 
-      (affiliateScore * 0.2) + 
-      (tradingScore * 0.2) + 
-      (quizScore * 0.15) + 
-      (creatorScore * 0.15)
+    const tier = userData.role_tier || 'NOMAD'
+
+    // Base score from XP and level
+    const baseScore = (xp * 0.4) + (level * 150)
+
+    // Activity scores with balanced weights
+    const activityScore = (
+      (affiliateScore * 0.25) +
+      (tradingScore * 0.25) +
+      (quizScore * 0.25) +
+      (creatorScore * 0.25)
     )
+
+    // Tier multiplier bonus
+    const tierMultiplier = tier === 'ROYAL' ? 1.3 : tier === 'PRO' ? 1.15 : 1.0
+
+    // Engagement bonus for users active in multiple areas
+    const activeAreas = [affiliateScore, tradingScore, quizScore, creatorScore].filter(score => score > 0).length
+    const engagementBonus = activeAreas >= 3 ? 500 : activeAreas >= 2 ? 200 : 0
+
+    return Math.round((baseScore + activityScore) * tierMultiplier + engagementBonus)
   }
 
   /**
@@ -368,39 +425,70 @@ class LeaderboardService {
         })
       }
 
-      // Process and score users based on category
-      const processedUsers: LeaderboardUser[] = filteredUsers.map((user, index) => {
-        const username = this.decrypt(user.username_encrypted, user.address)
-        const location = user.location_encrypted ? this.decrypt(user.location_encrypted, user.address) : null
-        const profileImageUrl = this.getImageUrl(user.profile_image_blob_id)
-        
-        // Calculate scores based on category
-        const affiliateScore = this.calculateAffiliateScore(user.referral_data)
-        const tradingScore = this.calculateTradingScore(user)
-        const quizScore = this.calculateQuizScore(user)
-        const creatorScore = this.calculateCreatorScore(user)
-        const overallScore = this.calculateOverallScore(user, affiliateScore, tradingScore, quizScore, creatorScore)
-        
-        let score: number
-        let metrics: Record<string, any> = {}
-        
-        switch (category) {
-          case 'affiliates':
-            score = affiliateScore
-            metrics = {
-              referral_count: user.referral_data?.referral_count || 0,
-              total_commissions: user.referral_data?.total_commissions || 0,
-              conversion_rate: user.referral_data?.conversion_rate || 0
+      // Process and score users based on category (async processing)
+      const processedUsers: LeaderboardUser[] = await Promise.all(
+        filteredUsers.map(async (user, index) => {
+          const username = this.decrypt(user.username_encrypted, user.address)
+          const location = user.location_encrypted ? this.decrypt(user.location_encrypted, user.address) : null
+          const profileImageUrl = this.getImageUrl(user.profile_image_blob_id)
+
+          // Calculate scores based on category (some are async now)
+          const affiliateScore = this.calculateAffiliateScore(user.referral_data)
+          const tradingScore = await this.calculateTradingScore(user)
+          const quizScore = await this.calculateQuizScore(user)
+          const creatorScore = await this.calculateCreatorScore(user)
+          const overallScore = this.calculateOverallScore(user, affiliateScore, tradingScore, quizScore, creatorScore)
+
+          let score: number
+          let metrics: Record<string, any> = {}
+
+          // Get trading stats for traders category
+          let tradingStats = null
+          if (category === 'traders') {
+            try {
+              tradingStats = await tradingService.getUserTradingStats(user.address)
+            } catch (error) {
+              console.error('Failed to get trading stats for user:', user.address, error)
             }
-            break
-          case 'traders':
-            score = tradingScore
-            metrics = {
-              trading_volume: 0, // Placeholder
-              trades_count: 0,   // Placeholder
-              win_rate: 0        // Placeholder
+          }
+
+          // Get quiz stats for quiz category
+          let quizStats = null
+          if (category === 'quiz') {
+            try {
+              quizStats = await quizService.getQuizStatsForLeaderboard(user.address)
+            } catch (error) {
+              console.error('Failed to get quiz stats for user:', user.address, error)
             }
-            break
+          }
+
+          // Get creator stats for creators category
+          let creatorStats = null
+          if (category === 'creators') {
+            try {
+              creatorStats = await creatorService.getCreatorStatsForLeaderboard(user.address)
+            } catch (error) {
+              console.error('Failed to get creator stats for user:', user.address, error)
+            }
+          }
+
+          switch (category) {
+            case 'affiliates':
+              score = affiliateScore
+              metrics = {
+                referral_count: user.referral_data?.referral_count || 0,
+                total_commissions: user.referral_data?.total_commissions || 0,
+                conversion_rate: user.referral_data?.conversion_rate || 0
+              }
+              break
+            case 'traders':
+              score = tradingScore
+              metrics = {
+                trading_volume: tradingStats?.total_volume || 0,
+                trades_count: tradingStats?.total_trades || 0,
+                win_rate: tradingStats?.win_rate || 0
+              }
+              break
           case 'community':
             score = user.total_xp
             metrics = {
@@ -420,49 +508,50 @@ class LeaderboardService {
           case 'quiz':
             score = quizScore
             metrics = {
-              correct_answers: 0,     // Would need quiz data
-              quiz_participation: 0,  // Would need quiz data
-              tickets_minted: 0       // Would need raffle data
+              correct_answers: quizStats?.correct_answers || 0,
+              quiz_participation: quizStats?.quiz_participation || 0,
+              tickets_minted: quizStats?.tickets_minted || 0
             }
             break
           case 'creators':
             score = creatorScore
             metrics = {
-              channels_created: 0,  // Would need creator data
-              subscribers: 0,       // Would need creator data
-              engagement_rate: 0    // Would need creator data
+              channels_created: creatorStats?.channels_created || 0,
+              subscribers: creatorStats?.subscribers || 0,
+              engagement_rate: creatorStats?.engagement_rate || 0
             }
             break
-          case 'overall':
-          default:
-            score = overallScore
-            metrics = {
-              total_xp: user.total_xp,
-              referral_count: user.referral_data?.referral_count || 0,
-              trading_volume: 0,
-              achievements_count: user.achievements_data?.length || 0
-            }
-            break
-        }
-        
-        return {
-          address: user.address,
-          username: username || 'Anonymous',
-          profileImageUrl,
-          roleTier: user.role_tier,
-          profileLevel: user.profile_level,
-          currentXp: user.current_xp,
-          totalXp: user.total_xp,
-          points: user.points || 0,
-          location,
-          kycStatus: user.kyc_status,
-          joinDate: user.join_date,
-          lastActive: user.last_active,
-          rank: offset + index + 1,
-          score,
-          metrics
-        }
-      })
+            case 'overall':
+            default:
+              score = overallScore
+              metrics = {
+                total_xp: user.total_xp,
+                referral_count: user.referral_data?.referral_count || 0,
+                trading_volume: tradingStats?.total_volume || 0,
+                achievements_count: user.achievements_data?.length || 0
+              }
+              break
+          }
+
+          return {
+            address: user.address,
+            username: username || 'Anonymous',
+            profileImageUrl,
+            roleTier: user.role_tier,
+            profileLevel: user.profile_level,
+            currentXp: user.current_xp,
+            totalXp: user.total_xp,
+            points: user.points || 0,
+            location,
+            kycStatus: user.kyc_status,
+            joinDate: user.join_date,
+            lastActive: user.last_active,
+            rank: offset + index + 1,
+            score,
+            metrics
+          }
+        })
+      )
 
       // Sort by score (descending) and reassign ranks
       const sortedUsers = processedUsers

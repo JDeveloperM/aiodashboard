@@ -8,7 +8,7 @@ import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { useSubscription } from '@/contexts/subscription-context'
 import { getUserJoinedChannels } from '@/lib/channel-subscriptions-storage'
 import { getUserPremiumAccess } from '@/lib/channel-access-storage'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase-client'
 
 interface ChannelCounts {
   joinedChannels: number // Premium channels joined using free access
@@ -43,11 +43,7 @@ export function useChannelCounts(): ChannelCounts {
   // For premium channel access limits based on tier
   const maxJoinedChannels = tier === 'ROYAL' ? 9 : tier === 'PRO' ? 3 : 0
 
-  // Supabase client for direct database queries
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  // Using singleton Supabase client to prevent multiple instances
 
   // Load both joined and created channels count
   useEffect(() => {

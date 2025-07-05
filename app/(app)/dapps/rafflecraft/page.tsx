@@ -169,7 +169,7 @@ function QuizComponent({
               disabled={!canSubmit || isSubmitting}
               className={`w-full py-4 text-lg font-bold transition-all duration-300 ${
                 canSubmit && !isSubmitting
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-lg shadow-purple-500/25'
+                  ? 'bg-[#4da2ff] hover:bg-[#3d8ae6] text-white shadow-lg'
                   : 'bg-gray-600 cursor-not-allowed'
               }`}
             >

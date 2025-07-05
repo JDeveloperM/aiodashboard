@@ -81,10 +81,14 @@ class ChannelSubscriptionsStorage {
         .neq('creator_address', userAddress) // Exclude channels where user is the creator
         .order('joined_date', { ascending: false })
 
+
+
       if (error) {
         console.error('❌ Error fetching user channels:', error)
         throw error
       }
+
+
 
       if (!subscriptions || subscriptions.length === 0) {
         console.log('📺 No channels found for user')

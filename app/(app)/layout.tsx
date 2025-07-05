@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/sidebar"
 import { TopNav } from "@/components/top-nav"
 import { SessionRestorationIndicator } from "@/components/session-restoration-indicator"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { ProfileProvider } from "@/contexts/profile-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -56,7 +57,8 @@ export default function AppLayout({
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen flex flex-col lg:flex-row relative" style={{ backgroundColor: '#0f172a' }}>
+      <ProfileProvider>
+        <div className="min-h-screen flex flex-col lg:flex-row relative" style={{ backgroundColor: '#0f172a' }}>
         {/* Background - Dark blue gradient matching the image */}
         <div className="fixed inset-0 z-0 pointer-events-none">
           <div className="absolute inset-0 bg-gradient-to-br from-[#1e3a8a] via-[#0f172a] to-[#1e40af] opacity-50"></div>
@@ -94,6 +96,7 @@ export default function AppLayout({
           </div>
         </div>
       </div>
+      </ProfileProvider>
     </TooltipProvider>
   )
 }

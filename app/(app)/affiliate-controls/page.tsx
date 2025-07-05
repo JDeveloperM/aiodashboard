@@ -4,6 +4,8 @@ import { AffiliateControls } from "@/components/affiliate-controls"
 import { ContactSponsorButton } from "@/components/contact-sponsor-button"
 import { SubscriptionGuard } from "@/components/subscription-guard"
 import { AffiliateSubscriptionPayment } from "@/components/affiliate-subscription-payment"
+import { AIChatWidget } from "@/components/ai-chat-widget"
+import { useAffiliateData } from "@/hooks/use-affiliate-data"
 import { Button } from "@/components/ui/button"
 import { useCurrentAccount } from "@mysten/dapp-kit"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
@@ -14,9 +16,13 @@ export default function AffiliateControlsPage() {
   const account = useCurrentAccount()
   const { user } = useSuiAuth()
   const router = useRouter()
+  const { getAIAnalysisData, loading: affiliateDataLoading } = useAffiliateData()
 
   // Get user address from either traditional wallet or zkLogin
   const userAddress = user?.address || account?.address
+
+  // Get AI analysis data
+  const aiData = getAIAnalysisData()
 
   const handleRaffleCraftRedirect = () => {
     // Navigate to the RaffleCraft dapp page
@@ -72,6 +78,12 @@ export default function AffiliateControlsPage() {
         </div>
 
         <AffiliateControls />
+
+        {/* Floating AI Chat Widget */}
+        <AIChatWidget
+          context="affiliate"
+          data={aiData || undefined}
+        />
       </div>
     </SubscriptionGuard>
   )

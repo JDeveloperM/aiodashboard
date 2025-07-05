@@ -48,7 +48,7 @@ const features = [
   },
   {
     icon: Zap,
-    title: "RaffleQuiz",
+    title: "RaffleCraft",
     description: "Participate in weekly quiz-based raffles. Answer blockchain questions to earn ticket minting rights and win SUI token prizes."
   },
   {

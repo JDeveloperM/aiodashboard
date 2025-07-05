@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Camera, Upload, Trash2, AlertCircle, CheckCircle, Loader2, Database, HardDrive, Image } from 'lucide-react'
 import { StorageDurationSelector, WalrusStatusIndicator } from './walrus-provider'
 import { useWalrus } from '@/hooks/use-walrus'
-import { usePersistentProfile } from '@/hooks/use-persistent-profile'
+import { useProfile } from '@/contexts/profile-context'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { useCurrentAccount } from '@mysten/dapp-kit'
 import { useZkLogin } from '@/components/zklogin-provider'
@@ -40,7 +40,7 @@ export function EnhancedBanner({
     profile,
     refreshProfile,
     isLoading: profileLoading
-  } = usePersistentProfile()
+  } = useProfile()
 
   const { user } = useSuiAuth()
   const currentAccount = useCurrentAccount()

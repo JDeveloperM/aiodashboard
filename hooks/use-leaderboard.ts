@@ -12,8 +12,6 @@ interface UseLeaderboardOptions {
   category: string
   timePeriod: 'weekly' | 'monthly' | 'all-time'
   locationFilter?: string
-  autoRefresh?: boolean
-  refreshInterval?: number
 }
 
 interface UseLeaderboardReturn {
@@ -32,9 +30,7 @@ interface UseLeaderboardReturn {
 export function useLeaderboard({
   category,
   timePeriod,
-  locationFilter = 'all',
-  autoRefresh = false,
-  refreshInterval = 5 * 60 * 1000 // 5 minutes
+  locationFilter = 'all'
 }: UseLeaderboardOptions): UseLeaderboardReturn {
   const [data, setData] = useState<LeaderboardResponse | null>(null)
   const [stats, setStats] = useState<Record<string, any> | null>(null)
@@ -43,7 +39,6 @@ export function useLeaderboard({
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   
   const itemsPerPage = 20
@@ -145,29 +140,13 @@ export function useLeaderboard({
     loadAvailableLocations()
   }, [loadStats, loadAvailableLocations])
 
-  // Auto-refresh setup
-  useEffect(() => {
-    if (autoRefresh && refreshInterval > 0) {
-      refreshIntervalRef.current = setInterval(() => {
-        refresh()
-      }, refreshInterval)
 
-      return () => {
-        if (refreshIntervalRef.current) {
-          clearInterval(refreshIntervalRef.current)
-        }
-      }
-    }
-  }, [autoRefresh, refreshInterval, refresh])
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
-      }
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current)
       }
     }
   }, [])

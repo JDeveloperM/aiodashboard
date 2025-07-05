@@ -52,8 +52,8 @@ const faqs = [
     answer: "The referral system has 5 levels with commission tracking. Generate your unique referral code, share it with others, and earn from their activities. Your affiliate level matches your profile level (1-5) based on XP earned through achievements."
   },
   {
-    question: "What is RaffleQuiz and how do I participate?",
-    answer: "RaffleQuiz is a weekly quiz-based raffle system. Answer blockchain-related questions to earn ticket minting rights, then use SUI tokens to mint numbered tickets and participate in weekly prize drawings."
+    question: "What is RaffleCraft and how do I participate?",
+    answer: "RaffleCraft is a weekly quiz-based raffle system. Answer blockchain-related questions to earn ticket minting rights, then use SUI tokens to mint numbered tickets and participate in weekly prize drawings."
   },
   {
     question: "How do creator channels work?",

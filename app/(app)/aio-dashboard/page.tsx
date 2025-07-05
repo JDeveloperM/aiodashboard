@@ -5,7 +5,7 @@ import { useSubscription } from "@/contexts/subscription-context"
 import { useCommunityAnalytics } from "@/hooks/use-community-analytics"
 
 import { RoleImage } from "@/components/ui/role-image"
-import { TrendingUp, Users, Copy, Zap, BookOpen, ArrowRight, CheckCircle, Dice6, Rocket, RefreshCw } from "lucide-react"
+import { TrendingUp, Users, Copy, Zap, BookOpen, ArrowRight, CheckCircle, Dice6, Rocket, RefreshCw, UserCheck, MessageSquare, Search } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 
@@ -20,36 +20,28 @@ const navigationCards = [
     color: "#4DA2FF"
   },
   {
-    title: "AIO Connect",
-    description: "Connect with traders, access exclusive content and portfolio ideas",
-    icon: Users,
+    title: "Find Members",
+    description: "Search and connect with community members across the network",
+    icon: Search,
     href: "/community",
-    features: ["Discord Access", "User Search", "Affiliate Program"],
-    color: "#C0E6FF"
+    features: ["User Search", "Profile Discovery", "Network Building"],
+    color: "#10B981"
   },
   {
-    title: "AIO Creators",
-    description: "Content creators with monetization features and private channels",
-    icon: Users,
+    title: "Find Creators",
+    description: "Discover content creators and access premium channels",
+    icon: UserCheck,
     href: "/aio-creators",
-    features: ["Creator Profiles", "Private Channels", "SUI Payments"],
+    features: ["Creator Profiles", "Premium Channels", "Content Access"],
     color: "#9333EA"
   },
   {
-    title: "RaffleCraft",
-    description: "Decentralized raffles and giveaways on Sui Network",
-    icon: Dice6,
-    href: "/dapps/rafflecraft",
-    features: ["Ticket Minting", "Prize Pools", "Winner Drawing"],
-    color: "#8B5CF6"
-  },
-  {
-    title: "MetaGo Academy",
-    description: "Educational courses on DeFi, NFTs and blockchain",
-    icon: BookOpen,
-    href: "/metago-academy",
-    features: ["CEX & DEX Basics", "DeFi Courses", "NFT Education"],
-    color: "#4DA2FF"
+    title: "Forum",
+    description: "Engage in community discussions and share knowledge",
+    icon: MessageSquare,
+    href: "/forum",
+    features: ["Discussion Categories", "Creator Channels", "Community Posts"],
+    color: "#2196F3"
   }
 ]
 
@@ -192,7 +184,7 @@ export default function AIODashboard() {
       {/* Quick Navigation Cards */}
       <div className="space-y-6">
         <h2 className="text-xl font-bold text-white">Quick Navigation</h2>
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
           {navigationCards.map((card, index) => {
             const Icon = card.icon
 
@@ -243,13 +235,13 @@ export default function AIODashboard() {
             <div className="space-y-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-white mb-2">
-                  {analytics.totalHolders} / {analytics.dewhaleTargetHolders}
+                  {analytics.proHolders + analytics.royalHolders} / {analytics.dewhaleTargetHolders}
                 </div>
-                <div className="text-sm text-[#C0E6FF]">Holders for DEWhale Deployment</div>
+                <div className="text-sm text-[#C0E6FF]">PRO/ROYAL Users for DEWhale Deployment</div>
                 <div className="w-full bg-gray-700 rounded-full h-3 mt-2">
                   <div
                     className="bg-gradient-to-r from-[#4DA2FF] to-[#007ACC] h-3 rounded-full transition-all duration-300"
-                    style={{ width: `${(analytics.totalHolders / analytics.dewhaleTargetHolders) * 100}%` }}
+                    style={{ width: `${((analytics.proHolders + analytics.royalHolders) / analytics.dewhaleTargetHolders) * 100}%` }}
                   ></div>
                 </div>
               </div>
@@ -257,7 +249,7 @@ export default function AIODashboard() {
               <div className="bg-[#4DA2FF]/10 border border-[#4DA2FF]/20 rounded-lg p-3">
                 <div className="text-[#4DA2FF] text-sm font-medium mb-1">Coming Soon</div>
                 <div className="text-[#C0E6FF] text-sm">
-                  DEWhale will launch when we reach 500 PRO holders, enabling $100 KeyShares for early-stage investments.
+                  DEWhale will launch when we reach 500 PRO/ROYAL users, enabling $100 KeyShares for early-stage investments.
                 </div>
               </div>
             </div>

@@ -10,36 +10,36 @@ const faqCategories = [
     faqs: [
       {
         question: "What is AIONET and how does it work?",
-        answer: "AIONET is a Web2.5 platform that bridges traditional Web2 simplicity with Web3 functionality. We offer automated trading bots, community features, DApps, and educational resources. Users can sign in with Google, get auto-generated wallets, and access various tiers (Copier, PRO, ROYAL) with different benefits."
+        answer: "AIONET is an NFT-gated community on Sui Network that combines social features, achievement systems, and creator monetization. Members can build profiles, earn XP through achievements, grow referral networks, and access premium creator content."
       },
       {
-        question: "How do I get started with AIONET?",
-        answer: "Simply sign up using your Google account or email. You'll automatically start as a Copier user with access to basic features. Connect your Bybit account to start using our trading bots, or explore our community features and educational content."
+        question: "How do I join the community?",
+        answer: "You can join for free as a NOMAD member using zkLogin (Google) or by connecting your Sui wallet. Complete the 4-step onboarding process to set up your profile, choose an avatar, and start earning achievements."
       },
       {
-        question: "What are the different user tiers?",
-        answer: "We have three tiers: Copier (basic access, $25 per 10% cycle), PRO (premium features, no cycle fees), and ROYAL (highest tier, exclusive access). PRO and ROYAL users need to mint the respective NFTs to upgrade their accounts."
+        question: "What are the different membership tiers?",
+        answer: "There are three tiers: NOMAD (free), PRO (400 USDC NFT), and ROYAL (1500 USDC NFT). PRO members get 3 free premium channel accesses and can create 2 channels. ROYAL members get 9 free accesses and can create 3 channels."
       }
     ]
   },
   {
-    category: "Trading Bots",
+    category: "Profile & Achievements",
     faqs: [
       {
-        question: "How do the trading bots work?",
-        answer: "Our trading bots use advanced algorithms to execute trades on your connected exchange accounts. They monitor markets 24/7, analyze trends, and execute trades based on proven strategies. You maintain full control of your funds as they remain in your exchange account."
+        question: "What achievements can I earn?",
+        answer: "There are 21 unique achievements worth 50-800 XP each, covering profile completion, social connections, referrals, and community participation. Achievements unlock as you progress through 10 profile levels (0-5000 XP total)."
       },
       {
-        question: "What is the 10% cycle system?",
-        answer: "Our trading bots work in cycles. When a bot achieves 10% profit, the cycle completes and NOMAD users pay $25 to continue to the next cycle. PRO and ROYAL users are exempt from these fees and can continue automatically."
+        question: "How does the XP and level system work?",
+        answer: "You earn XP by completing achievements and participating in community activities. There are 10 profile levels from 0-5000 XP total. Your profile level determines your affiliate level (1-5) and unlocks various platform benefits."
       },
       {
-        question: "Which exchanges are supported?",
-        answer: "Currently, we primarily support Bybit for our copy trading features. We're continuously working to add support for more exchanges based on user demand and market requirements."
+        question: "How do I complete my profile?",
+        answer: "Complete the 4-step onboarding process: Welcome (wallet connection), Profile Setup (username/email), optional KYC verification, and completion. Choose from 12 default anime avatars or upload a custom one after onboarding."
       },
       {
-        question: "Is my money safe?",
-        answer: "Yes, your funds remain in your own exchange accounts at all times. We only connect via API keys with trading permissions - we never have withdrawal access to your funds. You maintain complete control over your assets."
+        question: "Can I change my username or wallet address?",
+        answer: "No, usernames and wallet addresses cannot be changed once set for security reasons. Email addresses are also locked for zkLogin users but can be edited once for traditional wallet users."
       }
     ]
   },
@@ -48,7 +48,7 @@ const faqCategories = [
     faqs: [
       {
         question: "What are PRO and ROYAL NFTs?",
-        answer: "PRO and ROYAL NFTs are utility tokens that upgrade your account tier. They provide access to premium features, remove cycle fees, grant exclusive Discord/Telegram roles, and unlock advanced DApps and educational content."
+        answer: "PRO and ROYAL NFTs are utility tokens that upgrade your account tier. They provide access to premium features, forum access, free premium channel accesses, and unlock advanced creator tools and community benefits."
       },
       {
         question: "How do I mint PRO or ROYAL NFTs?",
@@ -56,24 +56,45 @@ const faqCategories = [
       },
       {
         question: "Can I sell my NFTs?",
-        answer: "Yes, NFTs can be traded on compatible marketplaces. However, selling your NFT will downgrade your account tier and remove associated benefits like Discord roles and premium features."
+        answer: "Yes, NFTs can be traded on compatible marketplaces. However, selling your NFT will downgrade your account tier and remove associated benefits like forum access and premium channel features."
       }
     ]
   },
   {
-    category: "AIO Connect & Features",
+    category: "Creator Channels & Community",
     faqs: [
       {
-        question: "How does gated access work?",
-        answer: "Our Discord and Telegram communities have role-based access. PRO and ROYAL NFT holders get exclusive roles and access to premium channels. Roles are automatically synced with your NFT holdings."
+        question: "How do creator channels work?",
+        answer: "Verified creators can monetize their Telegram channels through AIONET. Users pay in SUI tokens for 30, 60, or 90-day access. PRO and ROYAL members get free premium channel accesses based on their tier."
       },
       {
-        question: "What is the Affiliate System?",
-        answer: "Our affiliate program allows you to earn commissions by inviting new users. You'll receive 25% of fees from PRO and ROYAL users you refer. Track your referrals and earnings in the AIO Connect section."
+        question: "How does forum access work?",
+        answer: "Our forum has role-based access with different categories. All users can access General discussions, while PRO and ROYAL members get access to exclusive categories and creator channels. Access is automatically granted based on your NFT tier."
       },
       {
-        question: "What DApps are available?",
-        answer: "We're launching several DApps including RaffleCraft and DEWhale Launchpad. These provide additional investment and engagement opportunities for our community members."
+        question: "How do I become a creator?",
+        answer: "Creators can apply through the platform to monetize their content. Once verified, you can create premium channels with subscription-based access. PRO users can create up to 2 channels, ROYAL users can create up to 3 channels."
+      },
+      {
+        question: "What is the referral system?",
+        answer: "The referral system has 5 levels with commission tracking. Generate your unique referral code, share it with others, and earn from their activities. Your affiliate level matches your profile level (1-5) based on XP earned through achievements."
+      }
+    ]
+  },
+  {
+    category: "RaffleCraft & DApps",
+    faqs: [
+      {
+        question: "What is RaffleCraft and how do I participate?",
+        answer: "RaffleCraft is a weekly quiz-based raffle system. Answer blockchain-related questions to earn ticket minting rights, then use SUI tokens to mint numbered tickets and participate in weekly prize drawings."
+      },
+      {
+        question: "How do RaffleCraft tickets work?",
+        answer: "Complete weekly quizzes to earn minting rights, then mint numbered tickets using SUI tokens. Each ticket gives you a chance to win weekly prizes. Tickets are NFTs stored on the Sui Network."
+      },
+      {
+        question: "What other DApps are available?",
+        answer: "RaffleCraft is our primary DApp, offering weekly quiz-based raffles with SUI token prizes. We're continuously developing new DApps to enhance the community experience and provide additional engagement opportunities."
       }
     ]
   },
@@ -86,15 +107,23 @@ const faqCategories = [
       },
       {
         question: "How do I connect my wallet?",
-        answer: "Wallets are auto-generated when you sign up, but you can also connect external Sui wallets. Go to your Profile settings to manage wallet connections and view your Sui address."
+        answer: "You can sign up using zkLogin (Google) for auto-generated wallets, or connect external Sui wallets. Go to your Profile settings to manage wallet connections and view your Sui address and balances."
+      },
+      {
+        question: "What is zkLogin and how does it work?",
+        answer: "zkLogin allows you to sign in with your Google account and automatically generates a Sui wallet. This provides Web2 simplicity with Web3 functionality, making it easy for new users to join without managing private keys."
+      },
+      {
+        question: "How do I get SUI tokens?",
+        answer: "You can purchase SUI tokens from exchanges or receive them through community activities. SUI tokens are used for NFT minting, channel subscriptions, and RaffleCraft ticket purchases."
       },
       {
         question: "What if I need help or support?",
-        answer: "You can reach our support team through Discord, Telegram, or by contacting us directly. PRO and ROYAL users receive priority support with faster response times."
+        answer: "You can get help through our community forum, where members and moderators provide assistance. PRO and ROYAL users receive priority support with faster response times."
       },
       {
         question: "How do I complete KYC verification?",
-        answer: "KYC verification is available in your Profile settings. This is required for certain features like DEWhale Launchpad access and higher-tier functionalities. The process is secure and compliant with regulations."
+        answer: "KYC verification is optional and available in your Profile settings during onboarding. This may be required for certain advanced features and helps ensure platform security and compliance."
       }
     ]
   }
@@ -120,7 +149,7 @@ export default function FAQsPage() {
             Frequently Asked Questions
           </h1>
           <p className="text-gray-400 mt-1">
-            Find answers to common questions about MetadudesX platform and services
+            Find answers to common questions about AIONET platform and services
           </p>
         </div>
       </div>
@@ -176,17 +205,17 @@ export default function FAQsPage() {
           Still have questions?
         </h3>
         <p className="text-gray-300 mb-4">
-          Can't find what you're looking for? Join our AIO Connect community or contact our support team.
+          Can't find what you're looking for? Join our community forum or reach out for additional support.
         </p>
         <div className="flex flex-wrap gap-3">
           <a
-            href="#"
+            href="/forum"
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
           >
-            Join Discord
+            Visit Forum
           </a>
           <a
-            href="#"
+            href="/profile"
             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
           >
             Contact Support

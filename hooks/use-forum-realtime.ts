@@ -1,16 +1,19 @@
 "use client"
 
-import { useEffect, useCallback, useRef } from "react"
+import { useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from '@supabase/supabase-js'
 import { ForumPost, ForumReply } from "@/lib/forum-service"
 import { useSubscription } from "@/contexts/subscription-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { toast } from "sonner"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// Memoized Supabase client to prevent multiple instances
+const useSupabaseClient = () => {
+  return useMemo(() => createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  ), [])
+}
 
 interface UseForumRealtimeProps {
   topicId?: string
@@ -36,6 +39,7 @@ export function useForumRealtime({
   const { tier } = useSubscription()
   const { user } = useSuiAuth()
   const subscriptionsRef = useRef<any[]>([])
+  const supabase = useSupabaseClient()
 
   // Check if user has access to topic
   const hasTopicAccess = useCallback(async (topicId: string): Promise<boolean> => {

@@ -243,11 +243,11 @@ export default function ForumPage() {
       {creatorContext && (
         <div className="flex items-center gap-2 text-sm bg-[#1a2f51] p-3 rounded-lg border border-[#C0E6FF]/20">
           <button
-            onClick={() => window.location.href = '/aio-creators'}
+            onClick={() => window.location.href = '/forum'}
             className="flex items-center gap-1 text-[#4DA2FF] hover:text-[#4DA2FF]/80 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            AIO Creators
+            Back to Forum
           </button>
           <ChevronRight className="w-4 h-4 text-gray-400" />
           <span className="text-gray-300">{creatorContext.creatorName}</span>

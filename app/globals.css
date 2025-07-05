@@ -817,13 +817,9 @@ button[data-dapp-kit="connectButton"]:hover,
 }
 
 /* Navigation Item Styles */
-.nav-item-hover:hover {
-  background-color: #00D4FF !important;
-}
-
 .nav-item-active {
-  background: linear-gradient(90deg, #00B8E6, #007ACC) !important;
-  color: white !important;
+  background: linear-gradient(90deg, #00B8E6, #007ACC);
+  color: white;
 }
 
 /* Sui dApp Kit Styles */

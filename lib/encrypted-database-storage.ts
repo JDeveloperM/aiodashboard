@@ -398,7 +398,8 @@ class EncryptedDatabaseStorage {
    */
   async getDecryptedProfile(address: string): Promise<DecryptedProfile | null> {
     try {
-      console.log('🔍 Fetching profile for address:', address)
+      // TEMPORARILY DISABLED TO STOP INFINITE LOOPS
+      // console.log('🔍 Fetching profile for address:', address)
 
       const { data, error } = await this.supabase
         .from('user_profiles')

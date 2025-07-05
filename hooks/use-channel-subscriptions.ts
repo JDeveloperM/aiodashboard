@@ -36,7 +36,9 @@ export function useChannelSubscriptions(): UseChannelSubscriptionsReturn {
       console.log('🔄 Fetching channels for user:', user.address)
       const userChannels = await getUserJoinedChannels(user.address)
 
+
       console.log(`✅ Loaded ${userChannels.length} channels from database`)
+      console.log('📺 Channel types breakdown:', userChannels.map(ch => ({ name: ch.name, type: ch.type, isActive: ch.isActive })))
 
       // Fetch creator data to get correct channel images (same as successful forum pages)
       const response = await fetch('/api/creators')

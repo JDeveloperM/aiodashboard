@@ -109,7 +109,7 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/dapps/rafflecraft" className="text-white/60 hover:text-white transition-colors">
-                  RaffleQuiz
+                  RaffleCraft
                 </Link>
               </li>
               <li>

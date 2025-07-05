@@ -557,7 +557,7 @@ export function CreatorControlsInterface() {
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Overall Stats Cards - Moved to top */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-[#1a2f51] border-[#C0E6FF]/20">
+        <Card className="enhanced-card">
           <CardContent className="p-4 h-full">
             <div className="flex flex-col justify-center items-center h-full space-y-3 text-center">
               <div className="flex items-center gap-2">
@@ -571,7 +571,7 @@ export function CreatorControlsInterface() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[#1a2f51] border-[#C0E6FF]/20">
+        <Card className="enhanced-card">
           <CardContent className="p-4 h-full">
             <div className="flex flex-col justify-center items-center h-full space-y-3 text-center">
               <div className="flex items-center gap-2">
@@ -585,22 +585,34 @@ export function CreatorControlsInterface() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[#1a2f51] border-[#C0E6FF]/20 md:col-span-2">
+        <Card className="enhanced-card md:col-span-2">
           <CardContent className="p-4">
             <div className="space-y-3">
               <div className="flex items-center gap-2 mb-3">
                 <Settings className="w-5 h-5 text-[#4DA2FF]" />
                 <p className="text-white font-medium">Channel Creation Limits</p>
               </div>
-              <div className="flex items-center justify-between p-3 bg-[#030f1c] rounded-lg">
+              <div className="flex items-center justify-between p-3">
                 <div>
-                  <p className="text-white font-medium">Your Tier: {tier}</p>
+                  <p className="text-white font-medium">
+                    Your Tier: <span className={`${
+                      tier === 'ROYAL' ? 'text-yellow-400' :
+                      tier === 'PRO' ? 'text-[#4DA2FF]' :
+                      'text-gray-400'
+                    }`}>{tier}</span>
+                  </p>
                   <p className="text-[#C0E6FF] text-sm">
                     {tier === 'ROYAL' ? 'Maximum 3 channels allowed' : 'Maximum 2 channels allowed'}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className={`font-medium ${currentChannelCount >= maxChannels ? 'text-red-400' : 'text-white'}`}>
+                  <p className={`font-medium text-2xl ${
+                    currentChannelCount >= maxChannels
+                      ? 'text-red-400'
+                      : currentChannelCount > 0
+                        ? 'text-[#4DA2FF]'
+                        : 'text-[#C0E6FF]'
+                  }`}>
                     {currentChannelCount} / {maxChannels}
                   </p>
                   <p className="text-[#C0E6FF] text-sm">Channels Created</p>

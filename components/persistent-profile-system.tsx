@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RoleImage } from "@/components/ui/role-image"
 import { EnhancedAvatar } from "@/components/enhanced-avatar"
 import { EnhancedBanner } from "@/components/enhanced-banner"
 import { usePersistentProfile } from '@/hooks/use-persistent-profile'
+import { useProfile } from '@/contexts/profile-context'
 import { useChannelSubscriptions, getChannelTypeBadgeColor, formatSubscriptionStatus } from '@/hooks/use-channel-subscriptions'
 import { useReferralCodes } from '@/hooks/use-referral-codes'
 import { encryptedStorage } from '@/lib/encrypted-database-storage'
@@ -118,7 +119,7 @@ export function PersistentProfileSystem() {
     updateAchievements,
     clearError,
     refreshProfile
-  } = usePersistentProfile()
+  } = useProfile()
 
   // State for UI interactions
   const [copied, setCopied] = useState(false)
@@ -332,8 +333,7 @@ export function PersistentProfileSystem() {
     profile?.profile_level,
     profile?.current_xp,
     profile?.total_xp,
-    profile?.achievements_data,
-    user?.username
+    profile?.achievements_data
   ])
 
   // Update level rewards availability based on current level
@@ -597,15 +597,25 @@ export function PersistentProfileSystem() {
 
   // Close mobile tooltip when clicking outside
   useEffect(() => {
-    const handleClickOutside = () => {
-      setMobileTooltipOpen(null)
+    const handleClickOutside = (event: MouseEvent) => {
+      // Only handle clicks if mobile tooltip is actually open
+      if (mobileTooltipOpen === null) return
+
+      // Check if click is outside the tooltip area
+      const target = event.target as Element
+      if (target && !target.closest('[data-mobile-tooltip]')) {
+        setMobileTooltipOpen(null)
+      }
     }
 
-    document.addEventListener('click', handleClickOutside)
-    return () => {
-      document.removeEventListener('click', handleClickOutside)
+    // Only add listener if mobile tooltip is open
+    if (mobileTooltipOpen !== null) {
+      document.addEventListener('click', handleClickOutside)
+      return () => {
+        document.removeEventListener('click', handleClickOutside)
+      }
     }
-  }, [])
+  }, [mobileTooltipOpen])
 
   if (!isInitialized) {
     return (
@@ -685,16 +695,7 @@ export function PersistentProfileSystem() {
                             : "border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 hover:border-[#C0E6FF] bg-transparent"
                           }`}
                           style={social.connected ? { backgroundColor: '#7dffae63' } : {}}
-                          onMouseEnter={(e) => {
-                            if (social.connected) {
-                              e.currentTarget.style.backgroundColor = '#7dffae88'
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (social.connected) {
-                              e.currentTarget.style.backgroundColor = '#7dffae63'
-                            }
-                          }}
+
                           onClick={() => handleSocialConnect(social.platform, social.url)}
                         >
                           <Image
@@ -1542,7 +1543,7 @@ function ChannelsRefreshButton() {
 function ChannelsJoinedSection() {
   const { channels, isLoading, error, refreshChannels, addSampleChannels } = useChannelSubscriptions()
   const router = useRouter()
-  const { profile } = usePersistentProfile()
+  const { profile } = useProfile()
 
   // Get user tier from profile
   const tier = profile?.role_tier || 'NOMAD'

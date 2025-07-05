@@ -73,9 +73,7 @@ export function Leaderboard() {
   } = useLeaderboard({
     category: activeCategory,
     timePeriod,
-    locationFilter,
-    autoRefresh: true,
-    refreshInterval: 5 * 60 * 1000 // 5 minutes
+    locationFilter
   })
 
   const currentCategory = useMemo(() =>
