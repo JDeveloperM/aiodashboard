@@ -57,7 +57,7 @@ export function initializeSessionManager(): void {
     checkAndRefreshSession()
   })
   
-  console.log('Session manager initialized')
+
 }
 
 /**

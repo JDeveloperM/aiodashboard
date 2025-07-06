@@ -417,12 +417,7 @@ class EncryptedDatabaseStorage {
         return null
       }
 
-      console.log('📄 Profile data found, decrypting...', {
-        address: data.address,
-        hasUsername: !!data.username_encrypted,
-        profileLevel: data.profile_level,
-        onboardingCompleted: data.onboarding_completed
-      })
+
 
       const encryptionKey = this.generateEncryptionKey(address)
       const decryptedProfile = this.decryptProfile(data, encryptionKey)

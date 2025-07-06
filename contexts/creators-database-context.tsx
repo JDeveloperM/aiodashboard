@@ -95,7 +95,6 @@ const CreatorsContext = createContext<CreatorsContextType | undefined>(undefined
 
 // Convert DecryptedCreator to Creator interface
 function convertDecryptedCreatorToCreator(decryptedCreator: DecryptedCreator): Creator {
-  console.log('🔄 Converting creator:', decryptedCreator.channel_name, 'with channels_data:', decryptedCreator.channels_data)
   // Generate avatar URL from Walrus blob ID
 
   const avatar = decryptedCreator.profile_image_blob_id
@@ -265,7 +264,7 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
       return creatorList
     }
 
-    console.log('🔄 Updating real-time subscriber counts...')
+
 
     const updatedCreators = await Promise.all(
       creatorList.map(async (creator) => {
@@ -310,7 +309,7 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
       })
     )
 
-    console.log('✅ Updated real-time subscriber counts and availability slots')
+
     return updatedCreators
   }
 
@@ -320,48 +319,16 @@ export function CreatorsDatabaseProvider({ children }: { children: React.ReactNo
       setIsLoading(true)
       setError(null)
       
-      console.log('🔄 Loading creators from database...')
-      const decryptedCreators = await getAllCreatorProfiles()
 
-      console.log(`📊 Retrieved ${decryptedCreators.length} creators from database`)
+      const decryptedCreators = await getAllCreatorProfiles()
 
       // Convert to Creator interface
       const convertedCreators = decryptedCreators.map(convertDecryptedCreatorToCreator)
-
-      console.log('📋 Converted creators:', convertedCreators.map(c => `${c.username}: ${c.channels.length} channels`))
-      console.log('🔍 Creator IDs and Channel IDs for debugging:')
-      convertedCreators.forEach(creator => {
-        console.log(`Creator: ${creator.name} (ID: ${creator.id})`)
-        creator.channels.forEach(channel => {
-          console.log(`  - Channel: ${channel.name} (ID: ${channel.id})`)
-        })
-      })
-
-      // Debug: Log channel-specific data for first creator
-      if (convertedCreators.length > 0) {
-        const firstCreator = convertedCreators[0]
-        console.log('🔍 First creator channels debug:', firstCreator.channels.map(ch => ({
-          name: ch.name,
-          channelCategories: ch.channelCategories,
-          channelRole: ch.channelRole,
-          channelLanguage: ch.channelLanguage,
-          availability: ch.availability
-        })))
-
-        // Also log the raw database data for comparison
-        console.log('🔍 Raw database creator data:', {
-          channel_categories: decryptedCreators[0]?.channel_categories,
-          creator_role: decryptedCreators[0]?.creator_role,
-          channel_language: decryptedCreators[0]?.channel_language,
-          channels_data: decryptedCreators[0]?.channels_data
-        })
-      }
 
       // Update subscriber counts with real-time data
       const creatorsWithRealTimeCounts = await updateAllSubscriberCounts(convertedCreators)
 
       setCreators(creatorsWithRealTimeCounts)
-      console.log(`✅ Loaded ${creatorsWithRealTimeCounts.length} creators from database with real-time subscriber counts`)
     } catch (err) {
       console.error('Failed to load creators:', err)
       const errorMessage = err instanceof Error ? err.message : 'Failed to load creators'

@@ -367,7 +367,6 @@ class CreatorStorage {
    */
   async getAllCreators(): Promise<DecryptedCreator[]> {
     try {
-      console.log('🔍 Getting all creator profiles via API...')
 
       const response = await fetch('/api/creators', {
         method: 'GET',

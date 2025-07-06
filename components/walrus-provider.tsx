@@ -46,7 +46,7 @@ export function WalrusProvider({
       // Default to testnet for Walrus (since Walrus primarily runs on testnet)
       const detectedNetwork = 'testnet'
 
-      console.log(`Initializing Walrus for ${detectedNetwork} network...`)
+
 
       await walrusService.initialize(detectedNetwork)
 
@@ -60,7 +60,7 @@ export function WalrusProvider({
         })
       }
 
-      console.log(`Walrus successfully initialized for ${detectedNetwork}`)
+
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to initialize Walrus'
       setError(errorMessage)

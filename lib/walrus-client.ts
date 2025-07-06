@@ -109,7 +109,6 @@ class WalrusService {
       this.suiClient = customSuiClient || new SuiClient({ url: getFullnodeUrl(config.suiNetwork) })
 
       this.isInitialized = true
-      console.log(`Walrus SDK initialized for ${network} with wallet transactions`)
     } catch (error) {
       console.error('Failed to initialize Walrus client:', error)
       throw error

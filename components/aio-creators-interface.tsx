@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { CreatorCards } from "./creator-cards"
+import { FeaturedChannels } from "./featured-channels"
 import { useCreatorsDatabase } from "@/contexts/creators-database-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { useCurrentAccount } from "@mysten/dapp-kit"
@@ -182,6 +183,9 @@ export function AIOCreatorsInterface() {
 
   return (
     <div className="space-y-6">
+      {/* Featured Channels Section */}
+      <FeaturedChannels />
+
       {/* Search and Filter Section */}
       <div className="enhanced-card">
         <div className="enhanced-card-content">

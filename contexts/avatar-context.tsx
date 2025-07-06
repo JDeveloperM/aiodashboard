@@ -61,7 +61,7 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (walrusInitialized) {
       const address = getUserAddress()
-      console.log('🔄 Walrus initialized, checking for avatar', { address })
+
       if (address && !cachedImageUrl) {
         loadAvatarFromDatabase(address)
       }
