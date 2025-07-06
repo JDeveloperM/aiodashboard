@@ -93,6 +93,14 @@ export interface LeaderboardResponse {
 // Leaderboard categories configuration
 export const LEADERBOARD_CATEGORIES: LeaderboardCategory[] = [
   {
+    id: 'all',
+    name: 'All Categories',
+    description: 'Overall ranking based on combined activity across all areas',
+    icon: 'Trophy',
+    scoreField: 'overall_score',
+    additionalMetrics: ['total_xp', 'referral_count', 'trading_volume', 'achievements_count']
+  },
+  {
     id: 'affiliates',
     name: 'Top Affiliates',
     description: 'Based on referral count and commission earnings',
@@ -473,6 +481,17 @@ class LeaderboardService {
           }
 
           switch (category) {
+            case 'all':
+            case 'overall':
+            default:
+              score = overallScore
+              metrics = {
+                total_xp: user.total_xp || 0,
+                referral_count: user.referral_data?.referral_count || 0,
+                trading_volume: tradingStats?.total_volume || 0,
+                achievements_count: user.achievements_data?.length || 0
+              }
+              break
             case 'affiliates':
               score = affiliateScore
               metrics = {
@@ -521,16 +540,6 @@ class LeaderboardService {
               engagement_rate: creatorStats?.engagement_rate || 0
             }
             break
-            case 'overall':
-            default:
-              score = overallScore
-              metrics = {
-                total_xp: user.total_xp,
-                referral_count: user.referral_data?.referral_count || 0,
-                trading_volume: tradingStats?.total_volume || 0,
-                achievements_count: user.achievements_data?.length || 0
-              }
-              break
           }
 
           return {

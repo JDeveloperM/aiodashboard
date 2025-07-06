@@ -615,11 +615,71 @@ class AffiliateService {
         return false
       }
 
+      // Update referrer's referral_data with the new referral count
+      await this.updateReferrerReferralData(referrerAddress)
+
       return true
 
     } catch (error) {
       console.error('Failed to create affiliate relationship:', error)
       return false
+    }
+  }
+
+  /**
+   * Update referrer's referral_data with current referral count and stats
+   */
+  private async updateReferrerReferralData(referrerAddress: string): Promise<void> {
+    try {
+      // Get current referral count from affiliate_relationships
+      const { data: relationships, error: countError } = await supabase
+        .from('affiliate_relationships')
+        .select('id')
+        .eq('referrer_address', referrerAddress)
+        .eq('relationship_status', 'active')
+
+      if (countError) {
+        console.error('Error getting referral count:', countError)
+        return
+      }
+
+      const referralCount = relationships?.length || 0
+
+      // Get current user profile
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('referral_data')
+        .eq('address', referrerAddress)
+        .single()
+
+      if (profileError) {
+        console.error('Error getting user profile for referral update:', profileError)
+        return
+      }
+
+      // Update referral_data with current count
+      const updatedReferralData = {
+        ...profile?.referral_data,
+        referral_count: referralCount,
+        last_referral_at: new Date().toISOString()
+      }
+
+      // Update the profile
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({
+          referral_data: updatedReferralData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('address', referrerAddress)
+
+      if (updateError) {
+        console.error('Error updating referrer referral_data:', updateError)
+      } else {
+        console.log('✅ Updated referrer referral_data for:', referrerAddress, 'count:', referralCount)
+      }
+    } catch (error) {
+      console.error('Failed to update referrer referral_data:', error)
     }
   }
 
@@ -1227,6 +1287,42 @@ class AffiliateService {
       }
     } catch (error) {
       console.error('Failed to sync all user referral statistics:', error)
+    }
+  }
+
+  /**
+   * Sync referral data for all users who have referrals but missing referral_count
+   */
+  async syncAllUsersReferralData(): Promise<void> {
+    try {
+      console.log('🔄 Syncing referral data for all users...')
+
+      // Get all users who have made referrals
+      const { data: referrers, error: referrersError } = await supabase
+        .from('affiliate_relationships')
+        .select('referrer_address')
+        .eq('relationship_status', 'active')
+
+      if (referrersError) {
+        console.error('Error getting referrers:', referrersError)
+        return
+      }
+
+      // Get unique referrer addresses
+      const uniqueReferrers = [...new Set(referrers?.map(r => r.referrer_address) || [])]
+
+      console.log(`Found ${uniqueReferrers.length} unique referrers to sync`)
+
+      // Update each referrer's referral_data
+      for (const referrerAddress of uniqueReferrers) {
+        await this.updateReferrerReferralData(referrerAddress)
+        // Add small delay to avoid overwhelming the database
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+
+      console.log('✅ Finished syncing referral data for all users')
+    } catch (error) {
+      console.error('Failed to sync all users referral data:', error)
     }
   }
 

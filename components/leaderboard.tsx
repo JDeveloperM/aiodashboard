@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -56,7 +57,8 @@ interface LeaderboardStats {
 }
 
 export function Leaderboard() {
-  const [activeCategory, setActiveCategory] = useState('affiliates')
+  const router = useRouter()
+  const [activeCategory, setActiveCategory] = useState('all')
   const [timePeriod, setTimePeriod] = useState<'weekly' | 'monthly' | 'all-time'>('all-time')
   const [locationFilter, setLocationFilter] = useState<string>('all')
 
@@ -105,8 +107,8 @@ export function Leaderboard() {
   }
 
   const handleUserClick = (user: LeaderboardUser) => {
-    // Navigate to user profile or show user details
-    window.open(`/profile/${user.address}`, '_blank')
+    // Navigate to user profile in the same window
+    router.push(`/profile/${user.address}`)
   }
 
   return (
@@ -138,12 +140,6 @@ export function Leaderboard() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-[#1a2f51] border-[#1a2f51]">
-              <SelectItem value="all" className="text-white hover:bg-[#2a3f61]">
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-4 h-4" />
-                  All Categories
-                </div>
-              </SelectItem>
               {LEADERBOARD_CATEGORIES.map((category) => {
                 const IconComponent = CATEGORY_ICONS[category.icon as keyof typeof CATEGORY_ICONS] || Trophy
                 return (

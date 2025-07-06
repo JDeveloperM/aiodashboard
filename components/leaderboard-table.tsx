@@ -95,11 +95,11 @@ export function LeaderboardTable({
   const getTopRankBackground = (rank: number) => {
     switch (rank) {
       case 1:
-        return "bg-gradient-to-r from-yellow-400/25 via-yellow-300/20 to-yellow-400/25 border-yellow-400/40 shadow-lg shadow-yellow-400/30"
+        return "bg-gradient-to-r from-yellow-400/25 via-yellow-300/20 to-yellow-400/25 border-yellow-400/40"
       case 2:
-        return "bg-[#4da2ff73] border-[#4da2ff] shadow-lg shadow-[#4da2ff]/20"
+        return "bg-[#4da2ff73] border-[#4da2ff]"
       case 3:
-        return "bg-[#4da2ff40] border-[#4da2ff]/60 shadow-lg shadow-[#4da2ff]/15"
+        return "bg-[#4da2ff40] border-[#4da2ff]/60"
       default:
         return ""
     }
