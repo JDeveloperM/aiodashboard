@@ -26,6 +26,7 @@ const supabase = createClient(
 export interface CreatorStats {
   user_address: string
   channels_created: number
+  total_posts: number
   total_subscribers: number
   premium_channels: number
   free_channels: number
@@ -153,13 +154,21 @@ class CreatorService {
         ? paidChannels.reduce((sum: number, ch: any) => sum + (ch.price || 0), 0) / paidChannels.length
         : 0
 
+      // Calculate total posts by this creator
+      const { count: totalPosts } = await supabase
+        .from('forum_posts')
+        .select('*', { count: 'exact', head: true })
+        .eq('author_address', userAddress)
+        .eq('is_deleted', false)
+        .eq('post_type', 'creator_post')
+
       // Calculate engagement rate (simplified: subscribers per channel)
       const engagementRate = channelsCreated > 0 ? (totalSubscribers / channelsCreated) * 100 : 0
 
       // Get most popular channel (by subscriber count)
       let mostPopularChannel: string | undefined
       if (channelsData.length > 0) {
-        const popularChannel = channelsData.reduce((prev: any, current: any) => 
+        const popularChannel = channelsData.reduce((prev: any, current: any) =>
           (current.subscribers || 0) > (prev.subscribers || 0) ? current : prev
         )
         mostPopularChannel = popularChannel.name
@@ -168,6 +177,7 @@ class CreatorService {
       const stats: CreatorStats = {
         user_address: userAddress,
         channels_created: channelsCreated,
+        total_posts: totalPosts || 0,
         total_subscribers: totalSubscribers,
         premium_channels: premiumChannels,
         free_channels: freeChannels,
@@ -296,30 +306,30 @@ class CreatorService {
    * Get creator statistics for leaderboard integration
    */
   async getCreatorStatsForLeaderboard(userAddress: string): Promise<{
-    channels_created: number
+    total_posts: number
     subscribers: number
     engagement_rate: number
   }> {
     try {
       const stats = await this.getUserCreatorStats(userAddress)
-      
+
       if (!stats) {
         return {
-          channels_created: 0,
+          total_posts: 0,
           subscribers: 0,
           engagement_rate: 0
         }
       }
 
       return {
-        channels_created: stats.channels_created,
+        total_posts: stats.total_posts,
         subscribers: stats.total_subscribers,
         engagement_rate: stats.engagement_rate
       }
     } catch (error) {
       console.error('Failed to get creator stats for leaderboard:', error)
       return {
-        channels_created: 0,
+        total_posts: 0,
         subscribers: 0,
         engagement_rate: 0
       }

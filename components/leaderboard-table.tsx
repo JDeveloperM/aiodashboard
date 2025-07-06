@@ -131,7 +131,7 @@ export function LeaderboardTable({
     if (key.includes('correct_answers')) return <CheckCircle className="w-3 h-3" />
     if (key.includes('quiz_participation')) return <Brain className="w-3 h-3" />
     if (key.includes('tickets_minted')) return <Coins className="w-3 h-3" />
-    if (key.includes('channels_created')) return <Video className="w-3 h-3" />
+    if (key.includes('total_posts')) return <Video className="w-3 h-3" />
     if (key.includes('subscribers')) return <Users className="w-3 h-3" />
     if (key.includes('engagement_rate')) return <TrendingUp className="w-3 h-3" />
     return <Award className="w-3 h-3" />
@@ -155,7 +155,7 @@ export function LeaderboardTable({
       'correct_answers': 'Correct',
       'quiz_participation': 'Quizzes',
       'tickets_minted': 'Tickets',
-      'channels_created': 'Channels',
+      'total_posts': 'Posts',
       'subscribers': 'Subscribers',
       'engagement_rate': 'Engagement',
       'level_rewards': 'Rewards',

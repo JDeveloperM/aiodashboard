@@ -136,10 +136,10 @@ export const LEADERBOARD_CATEGORIES: LeaderboardCategory[] = [
   {
     id: 'creators',
     name: 'Top Channel Creators',
-    description: 'Based on channel creation and engagement',
+    description: 'Based on posts created and engagement',
     icon: 'Video',
     scoreField: 'creator_score',
-    additionalMetrics: ['channels_created', 'subscribers', 'engagement_rate']
+    additionalMetrics: ['total_posts', 'subscribers', 'engagement_rate']
   },
 
 ]
@@ -535,7 +535,7 @@ class LeaderboardService {
           case 'creators':
             score = creatorScore
             metrics = {
-              channels_created: creatorStats?.channels_created || 0,
+              total_posts: creatorStats?.total_posts || 0,
               subscribers: creatorStats?.subscribers || 0,
               engagement_rate: creatorStats?.engagement_rate || 0
             }
@@ -729,7 +729,7 @@ class LeaderboardService {
                   countryData.totalVolume += (achievementsData.quiz_score || user.current_xp || 0)
                   break
                 case 'creators':
-                  countryData.totalVolume += (achievementsData.channels_created || 0) * 1000
+                  countryData.totalVolume += (achievementsData.total_posts || 0) * 100
                   break
                 default:
                   countryData.totalVolume += (user.total_xp || 0) + (referralData.total_commissions || 0) * 10
