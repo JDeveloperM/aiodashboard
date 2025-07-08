@@ -26,7 +26,7 @@ import { useZkLogin } from './zklogin-provider'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { useSuiClientQuery } from '@mysten/dapp-kit'
 import { useAvatar } from '@/contexts/avatar-context'
-import { usePersistentProfile } from '@/hooks/use-persistent-profile'
+import { useProfile } from '@/contexts/profile-context'
 import { useChannelCounts } from '@/hooks/use-channel-counts'
 import { useSubscription } from '@/contexts/subscription-context'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -48,7 +48,7 @@ export function ZkLoginWalletDisplay() {
   const router = useRouter()
   const { zkLoginUserAddress, jwt, reset: resetZkLogin } = useZkLogin()
   const { user, signOut, formatAddress } = useSuiAuth()
-  const { profile } = usePersistentProfile()
+  const { profile } = useProfile()
   const { getAvatarUrl, getFallbackText } = useAvatar()
   const { tier } = useSubscription()
   const { joinedChannels, maxJoinedChannels, createdChannels, maxCreatedChannels, isLoading: channelCountsLoading } = useChannelCounts()

@@ -16,7 +16,7 @@ import {
   ArrowRight,
   X
 } from 'lucide-react'
-import { usePersistentProfile } from '@/hooks/use-persistent-profile'
+import { useProfile } from '@/contexts/profile-context'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { toast } from 'sonner'
 
@@ -37,7 +37,7 @@ interface KYCVerificationFlowProps {
 
 export function KYCVerificationFlow({ isOpen, onClose, onComplete }: KYCVerificationFlowProps) {
   const { user, completeKYC } = useSuiAuth()
-  const { profile, updateKYCStatus } = usePersistentProfile()
+  const { profile, updateKYCStatus } = useProfile()
   
   const [currentStep, setCurrentStep] = useState(0)
   const [isProcessing, setIsProcessing] = useState(false)

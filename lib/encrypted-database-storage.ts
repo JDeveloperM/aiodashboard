@@ -214,14 +214,26 @@ class EncryptedDatabaseStorage {
         throw new Error(`Database connection failed: ${connectionTest.error}`)
       }
 
-      // Check if profile already exists to determine if this is an update or create
-      const { data: existingProfile } = await this.supabase
-        .from('user_profiles')
-        .select('onboarding_completed, onboarding_completed_at')
-        .eq('address', address)
-        .single()
+      // Check if profile already exists and load full profile for merging
+      let existingProfile: any = null
+      let isExistingProfile = false
 
-      const isExistingProfile = !!existingProfile
+      try {
+        const existingDecryptedProfile = await this.getDecryptedProfile(address)
+        if (existingDecryptedProfile) {
+          existingProfile = existingDecryptedProfile
+          isExistingProfile = true
+          console.log('📋 Found existing profile for merging:', {
+            username: existingProfile.username,
+            role_tier: existingProfile.role_tier,
+            profile_level: existingProfile.profile_level,
+            current_xp: existingProfile.current_xp
+          })
+        }
+      } catch (error) {
+        console.log('📋 No existing profile found, creating new one')
+        isExistingProfile = false
+      }
       console.log('✅ Database connection verified')
 
       const encryptionKey = this.generateEncryptionKey(address)
@@ -248,76 +260,67 @@ class EncryptedDatabaseStorage {
         updated_at: new Date().toISOString(),
         last_active: new Date().toISOString(),
 
-        // Basic required fields that should exist
-        role_tier: profileData.role_tier || 'NOMAD',
-        profile_level: profileData.profile_level || 1,
-        current_xp: profileData.current_xp ?? 0,
-        total_xp: profileData.total_xp ?? 0,
-        points: profileData.points ?? 0,
-        kyc_status: profileData.kyc_status || 'not_verified',
+        // Basic required fields - merge with existing data or use defaults for new profiles
+        role_tier: profileData.role_tier ?? (existingProfile?.role_tier || 'NOMAD'),
+        profile_level: profileData.profile_level ?? (existingProfile?.profile_level || 1),
+        current_xp: profileData.current_xp ?? (existingProfile?.current_xp || 0),
+        total_xp: profileData.total_xp ?? (existingProfile?.total_xp || 0),
+        points: profileData.points ?? (existingProfile?.points || 0),
+        kyc_status: profileData.kyc_status ?? (existingProfile?.kyc_status || 'not_verified'),
 
         // Onboarding tracking - preserve existing values for updates, set defaults for new profiles
         onboarding_completed: profileData.onboarding_completed !== undefined
           ? profileData.onboarding_completed
-          : (isExistingProfile ? existingProfile?.onboarding_completed ?? false : false),
+          : (existingProfile?.onboarding_completed ?? false),
         onboarding_completed_at: profileData.onboarding_completed_at !== undefined
           ? profileData.onboarding_completed_at
-          : (isExistingProfile ? existingProfile?.onboarding_completed_at : null)
+          : (existingProfile?.onboarding_completed_at || null)
       }
 
-      // Only add optional fields if they exist in the data
-      if (profileData.achievements_data) {
-        encryptedData.achievements_data = profileData.achievements_data
-      }
-      if (profileData.referral_data) {
-        encryptedData.referral_data = profileData.referral_data
-      }
-      if (profileData.display_preferences) {
-        encryptedData.display_preferences = profileData.display_preferences
-      }
-      if (profileData.walrus_metadata) {
-        encryptedData.walrus_metadata = profileData.walrus_metadata
-      }
-      if (profileData.join_date) {
-        encryptedData.join_date = profileData.join_date
-      }
+      // Merge optional fields with existing data
+      encryptedData.achievements_data = profileData.achievements_data ?? existingProfile?.achievements_data
+      encryptedData.referral_data = profileData.referral_data ?? existingProfile?.referral_data
+      encryptedData.display_preferences = profileData.display_preferences ?? existingProfile?.display_preferences
+      encryptedData.walrus_metadata = profileData.walrus_metadata ?? existingProfile?.walrus_metadata
+      encryptedData.join_date = profileData.join_date ?? existingProfile?.join_date
 
       // Add created_at only if it's a new record
       if (!profileData.id) {
         encryptedData.created_at = new Date().toISOString()
       }
 
-      // Set Walrus blob IDs
-      if (imageBlobId) {
-        encryptedData.profile_image_blob_id = imageBlobId
-      } else if (profileData.profile_image_blob_id) {
-        encryptedData.profile_image_blob_id = profileData.profile_image_blob_id
-      }
-      if (profileData.banner_image_blob_id !== undefined) {
-        encryptedData.banner_image_blob_id = profileData.banner_image_blob_id
+      // Set Walrus blob IDs - merge with existing data
+      encryptedData.profile_image_blob_id = imageBlobId ?? profileData.profile_image_blob_id ?? existingProfile?.profile_image_blob_id
+      encryptedData.banner_image_blob_id = profileData.banner_image_blob_id ?? existingProfile?.banner_image_blob_id
+
+      // Encrypt sensitive fields - merge with existing data
+      const usernameToEncrypt = profileData.username ?? existingProfile?.username
+      if (usernameToEncrypt) {
+        encryptedData.username_encrypted = this.encrypt(usernameToEncrypt, encryptionKey)
       }
 
-      // Encrypt sensitive fields
-      if (profileData.username) {
-        encryptedData.username_encrypted = this.encrypt(profileData.username, encryptionKey)
-      }
-      if (profileData.email) {
-        encryptedData.email_encrypted = this.encrypt(profileData.email, encryptionKey)
+      const emailToEncrypt = profileData.email ?? existingProfile?.email
+      if (emailToEncrypt) {
+        encryptedData.email_encrypted = this.encrypt(emailToEncrypt, encryptionKey)
       }
 
       // Encrypt real_name (first name + last name)
-      if (profileData.real_name) {
-        encryptedData.real_name_encrypted = this.encrypt(profileData.real_name, encryptionKey)
+      const realNameToEncrypt = profileData.real_name ?? existingProfile?.real_name
+      if (realNameToEncrypt) {
+        encryptedData.real_name_encrypted = this.encrypt(realNameToEncrypt, encryptionKey)
       }
+
       // Encrypt location field
-      if (profileData.location) {
-        encryptedData.location_encrypted = this.encrypt(profileData.location, encryptionKey)
+      const locationToEncrypt = profileData.location ?? existingProfile?.location
+      if (locationToEncrypt) {
+        encryptedData.location_encrypted = this.encrypt(locationToEncrypt, encryptionKey)
       }
 
       // Enable social links encryption
-      if (profileData.social_links) {
+      const socialLinksToEncrypt = profileData.social_links ?? existingProfile?.social_links
+      if (socialLinksToEncrypt) {
         encryptedData.social_links_encrypted = this.encrypt(
-          JSON.stringify(profileData.social_links),
+          JSON.stringify(socialLinksToEncrypt),
           encryptionKey
         )
       }
@@ -398,7 +401,6 @@ class EncryptedDatabaseStorage {
    */
   async getDecryptedProfile(address: string): Promise<DecryptedProfile | null> {
     try {
-      // TEMPORARILY DISABLED TO STOP INFINITE LOOPS
       // console.log('🔍 Fetching profile for address:', address)
 
       const { data, error } = await this.supabase

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef, useMemo } from "react"
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RoleImage } from "@/components/ui/role-image"
 import { EnhancedAvatar } from "@/components/enhanced-avatar"
 import { EnhancedBanner } from "@/components/enhanced-banner"
-import { usePersistentProfile } from '@/hooks/use-persistent-profile'
+
 import { useProfile } from '@/contexts/profile-context'
 import { useChannelSubscriptions, getChannelTypeBadgeColor, formatSubscriptionStatus } from '@/hooks/use-channel-subscriptions'
 import { useReferralCodes } from '@/hooks/use-referral-codes'
@@ -20,7 +20,8 @@ import { encryptedStorage } from '@/lib/encrypted-database-storage'
 import { getCountryCodeByName } from '@/lib/locations'
 import ReactCountryFlag from 'react-country-flag'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
-import { useSubscription } from "@/contexts/subscription-context"
+import { useTierRefresh } from '@/hooks/use-tier-sync'
+
 import { toast } from 'sonner'
 import Image from "next/image"
 import {
@@ -105,8 +106,8 @@ const getAchievementImage = (achievementName: string): string | null => {
 export function PersistentProfileSystem() {
   const router = useRouter()
   const { user } = useSuiAuth()
-  const { tier, setTier } = useSubscription()
   const { getDefaultCode, getReferralLink } = useReferralCodes()
+  const { refreshTier } = useTierRefresh()
   const {
     profile,
     isLoading,
@@ -118,8 +119,19 @@ export function PersistentProfileSystem() {
     claimAchievement,
     updateAchievements,
     clearError,
-    refreshProfile
+    refreshProfile,
+    fixLevelCalculation
   } = useProfile()
+
+  // Get tier from profile context only (not subscription context)
+  const tier = profile?.role_tier || 'NOMAD'
+
+  // Function to refresh tier after NFT minting (can be called externally)
+  const handleTierRefresh = useCallback(async () => {
+    console.log('🔄 Refreshing tier after NFT mint...')
+    await refreshTier()
+    await refreshProfile()
+  }, [refreshTier, refreshProfile])
 
   // State for UI interactions
   const [copied, setCopied] = useState(false)
@@ -336,7 +348,7 @@ export function PersistentProfileSystem() {
     profile?.achievements_data
   ])
 
-  // Update level rewards availability based on current level
+  // Update level rewards availability based on current level (optimized dependencies)
   useEffect(() => {
     if (profile) {
       const currentLevel = profile.profile_level || 1
@@ -357,7 +369,7 @@ export function PersistentProfileSystem() {
         }
       }))
     }
-  }, [profile])
+  }, [profile?.profile_level, profile?.referral_data?.level_rewards]) // Only depend on specific fields
 
   // Removed tier synchronization to prevent sidebar re-renders
   // The profile page will use profile?.role_tier directly instead of the subscription context tier

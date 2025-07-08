@@ -35,8 +35,8 @@ interface ProfileActions {
 }
 
 export function usePersistentProfile(): ProfileState & ProfileActions {
-  // DISABLED: Redirect to context to prevent infinite loops
-  console.warn('⚠️ usePersistentProfile hook is disabled - use ProfileProvider context instead')
+  // TEMPORARILY DISABLED - RETURN EMPTY STATE
+  console.warn('⚠️ usePersistentProfile temporarily disabled to stop infinite loops')
 
   return {
     profile: null,

@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 
 
-import { usePersistentProfile } from "@/hooks/use-persistent-profile"
+import { useProfile } from "@/contexts/profile-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { EnhancedAvatar } from "@/components/enhanced-avatar"
 import { ReferralCodeManagement } from "@/components/referral-code-management"
@@ -50,7 +50,7 @@ interface ProfileData {
 
 export function DashboardProfiles() {
   const { user } = useSuiAuth()
-  const { profile, isLoading, updateProfile, updateKYCStatus } = usePersistentProfile()
+  const { profile, isLoading, updateProfile, updateKYCStatus } = useProfile()
 
   const [profileData, setProfileData] = useState<ProfileData>({
     firstName: "",
@@ -715,7 +715,7 @@ export function DashboardProfiles() {
 
 // Simple Social Media Management Component
 function SocialMediaSection() {
-  const { profile, updateSocialLinks } = usePersistentProfile()
+  const { profile, updateSocialLinks } = useProfile()
   const { user } = useSuiAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)

@@ -110,8 +110,16 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
 
     if (lastSuiAddress.current === currentSuiAddress &&
         lastZkLoginAddress.current === currentZkLoginAddress) {
+      console.log('🔄 [SUI-AUTH] Skipping - no address change')
       return
     }
+
+    console.log('🔄 [SUI-AUTH] Address changed, updating user:', {
+      currentSuiAddress,
+      currentZkLoginAddress,
+      lastSui: lastSuiAddress.current,
+      lastZkLogin: lastZkLoginAddress.current
+    })
 
     // Removed debug logs
 
@@ -279,7 +287,7 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     createOrUpdateUser()
-  }, [suiAccount?.address, zkLoginUserAddress])
+  }, [suiAccount?.address, zkLoginUserAddress]) // Keep original dependencies but add stability check above
 
   const signOut = async () => {
     try {

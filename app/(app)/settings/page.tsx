@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Bell, Globe, Zap, AlertTriangle, User, CreditCard, Coins, Plus, Trash2, Shield, Eye, EyeOff, Settings, Flag } from "lucide-react"
 import { useNotifications } from "@/hooks/use-notifications"
-import { usePersistentProfile } from "@/hooks/use-persistent-profile"
+import { useProfile } from "@/contexts/profile-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { DashboardProfiles } from "@/components/dashboard-profiles"
 import { NewUserOnboarding } from "@/components/new-user-onboarding"
@@ -55,7 +55,7 @@ export default function SettingsPage() {
     isSupported: isNotificationSupported,
     sendTestNotification
   } = useNotifications(user?.address)
-  const { profile, updateProfile, isLoading } = usePersistentProfile()
+  const { profile, updateProfile, isLoading } = useProfile()
 
   // KYC flow state
   const [showKYCFlow, setShowKYCFlow] = useState(false)

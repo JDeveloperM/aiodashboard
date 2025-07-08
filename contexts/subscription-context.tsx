@@ -2,17 +2,19 @@
 
 import type React from "react"
 
-import { createContext, useContext, useState, useEffect, useMemo, useRef } from "react"
+import { createContext, useContext, useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { useCurrentAccount } from "@mysten/dapp-kit"
 import { encryptedStorage } from "@/lib/encrypted-database-storage"
 import { toast } from "sonner"
+import { useProfile } from "@/contexts/profile-context"
 
 export type SubscriptionTier = "NOMAD" | "PRO" | "ROYAL"
 
 interface SubscriptionContextType {
   tier: SubscriptionTier
   setTier: (tier: SubscriptionTier) => Promise<void>
+  reloadTier: () => Promise<void>
   canAccessCryptoBots: boolean
   canAccessForexBots: boolean
   upgradeToPremium: () => Promise<void>
@@ -25,6 +27,7 @@ const SubscriptionContext = createContext<SubscriptionContextType | undefined>(u
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const { user } = useSuiAuth()
   const currentAccount = useCurrentAccount()
+  const { profile, isInitialized: profileInitialized } = useProfile()
 
   // Initialize with NOMAD as default tier
   const [tier, setTierState] = useState<SubscriptionTier>("NOMAD")
@@ -38,40 +41,18 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     user?.address || currentAccount?.address,
     [user?.address, currentAccount?.address]
   )
-  const lastLoadedAddress = useRef<string | undefined>(undefined)
 
   // Determine access based on AIONET tier system
   // According to guidelines: PRO and ROYAL have no cycle payments, ROYAL has VIP features
   const canAccessCryptoBots = tier === "PRO" || tier === "ROYAL"
   const canAccessForexBots = tier === "ROYAL"  // VIP-only (ROYAL tier)
 
-  // Enhanced setTier function with database and Walrus persistence only
+  // Read-only tier management - subscription context only reads from profile, doesn't write
   const setTier = async (newTier: SubscriptionTier) => {
-    setIsUpdatingTier(true)
-
-    try {
-      // Update local state immediately for better UX
-      setTierState(newTier)
-
-      // Save to database and Walrus if user is connected
-      const userAddress = user?.address || currentAccount?.address
-      if (userAddress) {
-        await encryptedStorage.updateUserTier(userAddress, newTier)
-        toast.success(`🎉 Subscription upgraded to ${newTier}! Your tier is now saved permanently.`)
-      } else {
-        toast.error(`Please connect your wallet to upgrade your tier.`)
-        // Revert the state change if user is not connected
-        setTierState(tier)
-        return
-      }
-    } catch (error) {
-      console.error(`Failed to update tier in database:`, error)
-      toast.error(`Failed to save tier to database. Please try again.`)
-      // Revert the state change on error
-      setTierState(tier)
-    } finally {
-      setIsUpdatingTier(false)
-    }
+    console.warn('⚠️ setTier called on subscription context - this should use profile context instead')
+    // For now, just update local state but don't persist to database
+    // Components should use profile context updateTier instead
+    setTierState(newTier)
   }
 
   // Upgrade functions with database persistence
@@ -83,55 +64,40 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     await setTier("ROYAL")
   }
 
-  // Load tier from database when user connects (STABLE VERSION)
+  // Sync tier when profile changes (optimized to prevent sidebar blinking)
   useEffect(() => {
-    // Only load if address actually changed
-    if (lastLoadedAddress.current === stableUserAddress) {
-      return
-    }
+    if (profileInitialized) {
+      const profileTier = profile?.role_tier || "NOMAD"
 
-    lastLoadedAddress.current = stableUserAddress
-
-    const loadTierFromDatabase = async () => {
-      if (stableUserAddress) {
-        try {
-          const profile = await encryptedStorage.getDecryptedProfile(stableUserAddress)
-
-          if (profile?.role_tier) {
-            // Use callback to avoid dependency on current tier state
-            setTierState(profile.role_tier)
-          } else {
-            setTierState("NOMAD")
-          }
-        } catch (error) {
-          console.error(`Failed to load tier from database:`, error)
-          setTierState("NOMAD")
-        }
-      } else {
-        // User not connected, reset to NOMAD
-        setTierState("NOMAD")
+      // Only update if tier actually changed
+      if (profileTier !== tier) {
+        setTierState(profileTier)
       }
       setIsLoaded(true)
     }
+  }, [profile?.role_tier, profileInitialized, tier])
 
-    // Small delay to prevent rapid successive calls
-    const timeoutId = setTimeout(() => {
-      loadTierFromDatabase()
-    }, 100)
-
-    return () => clearTimeout(timeoutId)
-  }, [stableUserAddress]) // Only depend on stable address
+  // Reload tier function for external use (read-only)
+  const reloadTier = useCallback(async () => {
+    console.log('🔄 Manual tier reload requested - syncing from profile')
+    // Just sync from current profile state, don't force database reload
+    if (profileInitialized) {
+      const profileTier = profile?.role_tier || "NOMAD"
+      setTierState(profileTier)
+    }
+  }, [profileInitialized, profile?.role_tier])
 
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
     tier,
     setTier,
+    reloadTier,
     canAccessCryptoBots,
     canAccessForexBots,
     upgradeToPremium,
     upgradeToVIP,
     isUpdatingTier,
-  }), [tier, canAccessCryptoBots, canAccessForexBots, isUpdatingTier])
+  }), [tier, reloadTier, canAccessCryptoBots, canAccessForexBots, isUpdatingTier])
 
   return (
     <SubscriptionContext.Provider value={contextValue}>

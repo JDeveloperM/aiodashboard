@@ -1,15 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
   CheckCircle,
-  ArrowRight
+  ArrowRight,
+  Zap,
+  Loader2
 } from "lucide-react"
 import { useSubscription } from "@/contexts/subscription-context"
 import { RoleImage } from "@/components/ui/role-image"
+import { useNFTMinting, useNFTTierStatus } from "@/hooks/use-nft-minting"
+import { useTierSync } from "@/hooks/use-tier-sync"
+
+import { NFT_PRICING } from "@/lib/nft-minting-service"
 
 interface NFTTier {
   id: 'NOMAD' | 'PRO' | 'ROYAL'
@@ -53,8 +59,8 @@ const nftTiers: NFTTier[] = [
   {
     id: 'PRO',
     name: 'PRO NFT',
-    price: 400,
-    currency: 'EUR',
+    price: NFT_PRICING.PRO.costSui,
+    currency: 'SUI',
     features: [
       'Bybit Copy Trading (Crypto) Access',
       'No Cycle Payments',
@@ -82,8 +88,8 @@ const nftTiers: NFTTier[] = [
   {
     id: 'ROYAL',
     name: 'ROYAL NFT',
-    price: 1500,
-    currency: 'EUR',
+    price: NFT_PRICING.ROYAL.costSui,
+    currency: 'SUI',
     features: [
       'All PRO Features',
       'Bybit Copy Trading (FOREX) Access',
@@ -113,22 +119,48 @@ export function DashboardSubscriptions() {
   const [selectedTier, setSelectedTier] = useState<NFTTier | null>(null)
   const [isUpgrading, setIsUpgrading] = useState(false)
 
+  // NFT minting hooks
+  const { isMinting, mintNFT, hasNFTTier } = useNFTMinting()
+  const { currentTier: nftTier, refreshTierStatus } = useNFTTierStatus()
+
+  // Tier synchronization
+  const { syncTierFromNFTs } = useTierSync()
+
+  // Check NFT ownership on component mount
+  useEffect(() => {
+    refreshTierStatus()
+    syncTierFromNFTs() // Also sync tier from NFTs
+  }, [])
+
   const currentTierData = nftTiers.find(t => t.id === tier) || nftTiers[0]
 
-  const handleUpgrade = async (targetTier: NFTTier) => {
+  const handleMintNFT = async (targetTier: NFTTier) => {
+    if (targetTier.id === 'NOMAD') return // Can't mint NOMAD
+
     setIsUpgrading(true)
     setSelectedTier(targetTier)
 
     try {
-      // Simulate NFT purchase process
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      console.log(`🎨 Minting ${targetTier.id} NFT...`)
 
-      // Update tier in database and Walrus storage
-      console.log(`🎯 Upgrading to ${targetTier.id}...`)
-      await setTier(targetTier.id)
-      console.log(`✅ Successfully upgraded to ${targetTier.id}`)
+      const result = await mintNFT(targetTier.id as 'PRO' | 'ROYAL')
+
+      if (result.success) {
+        console.log(`✅ Successfully minted ${targetTier.id} NFT`)
+
+        // Update tier status after successful mint
+        await refreshTierStatus()
+
+        // Sync tier from NFTs (this will automatically update the subscription context)
+        setTimeout(async () => {
+          await syncTierFromNFTs()
+        }, 2000) // Wait 2 seconds for blockchain to update
+
+      } else {
+        console.error(`❌ Failed to mint ${targetTier.id} NFT:`, result.error)
+      }
     } catch (error) {
-      console.error(`❌ Failed to upgrade to ${targetTier.id}:`, error)
+      console.error(`❌ NFT minting error for ${targetTier.id}:`, error)
     } finally {
       setIsUpgrading(false)
       setSelectedTier(null)
@@ -144,9 +176,11 @@ export function DashboardSubscriptions() {
           <h2 className="text-2xl font-bold text-white">AIONET NFT Tiers</h2>
           <p className="text-[#C0E6FF] mt-1">Mint your NFT on Sui Network to unlock exclusive features. PRO and ROYAL are unlimited NFT-based roles.</p>
         </div>
-        <Badge className={`bg-gradient-to-r ${currentTierData.gradient} text-white px-4 py-2`}>
-          Current: {currentTierData.name}
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Badge className={`bg-gradient-to-r ${currentTierData.gradient} text-white px-4 py-2`}>
+            Current: {currentTierData.name}
+          </Badge>
+        </div>
       </div>
 
       {/* NFT Tiers */}
@@ -198,42 +232,74 @@ export function DashboardSubscriptions() {
                   </ul>
                 </div>
 
-                {/* Action Button */}
+                {/* Action Buttons */}
                 <div className="pt-4 mt-auto">
                   {isCurrentTier ? (
+                    <div className="flex gap-2">
+                      {/* Current Tier Button */}
+                      <Button
+                        disabled
+                        className="flex-1 bg-green-500 text-white"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Current Tier
+                      </Button>
+
+                      {/* Mint Additional NFT Button for Current Tier */}
+                      {tierData.id !== 'NOMAD' && (
+                        <Button
+                          onClick={() => handleMintNFT(tierData)}
+                          disabled={isMinting || isUpdatingTier}
+                          variant="outline"
+                          className={`flex-1 border-2 transition-colors duration-200 ${
+                            tierData.id === 'PRO'
+                              ? 'border-[#4da2ff] text-[#4da2ff] hover:bg-[#4da2ff] hover:text-white hover:border-[#3d8bff]'
+                              : 'border-yellow-500 text-yellow-400 hover:bg-yellow-500 hover:text-white hover:border-yellow-400'
+                          }`}
+                        >
+                          {(isMinting && selectedTier?.id === tierData.id) || isUpdatingTier ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Minting...
+                            </>
+                          ) : (
+                            <>
+                              <Zap className="w-4 h-4 mr-2" />
+                              Mint {tierData.name} NFT
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  ) : tierData.id === 'NOMAD' ? (
                     <Button
                       disabled
-                      className="w-full bg-green-500 text-white"
+                      variant="outline"
+                      className="w-full border-[#C0E6FF]/30 text-[#C0E6FF]"
                     >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Current Tier
+                      Default Tier
                     </Button>
-                  ) : canUpgrade ? (
+                  ) : (
                     <Button
-                      onClick={() => handleUpgrade(tierData)}
-                      disabled={isUpgrading || isUpdatingTier}
+                      onClick={() => handleMintNFT(tierData)}
+                      disabled={isMinting || isUpdatingTier}
                       className={`w-full text-white ${
                         tierData.id === 'PRO'
                           ? 'bg-[#4da2ff] hover:bg-[#3d8bff] transition-colors duration-200'
                           : `bg-gradient-to-r ${tierData.gradient} hover:opacity-90`
                       }`}
                     >
-                      {(isUpgrading && selectedTier?.id === tierData.id) || isUpdatingTier ? (
-                        "Processing..."
+                      {(isMinting && selectedTier?.id === tierData.id) || isUpdatingTier ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Minting...
+                        </>
                       ) : (
                         <>
-                          Upgrade to {tierData.name}
-                          <ArrowRight className="w-4 h-4 ml-2" />
+                          <Zap className="w-4 h-4 mr-2" />
+                          Mint {tierData.name} ({tierData.price} {tierData.currency})
                         </>
                       )}
-                    </Button>
-                  ) : (
-                    <Button
-                      disabled
-                      variant="outline"
-                      className="w-full border-[#C0E6FF]/30 text-[#C0E6FF]"
-                    >
-                      {tierData.id === 'NOMAD' ? 'Default Tier' : 'Lower Tier'}
                     </Button>
                   )}
                 </div>

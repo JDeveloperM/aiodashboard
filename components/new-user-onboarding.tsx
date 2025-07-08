@@ -24,7 +24,7 @@ import {
   MapPin
 } from 'lucide-react'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
-import { usePersistentProfile } from '@/hooks/use-persistent-profile'
+import { useProfile } from '@/contexts/profile-context'
 import { useReferralTracking } from '@/hooks/use-referral-tracking'
 import { useReferralCodes } from '@/hooks/use-referral-codes'
 import { affiliateService } from '@/lib/affiliate-service'
@@ -43,9 +43,11 @@ interface OnboardingStep {
 
 export function NewUserOnboarding() {
   const { user, isNewUser, completeOnboarding, completeProfileSetup, completeKYC, refreshUserState } = useSuiAuth()
-  const { profile, updateProfile, updateKYCStatus } = usePersistentProfile()
   const { referralCode: trackedReferralCode, processReferralOnSignup } = useReferralTracking()
   const { createDefaultCode } = useReferralCodes()
+
+  // Use profile context instead of direct database calls to prevent infinite loops
+  const { profile, isLoading: isLoadingProfile, updateProfile, updateKYCStatus } = useProfile()
 
   const [currentStep, setCurrentStep] = useState(0)
   const [isCompleting, setIsCompleting] = useState(false)
@@ -64,79 +66,96 @@ export function NewUserOnboarding() {
   const [socialAuthEmail, setSocialAuthEmail] = useState("")
 
   useEffect(() => {
-    if (user?.connectionType === 'zklogin') {
-      setIsSocialAuthUser(true)
+    const extractEmailFromZkLogin = async () => {
+      if (user?.connectionType === 'zklogin') {
+        setIsSocialAuthUser(true)
 
-      // Try to extract email from different sources
-      let extractedEmail = ""
+        let extractedEmail = ""
 
-      // Method 1: Legacy zkLogin JWT from localStorage
-      const jwt = localStorage.getItem('zklogin_jwt')
-      if (jwt) {
         try {
-          const payload = jwt.split('.')[1]
-          const decodedPayload = JSON.parse(atob(payload))
-          if (decodedPayload.email) {
-            extractedEmail = decodedPayload.email
-          }
-        } catch (error) {
-          console.error('Failed to decode legacy zkLogin JWT for email:', error)
-        }
-      }
+          // Method 1: Get JWT from zkLogin context (most reliable)
+          const { useZkLogin } = await import('@/components/zklogin-provider')
+          // We can't use the hook here, so let's check localStorage for the JWT
 
-      // Method 2: Check for Enoki session data
-      if (!extractedEmail) {
-        try {
-          // Check for Enoki session in localStorage or sessionStorage
-          const enokiSession = localStorage.getItem('enoki_session') || sessionStorage.getItem('enoki_session')
-          if (enokiSession) {
-            const sessionData = JSON.parse(enokiSession)
-            if (sessionData.email) {
-              extractedEmail = sessionData.email
+          // Method 2: Check zkLogin session from cookies/localStorage
+          const { getZkLoginSession } = await import('@/lib/auth-cookies')
+          const zkLoginSession = getZkLoginSession()
+
+          if (zkLoginSession?.jwt) {
+            try {
+              const payload = zkLoginSession.jwt.split('.')[1]
+              const decodedPayload = JSON.parse(atob(payload))
+              console.log('🔍 Extracted JWT payload:', decodedPayload)
+
+              if (decodedPayload.email) {
+                extractedEmail = decodedPayload.email
+                console.log('✅ Found email in zkLogin JWT:', extractedEmail)
+              }
+            } catch (error) {
+              console.error('Failed to decode zkLogin JWT:', error)
             }
           }
-        } catch (error) {
-          console.error('Failed to extract email from Enoki session:', error)
-        }
-      }
 
-      // Method 3: Check for any JWT-like tokens that might contain email
-      if (!extractedEmail) {
-        try {
-          // Check all localStorage keys for potential JWT tokens
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i)
-            if (key && (key.includes('jwt') || key.includes('token') || key.includes('auth'))) {
-              const value = localStorage.getItem(key)
-              if (value && value.includes('.')) {
-                try {
-                  const parts = value.split('.')
-                  if (parts.length === 3) {
-                    const payload = JSON.parse(atob(parts[1]))
-                    if (payload.email) {
-                      extractedEmail = payload.email
-                      break
+          // Method 3: Fallback to localStorage JWT
+          if (!extractedEmail) {
+            const jwt = localStorage.getItem('zklogin_jwt')
+            if (jwt) {
+              try {
+                const payload = jwt.split('.')[1]
+                const decodedPayload = JSON.parse(atob(payload))
+                if (decodedPayload.email) {
+                  extractedEmail = decodedPayload.email
+                  console.log('✅ Found email in localStorage JWT:', extractedEmail)
+                }
+              } catch (error) {
+                console.error('Failed to decode localStorage JWT:', error)
+              }
+            }
+          }
+
+          // Method 4: Check all localStorage for JWT tokens
+          if (!extractedEmail) {
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i)
+              if (key && (key.includes('jwt') || key.includes('token') || key.includes('auth'))) {
+                const value = localStorage.getItem(key)
+                if (value && value.includes('.')) {
+                  try {
+                    const parts = value.split('.')
+                    if (parts.length === 3) {
+                      const payload = JSON.parse(atob(parts[1]))
+                      if (payload.email) {
+                        extractedEmail = payload.email
+                        console.log('✅ Found email in token:', key, extractedEmail)
+                        break
+                      }
                     }
+                  } catch (e) {
+                    // Skip invalid tokens
                   }
-                } catch (e) {
-                  // Skip invalid tokens
                 }
               }
             }
           }
-        } catch (error) {
-          console.error('Failed to search for email in tokens:', error)
-        }
-      }
 
-      if (extractedEmail) {
-        setSocialAuthEmail(extractedEmail)
-        setFormData(prev => ({ ...prev, email: extractedEmail }))
+        } catch (error) {
+          console.error('Failed to extract email from zkLogin:', error)
+        }
+
+        if (extractedEmail) {
+          setSocialAuthEmail(extractedEmail)
+          setFormData(prev => ({ ...prev, email: extractedEmail }))
+          console.log('🎯 Email set for onboarding:', extractedEmail)
+        } else {
+          console.warn('⚠️ No email found in zkLogin session')
+        }
+      } else {
+        setIsSocialAuthUser(false)
+        setSocialAuthEmail("")
       }
-    } else {
-      setIsSocialAuthUser(false)
-      setSocialAuthEmail("")
     }
+
+    extractEmailFromZkLogin()
   }, [user?.connectionType])
 
   // Referral options
@@ -148,8 +167,8 @@ export function NewUserOnboarding() {
   // Avatar selection state
   const [showAvatarSelection, setShowAvatarSelection] = useState(false)
 
-  // Form validation - always valid if username is provided since we have admin default code
-  const isFormValid = formData.username.trim().length >= 3
+  // Form validation - username and email are both required for all users
+  const isFormValid = formData.username.trim().length >= 3 && formData.email.trim().length > 0
 
   const steps: OnboardingStep[] = [
     {
@@ -220,12 +239,12 @@ export function NewUserOnboarding() {
     }
   }, [profile, user?.address, trackedReferralCode])
 
-  // Auto-refresh user state when profile changes
-  useEffect(() => {
-    if (profile?.username && profile.username !== `User ${user?.address.slice(0, 6)}`) {
-      refreshUserState()
-    }
-  }, [profile?.username, user?.address, refreshUserState])
+  // Auto-refresh user state when profile changes (DISABLED to prevent infinite loop)
+  // useEffect(() => {
+  //   if (profile?.username && profile.username !== `User ${user?.address.slice(0, 6)}`) {
+  //     refreshUserState()
+  //   }
+  // }, [profile?.username, user?.address, refreshUserState])
 
   const handleProfileSubmit = async () => {
     if (!isFormValid) {
@@ -461,7 +480,6 @@ export function NewUserOnboarding() {
         return (
           <div className="space-y-4 sm:space-y-6">
             <div className="text-center">
-              <User className="w-10 h-10 sm:w-12 sm:h-12 text-[#4DA2FF] mx-auto mb-3" />
               <h2 className="text-lg sm:text-xl font-bold text-white mb-2">Complete Your Profile</h2>
               <p className="text-sm sm:text-base text-[#C0E6FF]">
                 Choose your avatar and add your information to personalize your AIONET experience
@@ -485,15 +503,22 @@ export function NewUserOnboarding() {
 
                 {/* Current Avatar Preview */}
                 <div className="flex items-center space-x-3 mb-2">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border-2 border-[#4DA2FF]">
-                    <img
-                      src={formData.selectedAvatar}
-                      alt="Selected avatar"
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border-2 border-[#4DA2FF] bg-[#1a2f51] flex items-center justify-center">
+                    {formData.selectedAvatar ? (
+                      <img
+                        src={formData.selectedAvatar}
+                        alt="Selected avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-6 h-6 sm:w-8 sm:h-8 text-[#4DA2FF]" />
+                    )}
                   </div>
                   <span className="text-xs sm:text-sm text-[#C0E6FF]/70">
-                    {showAvatarSelection ? 'Click an avatar below to change' : 'Click above to change avatar'}
+                    {formData.selectedAvatar
+                      ? (showAvatarSelection ? 'Click an avatar below to change' : 'Click above to change avatar')
+                      : 'Click above to choose an avatar'
+                    }
                   </span>
                 </div>
 
@@ -555,26 +580,33 @@ export function NewUserOnboarding() {
 
               <div>
                 <Label htmlFor="email" className="text-white text-sm sm:text-base">
-                  Email {isSocialAuthUser ? "(From Social Login)" : "(Optional - Can only be set once)"}
+                  Email {isSocialAuthUser ? "(From Google Account)" : "(Required - Can only be set once)"}
                 </Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder={isSocialAuthUser ? "Email from social account" : "Enter your email (can only be set once)"}
-                  className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white text-sm sm:text-base"
+                  placeholder={isSocialAuthUser ? "Email from Google account" : "Enter your email address"}
+                  className={`bg-[#1a2f51] border-[#C0E6FF]/20 text-white text-sm sm:text-base ${
+                    isSocialAuthUser ? 'bg-green-500/10 border-green-500/30' : ''
+                  }`}
                   disabled={isSocialAuthUser}
+                  readOnly={isSocialAuthUser}
+                  required
                 />
                 {isSocialAuthUser && (
-                  <p className="text-[#C0E6FF]/70 text-xs sm:text-sm mt-1">
-                    🔒 Email is automatically bound from your social login account
+                  <p className="text-green-400 text-xs sm:text-sm mt-1 flex items-center gap-1">
+                    ✅ Email automatically retrieved from your Google account
                   </p>
                 )}
                 {!isSocialAuthUser && (
                   <p className="text-[#C0E6FF]/70 text-xs sm:text-sm mt-1">
-                    ⚠️ Email can only be set once and cannot be changed later
+                    ⚠️ Email is required and can only be set once - cannot be changed later
                   </p>
+                )}
+                {!formData.email.trim() && !isSocialAuthUser && (
+                  <p className="text-red-400 text-xs sm:text-sm mt-1">Email is required</p>
                 )}
               </div>
 
@@ -792,8 +824,14 @@ export function NewUserOnboarding() {
   // Check if onboarding is completed in database
   const isOnboardingCompleted = profile?.onboarding_completed === true
 
-  // Don't show onboarding if user has completed onboarding or has no profile yet
-  if (!profile || isOnboardingCompleted) {
+  // Show onboarding for new users or users with incomplete onboarding
+  // If profile is null (new user) or onboarding is not completed, show onboarding
+  if (!isNewUser && isOnboardingCompleted) {
+    return null
+  }
+
+  // Also don't show if user is not connected
+  if (!user?.address) {
     return null
   }
 

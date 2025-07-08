@@ -60,7 +60,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { EditChannelModal } from "./edit-channel-modal"
-import { usePersistentProfile } from "@/hooks/use-persistent-profile"
+import { useProfile } from "@/contexts/profile-context"
 
 // Form validation schema
 const creatorFormSchema = z.object({
@@ -119,7 +119,7 @@ export function CreatorControlsInterface() {
   const router = useRouter()
   const currentAccount = useCurrentAccount()
   const { user } = useSuiAuth()
-  const { profile } = usePersistentProfile()
+  const { profile } = useProfile()
   const { mutate: signAndExecute } = useSignAndExecuteTransaction()
   // Image states - using Walrus integration like profile page
   const [profileImage, setProfileImage] = useState<string>("")
