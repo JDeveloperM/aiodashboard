@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { 
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
 import {
   Copy,
   Send,
@@ -20,12 +22,14 @@ import {
   LogOut,
   ChevronDown,
   Users,
-  Plus
+  Plus,
+  RefreshCw
 } from 'lucide-react'
 import { useZkLogin } from './zklogin-provider'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { useSuiClientQuery } from '@mysten/dapp-kit'
 import { useAvatar } from '@/contexts/avatar-context'
+import { nftMintingService } from '@/lib/nft-minting-service'
 import { useProfile } from '@/contexts/profile-context'
 import { useChannelCounts } from '@/hooks/use-channel-counts'
 import { useSubscription } from '@/contexts/subscription-context'
@@ -57,6 +61,9 @@ export function ZkLoginWalletDisplay() {
   const [isOpen, setIsOpen] = useState(false)
   const [showDepositModal, setShowDepositModal] = useState(false)
   const [showSendModal, setShowSendModal] = useState(false)
+  const [userNFTs, setUserNFTs] = useState<any[]>([])
+  const [isLoadingNFTs, setIsLoadingNFTs] = useState(false)
+  const [nftImages, setNftImages] = useState<{[key: string]: string}>({})
 
   // USDC contract addresses for different networks
   const USDC_COIN_TYPES = {
@@ -109,6 +116,209 @@ export function ZkLoginWalletDisplay() {
     }
   }, [jwt])
 
+  // Helper function to decode NFT type
+  const decodeNFTType = (nftData: any): string => {
+    console.log('🔧 decodeNFTType called with:', nftData)
+
+    const decodeBytes = (bytes: any): string => {
+      console.log('🔧 decodeBytes called with:', bytes, 'type:', typeof bytes)
+      if (Array.isArray(bytes)) {
+        try {
+          const decoded = new TextDecoder().decode(new Uint8Array(bytes))
+          console.log('🔧 Decoded array to string:', decoded)
+          return decoded
+        } catch (error) {
+          console.log('🔧 Failed to decode array:', error)
+          return 'Unknown'
+        }
+      }
+      const result = bytes?.toString() || 'Unknown'
+      console.log('🔧 Converted to string:', result)
+      return result
+    }
+
+    let nftType = 'Unknown'
+
+    console.log('🔧 Checking collection_type:', nftData?.collection_type)
+    if (nftData?.collection_type) {
+      nftType = decodeBytes(nftData.collection_type)
+      console.log('🔧 Got type from collection_type:', nftType)
+    } else if (nftData?.tier) {
+      nftType = decodeBytes(nftData.tier)
+      console.log('🔧 Got type from tier:', nftType)
+    } else if (nftData?.type) {
+      nftType = decodeBytes(nftData.type)
+      console.log('🔧 Got type from type:', nftType)
+    } else if (nftData?.name) {
+      nftType = decodeBytes(nftData.name)
+      console.log('🔧 Got type from name:', nftType)
+    }
+
+    const cleanType = nftType.trim().toUpperCase()
+    const finalType = ['PRO', 'ROYAL'].includes(cleanType) ? cleanType : 'Unknown'
+
+    console.log('🔧 Final type detection:', {
+      original: nftType,
+      cleaned: cleanType,
+      final: finalType
+    })
+
+    return finalType
+  }
+
+  // Function to fetch user's NFTs
+  const fetchNFTs = async () => {
+    if (!zkLoginUserAddress) return
+
+    setIsLoadingNFTs(true)
+    try {
+      console.log('🔍 Fetching NFTs for address:', zkLoginUserAddress)
+
+      // Debug: Check all owned objects first
+      const { SuiClient } = await import('@mysten/sui/client')
+      const suiClient = new SuiClient({ url: process.env.NEXT_PUBLIC_SUI_RPC_URL || 'https://fullnode.testnet.sui.io' })
+
+      const allObjects = await suiClient.getOwnedObjects({
+        owner: zkLoginUserAddress,
+        options: {
+          showContent: true,
+          showType: true,
+          showOwner: true
+        }
+      })
+
+      console.log('🔍 All owned objects:', allObjects.data)
+      console.log('🔍 Total objects owned:', allObjects.data.length)
+
+      // Now try to get NFTs specifically
+      const nfts = await nftMintingService.getUserNFTs(zkLoginUserAddress)
+      setUserNFTs(nfts)
+      console.log('🎨 Fetched NFTs:', nfts)
+      console.log('🎨 NFT count:', nfts.length)
+
+      // Debug: Check recent transactions
+      try {
+        const transactions = await suiClient.queryTransactionBlocks({
+          filter: {
+            FromAddress: zkLoginUserAddress
+          },
+          limit: 10,
+          options: {
+            showEffects: true,
+            showEvents: true,
+            showInput: true
+          }
+        })
+
+        console.log('📋 Recent transactions:', transactions.data)
+
+        // Look for NFT minting transactions
+        const mintTransactions = transactions.data.filter(tx =>
+          tx.transaction?.data?.transaction?.kind === 'ProgrammableTransaction' &&
+          JSON.stringify(tx).includes('mint_nft')
+        )
+
+        console.log('🎯 Mint transactions found:', mintTransactions)
+
+        // Check for any created objects in recent transactions
+        transactions.data.forEach((tx, index) => {
+          if (tx.effects?.created && tx.effects.created.length > 0) {
+            console.log(`📦 Transaction ${index} created objects:`, tx.effects.created)
+          }
+        })
+
+      } catch (error) {
+        console.error('Failed to fetch transactions:', error)
+      }
+
+      // Set up static NFT images based on type
+      const imageMap: {[key: string]: string} = {}
+
+      nfts.forEach((nft, index) => {
+        const nftData = nft.data?.content?.fields
+        const nftId = nft.data?.objectId
+        let nftType = decodeNFTType(nftData)
+
+        // Fallback if type detection fails
+        if (nftType === 'Unknown') {
+          nftType = index === 0 ? 'PRO' : 'ROYAL'
+        }
+
+        // Simple assignment: PRO = pro-nft.png, ROYAL = royal-nft.png
+        if (nftType === 'PRO') {
+          imageMap[nftId] = '/images/nfts/pro-nft.png'
+        } else if (nftType === 'ROYAL') {
+          imageMap[nftId] = '/images/nfts/royal-nft.png'
+        }
+
+        console.log(`🖼️ NFT ${nftId} is ${nftType} -> ${imageMap[nftId]}`)
+      })
+
+      console.log('🗺️ Static image map:', imageMap)
+      setNftImages(imageMap)
+
+      // Test if images are accessible
+      Object.entries(imageMap).forEach(([nftId, imagePath]) => {
+        const img = new Image()
+        img.onload = () => console.log(`✅ Image accessible: ${imagePath}`)
+        img.onerror = () => console.error(`❌ Image not accessible: ${imagePath}`)
+        img.src = imagePath
+      })
+
+    } catch (error) {
+      console.error('Failed to fetch NFTs:', error)
+      setUserNFTs([])
+    } finally {
+      setIsLoadingNFTs(false)
+    }
+  }
+
+  // Fetch NFTs on address change
+  useEffect(() => {
+    fetchNFTs()
+  }, [zkLoginUserAddress])
+
+  // Refresh NFTs when popover opens
+  useEffect(() => {
+    if (isOpen && zkLoginUserAddress) {
+      fetchNFTs()
+    }
+  }, [isOpen, zkLoginUserAddress])
+
+  // Debug function for manual testing
+  useEffect(() => {
+    if (typeof window !== 'undefined' && zkLoginUserAddress) {
+      // @ts-ignore - Adding to window for debugging
+      window.debugNFTs = async () => {
+        console.log('🔧 Manual NFT Debug for:', zkLoginUserAddress)
+        await fetchNFTs()
+      }
+
+      // @ts-ignore - Adding to window for debugging
+      window.checkNFTContract = async () => {
+        const { SuiClient } = await import('@mysten/sui/client')
+        const suiClient = new SuiClient({ url: process.env.NEXT_PUBLIC_SUI_RPC_URL || 'https://fullnode.testnet.sui.io' })
+
+        const contractConfig = nftMintingService.getContractConfig()
+        console.log('📋 Contract Config:', contractConfig)
+
+        try {
+          const packageInfo = await suiClient.getObject({
+            id: contractConfig.PACKAGE_ID,
+            options: { showContent: true, showType: true }
+          })
+          console.log('📦 Package Info:', packageInfo)
+        } catch (error) {
+          console.error('❌ Failed to get package info:', error)
+        }
+      }
+
+      console.log('🔧 Debug functions available:')
+      console.log('  - window.debugNFTs() - Check NFTs for current user')
+      console.log('  - window.checkNFTContract() - Check contract deployment')
+    }
+  }, [zkLoginUserAddress])
+
   const copyAddress = async () => {
     if (zkLoginUserAddress) {
       try {
@@ -142,8 +352,8 @@ export function ZkLoginWalletDisplay() {
 
   return (
     <>
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <SheetTrigger asChild>
         <Button
           variant="outline"
           className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white hover:bg-[#C0E6FF]/10 px-3 py-2 h-auto"
@@ -161,16 +371,15 @@ export function ZkLoginWalletDisplay() {
             </Avatar>
           </div>
         </Button>
-      </PopoverTrigger>
+      </SheetTrigger>
 
-      <PopoverContent 
-        className="w-80 bg-[#0c1b36] border-[#1e3a8a] text-white p-0" 
-        align="end"
-        sideOffset={8}
-      >
-        <div className="p-4 space-y-4">
+      <SheetContent className="w-96 bg-[#0c1b36] border-[#1e3a8a] text-white" side="right">
+        <SheetHeader>
+          <SheetTitle className="text-[#C0E6FF]">Wallet Details</SheetTitle>
+        </SheetHeader>
+        <div className="mt-4 space-y-2">
           {/* Header with avatar, address and email */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {/* User Avatar */}
             <Avatar className="h-8 w-8">
               <AvatarImage src={getAvatarUrl()} alt={user?.username} />
@@ -199,7 +408,7 @@ export function ZkLoginWalletDisplay() {
           {/* Balance */}
           <div className="bg-[#1a2f51]/50 rounded-lg p-3">
             <div className="text-sm text-[#C0E6FF] mb-2">Balance</div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               {/* SUI Balance */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -223,6 +432,109 @@ export function ZkLoginWalletDisplay() {
                 <span className="text-[#C0E6FF] text-sm">USDC</span>
               </div>
             </div>
+          </div>
+
+          {/* NFTs Section */}
+          <div className="bg-[#1a2f51]/50 rounded-lg p-3">
+            <div className="text-sm text-[#C0E6FF] mb-2">AIONET NFTs</div>
+
+            {userNFTs.length > 0 ? (() => {
+              // Filter NFTs first to determine final count
+              const filteredNFTs = userNFTs
+                .map((nft, index) => {
+                  const nftData = nft.data?.content?.fields
+                  const nftId = nft.data?.objectId
+                  let nftType = decodeNFTType(nftData)
+
+                  if (nftType === 'Unknown') {
+                    nftType = index === 0 ? 'PRO' : 'ROYAL'
+                  }
+
+                  return { nft, nftData, nftId, nftType, index }
+                })
+                .filter(({ nftType }) => {
+                  // Simple logic: if user has ROYAL, hide PRO
+                  const hasRoyal = userNFTs.some((nft, index) => {
+                    const nftData = nft.data?.content?.fields
+                    let type = decodeNFTType(nftData)
+                    if (type === 'Unknown') {
+                      type = index === 0 ? 'PRO' : 'ROYAL'
+                    }
+                    return type === 'ROYAL'
+                  })
+
+                  if (hasRoyal && nftType === 'PRO') {
+                    console.log('🚫 Hiding PRO NFT because user has ROYAL')
+                    return false
+                  }
+
+                  return true
+                })
+
+              // Use flex with justify-center for single NFT, grid for multiple
+              const containerClass = filteredNFTs.length === 1
+                ? "flex justify-center"
+                : "grid grid-cols-2 gap-3"
+
+              return (
+                <div className={containerClass}>
+                  {filteredNFTs.map(({ nft, nftData, nftId, nftType, index }) => {
+
+                  return (
+                    <div
+                      key={nftId || index}
+                      className="flex flex-col items-center gap-2"
+                    >
+                      {/* NFT Image */}
+                      {nftImages[nftId] ? (
+                        <img
+                          src={nftImages[nftId]}
+                          alt={`${nftType} NFT`}
+                          className="w-40 h-40 rounded-lg object-cover border-2 border-[#4DA2FF]"
+                          onLoad={() => {
+                            console.log(`✅ Successfully loaded image: ${nftImages[nftId]}`)
+                          }}
+                          onError={(e) => {
+                            console.error(`❌ Failed to load image: ${nftImages[nftId]} for ${nftType} NFT`)
+                          }}
+                        />
+                      ) : (
+                        <div className={`w-40 h-40 rounded-lg flex items-center justify-center ${
+                          nftType === 'PRO' ? 'bg-blue-500' :
+                          nftType === 'ROYAL' ? 'bg-yellow-500' :
+                          'bg-purple-500'
+                        }`}>
+                          <span className="text-2xl font-bold text-white">
+                            {nftType === 'PRO' ? 'P' : nftType === 'ROYAL' ? 'R' : 'N'}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Explorer Button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-6 px-2 text-xs bg-[#1a2f51] border-[#4DA2FF] text-[#4DA2FF] hover:bg-[#4DA2FF] hover:text-white"
+                        onClick={() => {
+                          const explorerUrl = `https://suiscan.xyz/testnet/object/${nftId}`
+                          window.open(explorerUrl, '_blank')
+                        }}
+                      >
+                        View
+                      </Button>
+                    </div>
+                  )
+                })}
+                </div>
+              )
+            })() : (
+              <div className="text-center py-3">
+                <div className="text-[#C0E6FF] text-sm">No NFTs owned</div>
+                <div className="text-[#C0E6FF]/60 text-xs mt-1">
+                  Mint NFTs to unlock exclusive features
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
@@ -287,10 +599,10 @@ export function ZkLoginWalletDisplay() {
           <Separator className="bg-[#1e3a8a]" />
 
           {/* Menu Items */}
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 p-3 text-[#C0E6FF] hover:bg-[#1e3a8a] hover:text-white transition-colors"
+              className="w-full justify-start gap-2 p-2 text-[#C0E6FF] hover:bg-[#1e3a8a] hover:text-white transition-colors"
               onClick={() => handleNavigation('/profile')}
             >
               <User className="h-4 w-4" />
@@ -299,7 +611,7 @@ export function ZkLoginWalletDisplay() {
 
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 p-3 text-[#C0E6FF] hover:bg-[#1e3a8a] hover:text-white transition-colors"
+              className="w-full justify-start gap-2 p-2 text-[#C0E6FF] hover:bg-[#1e3a8a] hover:text-white transition-colors"
               onClick={() => handleNavigation('/settings')}
             >
               <Settings className="h-4 w-4" />
@@ -308,18 +620,18 @@ export function ZkLoginWalletDisplay() {
 
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 p-3 text-[#C0E6FF] hover:bg-[#1e3a8a] hover:text-white transition-colors"
+              className="w-full justify-start gap-2 p-2 text-[#C0E6FF] hover:bg-[#1e3a8a] hover:text-white transition-colors"
               onClick={() => handleNavigation('/subscriptions')}
             >
               <CreditCard className="h-4 w-4" />
               <span>Subscriptions</span>
             </Button>
 
-            <Separator className="bg-[#1e3a8a] my-2" />
+            <Separator className="bg-[#1e3a8a] my-1" />
 
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 p-3 text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+              className="w-full justify-start gap-2 p-2 text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
               onClick={handleSignOut}
             >
               <LogOut className="h-4 w-4" />
@@ -327,8 +639,8 @@ export function ZkLoginWalletDisplay() {
             </Button>
           </div>
         </div>
-      </PopoverContent>
-    </Popover>
+      </SheetContent>
+    </Sheet>
 
     {/* Deposit Modal */}
     <DepositModal

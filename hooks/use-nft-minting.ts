@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
+import { useZkLoginWallet } from '@/hooks/use-zklogin-wallet'
 import { nftMintingService, NFTTier, MintResult, NFT_PRICING } from '@/lib/nft-minting-service'
 import { toast } from 'sonner'
 
@@ -23,9 +24,13 @@ export function useNFTMinting(): UseMintingReturn {
   const account = useCurrentAccount()
   const { user } = useSuiAuth()
   const { mutate: signAndExecute } = useSignAndExecuteTransaction()
+  const { wallet: zkWallet, signAndExecuteTransaction: zkSignAndExecute, isConnected: isZkConnected } = useZkLoginWallet()
 
   // Get user address from either traditional wallet or zkLogin
   const userAddress = user?.address || account?.address
+
+  // Determine connection type
+  const isZkLogin = user?.connectionType === 'zklogin'
 
   /**
    * Mint NFT directly with user's wallet
@@ -38,41 +43,79 @@ export function useNFTMinting(): UseMintingReturn {
     }
 
     setIsMinting(true)
-    
+
     try {
       console.log(`🎨 Starting ${tier} NFT mint for:`, userAddress)
       console.log(`💰 Minting cost: ${NFT_PRICING[tier].costSui} SUI`)
+      console.log(`🔗 Connection type: ${isZkLogin ? 'zkLogin' : 'traditional wallet'}`)
 
       // Show loading toast
       const loadingToast = toast.loading(`Minting ${tier} NFT...`, {
-        description: 'Please confirm the transaction in your wallet'
+        description: isZkLogin
+          ? 'Please confirm the transaction with your Google account'
+          : 'Please confirm the transaction in your wallet'
       })
 
       // Create transaction
       const transaction = nftMintingService.createMintTransaction(tier, userAddress)
       console.log('📝 Transaction created:', transaction)
 
-      // Execute transaction with user's wallet
-      const result = await new Promise<any>((resolve, reject) => {
-        signAndExecute(
-          {
-            transaction: transaction as any, // Type cast to resolve version conflicts
-          },
-          {
-            onSuccess: (result) => {
-              console.log('✅ Transaction successful:', result)
-              console.log('📊 Transaction effects:', result.effects)
-              console.log('🎉 Events:', (result as any).events) // Safe access to events
-              resolve(result)
+      let result: any
+
+      if (isZkLogin && zkWallet && isZkConnected) {
+        // Fallback to legacy zkLogin (will likely fail due to deprecated proving service)
+        console.log('🔐 Using legacy zkLogin wallet for transaction signing...')
+        try {
+          result = await zkSignAndExecute(transaction, {
+            showToast: false, // We handle our own toasts
+            onSuccess: (txResult) => {
+              console.log('✅ zkLogin transaction successful:', txResult)
             },
             onError: (error) => {
-              console.error('❌ Transaction failed:', error)
-              console.error('❌ Error details:', JSON.stringify(error, null, 2))
-              reject(error)
+              console.error('❌ zkLogin transaction failed:', error)
+              throw error
             }
+          })
+        } catch (zkError) {
+          console.error('❌ zkLogin transaction error:', zkError)
+
+          // Check if this is a proving service deprecation error
+          if (zkError instanceof Error &&
+              (zkError.message.includes('proving service') ||
+               zkError.message.includes('deprecated') ||
+               zkError.message.includes('Missing required parameters for proof generation'))) {
+            throw new Error(
+              'zkLogin proving service is deprecated. Please reconnect using Enoki social login for better experience. ' +
+              'Alternatively, you can connect a traditional wallet.'
+            )
           }
-        )
-      })
+
+          throw zkError
+        }
+      } else {
+        // Traditional wallet transaction
+        console.log('🔗 Using traditional wallet for transaction signing...')
+        result = await new Promise<any>((resolve, reject) => {
+          signAndExecute(
+            {
+              transaction: transaction as any, // Type cast to resolve version conflicts
+            },
+            {
+              onSuccess: (result) => {
+                console.log('✅ Traditional wallet transaction successful:', result)
+                console.log('📊 Transaction effects:', result.effects)
+                console.log('🎉 Events:', (result as any).events) // Safe access to events
+                resolve(result)
+              },
+              onError: (error) => {
+                console.error('❌ Traditional wallet transaction failed:', error)
+                console.error('❌ Error details:', JSON.stringify(error, null, 2))
+                reject(error)
+              }
+            }
+          )
+        })
+      }
 
       // Dismiss loading toast
       toast.dismiss(loadingToast)
@@ -147,7 +190,7 @@ export function useNFTMinting(): UseMintingReturn {
     } finally {
       setIsMinting(false)
     }
-  }, [userAddress, signAndExecute])
+  }, [userAddress, isZkLogin, zkWallet, isZkConnected, zkSignAndExecute, signAndExecute])
 
   /**
    * Check user's current tier based on owned NFTs
