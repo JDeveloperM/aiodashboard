@@ -52,6 +52,7 @@ export function ForumUserTooltip({
 
   const handleViewProfile = (e: React.MouseEvent) => {
     e.stopPropagation()
+    // Prioritize username over address for better URLs
     let identifier = userData?.name || username || userAddress
     if (identifier) {
       if (identifier.startsWith('@')) {

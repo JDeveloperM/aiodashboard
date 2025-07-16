@@ -1035,13 +1035,13 @@ export function ProfileSystem() {
         </div>
       </div>
 
-      {/* Level Progress and Level Rewards Combined Card */}
+      {/* Profile Level Progress and Profile Level Rewards Combined Card */}
       <div className="enhanced-card">
         <div className="enhanced-card-content">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Column 1: Level Progress */}
+            {/* Column 1: Profile Level Progress */}
             <div>
-              <h3 className="text-white font-semibold mb-4 text-center">Level Progress</h3>
+              <h3 className="text-white font-semibold mb-4 text-center">Profile Level Progress</h3>
 
               {/* Current Level with XP Needed */}
               <div className="mb-6">
@@ -1129,9 +1129,9 @@ export function ProfileSystem() {
               </div>
             </div>
 
-            {/* Column 2: Level Rewards */}
+            {/* Column 2: Profile Level Rewards */}
             <div>
-              <h3 className="text-white font-semibold mb-4 text-center">Level Rewards</h3>
+              <h3 className="text-white font-semibold mb-4 text-center">Profile Level Rewards</h3>
               <div className="grid grid-cols-5 gap-2">
                 {levelRewards.map((reward) => (
                   <div key={reward.level} className="bg-[#1a2f51] rounded-lg p-3 border border-[#C0E6FF]/20 text-center">

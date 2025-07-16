@@ -31,7 +31,8 @@ export function ProfileLink({
 
     if (disabled) return
 
-    let identifier = address || username
+    // Prioritize username over address for better URLs
+    let identifier = username || address
     if (identifier) {
       // Remove @ prefix from username if present (it gets added in community display)
       if (identifier.startsWith('@')) {

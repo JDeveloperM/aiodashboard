@@ -80,7 +80,9 @@ export function UserSearch() {
   }
 
   const handleResultClick = (result: SearchResult) => {
-    router.push(`/profile/${result.address}`)
+    // Prioritize username over address for better URLs
+    const identifier = result.username || result.address
+    router.push(`/profile/${encodeURIComponent(identifier)}`)
     setShowResults(false)
     setQuery('')
   }

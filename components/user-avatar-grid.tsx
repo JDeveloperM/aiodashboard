@@ -99,8 +99,8 @@ function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect }: UserAvat
 
   const handleViewProfile = (e: React.MouseEvent) => {
     e.stopPropagation()
-    // Use the user's id (which is the address) or username to navigate to their profile
-    let identifier = user.id || user.username
+    // Prioritize username over address for better URLs
+    let identifier = user.username || user.id
     if (identifier) {
       // Remove @ prefix from username if present (it gets added in community display)
       if (identifier.startsWith('@')) {

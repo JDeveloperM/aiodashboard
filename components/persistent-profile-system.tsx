@@ -146,13 +146,13 @@ export function PersistentProfileSystem() {
 
   // Level rewards state - Updated according to new progression system
   const [levelRewards, setLevelRewards] = useState([
-    { level: 2, points: 0, available: false, claimed: false, description: "Unlock 2nd Affiliate Level" },
-    { level: 3, points: 0, available: false, claimed: false, description: "Unlock 3rd Affiliate Level" },
-    { level: 4, points: 0, available: false, claimed: false, description: "Unlock 4th Affiliate Level" },
-    { level: 5, points: 0, available: false, claimed: false, description: "Unlock 5th Affiliate Level (Max)" },
+    { level: 2, points: 0, available: false, claimed: false, description: "Upgrade to 2nd Affiliate Level" },
+    { level: 3, points: 0, available: false, claimed: false, description: "Upgrade to 3rd Affiliate Level" },
+    { level: 4, points: 0, available: false, claimed: false, description: "Upgrade to 4th Affiliate Level" },
+    { level: 5, points: 0, available: false, claimed: false, description: "Upgrade to 5th Affiliate Level (Max)" },
     { level: 6, points: 500, available: false, claimed: false, description: "Earn 500 Points" },
     { level: 7, points: 2000, available: false, claimed: false, description: "Earn 2,000 Points" },
-    { level: 8, points: 6000, available: false, claimed: false, description: "Earn 6,000 Points + Bybit Partner" },
+    { level: 8, points: 6000, available: false, claimed: false, description: "Earn 6,000 Points" },
     { level: 9, points: 15000, available: false, claimed: false, description: "Earn 15,000 Points" },
     { level: 10, points: 35000, available: false, claimed: false, description: "Earn 35,000 Points" }
   ])
@@ -881,13 +881,13 @@ export function PersistentProfileSystem() {
         </div>
       </div>
 
-      {/* Level Progress and Level Rewards Combined Card */}
+      {/* Profile Level Progress and Profile Level Rewards Combined Card */}
       <div className="enhanced-card">
         <div className="enhanced-card-content">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Column 1: Level Progress */}
+            {/* Column 1: Profile Level Progress */}
             <div>
-              <h3 className="text-white font-semibold mb-4 text-center">Level Progress</h3>
+              <h3 className="text-white font-semibold mb-4 text-center">Profile Level Progress</h3>
 
               {/* Current Level with XP Needed */}
               <div className="mb-6">
@@ -1048,9 +1048,9 @@ export function PersistentProfileSystem() {
               </div>
             </div>
 
-            {/* Column 2: Level Rewards */}
+            {/* Column 2: Profile Level Rewards */}
             <div>
-              <h3 className="text-white font-semibold mb-4 text-center">Level Rewards</h3>
+              <h3 className="text-white font-semibold mb-4 text-center">Profile Level Rewards</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {levelRewards.map((reward: any) => (
                   <div key={reward.level} className="bg-[#1a2f51] rounded-lg p-3 border border-[#C0E6FF]/20 text-center">
@@ -1467,13 +1467,13 @@ export function PersistentProfileSystem() {
                   <tbody>
                     {[
                       { level: 1, xpRequired: 0, xpFromPrevious: 0, pointsUnlocked: 0, totalPoints: 0, description: "Starting level - Affiliate Level 1" },
-                      { level: 2, xpRequired: 100, xpFromPrevious: 100, pointsUnlocked: 0, totalPoints: 0, description: "Unlock 2nd Affiliate Level" },
-                      { level: 3, xpRequired: 250, xpFromPrevious: 150, pointsUnlocked: 0, totalPoints: 0, description: "Unlock 3rd Affiliate Level" },
-                      { level: 4, xpRequired: 500, xpFromPrevious: 250, pointsUnlocked: 0, totalPoints: 0, description: "Unlock 4th Affiliate Level" },
-                      { level: 5, xpRequired: 800, xpFromPrevious: 300, pointsUnlocked: 0, totalPoints: 0, description: "Unlock 5th Affiliate Level (Max)" },
+                      { level: 2, xpRequired: 100, xpFromPrevious: 100, pointsUnlocked: 0, totalPoints: 0, description: "Upgrade to 2nd Affiliate Level" },
+                      { level: 3, xpRequired: 250, xpFromPrevious: 150, pointsUnlocked: 0, totalPoints: 0, description: "Upgrade to 3rd Affiliate Level" },
+                      { level: 4, xpRequired: 500, xpFromPrevious: 250, pointsUnlocked: 0, totalPoints: 0, description: "Upgrade to 4th Affiliate Level" },
+                      { level: 5, xpRequired: 800, xpFromPrevious: 300, pointsUnlocked: 0, totalPoints: 0, description: "Upgrade to 5th Affiliate Level (Max)" },
                       { level: 6, xpRequired: 1200, xpFromPrevious: 400, pointsUnlocked: 500, totalPoints: 500, description: "Earn 500 Points" },
                       { level: 7, xpRequired: 1800, xpFromPrevious: 600, pointsUnlocked: 2000, totalPoints: 2500, description: "Earn 2,000 Points" },
-                      { level: 8, xpRequired: 2600, xpFromPrevious: 800, pointsUnlocked: 6000, totalPoints: 8500, description: "Earn 6,000 Points + Bybit Partner" },
+                      { level: 8, xpRequired: 2600, xpFromPrevious: 800, pointsUnlocked: 6000, totalPoints: 8500, description: "Earn 6,000 Points" },
                       { level: 9, xpRequired: 3600, xpFromPrevious: 1000, pointsUnlocked: 15000, totalPoints: 23500, description: "Earn 15,000 Points" },
                       { level: 10, xpRequired: 5000, xpFromPrevious: 1400, pointsUnlocked: 35000, totalPoints: 58500, description: "Earn 35,000 Points" }
                     ].map((row: any, index: number) => (

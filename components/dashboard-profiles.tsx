@@ -404,15 +404,14 @@ export function DashboardProfiles() {
             <>
               <Button
                 onClick={() => setIsEditing(false)}
-                variant="outline"
-                className="border-[#C0E6FF] text-[#C0E6FF]"
+                className="bg-[#ef444445] text-white"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSave}
                 disabled={isSaving || isLoading}
-                className="bg-gradient-to-r from-[#4DA2FF] to-[#011829] text-white"
+                className="bg-[#22c55e45] text-white"
               >
                 {isSaving ? "Saving to Database & Walrus..." : "Save Changes"}
               </Button>

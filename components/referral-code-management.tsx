@@ -267,7 +267,7 @@ export function ReferralCodeManagement() {
                 <Input
                   value={getReferralLink(code.code)}
                   readOnly
-                  className="bg-[#030f1c] border-[#C0E6FF]/20 text-[#C0E6FF] text-sm font-mono"
+                  className="bg-[#22c55e45] border-[#C0E6FF]/20 text-[#C0E6FF] text-sm font-mono"
                 />
                 <Button
                   onClick={() => handleCopyLink(code.code)}

@@ -107,8 +107,9 @@ export function Leaderboard() {
   }
 
   const handleUserClick = (user: LeaderboardUser) => {
-    // Navigate to user profile in the same window
-    router.push(`/profile/${user.address}`)
+    // Navigate to user profile in the same window - prioritize username over address
+    const identifier = user.username || user.address
+    router.push(`/profile/${encodeURIComponent(identifier)}`)
   }
 
   return (

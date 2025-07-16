@@ -790,7 +790,7 @@ export function AffiliateControls() {
                                   </AvatarFallback>
                                 </Avatar>
                                 <div>
-                                  <UsernameDisplay username={user.username} />
+                                  <UsernameDisplay username={user.username} address={user.address} />
                                   <p className="text-[#C0E6FF]/70 text-xs">{user.email}</p>
                                 </div>
                               </div>

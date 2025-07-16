@@ -183,9 +183,6 @@ export function AIOCreatorsInterface() {
 
   return (
     <div className="space-y-6">
-      {/* Featured Channels Section */}
-      <FeaturedChannels />
-
       {/* Search and Filter Section */}
       <div className="enhanced-card">
         <div className="enhanced-card-content">
@@ -280,6 +277,9 @@ export function AIOCreatorsInterface() {
           </div>
         </div>
       </div>
+
+      {/* Featured Channels Section */}
+      <FeaturedChannels />
 
       {/* Creators Grid */}
       {filteredCreators.length === 0 ? (

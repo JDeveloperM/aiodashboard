@@ -44,7 +44,7 @@ const spaceGrotesk = Space_Grotesk({
 
 
 export const metadata: Metadata = {
-  title: "AIONET - Greek NFT-Gated Community on Sui Network",
+  title: "AIONET - All in one Network",
   description: "Empowering everyday individuals through decentralized investment opportunities, NFT-gated trading bots, and educational resources on Sui Network",
   generator: 'v0.dev'
 }
