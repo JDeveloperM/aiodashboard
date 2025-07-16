@@ -341,19 +341,13 @@ export default function RoyaltiesPage() {
 
         <div className="enhanced-card-content relative">
           {/* Header with animated crown */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 p-2 rounded-full animate-pulse">
-                <Crown className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-white">ROYAL Member Benefits</h3>
-                <p className="text-[#C0E6FF] text-sm">Exclusive passive income opportunities</p>
-              </div>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 p-2 rounded-full animate-pulse">
+              <Crown className="w-6 h-6 text-white" />
             </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-yellow-400">{royaltiesData.totalRoyalHolders}</div>
-              <div className="text-xs text-[#C0E6FF]">Elite Members</div>
+            <div>
+              <h3 className="text-xl font-bold text-white">ROYAL Member Benefits</h3>
+              <p className="text-[#C0E6FF] text-sm">Exclusive passive income opportunities</p>
             </div>
           </div>
 

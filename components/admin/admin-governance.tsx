@@ -7,19 +7,21 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { 
-  Vote, 
-  Plus, 
-  Calendar, 
-  Users, 
-  TrendingUp, 
+import {
+  Vote,
+  Plus,
+  Calendar,
+  Users,
+  TrendingUp,
   Clock,
   Edit,
   Trash2,
   CheckCircle,
   XCircle,
   AlertTriangle,
-  Loader2
+  Loader2,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -52,6 +54,7 @@ export function AdminGovernance({ isAdmin }: AdminGovernanceProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
   
   // Form state
   const [title, setTitle] = useState('')
@@ -216,27 +219,42 @@ export function AdminGovernance({ isAdmin }: AdminGovernanceProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Vote className="w-6 h-6 text-[#4da2ff]" />
-            Governance Management
-          </h2>
-          <p className="text-gray-400 mt-1">Create and manage DAO proposals</p>
+    <Card className="bg-[#1a2f51] border-[#C0E6FF]/30">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-white hover:bg-[#C0E6FF]/10 p-2"
+          >
+            {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+          </Button>
+          <div>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Vote className="w-5 h-5 text-[#4da2ff]" />
+              Governance Management
+            </CardTitle>
+            <p className="text-sm text-gray-400 mt-1">Create and manage DAO proposals</p>
+          </div>
         </div>
-        <Button
-          onClick={() => setShowCreateForm(!showCreateForm)}
-          className="bg-[#4da2ff] hover:bg-[#4da2ff]/80 text-white"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          New Proposal
-        </Button>
-      </div>
+        {isExpanded && (
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="bg-[#4da2ff] hover:bg-[#4da2ff]/80 text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Proposal
+            </Button>
+          </div>
+        )}
+      </CardHeader>
 
-      {/* Create Proposal Form */}
-      {showCreateForm && (
+      {isExpanded && (
+        <CardContent className="space-y-6">
+          {/* Create Proposal Form */}
+          {showCreateForm && (
         <Card className="bg-[#1a2f51] border-[#C0E6FF]/30">
           <CardHeader>
             <CardTitle className="text-white">Create New Proposal</CardTitle>
@@ -413,8 +431,10 @@ export function AdminGovernance({ isAdmin }: AdminGovernanceProps) {
               </CardContent>
             </Card>
           ))}
-        </div>
+          </div>
+        )}
+        </CardContent>
       )}
-    </div>
+    </Card>
   )
 }

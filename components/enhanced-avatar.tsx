@@ -165,7 +165,7 @@ export function EnhancedAvatar({
       <div className={cn("relative group", className)}>
         <Avatar className={cn(
           sizeClasses[size],
-          "bg-blue-100",
+          "bg-blue-100 border-4 border-[#C0E6FF]/20",
           className
         )}>
           <AvatarImage

@@ -262,7 +262,7 @@ export function TraditionalWalletDisplay() {
           {/* Header with avatar and address */}
           <div className="flex items-center gap-2">
             {/* User Avatar */}
-            <Avatar className="h-8 w-8">
+            <Avatar className="h-16 w-16">
               <AvatarImage src={getAvatarUrl()} alt={user?.username} />
               <AvatarFallback className="bg-[#4DA2FF] text-white text-sm">
                 {getFallbackText()}
@@ -282,7 +282,7 @@ export function TraditionalWalletDisplay() {
                   <Copy className={`h-3 w-3 ${copiedAddress ? 'text-green-400' : 'text-[#C0E6FF]'}`} />
                 </Button>
               </div>
-              <p className="text-sm text-[#C0E6FF]">Crypto Wallet</p>
+              <p className="text-sm text-[#C0E6FF]">{profile?.username || user?.username || 'Anonymous User'}</p>
             </div>
           </div>
 
@@ -296,7 +296,7 @@ export function TraditionalWalletDisplay() {
                   <img
                     src="/images/logo-sui.png"
                     alt="SUI"
-                    className="w-5 h-5"
+                    className="w-6 h-6"
                   />
                   <span className="text-white font-medium">{suiAmount.toFixed(4)}</span>
                 </div>
@@ -305,9 +305,11 @@ export function TraditionalWalletDisplay() {
               {/* USDC Balance */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-bold text-white">$</span>
-                  </div>
+                  <img
+                    src="/images/usdc-logo.png"
+                    alt="USDC"
+                    className="w-6 h-6"
+                  />
                   <span className="text-white font-medium">{usdcAmount.toFixed(2)}</span>
                 </div>
                 <span className="text-[#C0E6FF] text-sm">USDC</span>

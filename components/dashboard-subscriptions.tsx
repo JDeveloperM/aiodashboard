@@ -336,38 +336,38 @@ export function DashboardSubscriptions() {
                 </tr>
                 <tr className="border-b border-[#C0E6FF]/10">
                   <td className="py-3 text-white">Cycle Payment Exemption</td>
+                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
+                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
+                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-[#C0E6FF]/10">
+                  <td className="py-3 text-white">E-Learning</td>
+                  <td className="py-3 text-center text-white">Basic Course</td>
+                  <td className="py-3 text-center text-blue-400">Full Access</td>
+                  <td className="py-3 text-center text-yellow-400">Full Access</td>
+                </tr>
+                <tr className="border-b border-[#C0E6FF]/10">
+                  <td className="py-3 text-white">RaffleQuiz (DApp)</td>
+                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
+                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
+                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-[#C0E6FF]/10">
+                  <td className="py-3 text-white">DEWhale (DApp)</td>
+                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
+                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
+                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-[#C0E6FF]/10">
+                  <td className="py-3 text-white">Premium Creator Free Channels</td>
                   <td className="py-3 text-center text-red-400">✗</td>
-                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
-                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
-                </tr>
-                <tr className="border-b border-[#C0E6FF]/10">
-                  <td className="py-3 text-white">Discord Community Role</td>
-                  <td className="py-3 text-center text-white">Basic</td>
-                  <td className="py-3 text-center text-blue-400">PRO</td>
-                  <td className="py-3 text-center text-yellow-400">ROYAL</td>
-                </tr>
-                <tr className="border-b border-[#C0E6FF]/10">
-                  <td className="py-3 text-white">MetaGo Academy Access</td>
-                  <td className="py-3 text-center text-white">Basic</td>
-                  <td className="py-3 text-center text-blue-400">Premium</td>
-                  <td className="py-3 text-center text-yellow-400">Premium</td>
-                </tr>
-                <tr className="border-b border-[#C0E6FF]/10">
-                  <td className="py-3 text-white">DApps Access (RaffleCraft & DEWhale)</td>
-                  <td className="py-3 text-center text-red-400">✗</td>
-                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
-                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
-                </tr>
-                <tr className="border-b border-[#C0E6FF]/10">
-                  <td className="py-3 text-white">Premium Creator Channels</td>
-                  <td className="py-3 text-center text-red-400">✗</td>
-                  <td className="py-3 text-center text-blue-400">3 Free</td>
-                  <td className="py-3 text-center text-yellow-400">9 Free</td>
+                  <td className="py-3 text-center text-blue-400">3</td>
+                  <td className="py-3 text-center text-yellow-400">9</td>
                 </tr>
                 <tr className="border-b border-[#C0E6FF]/10">
                   <td className="py-3 text-white">FOREX & STOCKS Trading</td>
-                  <td className="py-3 text-center text-red-400">✗</td>
-                  <td className="py-3 text-center text-red-400">✗</td>
+                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
+                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
                   <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
                 </tr>
                 <tr className="border-b border-[#C0E6FF]/10">

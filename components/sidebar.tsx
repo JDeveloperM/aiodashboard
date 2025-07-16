@@ -86,7 +86,6 @@ export const Sidebar = memo(function Sidebar() {
         { name: "Forum", href: "/forum", icon: MessageSquare },
       ]
     },
-    { name: "Governance", href: "/governance", icon: Vote, restricted: !canAccessGovernance },
     { name: "Royalties", href: "/royalties", icon: DollarSign, restricted: !canAccessRoyalties },
     { name: "RaffleCraft", href: "/dapps/rafflecraft", icon: Dice6, restricted: false },
     { name: "Dewhale", href: "/dapps/dewhale-launchpad", icon: Rocket, restricted: false },
@@ -95,6 +94,7 @@ export const Sidebar = memo(function Sidebar() {
   ]
 
   const bottomNavigation = [
+    { name: "Governance", href: "/governance", icon: Vote, restricted: !canAccessGovernance },
     { name: "FAQs", href: "/faqs", icon: HelpCircle, restricted: false },
   ]
 
