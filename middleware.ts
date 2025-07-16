@@ -28,6 +28,8 @@ const protectedRoutes = [
   '/aio-creators',
   '/creator-controls',
   '/copy-trading',
+  '/governance',
+  '/royalties',
   '/dapps',
   '/metago-academy',
   '/marketplace',
