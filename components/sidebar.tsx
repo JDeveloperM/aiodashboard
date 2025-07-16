@@ -7,7 +7,7 @@ import { useSubscription } from "@/contexts/subscription-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, LineChart, ArrowUpRight, Crown, ArrowRight, Bot, Users, BookOpen, ChevronDown, ChevronRight, Dice6, Rocket, Share2, HelpCircle, Globe, Settings, Trophy, MessageSquare, UserCheck, Shield } from "lucide-react"
+import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, LineChart, ArrowUpRight, Crown, ArrowRight, Bot, Users, BookOpen, ChevronDown, ChevronRight, Dice6, Rocket, Share2, HelpCircle, Globe, Settings, Trophy, MessageSquare, UserCheck, Shield, Vote } from "lucide-react"
 
 export const Sidebar = memo(function Sidebar() {
   const pathname = usePathname()
@@ -23,6 +23,9 @@ export const Sidebar = memo(function Sidebar() {
   // Admin authentication
   const { user } = useSuiAuth()
   const isAdmin = user?.address === '0x311479200d45ef0243b92dbcf9849b8f6b931d27ae885197ea73066724f2bcf4'
+
+  // Governance access (PRO and ROYAL tiers only)
+  const canAccessGovernance = tier === 'PRO' || tier === 'ROYAL'
 
   // Close mobile sidebar when route changes
   useEffect(() => {
@@ -80,6 +83,7 @@ export const Sidebar = memo(function Sidebar() {
         { name: "Forum", href: "/forum", icon: MessageSquare },
       ]
     },
+    { name: "Governance", href: "/governance", icon: Vote, restricted: !canAccessGovernance },
     { name: "RaffleCraft", href: "/dapps/rafflecraft", icon: Dice6, restricted: false },
     { name: "Dewhale", href: "/dapps/dewhale-launchpad", icon: Rocket, restricted: false },
     { name: "E-Learning", href: "/metago-academy", icon: BookOpen, restricted: false },

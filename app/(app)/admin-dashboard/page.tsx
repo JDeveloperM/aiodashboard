@@ -7,6 +7,7 @@ import { AdminOverview } from '@/components/admin/admin-overview'
 import { AdminContentNotifications } from '@/components/admin/admin-content-notifications'
 import { AdminCreatorManagement } from '@/components/admin/admin-creator-management'
 import { AdminRaffleCraft } from '@/components/admin/admin-rafflecraft'
+import { AdminGovernance } from '@/components/admin/admin-governance'
 
 // Admin wallet address
 const ADMIN_ADDRESS = '0x311479200d45ef0243b92dbcf9849b8f6b931d27ae885197ea73066724f2bcf4'
@@ -72,6 +73,9 @@ export default function AdminDashboardPage() {
 
       {/* Creator & Channel Management */}
       <AdminCreatorManagement />
+
+      {/* Governance Management */}
+      <AdminGovernance isAdmin={isAdmin} />
 
       {/* RaffleCraft Admin */}
       <AdminRaffleCraft />
