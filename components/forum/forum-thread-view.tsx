@@ -11,6 +11,7 @@ import { CreatePostModal } from "./create-post-modal"
 import { CreateChannelPostModal } from "../create-channel-post-modal"
 import { RichContentDisplay } from "@/components/ui/rich-content-display"
 import { ForumUserTooltip } from "./forum-user-tooltip"
+import { ReplyActionButtons } from "./reply-action-buttons"
 import { ForumPost, ForumTopic, forumService } from "@/lib/forum-service"
 import { forumUserService, ForumUserData } from "@/lib/forum-user-service"
 import { useForumRealtime } from "@/hooks/use-forum-realtime"
@@ -120,6 +121,12 @@ export function ForumThreadView({
     try {
       // Get the current topic data to check if it's a creator channel
       const topic = await forumService.getTopicById(topicId)
+      console.log('🔍 ForumThreadView: Loaded topic:', {
+        topicId,
+        topic,
+        creatorId: topic?.creatorId,
+        contentType: topic?.contentType
+      })
       setCurrentTopic(topic)
     } catch (error) {
       console.error('Failed to load current topic:', error)
@@ -136,6 +143,14 @@ export function ForumThreadView({
   // Check if this is a creator channel topic
   const isCreatorChannel = currentTopic?.contentType === 'creator_post' || currentTopic?.creatorId
   const isTopicOwner = user?.address === currentTopic?.creatorId
+
+  // Debug user and topic info
+  console.log('🔍 ForumThreadView: User and topic info:', {
+    userAddress: user?.address,
+    topicCreatorId: currentTopic?.creatorId,
+    isCreatorChannel,
+    isTopicOwner
+  })
 
   // Function to handle create post modal
   const handleCreatePost = () => {
@@ -166,17 +181,90 @@ export function ForumThreadView({
     }
   }
 
-  // Helper function to organize posts and replies
+  // Helper function to organize posts and replies with nested creator answers
   const organizePostsAndReplies = () => {
-    const standalonePosts = posts.filter(post => !post.title.startsWith('Re:'))
-    const replies = posts.filter(post => post.title.startsWith('Re:'))
+    // Filter out creator answers from standalone posts - they should be treated as replies
+    const standalonePosts = posts.filter(post =>
+      !post.title.startsWith('Re:') &&
+      !post.title.startsWith('Answer to ')
+    )
+
+    // Include both regular replies (Re:) and creator answers (Answer to)
+    const allReplies = posts.filter(post =>
+      post.title.startsWith('Re:') ||
+      post.title.startsWith('Answer to ')
+    )
+
+    // Separate user replies from creator answers
+    const userReplies = allReplies.filter(reply =>
+      !currentTopic?.creatorId ||
+      reply.author_address.toLowerCase() !== currentTopic.creatorId.toLowerCase()
+    )
+
+    const creatorAnswers = allReplies.filter(reply =>
+      currentTopic?.creatorId &&
+      reply.author_address.toLowerCase() === currentTopic.creatorId.toLowerCase()
+    )
+
+    console.log('🔍 Creator answers found:', creatorAnswers.map(answer => ({
+      id: answer.id,
+      title: answer.title,
+      author: answer.author_address,
+      created_at: answer.created_at
+    })))
+
+    console.log('🔍 User replies found:', userReplies.map(reply => ({
+      id: reply.id,
+      title: reply.title,
+      author: reply.author_address,
+      created_at: reply.created_at
+    })))
+
+    console.log('🔍 DETAILED ANALYSIS:')
+    console.log('All creator answers:', creatorAnswers)
+    console.log('All user replies:', userReplies)
 
     // Group replies by their parent post (based on title matching)
     const postsWithReplies = standalonePosts.map(post => {
-      const postReplies = replies.filter(reply =>
+      const postReplies = userReplies.filter(reply =>
         reply.title === `Re: ${post.title}` ||
         reply.title.includes(post.title)
-      )
+      ).map(reply => {
+        // Find creator answers for this specific reply using the precise title format
+        const replyAnswers = creatorAnswers.filter(answer => {
+          const matchesNewFormat = answer.title.startsWith(`Answer to ${reply.id}:`)
+
+          // Temporary: Let's also check what the old format looks like
+          const possibleOldMatches = [
+            answer.title === reply.title,
+            answer.title.includes(reply.title.replace('Re: ', '')),
+            reply.title.startsWith('Re: ') && answer.title.includes(reply.title.substring(4))
+          ]
+
+          console.log('🔍 DETAILED Answer matching:', {
+            replyId: reply.id,
+            replyTitle: reply.title,
+            answerTitle: answer.title,
+            answerId: answer.id,
+            answerCreatedAt: answer.created_at,
+            replyCreatedAt: reply.created_at,
+            matchesNewFormat,
+            possibleOldMatches,
+            timeComparison: answer.created_at > reply.created_at ? 'AFTER' : 'BEFORE',
+            finalMatch: matchesNewFormat
+          })
+
+          // Only use the new format for now to prevent cross-contamination
+          // Old answers without proper ID matching will not be shown until they're re-answered
+          return matchesNewFormat
+        })
+
+        return {
+          ...reply,
+          creatorAnswers: replyAnswers
+        }
+      })
+
       return {
         ...post,
         replies: postReplies,
@@ -438,9 +526,21 @@ export function ForumThreadView({
                 {/* Collapsible Replies */}
                 {post.replyCount > 0 && isExpanded && (
                   <div className="ml-6 mt-2 space-y-2">
-                    {post.replies.map((reply) => (
-                      <Card key={reply.id} className="bg-[#0f1a2e] border-[#C0E6FF]/5">
-                        <CardContent className="p-3">
+                    {post.replies.map((reply) => {
+                      // Check if this is a creator answer
+                      const isCreatorAnswer = reply.author_address && currentTopic?.creatorId &&
+                        reply.author_address.toLowerCase() === currentTopic.creatorId.toLowerCase()
+
+                      return (
+                        <Card
+                          key={reply.id}
+                          className={`border-[#C0E6FF]/5 ${
+                            isCreatorAnswer
+                              ? 'bg-green-500/10 border-green-500/20' // Transparent green for creator answers
+                              : 'bg-[#0f1a2e]' // Default background for user replies
+                          }`}
+                        >
+                          <CardContent className="p-3">
                           <div className="flex items-start gap-3">
                             {/* Reply Avatar */}
                             <div className="flex-shrink-0">
@@ -479,17 +579,87 @@ export function ForumThreadView({
                                 <Badge variant="outline" className="text-xs text-[#C0E6FF]/60 border-[#C0E6FF]/20">
                                   Reply
                                 </Badge>
+
+                                {/* Creator Action Buttons */}
+                                <ReplyActionButtons
+                                  replyId={reply.id}
+                                  replyAuthor={reply.author_username || `User ${reply.author_address.slice(0, 6)}`}
+                                  replyContent={reply.content}
+                                  currentUserAddress={user?.address || ''}
+                                  topicCreatorId={currentTopic?.creatorId || ''}
+                                  replyAuthorAddress={reply.author_address}
+                                  onReplyDeleted={handleReplyCreated}
+                                  onAnswerCreated={handleReplyCreated}
+                                />
                               </div>
 
                               {/* Reply Content */}
                               <div className="text-[#C0E6FF] whitespace-pre-wrap text-sm">
                                 {reply.content}
                               </div>
+
+                              {/* Creator Answers to this Reply */}
+                              {reply.creatorAnswers && reply.creatorAnswers.length > 0 && (
+                                <div className="mt-3 ml-4 space-y-2">
+                                  {reply.creatorAnswers.map((answer) => (
+                                    <Card
+                                      key={answer.id}
+                                      className="bg-green-500/10 border-green-500/20"
+                                    >
+                                      <CardContent className="p-3">
+                                        <div className="flex items-start gap-3">
+                                          {/* Answer Avatar */}
+                                          <div className="flex-shrink-0">
+                                            <ForumUserTooltip
+                                              userAddress={answer.author_address}
+                                              username={answer.author_username}
+                                              avatar={getAvatarUrl(answer.author_avatar)}
+                                              tier={answer.author_tier}
+                                            >
+                                              <Avatar className="w-6 h-6 cursor-pointer hover:ring-2 hover:ring-[#4DA2FF]/50 transition-all duration-200">
+                                                <AvatarImage
+                                                  src={getAvatarUrl(answer.author_avatar)}
+                                                  alt={answer.author_username || 'Creator'}
+                                                />
+                                                <AvatarFallback className="bg-green-600 text-white text-xs">
+                                                  {answer.author_username?.charAt(0).toUpperCase() || 'C'}
+                                                </AvatarFallback>
+                                              </Avatar>
+                                            </ForumUserTooltip>
+                                          </div>
+
+                                          {/* Answer Content */}
+                                          <div className="flex-1 min-w-0">
+                                            {/* Answer Header */}
+                                            <div className="flex items-center gap-2 mb-1">
+                                              <span className="text-sm font-medium text-white">
+                                                {answer.author_username || `Creator ${answer.author_address.slice(0, 6)}`}
+                                              </span>
+                                              <Badge className="bg-green-600 text-white text-xs px-1 py-0 h-4">
+                                                Creator
+                                              </Badge>
+                                              <span className="text-xs text-[#C0E6FF]/40">
+                                                {formatDate(answer.created_at)}
+                                              </span>
+                                            </div>
+
+                                            {/* Answer Content */}
+                                            <div className="text-[#C0E6FF] whitespace-pre-wrap text-sm">
+                                              {answer.content}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>

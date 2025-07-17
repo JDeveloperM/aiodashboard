@@ -461,7 +461,14 @@ class ForumService {
         return null
       }
 
-      return data
+      // Map database fields to interface fields
+      return {
+        ...data,
+        creatorId: data.creator_id, // Map creator_id to creatorId
+        channelId: data.channel_id, // Map channel_id to channelId
+        contentType: data.content_type, // Map content_type to contentType
+        accessLevel: data.access_level // Map access_level to accessLevel
+      }
     } catch (error) {
       console.error('Failed to get topic by ID:', error)
       return null
@@ -916,6 +923,96 @@ class ForumService {
 
     } catch (error) {
       console.error('Failed to moderate reply:', error)
+      return { success: false, error: 'Internal server error' }
+    }
+  }
+
+  /**
+   * Delete a reply (creator only)
+   */
+  async deleteReply(
+    creatorAddress: string,
+    replyId: string
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log('🗑️ Deleting reply via API:', {
+        replyId,
+        creatorAddress
+      })
+
+      const response = await fetch(`/api/forum/replies/${replyId}?creatorAddress=${encodeURIComponent(creatorAddress)}`, {
+        method: 'DELETE',
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        console.error('❌ API delete reply failed:', result)
+        return { success: false, error: result.error || 'Failed to delete reply' }
+      }
+
+      console.log('✅ Reply deleted successfully via API:', result)
+      return { success: true }
+
+    } catch (error) {
+      console.error('Failed to delete reply:', error)
+      return { success: false, error: 'Internal server error' }
+    }
+  }
+
+  /**
+   * Create creator answer to a reply
+   */
+  async createCreatorAnswer(
+    creatorAddress: string,
+    replyId: string,
+    content: string
+  ): Promise<{ success: boolean; answerId?: string; error?: string }> {
+    try {
+      console.log('💬 Creating creator answer via API:', {
+        replyId,
+        creatorAddress,
+        creatorAddressType: typeof creatorAddress,
+        creatorAddressLength: creatorAddress?.length,
+        content: content.substring(0, 50) + '...'
+      })
+
+      const requestBody = {
+        creatorAddress,
+        content
+      }
+
+      console.log('📤 Request body:', requestBody)
+
+      const response = await fetch(`/api/forum/replies/${replyId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      })
+
+      console.log('📥 Response status:', response.status, response.statusText)
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        console.error('❌ API create answer failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          result
+        })
+        return { success: false, error: result.error || 'Failed to create answer' }
+      }
+
+      console.log('✅ Creator answer created successfully via API:', result)
+      return {
+        success: true,
+        answerId: result.answerId
+      }
+
+    } catch (error) {
+      console.error('Failed to create creator answer:', error)
       return { success: false, error: 'Internal server error' }
     }
   }
