@@ -208,13 +208,11 @@ export function AdminGovernance({ isAdmin }: AdminGovernanceProps) {
 
   if (!isAdmin) {
     return (
-      <Card className="bg-[#1a2f51] border-[#C0E6FF]/30">
-        <CardContent className="p-8 text-center">
-          <AlertTriangle className="w-12 h-12 text-orange-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white mb-2">Admin Access Required</h3>
-          <p className="text-gray-400">Only administrators can manage governance proposals.</p>
-        </CardContent>
-      </Card>
+      <div className="bg-[#1a2f51] border border-[#C0E6FF]/30 rounded-lg p-8 text-center">
+        <AlertTriangle className="w-12 h-12 text-orange-400 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-white mb-2">Admin Access Required</h3>
+        <p className="text-gray-400">Only administrators can manage governance proposals.</p>
+      </div>
     )
   }
 
@@ -255,11 +253,11 @@ export function AdminGovernance({ isAdmin }: AdminGovernanceProps) {
         <CardContent className="space-y-6">
           {/* Create Proposal Form */}
           {showCreateForm && (
-        <Card className="bg-[#1a2f51] border-[#C0E6FF]/30">
-          <CardHeader>
-            <CardTitle className="text-white">Create New Proposal</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="bg-[#1a2f51] border border-[#C0E6FF]/30 rounded-lg">
+          <div className="p-6 border-b border-[#C0E6FF]/20">
+            <h3 className="text-white text-lg font-semibold">Create New Proposal</h3>
+          </div>
+          <div className="p-6 space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Title
@@ -319,8 +317,8 @@ export function AdminGovernance({ isAdmin }: AdminGovernanceProps) {
                 Cancel
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Proposals List */}
@@ -330,18 +328,15 @@ export function AdminGovernance({ isAdmin }: AdminGovernanceProps) {
           <span className="ml-2 text-gray-400">Loading proposals...</span>
         </div>
       ) : proposals.length === 0 ? (
-        <Card className="bg-[#1a2f51] border-[#C0E6FF]/30">
-          <CardContent className="p-12 text-center">
-            <Vote className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">No Proposals</h3>
-            <p className="text-gray-400">Create your first governance proposal to get started.</p>
-          </CardContent>
-        </Card>
+        <div className="bg-[#1a2f51] border border-[#C0E6FF]/30 rounded-lg p-12 text-center">
+          <Vote className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-white mb-2">No Proposals</h3>
+          <p className="text-gray-400">Create your first governance proposal to get started.</p>
+        </div>
       ) : (
         <div className="space-y-4">
           {proposals.map((proposal) => (
-            <Card key={proposal.id} className="bg-[#1a2f51] border-[#C0E6FF]/30">
-              <CardContent className="p-6">
+            <div key={proposal.id} className="bg-[#1a2f51] border border-[#C0E6FF]/30 rounded-lg p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-white mb-2">{proposal.title}</h3>
@@ -428,8 +423,7 @@ export function AdminGovernance({ isAdmin }: AdminGovernanceProps) {
                     Delete
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+            </div>
           ))}
           </div>
         )}

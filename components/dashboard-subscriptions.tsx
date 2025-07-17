@@ -43,7 +43,7 @@ const nftTiers: NFTTier[] = [
       'Entry to the Official Discord Community',
       'Affiliate Dashboard & Control Access',
       'AIO Creators Channels Access',
-      'MetaGo Academy Crypto Basic Level'
+      'E-Learning Crypto Basic Level'
     ],
     icon: <RoleImage role="NOMAD" size="2xl" />,
     color: '#6B7280',
@@ -66,8 +66,8 @@ const nftTiers: NFTTier[] = [
       'No Cycle Payments',
       'PRO Role within the Discord Community',
       'Affiliate Dashboard & Control Access',
-      'MetaGo Academy Premium',
-      'Access to RaffleCraft Decentralized Application',
+      'E-Learning Premium',
+      'Access to rafflequiz Decentralized Application',
       'Access to DEWhale Decentralized Application',
       'Comprehensive access to AIO Creator tools',
       'Free Access to 3 Premium AIO Creators channels'
@@ -336,15 +336,15 @@ export function DashboardSubscriptions() {
                 </tr>
                 <tr className="border-b border-[#C0E6FF]/10">
                   <td className="py-3 text-white">Cycle Payment Exemption</td>
-                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
+                  <td className="py-3 text-center text-red-400">✗</td>
                   <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
                   <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
                 </tr>
                 <tr className="border-b border-[#C0E6FF]/10">
                   <td className="py-3 text-white">E-Learning</td>
                   <td className="py-3 text-center text-white">Basic Course</td>
-                  <td className="py-3 text-center text-blue-400">Full Access</td>
-                  <td className="py-3 text-center text-yellow-400">Full Access</td>
+                  <td className="py-3 text-center text-green-400">Full Access</td>
+                  <td className="py-3 text-center text-green-400">Full Access</td>
                 </tr>
                 <tr className="border-b border-[#C0E6FF]/10">
                   <td className="py-3 text-white">RaffleQuiz (DApp)</td>
@@ -366,8 +366,8 @@ export function DashboardSubscriptions() {
                 </tr>
                 <tr className="border-b border-[#C0E6FF]/10">
                   <td className="py-3 text-white">FOREX & STOCKS Trading</td>
-                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
-                  <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
+                  <td className="py-3 text-center text-red-400">✗</td>
+                  <td className="py-3 text-center text-red-400">✗</td>
                   <td className="py-3 text-center"><CheckCircle className="w-4 h-4 text-green-400 mx-auto" /></td>
                 </tr>
                 <tr className="border-b border-[#C0E6FF]/10">

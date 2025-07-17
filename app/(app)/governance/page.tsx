@@ -18,21 +18,19 @@ import {
   Vote,
   Clock,
   Users,
-  Crown,
-  Star,
   Shield,
   CheckCircle,
   XCircle,
   AlertTriangle,
   Loader2
 } from 'lucide-react'
+import Image from 'next/image'
 import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 
 interface ProposalCardProps {
   proposal: GovernanceProposal
   userStatus: UserVotingStatus
-  onVote: (proposalId: string, choice: 'for' | 'against') => Promise<void>
-  isVoting: boolean
 }
 
 interface CompletedProposalsTableProps {
@@ -40,6 +38,8 @@ interface CompletedProposalsTableProps {
 }
 
 function CompletedProposalsTable({ proposals }: CompletedProposalsTableProps) {
+  const router = useRouter()
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -81,6 +81,7 @@ function CompletedProposalsTable({ proposals }: CompletedProposalsTableProps) {
               <TableHead className="text-[#C0E6FF] font-semibold text-center">Votes</TableHead>
               <TableHead className="text-[#C0E6FF] font-semibold text-center">Participation</TableHead>
               <TableHead className="text-[#C0E6FF] font-semibold text-center">Completed</TableHead>
+              <TableHead className="text-[#C0E6FF] font-semibold text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -88,9 +89,14 @@ function CompletedProposalsTable({ proposals }: CompletedProposalsTableProps) {
               <TableRow key={proposal.id} className="border-[#C0E6FF]/10 hover:bg-[#C0E6FF]/5">
                 <TableCell className="py-4">
                   <div>
-                    <h3 className="text-white font-medium text-sm mb-1 line-clamp-2">
-                      {proposal.title}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant="outline" className="bg-[#4da2ff]/20 text-[#4da2ff] border-[#4da2ff]/30 text-xs">
+                        #{proposal.proposal_number}
+                      </Badge>
+                      <h3 className="text-white font-medium text-sm line-clamp-2">
+                        {proposal.title}
+                      </h3>
+                    </div>
                     <p className="text-gray-400 text-xs line-clamp-1">
                       {proposal.description}
                     </p>
@@ -126,6 +132,16 @@ function CompletedProposalsTable({ proposals }: CompletedProposalsTableProps) {
                     {formatDate(proposal.voting_deadline)}
                   </div>
                 </TableCell>
+                <TableCell className="text-center">
+                  <Button
+                    onClick={() => router.push(`/governance/${proposal.id}`)}
+                    variant="outline"
+                    size="sm"
+                    className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 text-xs"
+                  >
+                    View Details
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -135,7 +151,9 @@ function CompletedProposalsTable({ proposals }: CompletedProposalsTableProps) {
   )
 }
 
-function ProposalCard({ proposal, userStatus, onVote, isVoting }: ProposalCardProps) {
+function ProposalCard({ proposal, userStatus }: ProposalCardProps) {
+  const router = useRouter()
+
   const formatTimeRemaining = (seconds: number) => {
     if (seconds <= 0) return 'Expired'
     
@@ -152,10 +170,14 @@ function ProposalCard({ proposal, userStatus, onVote, isVoting }: ProposalCardPr
 
   const getTierIcon = (tier: string) => {
     switch (tier) {
-      case 'ROYAL': return <Crown className="w-4 h-4 text-yellow-400" />
-      case 'PRO': return <Star className="w-4 h-4 text-blue-400" />
-      case 'NOMAD': return <Shield className="w-4 h-4 text-gray-400" />
-      default: return <Shield className="w-4 h-4 text-gray-400" />
+      case 'ROYAL':
+        return <Image src="/images/nfts/royal-nft.png" alt="ROYAL NFT" width={16} height={16} className="w-4 h-4 rounded-sm" />
+      case 'PRO':
+        return <Image src="/images/nfts/pro-nft.png" alt="PRO NFT" width={16} height={16} className="w-4 h-4 rounded-sm" />
+      case 'NOMAD':
+        return <Shield className="w-4 h-4 text-gray-400" />
+      default:
+        return <Shield className="w-4 h-4 text-gray-400" />
     }
   }
 
@@ -168,7 +190,12 @@ function ProposalCard({ proposal, userStatus, onVote, isVoting }: ProposalCardPr
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-xl text-white mb-2">{proposal.title}</CardTitle>
+            <div className="flex items-center gap-3 mb-2">
+              <Badge variant="outline" className="bg-[#4da2ff]/20 text-[#4da2ff] border-[#4da2ff]/30">
+                Proposal #{proposal.proposal_number}
+              </Badge>
+              <CardTitle className="text-xl text-white">{proposal.title}</CardTitle>
+            </div>
             <p className="text-gray-300 text-sm leading-relaxed">{proposal.description}</p>
           </div>
 
@@ -203,11 +230,23 @@ function ProposalCard({ proposal, userStatus, onVote, isVoting }: ProposalCardPr
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-gray-400">
-              <Crown className="w-4 h-4 text-yellow-400" />
+              <Image
+                src="/images/nfts/royal-nft.png"
+                alt="ROYAL NFT"
+                width={16}
+                height={16}
+                className="w-4 h-4 rounded-sm"
+              />
               <span>ROYAL voters: {proposal.royal_voters}</span>
             </div>
             <div className="flex items-center gap-2 text-gray-400">
-              <Star className="w-4 h-4 text-blue-400" />
+              <Image
+                src="/images/nfts/pro-nft.png"
+                alt="PRO NFT"
+                width={16}
+                height={16}
+                className="w-4 h-4 rounded-sm"
+              />
               <span>PRO voters: {proposal.pro_voters}</span>
             </div>
           </div>
@@ -218,7 +257,7 @@ function ProposalCard({ proposal, userStatus, onVote, isVoting }: ProposalCardPr
             </div>
             <div className="flex items-center gap-2 text-gray-400">
               <Users className="w-4 h-4" />
-              <span>Weight: {proposal.royal_vote_weight + proposal.pro_vote_weight}</span>
+              <span>Voting Power: {proposal.royal_vote_weight + proposal.pro_vote_weight}</span>
             </div>
           </div>
         </div>
@@ -231,7 +270,7 @@ function ProposalCard({ proposal, userStatus, onVote, isVoting }: ProposalCardPr
             <div className="flex items-center gap-2">
               {getTierIcon(userStatus.tier)}
               <span className="text-sm text-gray-400">
-                Your tier: {userStatus.tier} (Weight: {userStatus.vote_weight})
+                Your tier: {userStatus.tier} (Voting Power: {userStatus.vote_weight})
               </span>
             </div>
             
@@ -283,31 +322,8 @@ function ProposalCard({ proposal, userStatus, onVote, isVoting }: ProposalCardPr
               </span>
             </div>
           ) : canVoteOnProposal ? (
-            <div className="flex gap-2">
-              <Button
-                onClick={() => onVote(proposal.id, 'for')}
-                disabled={isVoting}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-              >
-                {isVoting ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                )}
-                Vote For
-              </Button>
-              <Button
-                onClick={() => onVote(proposal.id, 'against')}
-                disabled={isVoting}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-              >
-                {isVoting ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <XCircle className="w-4 h-4 mr-2" />
-                )}
-                Vote Against
-              </Button>
+            <div className="text-center p-2 bg-green-500/10 border border-green-500/30 rounded-lg">
+              <span className="text-sm text-green-400">Click "View Details" to cast your vote</span>
             </div>
           ) : userStatus.has_voted ? (
             <div className="text-center p-2 bg-blue-500/10 border border-blue-500/30 rounded-lg">
@@ -318,6 +334,16 @@ function ProposalCard({ proposal, userStatus, onVote, isVoting }: ProposalCardPr
               <span className="text-sm text-gray-400">Voting is no longer available</span>
             </div>
           )}
+
+          {/* View Details Button */}
+          <Separator className="bg-gray-700" />
+          <Button
+            onClick={() => router.push(`/governance/${proposal.id}`)}
+            variant="outline"
+            className="w-full border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
+          >
+            View Details
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -404,7 +430,7 @@ export default function GovernancePage() {
       
       if (result.success) {
         toast.success(`Vote submitted successfully!`, {
-          description: `You voted ${choice.toUpperCase()} with weight ${userStatuses[proposalId]?.vote_weight || 1}`
+          description: `You voted ${choice.toUpperCase()} with voting power ${userStatuses[proposalId]?.vote_weight || 1}`
         })
         
         // Reload data to reflect changes
@@ -453,15 +479,9 @@ export default function GovernancePage() {
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">DAO Governance</h1>
-          <p className="text-gray-400 mt-2">Participate in AIONET community decisions</p>
-        </div>
-        <div className="flex items-center gap-2 bg-[#1a2f51] px-4 py-2 rounded-lg border border-[#C0E6FF]/30">
-          <Vote className="w-5 h-5 text-[#4da2ff]" />
-          <span className="text-white font-medium">Governance</span>
-        </div>
+      <div>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">DAO Governance</h1>
+        <p className="text-gray-400 mt-2">Participate in AIONET community decisions</p>
       </div>
 
       {/* User Status */}
@@ -479,7 +499,7 @@ export default function GovernancePage() {
               <div>
                 <h3 className="text-lg font-semibold text-white">Your Voting Power</h3>
                 <p className="text-gray-400">
-                  Tier: {tier} • Vote Weight: {governanceService.getVoteWeight(tier as any)}
+                  Tier: {tier} • Voting Power: {governanceService.getVoteWeight(tier as any)}
                   {tier === 'NOMAD' && ' (No voting access)'}
                 </p>
               </div>
@@ -545,8 +565,6 @@ export default function GovernancePage() {
                       has_voted: false,
                       remaining_votes: 0
                     }}
-                    onVote={handleVote}
-                    isVoting={isVoting}
                   />
                 ))}
               </div>

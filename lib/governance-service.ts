@@ -8,6 +8,7 @@ const supabase = createClient(
 
 export interface GovernanceProposal {
   id: string
+  proposal_number: number
   title: string
   description: string
   created_by: string
@@ -115,10 +116,18 @@ class GovernanceService {
       const { data, error } = await supabase
         .from('governance_proposal_stats')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: true }) // Order by creation time for numbering
 
       if (error) throw error
-      return data || []
+
+      // Add proposal numbers based on chronological order
+      const proposalsWithNumbers = (data || []).map((proposal, index) => ({
+        ...proposal,
+        proposal_number: index + 1
+      }))
+
+      // Return in reverse order for display (newest first)
+      return proposalsWithNumbers.reverse()
     } catch (error) {
       console.error('Error fetching all proposals:', error)
       throw error
@@ -130,14 +139,11 @@ class GovernanceService {
    */
   async getProposal(proposalId: string): Promise<GovernanceProposal | null> {
     try {
-      const { data, error } = await supabase
-        .from('governance_proposal_stats')
-        .select('*')
-        .eq('id', proposalId)
-        .single()
+      // Get all proposals to determine the correct numbering
+      const allProposals = await this.getAllProposals()
+      const proposal = allProposals.find(p => p.id === proposalId)
 
-      if (error) throw error
-      return data
+      return proposal || null
     } catch (error) {
       console.error('Error fetching proposal:', error)
       return null

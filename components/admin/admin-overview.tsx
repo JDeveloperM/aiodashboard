@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Users, Crown, Star, Shield, TrendingUp } from "lucide-react"
+import { AdminPaionTokenStats } from "./admin-paion-token-stats"
 
 // Admin wallet address
 const ADMIN_ADDRESS = '0x311479200d45ef0243b92dbcf9849b8f6b931d27ae885197ea73066724f2bcf4'
@@ -156,6 +157,9 @@ export function AdminOverview() {
           </CardContent>
         </Card>
       </div>
+
+      {/* pAION Token Statistics */}
+      <AdminPaionTokenStats />
     </div>
   )
 }

@@ -216,10 +216,7 @@ export default function RoyaltiesPage() {
               My Wallet
             </Button>
           </div>
-          <div className="flex items-center justify-center md:justify-start gap-2">
-            <Crown className="w-6 h-6 text-yellow-400" />
-            <span className="text-yellow-400 font-semibold">ROYAL Access</span>
-          </div>
+
         </div>
       </div>
 
@@ -352,180 +349,140 @@ export default function RoyaltiesPage() {
           </div>
 
           {/* Income Sources with Circular Gauges */}
-          <div className="grid gap-6 md:grid-cols-2 mb-6">
+          <div className="grid gap-6 md:grid-cols-3 mb-6">
+            {/* Passive Income Sources - Column 1 */}
             <div className="space-y-4">
               <h4 className="text-white font-semibold flex items-center gap-2">
                 <Zap className="w-4 h-4 text-yellow-400" />
                 Passive Income Sources
               </h4>
 
-              {/* Side by side circular gauges */}
-              <div className="grid grid-cols-2 gap-4">
-                {/* PRO NFT Royalties Circular Gauge */}
-                <div className="bg-[#1a2f51]/50 rounded-lg p-4 border border-yellow-400/20 text-center">
-                  <div className="relative w-20 h-20 mx-auto mb-3">
-                    {/* Background circle */}
-                    <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 80 80">
-                      <circle
-                        cx="40"
-                        cy="40"
-                        r="30"
-                        stroke="currentColor"
-                        strokeWidth="8"
-                        fill="none"
-                        className="text-gray-700"
-                      />
-                      {/* Progress circle */}
-                      <circle
-                        cx="40"
-                        cy="40"
-                        r="30"
-                        stroke="url(#yellowGradient)"
-                        strokeWidth="8"
-                        fill="none"
-                        strokeDasharray={`${25 * 1.88} ${100 * 1.88}`}
-                        strokeLinecap="round"
-                        className="animate-pulse"
-                      />
-                      <defs>
-                        <linearGradient id="yellowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#fbbf24" />
-                          <stop offset="100%" stopColor="#f59e0b" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                    {/* Center text */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-yellow-400 font-bold text-lg">25%</span>
-                    </div>
+              {/* Centered PRO NFT Royalties Card */}
+              <div className="bg-gradient-to-br from-[#1a2f51]/80 to-[#2a4f71]/60 rounded-xl p-4 border border-yellow-400/30 text-center shadow-lg h-[280px] flex flex-col justify-center">
+                <div className="relative w-24 h-24 mx-auto mb-4">
+                  {/* Background circle */}
+                  <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 96 96">
+                    <circle
+                      cx="48"
+                      cy="48"
+                      r="36"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="none"
+                      className="text-gray-700"
+                    />
+                    {/* Progress circle */}
+                    <circle
+                      cx="48"
+                      cy="48"
+                      r="36"
+                      stroke="url(#yellowGradient)"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeDasharray={`${10 * 2.26} ${100 * 2.26}`}
+                      strokeLinecap="round"
+                      className="animate-pulse"
+                    />
+                    <defs>
+                      <linearGradient id="yellowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#fbbf24" />
+                        <stop offset="100%" stopColor="#f59e0b" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  {/* Center text */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-yellow-400 font-bold text-2xl">10%</span>
                   </div>
-                  <h5 className="text-[#C0E6FF] text-sm font-medium">PRO NFT</h5>
-                  <p className="text-xs text-[#C0E6FF]/70">Royalties</p>
+                </div>
+                <h5 className="text-white text-base font-semibold mb-1">PRO NFT Royalties</h5>
+                <p className="text-[#C0E6FF]/80 text-sm">Passive income from PRO tier NFT holders</p>
+              </div>
+            </div>
+
+            {/* Distribution Schedule - Previous Distribution - Column 2 */}
+            <div className="space-y-4">
+              <h4 className="text-white font-semibold flex items-center gap-2">
+                <Activity className="w-4 h-4 text-green-400" />
+                Previous Distribution
+              </h4>
+
+              <div className="bg-[#1a2f51]/50 rounded-xl p-4 border border-gray-400/20 h-[280px] flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[#C0E6FF] text-sm flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    Previous
+                  </span>
+                  <span className="text-gray-400 font-semibold text-xs">Completed</span>
                 </div>
 
-                {/* Platform Revenue Circular Gauge */}
-                <div className="bg-[#1a2f51]/50 rounded-lg p-4 border border-blue-400/20 text-center">
-                  <div className="relative w-20 h-20 mx-auto mb-3">
-                    {/* Background circle */}
-                    <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 80 80">
-                      <circle
-                        cx="40"
-                        cy="40"
-                        r="30"
-                        stroke="currentColor"
-                        strokeWidth="8"
-                        fill="none"
-                        className="text-gray-700"
-                      />
-                      {/* Progress circle */}
-                      <circle
-                        cx="40"
-                        cy="40"
-                        r="30"
-                        stroke="url(#blueGradient)"
-                        strokeWidth="8"
-                        fill="none"
-                        strokeDasharray={`${15 * 1.88} ${100 * 1.88}`}
-                        strokeLinecap="round"
-                        className="animate-pulse"
-                      />
-                      <defs>
-                        <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#60a5fa" />
-                          <stop offset="100%" stopColor="#3b82f6" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                    {/* Center text */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-blue-400 font-bold text-lg">15%</span>
+                <div className="space-y-4 flex-grow flex flex-col justify-center">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-white">
+                      {(royaltiesData.weeklyRoyaltiesAmount || 125.5).toFixed(2)} SUI
                     </div>
+                    <div className="text-sm text-[#C0E6FF]">Total Distributed</div>
                   </div>
-                  <h5 className="text-[#C0E6FF] text-sm font-medium">Platform</h5>
-                  <p className="text-xs text-[#C0E6FF]/70">Revenue</p>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-white">
+                      {royaltiesData.totalRoyalHolders || 120} Recipients
+                    </div>
+                    <div className="text-sm text-[#C0E6FF]">ROYAL holders paid</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center gap-2 pt-3 border-t border-gray-600/30">
+                  <Clock className="w-3 h-3 text-gray-400" />
+                  <span className="text-xs text-[#C0E6FF]">Last Friday, 12:00 UTC</span>
                 </div>
               </div>
             </div>
 
+            {/* Distribution Schedule - Next Distribution - Column 3 */}
             <div className="space-y-4">
               <h4 className="text-white font-semibold flex items-center gap-2">
                 <Activity className="w-4 h-4 text-green-400" />
-                Distribution Schedule
+                Next Distribution
               </h4>
 
-              {/* Previous and Next Distribution Side by Side */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Previous Distribution */}
-                <div className="bg-[#1a2f51]/50 rounded-lg p-4 border border-gray-400/20">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[#C0E6FF] text-sm flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      Previous
-                    </span>
-                    <span className="text-gray-400 font-semibold text-xs">Completed</span>
-                  </div>
+              <div className="bg-[#1a2f51]/50 rounded-xl p-4 border border-green-400/20 h-[280px] flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[#C0E6FF] text-sm flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    Next
+                  </span>
+                  <span className="text-green-400 font-semibold text-xs">Scheduled</span>
+                </div>
 
-                  <div className="space-y-3">
-                    <div>
-                      <div className="text-xl font-bold text-white">
-                        {(royaltiesData.weeklyRoyaltiesAmount || 125.5).toFixed(2)} SUI
-                      </div>
-                      <div className="text-xs text-[#C0E6FF]">Total Distributed</div>
+                {/* Minimal Countdown Timer */}
+                <div className="text-center flex-grow flex flex-col justify-center">
+                  <div className="text-sm text-[#C0E6FF] mb-3">Countdown:</div>
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-green-400">{countdown.days}</div>
+                      <div className="text-xs text-[#C0E6FF]">Days</div>
                     </div>
-                    <div>
-                      <div className="text-lg font-bold text-white">
-                        {royaltiesData.totalRoyalHolders || 120} Recipients
-                      </div>
-                      <div className="text-xs text-[#C0E6FF]">ROYAL holders paid</div>
+                    <div className="text-green-400 text-lg">:</div>
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-green-400">{countdown.hours}</div>
+                      <div className="text-xs text-[#C0E6FF]">Hrs</div>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-600/30">
-                    <Clock className="w-3 h-3 text-gray-400" />
-                    <span className="text-xs text-[#C0E6FF]">Last Friday, 12:00 UTC</span>
+                    <div className="text-green-400 text-lg">:</div>
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-green-400">{countdown.minutes}</div>
+                      <div className="text-xs text-[#C0E6FF]">Min</div>
+                    </div>
+                    <div className="text-green-400 text-lg">:</div>
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-green-400">{countdown.seconds}</div>
+                      <div className="text-xs text-[#C0E6FF]">Sec</div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Next Distribution with Countdown */}
-                <div className="bg-[#1a2f51]/50 rounded-lg p-4 border border-green-400/20">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[#C0E6FF] text-sm flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      Next
-                    </span>
-                    <span className="text-green-400 font-semibold text-xs">Scheduled</span>
-                  </div>
-
-                  {/* Minimal Countdown Timer */}
-                  <div className="text-center mb-3">
-                    <div className="text-xs text-[#C0E6FF] mb-2">Countdown:</div>
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-green-400">{countdown.days}</div>
-                        <div className="text-xs text-[#C0E6FF]">Days</div>
-                      </div>
-                      <div className="text-green-400">:</div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-green-400">{countdown.hours}</div>
-                        <div className="text-xs text-[#C0E6FF]">Hrs</div>
-                      </div>
-                      <div className="text-green-400">:</div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-green-400">{countdown.minutes}</div>
-                        <div className="text-xs text-[#C0E6FF]">Min</div>
-                      </div>
-                      <div className="text-green-400">:</div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-green-400">{countdown.seconds}</div>
-                        <div className="text-xs text-[#C0E6FF]">Sec</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-green-600/30">
-                    <Clock className="w-3 h-3 text-green-400" />
-                    <span className="text-xs text-[#C0E6FF]">Every Friday at 12:00 UTC</span>
-                  </div>
+                <div className="flex items-center justify-center gap-2 pt-3 border-t border-green-600/30">
+                  <Clock className="w-3 h-3 text-green-400" />
+                  <span className="text-xs text-[#C0E6FF]">Every Friday at 12:00 UTC</span>
                 </div>
               </div>
             </div>
