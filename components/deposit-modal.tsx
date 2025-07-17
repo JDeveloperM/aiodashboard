@@ -183,7 +183,7 @@ export function DepositModal({
               <div>
                 <p className="text-orange-400 font-medium text-sm">Important</p>
                 <p className="text-orange-300 text-xs mt-1">
-                  Only send SUI or USDC tokens to this address on SUI testnet. Double-check before sending.
+                  Only send SUI, WAL, or USDC tokens to this address on SUI testnet. pAION tokens are managed internally. Double-check before sending.
                 </p>
               </div>
             </div>

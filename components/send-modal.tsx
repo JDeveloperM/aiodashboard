@@ -11,6 +11,8 @@ import { Transaction } from '@mysten/sui/transactions'
 import { useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
 import { useZkLogin } from './zklogin-provider'
 import { useZkLoginWallet } from '@/hooks/use-zklogin-wallet'
+import { paionTokenService } from '@/lib/paion-token-service'
+import { useTokens } from '@/contexts/points-context'
 import {
   Send,
   AlertTriangle,
@@ -26,6 +28,8 @@ interface SendModalProps {
   walletAddress: string | null
   suiBalance: number
   usdcBalance: number
+  walBalance: number
+  paionBalance: number
   isZkLogin?: boolean
 }
 
@@ -35,11 +39,13 @@ export function SendModal({
   walletAddress,
   suiBalance,
   usdcBalance,
+  walBalance,
+  paionBalance,
   isZkLogin = false
 }: SendModalProps) {
   const [recipientAddress, setRecipientAddress] = useState('')
   const [amount, setAmount] = useState('')
-  const [selectedToken, setSelectedToken] = useState<'SUI' | 'USDC'>('SUI')
+  const [selectedToken, setSelectedToken] = useState<'SUI' | 'USDC' | 'WAL' | 'pAION'>('SUI')
   const [isProcessing, setIsProcessing] = useState(false)
   const [step, setStep] = useState<'form' | 'confirm' | 'processing' | 'success'>('form')
   const [transactionDigest, setTransactionDigest] = useState('')
@@ -53,8 +59,12 @@ export function SendModal({
   const zkLogin = useZkLogin()
   const zkWallet = useZkLoginWallet()
 
-  // USDC contract address on Sui testnet
+  // pAION token hooks
+  const { refreshBalance } = useTokens()
+
+  // Token contract addresses on Sui testnet
   const USDC_COIN_TYPE = '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC'
+  const WAL_COIN_TYPE = '0x2::sui::SUI' // Replace with actual WAL token contract when available
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -83,7 +93,22 @@ export function SendModal({
     }
 
     const amountNum = parseFloat(amount)
-    const maxBalance = selectedToken === 'SUI' ? suiBalance : usdcBalance
+    let maxBalance = 0
+
+    switch (selectedToken) {
+      case 'SUI':
+        maxBalance = suiBalance
+        break
+      case 'USDC':
+        maxBalance = usdcBalance
+        break
+      case 'WAL':
+        maxBalance = walBalance
+        break
+      case 'pAION':
+        maxBalance = paionBalance
+        break
+    }
 
     if (amountNum > maxBalance) {
       toast.error(`Insufficient ${selectedToken} balance`)
@@ -120,11 +145,34 @@ export function SendModal({
           const amountInMist = (amountNum * 1_000_000_000).toString()
           const result = await zkWallet.transferSui(recipientAddress, amountInMist)
           digest = result.digest
+        } else if (selectedToken === 'pAION') {
+          // pAION transfer (database-based)
+          const result = await paionTokenService.spendTokens(
+            walletAddress!,
+            amountNum,
+            `Transfer to ${recipientAddress.slice(0, 8)}...`,
+            'transfer',
+            recipientAddress
+          )
+
+          if (!result.success) {
+            throw new Error(result.error || 'pAION transfer failed')
+          }
+
+          // Add tokens to recipient
+          await paionTokenService.addTokens(
+            recipientAddress,
+            amountNum,
+            `Transfer from ${walletAddress!.slice(0, 8)}...`,
+            'transfer',
+            walletAddress!
+          )
+
+          digest = 'paion-transfer-' + Date.now() // Mock digest for pAION transfers
         } else {
-          // USDC transfer for zkLogin - this is a simplified implementation
-          // In a real app, you'd need to handle USDC coin selection properly
-          toast.error('USDC transfers for zkLogin wallets are not yet fully implemented')
-          throw new Error('USDC transfers for zkLogin wallets are not yet fully implemented')
+          // USDC/WAL transfers for zkLogin - simplified implementation
+          toast.error(`${selectedToken} transfers for zkLogin wallets are not yet fully implemented`)
+          throw new Error(`${selectedToken} transfers for zkLogin wallets are not yet fully implemented`)
         }
       } else {
         // Traditional wallet transaction
@@ -132,44 +180,89 @@ export function SendModal({
           throw new Error('Wallet not connected')
         }
 
-        const transaction = new Transaction()
+        if (selectedToken === 'pAION') {
+          // pAION transfer (database-based)
+          const result = await paionTokenService.spendTokens(
+            account.address,
+            amountNum,
+            `Transfer to ${recipientAddress.slice(0, 8)}...`,
+            'transfer',
+            recipientAddress
+          )
 
-        if (selectedToken === 'SUI') {
-          // Convert SUI to MIST (1 SUI = 1,000,000,000 MIST)
-          const amountInMist = Math.floor(amountNum * 1_000_000_000)
-          const [coin] = transaction.splitCoins(transaction.gas, [amountInMist])
-          transaction.transferObjects([coin], recipientAddress)
-        } else {
-          // USDC transfer
-          // Convert USDC to smallest unit (6 decimals)
-          const amountInSmallestUnit = Math.floor(amountNum * 1_000_000)
-          
-          // Get USDC coins
-          const coins = await suiClient.getCoins({
-            owner: account.address,
-            coinType: USDC_COIN_TYPE,
-          })
-
-          if (coins.data.length === 0) {
-            throw new Error('No USDC coins found')
+          if (!result.success) {
+            throw new Error(result.error || 'pAION transfer failed')
           }
 
-          // Use the first available USDC coin
-          const [coin] = transaction.splitCoins(coins.data[0].coinObjectId, [amountInSmallestUnit])
-          transaction.transferObjects([coin], recipientAddress)
-        }
-
-        // Execute transaction with traditional wallet
-        const result = await new Promise<{digest: string}>((resolve, reject) => {
-          signAndExecuteTransaction(
-            { transaction: transaction as any },
-            {
-              onSuccess: (result) => resolve({ digest: result.digest }),
-              onError: (error) => reject(error)
-            }
+          // Add tokens to recipient
+          await paionTokenService.addTokens(
+            recipientAddress,
+            amountNum,
+            `Transfer from ${account.address.slice(0, 8)}...`,
+            'transfer',
+            account.address
           )
-        })
-        digest = result.digest
+
+          digest = 'paion-transfer-' + Date.now() // Mock digest for pAION transfers
+        } else {
+          // On-chain token transfers (SUI, USDC, WAL)
+          const transaction = new Transaction()
+
+          if (selectedToken === 'SUI') {
+            // Convert SUI to MIST (1 SUI = 1,000,000,000 MIST)
+            const amountInMist = Math.floor(amountNum * 1_000_000_000)
+            const [coin] = transaction.splitCoins(transaction.gas, [amountInMist])
+            transaction.transferObjects([coin], recipientAddress)
+          } else if (selectedToken === 'USDC') {
+            // USDC transfer
+            // Convert USDC to smallest unit (6 decimals)
+            const amountInSmallestUnit = Math.floor(amountNum * 1_000_000)
+
+            // Get USDC coins
+            const coins = await suiClient.getCoins({
+              owner: account.address,
+              coinType: USDC_COIN_TYPE,
+            })
+
+            if (coins.data.length === 0) {
+              throw new Error('No USDC coins found')
+            }
+
+            // Use the first available USDC coin
+            const [coin] = transaction.splitCoins(coins.data[0].coinObjectId, [amountInSmallestUnit])
+            transaction.transferObjects([coin], recipientAddress)
+          } else if (selectedToken === 'WAL') {
+            // WAL transfer (using SUI for now until actual WAL contract is available)
+            // Convert WAL to smallest unit (9 decimals like SUI)
+            const amountInSmallestUnit = Math.floor(amountNum * 1_000_000_000)
+
+            // Get WAL coins
+            const coins = await suiClient.getCoins({
+              owner: account.address,
+              coinType: WAL_COIN_TYPE,
+            })
+
+            if (coins.data.length === 0) {
+              throw new Error('No WAL coins found')
+            }
+
+            // Use the first available WAL coin
+            const [coin] = transaction.splitCoins(coins.data[0].coinObjectId, [amountInSmallestUnit])
+            transaction.transferObjects([coin], recipientAddress)
+          }
+
+          // Execute transaction with traditional wallet
+          const result = await new Promise<{digest: string}>((resolve, reject) => {
+            signAndExecuteTransaction(
+              { transaction: transaction as any },
+              {
+                onSuccess: (result) => resolve({ digest: result.digest }),
+                onError: (error) => reject(error)
+              }
+            )
+          })
+          digest = result.digest
+        }
       }
 
       setTransactionDigest(digest)
@@ -177,7 +270,9 @@ export function SendModal({
       toast.success('Transaction sent successfully!')
 
       // Refresh balances after successful transaction
-      if (isZkLogin) {
+      if (selectedToken === 'pAION') {
+        await refreshBalance()
+      } else if (isZkLogin) {
         await zkWallet.refreshBalance()
       }
 
@@ -196,7 +291,22 @@ export function SendModal({
     }
   }
 
-  const maxAmount = selectedToken === 'SUI' ? suiBalance : usdcBalance
+  const getMaxAmount = () => {
+    switch (selectedToken) {
+      case 'SUI':
+        return suiBalance
+      case 'USDC':
+        return usdcBalance
+      case 'WAL':
+        return walBalance
+      case 'pAION':
+        return paionBalance
+      default:
+        return 0
+    }
+  }
+
+  const maxAmount = getMaxAmount()
 
   if (!walletAddress) {
     return null
@@ -218,28 +328,50 @@ export function SendModal({
               {/* Token Selection */}
               <div className="space-y-2">
                 <div className="text-[#C0E6FF] text-sm">Select Token</div>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <Button
                     variant={selectedToken === 'SUI' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setSelectedToken('SUI')}
-                    className={selectedToken === 'SUI' 
-                      ? 'bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white' 
+                    className={selectedToken === 'SUI'
+                      ? 'bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white'
                       : 'border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10'
                     }
                   >
                     SUI
                   </Button>
                   <Button
+                    variant={selectedToken === 'WAL' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedToken('WAL')}
+                    className={selectedToken === 'WAL'
+                      ? 'bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white'
+                      : 'border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10'
+                    }
+                  >
+                    WAL
+                  </Button>
+                  <Button
                     variant={selectedToken === 'USDC' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setSelectedToken('USDC')}
-                    className={selectedToken === 'USDC' 
-                      ? 'bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white' 
+                    className={selectedToken === 'USDC'
+                      ? 'bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white'
                       : 'border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10'
                     }
                   >
                     USDC
+                  </Button>
+                  <Button
+                    variant={selectedToken === 'pAION' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedToken('pAION')}
+                    className={selectedToken === 'pAION'
+                      ? 'bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white'
+                      : 'border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10'
+                    }
+                  >
+                    pAION
                   </Button>
                 </div>
                 <div className="text-xs text-[#C0E6FF]">

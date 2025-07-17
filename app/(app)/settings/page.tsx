@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Bell, Globe, Zap, AlertTriangle, User, CreditCard, Coins, Plus, Trash2, Shield, Eye, EyeOff, Settings, Flag } from "lucide-react"
 import { useNotifications } from "@/hooks/use-notifications"
 import { useProfile } from "@/contexts/profile-context"
+import { useTokens } from "@/contexts/points-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { DashboardProfiles } from "@/components/dashboard-profiles"
 import { NewUserOnboarding } from "@/components/new-user-onboarding"
@@ -56,13 +57,14 @@ export default function SettingsPage() {
     sendTestNotification
   } = useNotifications(user?.address)
   const { profile, updateProfile, isLoading } = useProfile()
+  const { balance: paionBalance, isLoading: paionLoading } = useTokens()
 
   // KYC flow state
   const [showKYCFlow, setShowKYCFlow] = useState(false)
 
   // Payment method state - loaded from persistent profile
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
-  const [pointsAutoRenewal, setPointsAutoRenewal] = useState(false)
+  const [paionAutoRenewal, setPaionAutoRenewal] = useState(false)
   const [showAddCardDialog, setShowAddCardDialog] = useState(false)
   const [newCardData, setNewCardData] = useState({
     number: '',
@@ -93,13 +95,13 @@ export default function SettingsPage() {
     if (profile) {
       // Load payment preferences (using localStorage fallback since column doesn't exist)
       const savedPaymentMethods = localStorage.getItem(`payment_methods_${user?.address}`)
-      const savedAutoRenewal = localStorage.getItem(`points_auto_renewal_${user?.address}`)
+      const savedAutoRenewal = localStorage.getItem(`paion_auto_renewal_${user?.address}`)
 
       if (savedPaymentMethods) {
         setPaymentMethods(JSON.parse(savedPaymentMethods))
       }
       if (savedAutoRenewal) {
-        setPointsAutoRenewal(savedAutoRenewal === 'true')
+        setPaionAutoRenewal(savedAutoRenewal === 'true')
       }
 
       // Load display preferences
@@ -124,7 +126,7 @@ export default function SettingsPage() {
     try {
       // Save to localStorage as fallback
       localStorage.setItem(`payment_methods_${user.address}`, JSON.stringify(updatedMethods))
-      localStorage.setItem(`points_auto_renewal_${user.address}`, autoRenewal.toString())
+      localStorage.setItem(`paion_auto_renewal_${user.address}`, autoRenewal.toString())
 
       console.log('✅ Payment preferences saved to localStorage')
       toast.success('Payment preferences saved')
@@ -149,7 +151,7 @@ export default function SettingsPage() {
 
     const updatedMethods = [...paymentMethods, newCard]
     setPaymentMethods(updatedMethods)
-    await savePaymentPreferences(updatedMethods, pointsAutoRenewal)
+    await savePaymentPreferences(updatedMethods, paionAutoRenewal)
 
     setNewCardData({ number: '', expiryMonth: '', expiryYear: '', cvc: '', name: '' })
     setShowAddCardDialog(false)
@@ -159,7 +161,7 @@ export default function SettingsPage() {
   const handleRemoveCard = async (cardId: string) => {
     const updatedMethods = paymentMethods.filter(method => method.id !== cardId)
     setPaymentMethods(updatedMethods)
-    await savePaymentPreferences(updatedMethods, pointsAutoRenewal)
+    await savePaymentPreferences(updatedMethods, paionAutoRenewal)
     toast.success('Payment method removed successfully!')
   }
 
@@ -169,7 +171,7 @@ export default function SettingsPage() {
       isDefault: method.id === cardId
     }))
     setPaymentMethods(updatedMethods)
-    await savePaymentPreferences(updatedMethods, pointsAutoRenewal)
+    await savePaymentPreferences(updatedMethods, paionAutoRenewal)
     toast.success('Default payment method updated!')
   }
 
@@ -180,14 +182,14 @@ export default function SettingsPage() {
         : method
     )
     setPaymentMethods(updatedMethods)
-    await savePaymentPreferences(updatedMethods, pointsAutoRenewal)
+    await savePaymentPreferences(updatedMethods, paionAutoRenewal)
     toast.success('Auto-renewal setting updated!')
   }
 
-  const handlePointsAutoRenewalChange = async (checked: boolean) => {
-    setPointsAutoRenewal(checked)
+  const handlePaionAutoRenewalChange = async (checked: boolean) => {
+    setPaionAutoRenewal(checked)
     await savePaymentPreferences(paymentMethods, checked)
-    toast.success('Points auto-renewal setting updated!')
+    toast.success('pAION auto-renewal setting updated!')
   }
 
   // Save general settings to database
@@ -449,9 +451,9 @@ export default function SettingsPage() {
                 <div className="mb-6">
                   <div className="flex items-center gap-2 mb-2">
                     <Coins className="h-5 w-5 text-[#4DA2FF]" />
-                    <h3 className="text-lg font-semibold text-white">Points Payment</h3>
+                    <h3 className="text-lg font-semibold text-white">pAION Payment</h3>
                   </div>
-                  <p className="text-[#C0E6FF] text-sm">Use your earned points to pay for subscriptions and services.</p>
+                  <p className="text-[#C0E6FF] text-sm">Use your earned pAION tokens to pay for subscriptions and services.</p>
                 </div>
 
                 <div className="space-y-4">
@@ -462,25 +464,27 @@ export default function SettingsPage() {
                           <Coins className="w-5 h-5 text-[#4DA2FF]" />
                         </div>
                         <div>
-                          <h4 className="text-white font-medium">Available Points</h4>
+                          <h4 className="text-white font-medium">Available pAION</h4>
                           <p className="text-[#C0E6FF] text-sm">Current balance</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-white">{(profile?.points || 0).toLocaleString()}</p>
-                        <p className="text-[#C0E6FF] text-sm">Points</p>
+                        <p className="text-2xl font-bold text-white">
+                          {paionLoading ? '...' : paionBalance.toLocaleString()}
+                        </p>
+                        <p className="text-[#C0E6FF] text-sm">pAION</p>
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between pt-3 border-t border-[#C0E6FF]/20">
                       <div>
-                        <Label htmlFor="points-auto-renewal" className="text-white">Auto-renewal with Points</Label>
-                        <p className="text-sm text-[#C0E6FF]">Automatically renew subscriptions using points when available.</p>
+                        <Label htmlFor="paion-auto-renewal" className="text-white">Auto-renewal with pAION</Label>
+                        <p className="text-sm text-[#C0E6FF]">Automatically renew subscriptions using pAION tokens when available.</p>
                       </div>
                       <Switch
-                        id="points-auto-renewal"
-                        checked={pointsAutoRenewal}
-                        onCheckedChange={handlePointsAutoRenewalChange}
+                        id="paion-auto-renewal"
+                        checked={paionAutoRenewal}
+                        onCheckedChange={handlePaionAutoRenewalChange}
                       />
                     </div>
                   </div>

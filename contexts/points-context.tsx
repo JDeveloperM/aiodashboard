@@ -1,152 +1,209 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect } from "react"
+import { useSuiAuth } from "@/contexts/sui-auth-context"
+import { paionTokenService, type PaionTransaction } from "@/lib/paion-token-service"
 import { toast } from "sonner"
 
-interface PointsContextType {
+interface TokenContextType {
   balance: number
-  addPoints: (amount: number, description?: string) => void
-  redeemPoints: (amount: number, itemName: string) => Promise<boolean>
-  transactions: PointsTransaction[]
+  isLoading: boolean
+  addTokens: (amount: number, description?: string, sourceType?: string, sourceId?: string) => Promise<boolean>
+  spendTokens: (amount: number, itemName: string, sourceType?: string, sourceId?: string) => Promise<boolean>
+  transactions: TokenTransaction[]
+  refreshBalance: () => Promise<void>
+  refreshTransactions: () => Promise<void>
 }
 
-interface PointsTransaction {
+interface TokenTransaction {
   id: string
-  type: "earned" | "redeemed"
+  type: "earned" | "spent"
   amount: number
   description: string
   timestamp: Date
+  source_type: string
+  metadata?: Record<string, any>
 }
 
-const PointsContext = createContext<PointsContextType | undefined>(undefined)
+const TokenContext = createContext<TokenContextType | undefined>(undefined)
 
-export function PointsProvider({ children }: { children: React.ReactNode }) {
-  const [balance, setBalance] = useState(2500) // Starting balance
-  const [transactions, setTransactions] = useState<PointsTransaction[]>([
-    {
-      id: "1",
-      type: "earned",
-      amount: 500,
-      description: "Welcome bonus",
-      timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-    },
-    {
-      id: "2", 
-      type: "earned",
-      amount: 1000,
-      description: "Trading bot profits",
-      timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
-    },
-    {
-      id: "3",
-      type: "earned", 
-      amount: 750,
-      description: "Community engagement",
-      timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
-    },
-    {
-      id: "4",
-      type: "earned",
-      amount: 250,
-      description: "Ambassador referral",
-      timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
-    }
-  ])
+export function TokenProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useSuiAuth()
+  const [balance, setBalance] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const [transactions, setTransactions] = useState<TokenTransaction[]>([])
 
-  const addPoints = (amount: number, description?: string) => {
-    setBalance(prev => prev + amount)
-    const newTransaction: PointsTransaction = {
-      id: Date.now().toString(),
-      type: "earned",
-      amount,
-      description: description || "Points earned",
-      timestamp: new Date()
+  // Convert PaionTransaction to TokenTransaction format
+  const convertTransaction = (paionTx: PaionTransaction): TokenTransaction => ({
+    id: paionTx.id,
+    type: paionTx.transaction_type === 'earned' ? 'earned' : 'spent',
+    amount: paionTx.amount,
+    description: paionTx.description,
+    timestamp: new Date(paionTx.created_at),
+    source_type: paionTx.source_type,
+    metadata: paionTx.metadata
+  })
+
+  // Load balance and transactions from database
+  const loadUserData = async () => {
+    if (!user?.address) return
+
+    setIsLoading(true)
+    try {
+      // Load balance
+      const userBalance = await paionTokenService.getBalance(user.address)
+      setBalance(userBalance)
+
+      // Load recent transactions
+      const recentTxs = await paionTokenService.getRecentTransactions(user.address)
+      const convertedTxs = recentTxs.map(convertTransaction)
+      setTransactions(convertedTxs)
+    } catch (error) {
+      console.error('Error loading user token data:', error)
+    } finally {
+      setIsLoading(false)
     }
-    setTransactions(prev => [newTransaction, ...prev])
-    toast.success(`Earned ${amount} points!`)
   }
 
-  const redeemPoints = async (amount: number, itemName: string): Promise<boolean> => {
-    if (balance < amount) {
-      toast.error("Insufficient points for this redemption")
+  // Refresh balance from database
+  const refreshBalance = async () => {
+    if (!user?.address) return
+
+    try {
+      const userBalance = await paionTokenService.getBalance(user.address)
+      setBalance(userBalance)
+    } catch (error) {
+      console.error('Error refreshing balance:', error)
+    }
+  }
+
+  // Refresh transactions from database
+  const refreshTransactions = async () => {
+    if (!user?.address) return
+
+    try {
+      const recentTxs = await paionTokenService.getRecentTransactions(user.address)
+      const convertedTxs = recentTxs.map(convertTransaction)
+      setTransactions(convertedTxs)
+    } catch (error) {
+      console.error('Error refreshing transactions:', error)
+    }
+  }
+
+  // Add tokens to user's balance
+  const addTokens = async (
+    amount: number,
+    description?: string,
+    sourceType: string = 'manual',
+    sourceId?: string
+  ): Promise<boolean> => {
+    if (!user?.address) {
+      toast.error("Please connect your wallet first")
       return false
     }
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    try {
+      const result = await paionTokenService.addTokens(
+        user.address,
+        amount,
+        description || "pAION tokens earned",
+        sourceType as any,
+        sourceId
+      )
 
-    setBalance(prev => prev - amount)
-    const newTransaction: PointsTransaction = {
-      id: Date.now().toString(),
-      type: "redeemed",
-      amount,
-      description: `Redeemed: ${itemName}`,
-      timestamp: new Date()
+      if (result.success) {
+        // Update local state
+        setBalance(result.balance || balance + amount)
+        await refreshTransactions()
+        return true
+      } else {
+        toast.error(result.error || "Failed to add tokens")
+        return false
+      }
+    } catch (error) {
+      console.error('Error adding tokens:', error)
+      toast.error("Failed to add tokens")
+      return false
     }
-    setTransactions(prev => [newTransaction, ...prev])
-    toast.success(`Successfully redeemed ${itemName}!`)
-    return true
   }
 
-  // Load from localStorage on client side
-  useEffect(() => {
-    const savedBalance = localStorage.getItem("pointsBalance")
-    const savedUserPoints = localStorage.getItem("user-points")
-    const savedTransactions = localStorage.getItem("pointsTransactions")
-
-    // Use the higher value between pointsBalance and user-points to avoid losing points
-    let finalBalance = 2500 // default
-    if (savedBalance && savedUserPoints) {
-      finalBalance = Math.max(parseInt(savedBalance), parseInt(savedUserPoints))
-    } else if (savedBalance) {
-      finalBalance = parseInt(savedBalance)
-    } else if (savedUserPoints) {
-      finalBalance = parseInt(savedUserPoints)
+  // Spend tokens from user's balance
+  const spendTokens = async (
+    amount: number,
+    itemName: string,
+    sourceType: string = 'marketplace',
+    sourceId?: string
+  ): Promise<boolean> => {
+    if (!user?.address) {
+      toast.error("Please connect your wallet first")
+      return false
     }
 
-    setBalance(finalBalance)
+    try {
+      const result = await paionTokenService.spendTokens(
+        user.address,
+        amount,
+        `Redeemed: ${itemName}`,
+        sourceType as any,
+        sourceId
+      )
 
-    if (savedTransactions) {
-      try {
-        const parsed = JSON.parse(savedTransactions)
-        setTransactions(parsed.map((t: any) => ({
-          ...t,
-          timestamp: new Date(t.timestamp)
-        })))
-      } catch (error) {
-        console.error("Error parsing saved transactions:", error)
+      if (result.success) {
+        // Update local state
+        setBalance(result.balance || balance - amount)
+        await refreshTransactions()
+        return true
+      } else {
+        toast.error(result.error || "Failed to spend tokens")
+        return false
       }
+    } catch (error) {
+      console.error('Error spending tokens:', error)
+      toast.error("Failed to spend tokens")
+      return false
     }
-  }, [])
+  }
 
-  // Save to localStorage when balance or transactions change
+  // Load user data when user changes
   useEffect(() => {
-    localStorage.setItem("pointsBalance", balance.toString())
-    localStorage.setItem("user-points", balance.toString()) // Keep both keys in sync
-  }, [balance])
-
-  useEffect(() => {
-    localStorage.setItem("pointsTransactions", JSON.stringify(transactions))
-  }, [transactions])
+    if (user?.address) {
+      loadUserData()
+    } else {
+      // Reset state when user disconnects
+      setBalance(0)
+      setTransactions([])
+    }
+  }, [user?.address])
 
   return (
-    <PointsContext.Provider
+    <TokenContext.Provider
       value={{
         balance,
-        addPoints,
-        redeemPoints,
+        isLoading,
+        addTokens,
+        spendTokens,
         transactions,
+        refreshBalance,
+        refreshTransactions,
       }}
     >
       {children}
-    </PointsContext.Provider>
+    </TokenContext.Provider>
   )
 }
 
-export function usePoints() {
-  const context = useContext(PointsContext)
+export function useTokens() {
+  const context = useContext(TokenContext)
   if (context === undefined) {
-    throw new Error("usePoints must be used within a PointsProvider")
+    throw new Error("useTokens must be used within a TokenProvider")
   }
   return context
 }
+
+// Backward compatibility - alias for useTokens
+export function usePoints() {
+  return useTokens()
+}
+
+// Backward compatibility - alias for TokenProvider
+export const PointsProvider = TokenProvider

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { usePoints } from "@/contexts/points-context"
+import { useTokens } from "@/contexts/points-context"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Coins, ShoppingCart, Check, Loader2 } from "lucide-react"
@@ -12,7 +12,7 @@ interface MarketplaceItem {
   name: string
   description: string
   image: string
-  pointsCost: number
+  tokenCost: number // Changed from pointsCost to tokenCost
   category: "token-bundles" | "merchandise" | "nfts"
   rarity?: "common" | "rare" | "epic" | "legendary"
   inStock: boolean
@@ -24,11 +24,11 @@ interface MarketplaceItemCardProps {
 }
 
 export function MarketplaceItemCard({ item }: MarketplaceItemCardProps) {
-  const { balance, redeemPoints } = usePoints()
+  const { balance, spendTokens } = useTokens()
   const [isRedeeming, setIsRedeeming] = useState(false)
   const [isRedeemed, setIsRedeemed] = useState(false)
 
-  const canAfford = balance >= item.pointsCost
+  const canAfford = balance >= item.tokenCost
   const isAvailable = item.inStock && !isRedeemed
 
   const handleRedeem = async () => {
@@ -36,7 +36,7 @@ export function MarketplaceItemCard({ item }: MarketplaceItemCardProps) {
 
     setIsRedeeming(true)
     try {
-      const success = await redeemPoints(item.pointsCost, item.name)
+      const success = await spendTokens(item.tokenCost, item.name, 'marketplace', item.id)
       if (success) {
         setIsRedeemed(true)
       }
@@ -126,9 +126,9 @@ export function MarketplaceItemCard({ item }: MarketplaceItemCardProps) {
             <div className="flex items-center gap-2">
               <Coins className="w-5 h-5 text-[#4DA2FF]" />
               <span className="text-white font-bold text-lg">
-                {item.pointsCost.toLocaleString()}
+                {item.tokenCost.toLocaleString()}
               </span>
-              <span className="text-[#C0E6FF] text-sm">points</span>
+              <span className="text-[#C0E6FF] text-sm">pAION</span>
             </div>
             <Badge
               variant={item.inStock ? "default" : "destructive"}
@@ -161,7 +161,7 @@ export function MarketplaceItemCard({ item }: MarketplaceItemCardProps) {
                 Redeemed
               </>
             ) : !canAfford ? (
-              "Insufficient Points"
+              "Insufficient pAION"
             ) : !item.inStock ? (
               "Out of Stock"
             ) : (
@@ -172,10 +172,10 @@ export function MarketplaceItemCard({ item }: MarketplaceItemCardProps) {
             )}
           </Button>
 
-          {/* Insufficient Points Warning */}
+          {/* Insufficient pAION Warning */}
           {!canAfford && isAvailable && (
             <p className="text-red-400 text-xs text-center">
-              Need {(item.pointsCost - balance).toLocaleString()} more points
+              Need {(item.tokenCost - balance).toLocaleString()} more pAION
             </p>
           )}
         </div>

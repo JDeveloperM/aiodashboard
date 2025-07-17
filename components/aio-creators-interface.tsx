@@ -6,7 +6,7 @@ import { FeaturedChannels } from "./featured-channels"
 import { useCreatorsDatabase } from "@/contexts/creators-database-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { useCurrentAccount } from "@mysten/dapp-kit"
-import { Search, Filter, Users, TrendingUp, BookOpen, FileText, Coins, Play } from "lucide-react"
+import { Search, Filter, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 import type { Creator, Channel } from "@/contexts/creators-context"
+import { CHANNEL_CATEGORIES_WITH_ICONS } from "@/lib/channel-categories"
 
 
 
@@ -28,19 +29,12 @@ export function AIOCreatorsInterface() {
   const currentAccount = useCurrentAccount()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
-  const [sortBy, setSortBy] = useState<'subscribers' | 'name' | 'category'>('subscribers')
+  const [sortBy, setSortBy] = useState<'subscribers' | 'newest' | 'oldest'>('newest')
 
   // Get current user's wallet address for filtering
   const userAddress = currentAccount?.address || user?.address
 
-  const categories = [
-    { value: "all", label: "All Categories", icon: Users },
-    { value: "trading", label: "Trading", icon: TrendingUp },
-    { value: "defi", label: "DeFi", icon: Coins },
-    { value: "analysis", label: "Analysis", icon: FileText },
-    { value: "education", label: "Education", icon: BookOpen },
-    { value: "nfts", label: "NFTs", icon: Play }
-  ]
+  const categories = CHANNEL_CATEGORIES_WITH_ICONS
 
   // Convert creators to individual channel cards (flatten channels into separate creator cards)
   // Filter out user's own channels from display - memoized for performance
@@ -97,10 +91,21 @@ export function AIOCreatorsInterface() {
       return matchesSearch && matchesCategory
     }).sort((a, b) => {
       switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name)
-        case 'category':
-          return a.category.localeCompare(b.category)
+        case 'newest':
+          // Sort by creator creation date (newest first)
+          // Use the creator's created_at field from the original creator data
+          const aCreator = creators.find(c => c.id === a.originalCreatorId)
+          const bCreator = creators.find(c => c.id === b.originalCreatorId)
+          const aDate = new Date((aCreator as any)?.created_at || Date.now()).getTime()
+          const bDate = new Date((bCreator as any)?.created_at || Date.now()).getTime()
+          return bDate - aDate
+        case 'oldest':
+          // Sort by creator creation date (oldest first)
+          const aCreatorOld = creators.find(c => c.id === a.originalCreatorId)
+          const bCreatorOld = creators.find(c => c.id === b.originalCreatorId)
+          const aDateOld = new Date((aCreatorOld as any)?.created_at || Date.now()).getTime()
+          const bDateOld = new Date((bCreatorOld as any)?.created_at || Date.now()).getTime()
+          return aDateOld - bDateOld
         case 'subscribers':
         default:
           return b.subscribers - a.subscribers
@@ -225,8 +230,8 @@ export function AIOCreatorsInterface() {
               </SelectTrigger>
               <SelectContent className="bg-[#1a2f51] border-[#C0E6FF]/30">
                 <SelectItem value="subscribers" className="text-[#FFFFFF]">Subscribers</SelectItem>
-                <SelectItem value="name" className="text-[#FFFFFF]">Name</SelectItem>
-                <SelectItem value="category" className="text-[#FFFFFF]">Category</SelectItem>
+                <SelectItem value="newest" className="text-[#FFFFFF]">New Channels</SelectItem>
+                <SelectItem value="oldest" className="text-[#FFFFFF]">Old Channels</SelectItem>
               </SelectContent>
             </Select>
           </div>

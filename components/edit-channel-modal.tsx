@@ -187,8 +187,15 @@ export function EditChannelModal({
   }
 
   const categories = [
-    "Trading", "DeFi", "Analysis", "Education", "NFTs", "Gaming",
-    "News", "Technical Analysis", "Altcoins", "Bitcoin", "Ethereum"
+    "Trading",
+    "DeFi",
+    "NFTs",
+    "Market Analysis",
+    "Education",
+    "AI Education",
+    "Algo Trading",
+    "Farming",
+    "Meme Coins"
   ]
 
   const languages = [
@@ -197,8 +204,10 @@ export function EditChannelModal({
   ]
 
   const roles = [
-    "Crypto Trader", "DeFi Expert", "NFT Collector", "Blockchain Developer",
-    "Market Analyst", "Content Creator", "Educator", "Influencer"
+    "Trading Expert", "Technical Analyst", "Trading Bot Expert",
+    "DeFi Specialist", "NFT Trader", "NFT Artist/Creator",
+    "Market Analyst", "Crypto Educator", "AI Educator",
+    "Algorithm Developer", "Yield Farmer", "Meme Coin Expert"
   ]
 
   if (!channel) return null

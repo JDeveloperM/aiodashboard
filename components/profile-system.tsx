@@ -117,7 +117,7 @@ interface InvitedUser {
 export function ProfileSystem() {
   const router = useRouter()
   const { tier } = useSubscription()
-  const { addPoints, balance } = usePoints()
+  const { addTokens, balance } = usePoints()
   const [affiliateLink] = useState("https://aionet.io/ref/MDX789ABC")
   const [copied, setCopied] = useState(false)
 
@@ -164,8 +164,8 @@ export function ProfileSystem() {
       // Save level claim status to localStorage
       localStorage.setItem('user-level-claims', JSON.stringify(updatedLevelRewards))
 
-      // Add points to the PointsContext (this will update the header and profile)
-      addPoints(claimingLevel.points, `Level ${claimingLevel.level} reward`)
+      // Add tokens to the TokenContext (this will update the header and profile)
+      addTokens(claimingLevel.points, `Level ${claimingLevel.level} reward`)
 
       setIsClaimingLevelPoints(false)
       setShowLevelClaimDialog(false)
@@ -742,6 +742,7 @@ export function ProfileSystem() {
                   </Button>
 
                   <Button
+                    onClick={() => router.push('/transaction-history')}
                     className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-3 text-sm font-semibold"
                   >
                     <History className="w-4 h-4 mr-2" />

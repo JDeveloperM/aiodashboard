@@ -97,14 +97,22 @@ const LANGUAGES = [
 ]
 
 const CREATOR_ROLES = [
-  "Technical Analyst", "Trading Expert", "Trading Bot Expert", 
-  "DeFi Specialist", "NFT Trader", "NFT Artist/Creator", "Crypto Educator"
+  "Trading Expert", "Technical Analyst", "Trading Bot Expert",
+  "DeFi Specialist", "NFT Trader", "NFT Artist/Creator",
+  "Market Analyst", "Crypto Educator", "AI Educator",
+  "Algorithm Developer", "Yield Farmer", "Meme Coin Expert"
 ]
 
 const CHANNEL_CATEGORIES = [
-  "Crypto Trading", "Forex Trading", "Stock Trading", "Microcaps", 
-  "On-Chain Analysis", "Market Analysis", "Whale Tracking", "DeFi", 
-  "Yield Farming", "Liquidity Pools", "Education", "NFTs", "Community"
+  "Trading",
+  "DeFi",
+  "NFTs",
+  "Market Analysis",
+  "Education",
+  "AI Education",
+  "Algo Trading",
+  "Farming",
+  "Meme Coins"
 ]
 
 const SUBSCRIPTION_DURATIONS = [

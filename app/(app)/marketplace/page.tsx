@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { PointsBalance } from "@/components/points-balance"
+import { TokenBalance } from "@/components/points-balance"
 import { TransactionHistory } from "@/components/transaction-history"
 import { MarketplaceItemCard } from "@/components/marketplace-item-card"
 
@@ -18,7 +18,7 @@ const marketplaceItems = {
       name: "Starter Token Bundle",
       description: "Perfect for beginners - includes 100 SUI tokens and trading guide",
       image: "/images/aibot.png",
-      pointsCost: 1500,
+      tokenCost: 1500,
       category: "token-bundles" as const,
       rarity: "common" as const,
       inStock: true,
@@ -29,7 +29,7 @@ const marketplaceItems = {
       name: "Premium Crypto Pack",
       description: "Advanced bundle with ETH, BTC, and exclusive trading signals",
       image: "/images/aibot.png",
-      pointsCost: 3500,
+      tokenCost: 3500,
       category: "token-bundles" as const,
       rarity: "rare" as const,
       inStock: true,
@@ -40,7 +40,7 @@ const marketplaceItems = {
       name: "Legendary Whale Package",
       description: "Ultimate package with rare tokens and VIP trading access",
       image: "/images/aibot.png",
-      pointsCost: 7500,
+      tokenCost: 7500,
       category: "token-bundles" as const,
       rarity: "legendary" as const,
       inStock: true,
@@ -53,7 +53,7 @@ const marketplaceItems = {
       name: "AIONET Hoodie",
       description: "Premium quality hoodie with AIONET logo",
       image: "/images/aibot.png",
-      pointsCost: 2000,
+      tokenCost: 2000,
       category: "merchandise" as const,
       inStock: true,
       featured: false
@@ -63,7 +63,7 @@ const marketplaceItems = {
       name: "Crypto Trading Mug",
       description: "Perfect for your morning coffee while checking charts",
       image: "/images/aibot.png",
-      pointsCost: 800,
+      tokenCost: 800,
       category: "merchandise" as const,
       inStock: true,
       featured: false
@@ -71,9 +71,9 @@ const marketplaceItems = {
     {
       id: "merch-3",
       name: "Limited Edition T-Shirt",
-      description: "Exclusive design available only through points redemption",
+      description: "Exclusive design available only through pAION redemption",
       image: "/images/aibot.png",
-      pointsCost: 1200,
+      tokenCost: 1200,
       category: "merchandise" as const,
       rarity: "rare" as const,
       inStock: false,
@@ -86,7 +86,7 @@ const marketplaceItems = {
       name: "Genesis Trader NFT",
       description: "Exclusive NFT granting special trading privileges",
       image: "/images/aibot.png",
-      pointsCost: 5000,
+      tokenCost: 5000,
       category: "nfts" as const,
       rarity: "epic" as const,
       inStock: true,
@@ -97,7 +97,7 @@ const marketplaceItems = {
       name: "Diamond Hands Collection",
       description: "Rare NFT for long-term holders and diamond hands",
       image: "/images/aibot.png",
-      pointsCost: 8000,
+      tokenCost: 8000,
       category: "nfts" as const,
       rarity: "legendary" as const,
       inStock: true,
@@ -108,7 +108,7 @@ const marketplaceItems = {
       name: "Community Builder Badge",
       description: "Special recognition for active community members",
       image: "/images/aibot.png",
-      pointsCost: 3000,
+      tokenCost: 3000,
       category: "nfts" as const,
       rarity: "rare" as const,
       inStock: true,
@@ -154,7 +154,7 @@ export default function MarketplacePage() {
         <div>
           <h1 className="text-3xl font-bold text-white">Marketplace</h1>
           <p className="text-[#C0E6FF] mt-1">
-            Redeem your points for exclusive items and rewards
+            Redeem your pAION tokens for exclusive items and rewards
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -169,10 +169,10 @@ export default function MarketplacePage() {
         </div>
       </div>
 
-      {/* Points Balance and Marketplace Content */}
+      {/* pAION Balance and Marketplace Content */}
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-1 space-y-6">
-          <PointsBalance />
+          <TokenBalance />
           <TransactionHistory />
         </div>
 

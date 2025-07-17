@@ -19,7 +19,7 @@ interface ProfileContextType {
   updateKYCStatus: (status: 'verified' | 'pending' | 'not_verified') => Promise<boolean>
   updateTier: (tier: 'NOMAD' | 'PRO' | 'ROYAL') => Promise<boolean>
   updateXP: (currentXP: number, totalXP: number, level: number) => Promise<boolean>
-  claimAchievement: (achievementName: string, xpReward: number, pointsReward?: number) => Promise<boolean>
+  claimAchievement: (achievementName: string, xpReward: number, tokenReward?: number) => Promise<boolean>
   updateAchievements: (achievements: Achievement[]) => Promise<boolean>
   clearError: () => void
   refreshProfile: () => Promise<void>
@@ -121,8 +121,8 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     return updateProfile({ current_xp: currentXP, total_xp: totalXP, profile_level: level })
   }, [updateProfile])
 
-  const claimAchievement = useCallback(async (achievementName: string, xpReward: number, pointsReward?: number): Promise<boolean> => {
-    if (!profile) return false
+  const claimAchievement = useCallback(async (achievementName: string, xpReward: number, tokenReward?: number): Promise<boolean> => {
+    if (!profile || !user?.address) return false
 
     try {
       // Get current achievements
@@ -161,6 +161,18 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       // Calculate new level using helper function
       const newLevel = calculateLevel(newTotalXP)
 
+      // Award pAION tokens if specified
+      if (tokenReward && tokenReward > 0) {
+        const { paionTokenService } = await import('@/lib/paion-token-service')
+        await paionTokenService.addTokens(
+          user.address,
+          tokenReward,
+          `Achievement reward: ${achievementName}`,
+          'achievement',
+          achievementName
+        )
+      }
+
       // Update profile with claimed achievement and new XP
       return updateProfile({
         achievements_data: updatedAchievements,
@@ -172,7 +184,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to claim achievement:', error)
       return false
     }
-  }, [updateProfile, profile])
+  }, [updateProfile, profile, user?.address])
 
   const updateAchievements = useCallback(async (achievements: Achievement[]): Promise<boolean> => {
     return updateProfile({ achievements_data: achievements })

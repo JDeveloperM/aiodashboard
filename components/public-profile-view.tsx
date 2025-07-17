@@ -183,16 +183,16 @@ export function PublicProfileView({ profileData }: PublicProfileViewProps) {
 
   // Level rewards data (same as your profile)
   const levelRewards = [
-    { level: 1, points: 0, available: true, claimed: true, description: "Starting level - Affiliate Level 1" },
-    { level: 2, points: 0, available: profileDisplayData.levelInfo.currentLevel >= 2, claimed: profileDisplayData.levelInfo.currentLevel >= 2, description: "Upgrade to 2nd Affiliate Level" },
-    { level: 3, points: 0, available: profileDisplayData.levelInfo.currentLevel >= 3, claimed: profileDisplayData.levelInfo.currentLevel >= 3, description: "Upgrade to 3rd Affiliate Level" },
-    { level: 4, points: 0, available: profileDisplayData.levelInfo.currentLevel >= 4, claimed: profileDisplayData.levelInfo.currentLevel >= 4, description: "Upgrade to 4th Affiliate Level" },
-    { level: 5, points: 0, available: profileDisplayData.levelInfo.currentLevel >= 5, claimed: profileDisplayData.levelInfo.currentLevel >= 5, description: "Upgrade to 5th Affiliate Level (Max)" },
-    { level: 6, points: 500, available: profileDisplayData.levelInfo.currentLevel >= 6, claimed: profileDisplayData.levelInfo.currentLevel >= 6, description: "Earn 500 Points" },
-    { level: 7, points: 2000, available: profileDisplayData.levelInfo.currentLevel >= 7, claimed: profileDisplayData.levelInfo.currentLevel >= 7, description: "Earn 2,000 Points" },
-    { level: 8, points: 6000, available: profileDisplayData.levelInfo.currentLevel >= 8, claimed: profileDisplayData.levelInfo.currentLevel >= 8, description: "Earn 6,000 Points" },
-    { level: 9, points: 15000, available: profileDisplayData.levelInfo.currentLevel >= 9, claimed: profileDisplayData.levelInfo.currentLevel >= 9, description: "Earn 15,000 Points" },
-    { level: 10, points: 35000, available: profileDisplayData.levelInfo.currentLevel >= 10, claimed: profileDisplayData.levelInfo.currentLevel >= 10, description: "Earn 35,000 Points" }
+    { level: 1, tokens: 0, available: true, claimed: true, description: "Starting level - Affiliate Level 1" },
+    { level: 2, tokens: 0, available: profileDisplayData.levelInfo.currentLevel >= 2, claimed: profileDisplayData.levelInfo.currentLevel >= 2, description: "Upgrade to 2nd Affiliate Level" },
+    { level: 3, tokens: 0, available: profileDisplayData.levelInfo.currentLevel >= 3, claimed: profileDisplayData.levelInfo.currentLevel >= 3, description: "Upgrade to 3rd Affiliate Level" },
+    { level: 4, tokens: 0, available: profileDisplayData.levelInfo.currentLevel >= 4, claimed: profileDisplayData.levelInfo.currentLevel >= 4, description: "Upgrade to 4th Affiliate Level" },
+    { level: 5, tokens: 0, available: profileDisplayData.levelInfo.currentLevel >= 5, claimed: profileDisplayData.levelInfo.currentLevel >= 5, description: "Upgrade to 5th Affiliate Level (Max)" },
+    { level: 6, tokens: 500, available: profileDisplayData.levelInfo.currentLevel >= 6, claimed: profileDisplayData.levelInfo.currentLevel >= 6, description: "Earn 500 pAION" },
+    { level: 7, tokens: 2000, available: profileDisplayData.levelInfo.currentLevel >= 7, claimed: profileDisplayData.levelInfo.currentLevel >= 7, description: "Earn 2,000 pAION" },
+    { level: 8, tokens: 6000, available: profileDisplayData.levelInfo.currentLevel >= 8, claimed: profileDisplayData.levelInfo.currentLevel >= 8, description: "Earn 6,000 pAION" },
+    { level: 9, tokens: 15000, available: profileDisplayData.levelInfo.currentLevel >= 9, claimed: profileDisplayData.levelInfo.currentLevel >= 9, description: "Earn 15,000 pAION" },
+    { level: 10, tokens: 35000, available: profileDisplayData.levelInfo.currentLevel >= 10, claimed: profileDisplayData.levelInfo.currentLevel >= 10, description: "Earn 35,000 pAION" }
   ]
 
   // Mock achievements data (same structure as your profile)

@@ -16,14 +16,12 @@ import {
   Copy,
   Send,
   ArrowDownToLine,
-  User,
-  Settings,
-  CreditCard,
   LogOut,
   ChevronDown,
   Users,
   Plus,
-  RefreshCw
+  RefreshCw,
+  ArrowUpDown
 } from 'lucide-react'
 import { useZkLogin } from './zklogin-provider'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
@@ -33,7 +31,9 @@ import { nftMintingService } from '@/lib/nft-minting-service'
 import { useProfile } from '@/contexts/profile-context'
 import { useChannelCounts } from '@/hooks/use-channel-counts'
 import { useSubscription } from '@/contexts/subscription-context'
+import { useTokens } from '@/contexts/points-context'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { PaionIcon } from './paion-icon'
 import { DepositModal } from './deposit-modal'
 import { SendModal } from './send-modal'
 import { toast } from 'sonner'
@@ -55,6 +55,7 @@ export function ZkLoginWalletDisplay() {
   const { profile } = useProfile()
   const { getAvatarUrl, getFallbackText } = useAvatar()
   const { tier } = useSubscription()
+  const { balance: paionBalance, isLoading: paionLoading } = useTokens()
   const { joinedChannels, maxJoinedChannels, createdChannels, maxCreatedChannels, isLoading: channelCountsLoading } = useChannelCounts()
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [jwtPayload, setJwtPayload] = useState<JWTPayload | null>(null)
@@ -72,8 +73,16 @@ export function ZkLoginWalletDisplay() {
     mainnet: '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN'
   }
 
+  // WAL (Walrus) token contract addresses for different networks
+  const WAL_COIN_TYPES = {
+    devnet: '0x2::sui::SUI', // For devnet, we'll use SUI as WAL equivalent for testing
+    testnet: '0x2::sui::SUI', // Replace with actual WAL token contract when available
+    mainnet: '0x2::sui::SUI' // Replace with actual WAL token contract when available
+  }
+
   const currentNetwork = (process.env.NEXT_PUBLIC_SUI_NETWORK as keyof typeof USDC_COIN_TYPES) || 'devnet'
   const USDC_COIN_TYPE = USDC_COIN_TYPES[currentNetwork]
+  const WAL_COIN_TYPE = WAL_COIN_TYPES[currentNetwork]
 
   // Query for SUI balance
   const { data: suiBalance } = useSuiClientQuery(
@@ -99,8 +108,21 @@ export function ZkLoginWalletDisplay() {
     }
   )
 
+  // Query for WAL balance
+  const { data: walBalance } = useSuiClientQuery(
+    'getBalance',
+    {
+      owner: zkLoginUserAddress || '',
+      coinType: WAL_COIN_TYPE,
+    },
+    {
+      enabled: !!zkLoginUserAddress,
+    }
+  )
+
   const suiAmount = suiBalance ? parseInt(suiBalance.totalBalance) / 1000000000 : 0
   const usdcAmount = usdcBalance ? parseInt(usdcBalance.totalBalance) / 1000000 : 0 // USDC has 6 decimals
+  const walAmount = walBalance ? parseInt(walBalance.totalBalance) / 1000000000 : 0 // WAL has 9 decimals like SUI
 
   // Extract email and other info from JWT
   useEffect(() => {
@@ -358,11 +380,8 @@ export function ZkLoginWalletDisplay() {
           variant="outline"
           className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white hover:bg-[#C0E6FF]/10 px-3 py-2 h-auto"
         >
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium">
-              {profile?.username || user?.username || 'Anonymous User'}
-            </span>
-            {/* User Avatar on the right */}
+          <div className="flex items-center">
+            {/* User Avatar */}
             <Avatar className="h-6 w-6">
               <AvatarImage src={getAvatarUrl()} alt={profile?.username || user?.username} />
               <AvatarFallback className="bg-[#4DA2FF] text-white text-xs">
@@ -377,7 +396,7 @@ export function ZkLoginWalletDisplay() {
         <SheetHeader>
           <SheetTitle className="text-[#C0E6FF]">Wallet Details</SheetTitle>
         </SheetHeader>
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 space-y-2 overflow-y-auto max-h-[calc(100vh-8rem)] pr-2">
           {/* Header with avatar, address and email */}
           <div className="flex items-center gap-2">
             {/* User Avatar */}
@@ -407,31 +426,78 @@ export function ZkLoginWalletDisplay() {
 
           {/* Balance */}
           <div className="bg-[#1a2f51]/50 rounded-lg p-3">
-            <div className="text-sm text-[#C0E6FF] mb-2">Balance</div>
-            <div className="space-y-1">
+            <div className="text-sm text-[#C0E6FF] mb-2 font-medium">Balance</div>
+            <div className="space-y-2">
               {/* SUI Balance */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between p-2 bg-[#0c1b36]/30 border border-[#C0E6FF]/10 rounded-lg">
                 <div className="flex items-center gap-2">
                   <img
                     src="/images/logo-sui.png"
                     alt="SUI"
-                    className="w-5 h-5"
+                    className="w-6 h-6 object-contain"
                   />
                   <span className="text-white font-medium">{suiAmount.toFixed(4)}</span>
                 </div>
-                <span className="text-[#C0E6FF] text-sm">SUI</span>
+                <span className="text-[#C0E6FF] text-sm font-medium">SUI</span>
+              </div>
+              {/* WAL Balance */}
+              <div className="flex items-center justify-between p-2 bg-[#0c1b36]/30 border border-[#C0E6FF]/10 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <img
+                    src="/images/wal-logo.png"
+                    alt="WAL"
+                    className="w-6 h-6 object-contain"
+                  />
+                  <span className="text-white font-medium">{walAmount.toFixed(4)}</span>
+                </div>
+                <span className="text-[#C0E6FF] text-sm font-medium">WAL</span>
               </div>
               {/* USDC Balance */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between p-2 bg-[#0c1b36]/30 border border-[#C0E6FF]/10 rounded-lg">
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                     <span className="text-xs font-bold text-white">$</span>
                   </div>
                   <span className="text-white font-medium">{usdcAmount.toFixed(2)}</span>
                 </div>
-                <span className="text-[#C0E6FF] text-sm">USDC</span>
+                <span className="text-[#C0E6FF] text-sm font-medium">USDC</span>
+              </div>
+              {/* pAION Balance */}
+              <div className="flex items-center justify-between p-2 bg-[#0c1b36]/30 border border-[#C0E6FF]/10 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <PaionIcon size={24} />
+                  <span className="text-white font-medium">
+                    {paionLoading ? '...' : paionBalance.toLocaleString()}
+                  </span>
+                </div>
+                <span className="text-[#C0E6FF] text-sm font-medium">pAION</span>
               </div>
             </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <Button
+              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+              onClick={() => setShowSendModal(true)}
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Send
+            </Button>
+            <Button
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => setShowDepositModal(true)}
+            >
+              <ArrowDownToLine className="w-4 h-4 mr-2" />
+              Deposit
+            </Button>
+            <Button
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => {/* TODO: Implement swap functionality */}}
+            >
+              <ArrowUpDown className="w-4 h-4 mr-2" />
+              Swap
+            </Button>
           </div>
 
           {/* NFTs Section */}
@@ -537,24 +603,6 @@ export function ZkLoginWalletDisplay() {
             )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            <Button
-              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
-              onClick={() => setShowSendModal(true)}
-            >
-              <Send className="w-4 h-4 mr-2" />
-              Send
-            </Button>
-            <Button
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => setShowDepositModal(true)}
-            >
-              <ArrowDownToLine className="w-4 h-4 mr-2" />
-              Deposit
-            </Button>
-          </div>
-
           <Separator className="bg-[#1e3a8a]" />
 
           {/* Channel Counters */}
@@ -602,35 +650,6 @@ export function ZkLoginWalletDisplay() {
           <div className="space-y-0.5">
             <Button
               variant="ghost"
-              className="w-full justify-start gap-2 p-2 text-[#C0E6FF] hover:bg-[#1e3a8a] hover:text-white transition-colors"
-              onClick={() => handleNavigation('/profile')}
-            >
-              <User className="h-4 w-4" />
-              <span>Profile</span>
-            </Button>
-
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 p-2 text-[#C0E6FF] hover:bg-[#1e3a8a] hover:text-white transition-colors"
-              onClick={() => handleNavigation('/settings')}
-            >
-              <Settings className="h-4 w-4" />
-              <span>Settings</span>
-            </Button>
-
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 p-2 text-[#C0E6FF] hover:bg-[#1e3a8a] hover:text-white transition-colors"
-              onClick={() => handleNavigation('/subscriptions')}
-            >
-              <CreditCard className="h-4 w-4" />
-              <span>Subscriptions</span>
-            </Button>
-
-            <Separator className="bg-[#1e3a8a] my-1" />
-
-            <Button
-              variant="ghost"
               className="w-full justify-start gap-2 p-2 text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
               onClick={handleSignOut}
             >
@@ -658,6 +677,8 @@ export function ZkLoginWalletDisplay() {
       walletAddress={zkLoginUserAddress}
       suiBalance={suiAmount}
       usdcBalance={usdcAmount}
+      walBalance={walAmount}
+      paionBalance={paionBalance}
       isZkLogin={true}
     />
   </>

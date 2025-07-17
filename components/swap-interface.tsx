@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { usePoints } from "@/contexts/points-context"
+import { useTokens } from "@/contexts/points-context"
 import { ArrowUpDown, ChevronDown, Coins, Wallet, AlertCircle, CheckCircle } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -55,11 +55,11 @@ const supportedTokens: Token[] = [
   }
 ]
 
-// Exchange rates to points (1 token = X points)
+// Exchange rates to pAION tokens (1 token = X pAION)
 const exchangeRates = {
-  SUI: 100,    // 1 SUI = 100 points
-  USDC: 50,    // 1 USDC = 50 points
-  USDT: 50     // 1 USDT = 50 points
+  SUI: 100,    // 1 SUI = 100 pAION
+  USDC: 50,    // 1 USDC = 50 pAION
+  USDT: 50     // 1 USDT = 50 pAION
 }
 
 export function SwapInterface({ className, onSwapComplete }: SwapInterfaceProps) {
@@ -68,13 +68,13 @@ export function SwapInterface({ className, onSwapComplete }: SwapInterfaceProps)
   const [toAmount, setToAmount] = useState("")
   const [isSwapping, setIsSwapping] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
-  const { addPoints } = usePoints()
+  const { addTokens } = useTokens()
 
-  // Calculate points when amount changes
+  // Calculate pAION tokens when amount changes
   useEffect(() => {
     if (fromAmount && !isNaN(Number(fromAmount))) {
-      const points = Number(fromAmount) * exchangeRates[fromToken.symbol as keyof typeof exchangeRates]
-      setToAmount(points.toString())
+      const tokens = Number(fromAmount) * exchangeRates[fromToken.symbol as keyof typeof exchangeRates]
+      setToAmount(tokens.toString())
     } else {
       setToAmount("")
     }
@@ -108,20 +108,29 @@ export function SwapInterface({ className, onSwapComplete }: SwapInterfaceProps)
       // Simulate blockchain transaction delay
       await new Promise(resolve => setTimeout(resolve, 2000))
 
-      // Add points to user's balance
-      addPoints(Number(toAmount))
+      // Add pAION tokens to user's balance
+      const success = await addTokens(
+        Number(toAmount),
+        `Swapped ${fromAmount} ${fromToken.symbol} for pAION`,
+        'swap',
+        `${fromToken.symbol}-${Date.now()}`
+      )
 
-      // Update token balance (simulate spending)
-      fromToken.balance -= Number(fromAmount)
+      if (success) {
+        // Update token balance (simulate spending)
+        fromToken.balance -= Number(fromAmount)
 
-      // Call completion callback
-      onSwapComplete?.(fromToken.symbol, Number(toAmount))
+        // Call completion callback
+        onSwapComplete?.(fromToken.symbol, Number(toAmount))
 
-      // Reset form
-      setFromAmount("")
-      setToAmount("")
+        // Reset form
+        setFromAmount("")
+        setToAmount("")
 
-      toast.success(`Successfully swapped ${fromAmount} ${fromToken.symbol} for ${toAmount} points!`)
+        toast.success(`Successfully swapped ${fromAmount} ${fromToken.symbol} for ${toAmount} pAION!`)
+      } else {
+        throw new Error('Failed to add tokens to balance')
+      }
     } catch (error) {
       toast.error("Swap failed. Please try again.")
     } finally {
@@ -144,10 +153,10 @@ export function SwapInterface({ className, onSwapComplete }: SwapInterfaceProps)
           {/* Header - Only show when not inline */}
           {!className?.includes('max-w-none') && (
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-white text-lg font-semibold">Swap to Points</h3>
+              <h3 className="text-white text-lg font-semibold">Swap to pAION</h3>
               <Badge variant="outline" className="border-[#4DA2FF] text-[#4DA2FF]">
                 <Coins className="w-3 h-3 mr-1" />
-                Earn Points
+                Earn pAION
               </Badge>
             </div>
           )}
@@ -228,7 +237,7 @@ export function SwapInterface({ className, onSwapComplete }: SwapInterfaceProps)
             </div>
           </div>
 
-          {/* To Points Section */}
+          {/* To pAION Section */}
           <div className="space-y-2">
             <label className="text-[#C0E6FF] text-sm font-medium">Buy</label>
 
@@ -240,13 +249,13 @@ export function SwapInterface({ className, onSwapComplete }: SwapInterfaceProps)
 
                 <div className="flex items-center gap-2 bg-gradient-to-r from-[#4DA2FF] to-purple-500 text-white px-3 py-2 rounded-lg">
                   <Coins className="w-5 h-5" />
-                  <span className="font-semibold">POINTS</span>
+                  <span className="font-semibold">pAION</span>
                 </div>
               </div>
 
               {toAmount && (
                 <div className="text-[#C0E6FF] text-sm mt-2">
-                  Rate: 1 {fromToken.symbol} = {exchangeRates[fromToken.symbol as keyof typeof exchangeRates]} points
+                  Rate: 1 {fromToken.symbol} = {exchangeRates[fromToken.symbol as keyof typeof exchangeRates]} pAION
                 </div>
               )}
             </div>
@@ -281,7 +290,7 @@ export function SwapInterface({ className, onSwapComplete }: SwapInterfaceProps)
               ) : Number(fromAmount) > fromToken.balance ? (
                 "Insufficient balance"
               ) : (
-                `Swap for ${toAmount} points`
+                `Swap for ${toAmount} pAION`
               )}
             </Button>
           )}

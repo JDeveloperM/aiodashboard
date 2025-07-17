@@ -12,6 +12,16 @@ import { useSubscription } from "@/contexts/subscription-context"
 import { usePremiumAccess } from "@/contexts/premium-access-context"
 import { useCreatorsDatabase } from "@/contexts/creators-database-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
+import { getCategoryIcon as getStandardCategoryIcon } from "@/lib/channel-categories"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 import { useCurrentAccount } from "@mysten/dapp-kit"
 import { useChannelReports } from "@/hooks/use-channel-reports"
 import { useChannelCounts } from "@/hooks/use-channel-counts"
@@ -226,6 +236,10 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
   const { deleteChannel } = useCreatorsDatabase()
   const { joinedChannels } = useChannelCounts()
   const currentAccount = useCurrentAccount()
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const CHANNELS_PER_PAGE = 8
 
   // Memoize channel IDs for report statistics to prevent recalculation
   const channelIds = useMemo(() =>
@@ -753,37 +767,13 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
   }
 
   const getCategoryIcon = (category: string) => {
-    switch (category.toLowerCase()) {
-      case 'trading':
-        return TrendingUp
-      case 'education':
-        return BookOpen
-      case 'analysis':
-        return FileText
-      case 'defi':
-        return Coins
-      case 'nfts':
-        return Play
-      default:
-        return Play
-    }
+    // Use the standardized category icon function
+    return getStandardCategoryIcon(category)
   }
 
   const getCategoryColor = (category: string) => {
-    switch (category.toLowerCase()) {
-      case 'trading':
-        return 'bg-green-500/20 text-green-400 border-green-500/30'
-      case 'education':
-        return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-      case 'analysis':
-        return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
-      case 'defi':
-        return 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-      case 'nfts':
-        return 'bg-pink-500/20 text-pink-400 border-pink-500/30'
-      default:
-        return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
-    }
+    // Consistent gray style for all categories (no hover, no different colors)
+    return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
   }
 
   const getChannelTypeColor = (type: string) => {
@@ -926,6 +916,19 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
       : creators
   }, [creators, showOnlyJoined, accessMap])
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredCreators.length / CHANNELS_PER_PAGE)
+  const startIndex = (currentPage - 1) * CHANNELS_PER_PAGE
+  const endIndex = startIndex + CHANNELS_PER_PAGE
+  const paginatedCreators = useMemo(() => {
+    return filteredCreators.slice(startIndex, endIndex)
+  }, [filteredCreators, startIndex, endIndex])
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [showOnlyJoined, filteredCreators.length])
+
   const joinedChannelsCount = useMemo(() => {
     return creators.reduce((count, creator) => {
       return count + creator.channels.filter(channel =>
@@ -963,12 +966,12 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
         </div>
 
         <div className="text-[#C0E6FF] text-sm">
-          {filteredCreators.length} creator{filteredCreators.length !== 1 ? 's' : ''} shown
+          Showing {startIndex + 1}-{Math.min(endIndex, filteredCreators.length)} of {filteredCreators.length} creator{filteredCreators.length !== 1 ? 's' : ''}
         </div>
       </div>
 
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filteredCreators.map((creator) => {
+        {paginatedCreators.map((creator) => {
           const CategoryIcon = getCategoryIcon(creator.category)
 
           return (
@@ -1009,7 +1012,7 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
                 })()}
                 {/* Main Banner Content */}
                 <div className="banner-main-content flex items-center gap-2 w-full relative z-10">
-                  <Avatar className="h-16 w-16 border-2 border-white/20">
+                  <Avatar className="h-16 w-16 border-4 border-black shadow-lg ring-2 ring-black/50">
                     <AvatarImage
                       src={(() => {
                         // Use first channel's avatar only (no creator profile avatar)
@@ -1024,18 +1027,21 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1">
-                      <h3 className="text-white font-semibold text-sm truncate">{creator.name}</h3>
-                      {creator.verified && (
-                        <CheckCircle className="w-3 h-3 text-blue-400 flex-shrink-0" />
-                      )}
+                    {/* Dark background overlay for better text readability */}
+                    <div className="bg-black/60 backdrop-blur-sm rounded-md px-2 py-1">
+                      <div className="flex items-center gap-1">
+                        <h3 className="text-white font-semibold text-sm truncate">{creator.name}</h3>
+                        {creator.verified && (
+                          <CheckCircle className="w-3 h-3 text-blue-400 flex-shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-white/90 text-xs">@{creator.username}</p>
                     </div>
-                    <p className="text-white/80 text-xs">@{creator.username}</p>
                   </div>
 
                   {/* Role Badge - Right Corner */}
                   <div className="flex items-center">
-                    <Badge className="bg-[#4DA2FF] text-white text-xs px-2 py-1">
+                    <Badge className="bg-black/60 backdrop-blur-sm border border-[#4DA2FF]/50 text-[#4DA2FF] text-xs px-2 py-1">
                       {creator.role}
                     </Badge>
                   </div>
@@ -1303,6 +1309,82 @@ export function CreatorCards({ creators }: CreatorCardsProps) {
           )
         })}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-8">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (currentPage > 1) {
+                      setCurrentPage(currentPage - 1)
+                    }
+                  }}
+                  className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                />
+              </PaginationItem>
+
+              {/* Page Numbers */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                // Show first page, last page, current page, and pages around current page
+                const showPage = page === 1 ||
+                                page === totalPages ||
+                                Math.abs(page - currentPage) <= 1
+
+                if (!showPage && page === 2 && currentPage > 4) {
+                  return (
+                    <PaginationItem key="ellipsis-start">
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )
+                }
+
+                if (!showPage && page === totalPages - 1 && currentPage < totalPages - 3) {
+                  return (
+                    <PaginationItem key="ellipsis-end">
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )
+                }
+
+                if (!showPage) return null
+
+                return (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setCurrentPage(page)
+                      }}
+                      isActive={currentPage === page}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                )
+              })}
+
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (currentPage < totalPages) {
+                      setCurrentPage(currentPage + 1)
+                    }
+                  }}
+                  className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
 
       <TipPaymentModal
         isOpen={showPaymentModal}

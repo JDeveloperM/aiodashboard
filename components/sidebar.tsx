@@ -86,8 +86,8 @@ export const Sidebar = memo(function Sidebar() {
         { name: "Forum", href: "/forum", icon: MessageSquare },
       ]
     },
-    { name: "Royalties", href: "/royalties", icon: DollarSign, restricted: !canAccessRoyalties },
-    { name: "RaffleCraft", href: "/dapps/rafflecraft", icon: Dice6, restricted: false },
+    { name: "Royalties", href: "/royalties", icon: Crown, restricted: false },
+    { name: "RaffleQuiz", href: "/dapps/rafflecraft", icon: Dice6, restricted: false },
     { name: "Dewhale", href: "/dapps/dewhale-launchpad", icon: Rocket, restricted: false },
     { name: "E-Learning", href: "/metago-academy", icon: BookOpen, restricted: false },
     { name: "Leaderboard", href: "/leaderboard", icon: Trophy, restricted: false },

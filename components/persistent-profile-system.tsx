@@ -137,24 +137,24 @@ export function PersistentProfileSystem() {
   const [copied, setCopied] = useState(false)
   const [showClaimDialog, setShowClaimDialog] = useState(false)
   const [claimingAchievement, setClaimingAchievement] = useState<any>(null)
-  const [isClaimingPoints, setIsClaimingPoints] = useState(false)
+  const [isClaimingTokens, setIsClaimingTokens] = useState(false)
   const [mobileTooltipOpen, setMobileTooltipOpen] = useState<number | null>(null)
   const [showLevelClaimDialog, setShowLevelClaimDialog] = useState(false)
   const [claimingLevel, setClaimingLevel] = useState<any>(null)
-  const [isClaimingLevelPoints, setIsClaimingLevelPoints] = useState(false)
+  const [isClaimingLevelTokens, setIsClaimingLevelTokens] = useState(false)
   const [showProgressionModal, setShowProgressionModal] = useState(false)
 
   // Level rewards state - Updated according to new progression system
   const [levelRewards, setLevelRewards] = useState([
-    { level: 2, points: 0, available: false, claimed: false, description: "Upgrade to 2nd Affiliate Level" },
-    { level: 3, points: 0, available: false, claimed: false, description: "Upgrade to 3rd Affiliate Level" },
-    { level: 4, points: 0, available: false, claimed: false, description: "Upgrade to 4th Affiliate Level" },
-    { level: 5, points: 0, available: false, claimed: false, description: "Upgrade to 5th Affiliate Level (Max)" },
-    { level: 6, points: 500, available: false, claimed: false, description: "Earn 500 Points" },
-    { level: 7, points: 2000, available: false, claimed: false, description: "Earn 2,000 Points" },
-    { level: 8, points: 6000, available: false, claimed: false, description: "Earn 6,000 Points" },
-    { level: 9, points: 15000, available: false, claimed: false, description: "Earn 15,000 Points" },
-    { level: 10, points: 35000, available: false, claimed: false, description: "Earn 35,000 Points" }
+    { level: 2, tokens: 0, available: false, claimed: false, description: "Upgrade to 2nd Affiliate Level" },
+    { level: 3, tokens: 0, available: false, claimed: false, description: "Upgrade to 3rd Affiliate Level" },
+    { level: 4, tokens: 0, available: false, claimed: false, description: "Upgrade to 4th Affiliate Level" },
+    { level: 5, tokens: 0, available: false, claimed: false, description: "Upgrade to 5th Affiliate Level (Max)" },
+    { level: 6, tokens: 500, available: false, claimed: false, description: "Earn 500 pAION" },
+    { level: 7, tokens: 2000, available: false, claimed: false, description: "Earn 2,000 pAION" },
+    { level: 8, tokens: 6000, available: false, claimed: false, description: "Earn 6,000 pAION" },
+    { level: 9, tokens: 15000, available: false, claimed: false, description: "Earn 15,000 pAION" },
+    { level: 10, tokens: 35000, available: false, claimed: false, description: "Earn 35,000 pAION" }
   ])
 
   // Affiliate link - use referral code if available, fallback to wallet address
@@ -217,36 +217,36 @@ export function PersistentProfileSystem() {
   // Create achievements with proper unlock status
   const createAchievements = () => {
     const baseAchievements = [
-      // Profile & KYC Category - Updated with new names and XP values
-      { name: "Personalize Your Profile", icon: User, color: "#4DA2FF", xp: 50, category: "Profile/KYC", tooltip: "Upload a profile picture to your account" },
-      { name: "Unlock Full Access", icon: CheckCircle2, color: "#10B981", xp: 100, category: "Profile/KYC", tooltip: "Finish the KYC verification process" },
-      { name: "Advanced User Status", icon: Star, color: "#FFD700", xp: 200, category: "Profile/KYC", tooltip: "Achieve profile level 5" },
+      // Profile & KYC Category - Updated with new names, XP values, and pAION token rewards
+      { name: "Personalize Your Profile", icon: User, color: "#4DA2FF", xp: 50, tokens: 25, category: "Profile/KYC", tooltip: "Upload a profile picture to your account" },
+      { name: "Unlock Full Access", icon: CheckCircle2, color: "#10B981", xp: 100, tokens: 50, category: "Profile/KYC", tooltip: "Finish the KYC verification process" },
+      { name: "Advanced User Status", icon: Star, color: "#FFD700", xp: 200, tokens: 100, category: "Profile/KYC", tooltip: "Achieve profile level 5" },
 
-      // Social Connections Category - Updated with new names and XP values
-      { name: "Join the Community", image: socialImages.Discord, color: "#5865F2", xp: 50, category: "Social Connections", tooltip: "Link your Discord account" },
-      { name: "Stay Informed", image: socialImages.Telegram, color: "#0088CC", xp: 50, category: "Social Connections", tooltip: "Link your Telegram account" },
-      { name: "Follow the Conversation", image: socialImages.X, color: "#000000", xp: 50, category: "Social Connections", tooltip: "Link your X (Twitter) account" },
+      // Social Connections Category - Updated with new names, XP values, and pAION token rewards
+      { name: "Join the Community", image: socialImages.Discord, color: "#5865F2", xp: 50, tokens: 25, category: "Social Connections", tooltip: "Link your Discord account" },
+      { name: "Stay Informed", image: socialImages.Telegram, color: "#0088CC", xp: 50, tokens: 25, category: "Social Connections", tooltip: "Link your Telegram account" },
+      { name: "Follow the Conversation", image: socialImages.X, color: "#000000", xp: 50, tokens: 25, category: "Social Connections", tooltip: "Link your X (Twitter) account" },
 
-      // Crypto Bot Activities Category - Updated with new names and XP values
-      { name: "Automate Your Trades", icon: Link, color: "#F7931A", xp: 150, category: "Crypto Bot Activities", tooltip: "Link your Bybit account" },
-      { name: "APLN Trading Signals", icon: Activity, color: "#9333EA", xp: 100, category: "Crypto Bot Activities", tooltip: "Subscribe to the APLN Bot" },
-      { name: "HRMS Trading Insights", icon: Activity, color: "#06B6D4", xp: 100, category: "Crypto Bot Activities", tooltip: "Subscribe to the HRMS Bot" },
-      { name: "ATHN Trading Edge", icon: Activity, color: "#8B5CF6", xp: 100, category: "Crypto Bot Activities", tooltip: "Subscribe to the ATHN Bot" },
-      { name: "Master Trading Cycles", icon: Repeat, color: "#10B981", xp: 200, category: "Crypto Bot Activities", tooltip: "Finish at least 3 trading cycles with platform bots" },
+      // Crypto Bot Activities Category - Updated with new names, XP values, and pAION token rewards
+      { name: "Automate Your Trades", icon: Link, color: "#F7931A", xp: 150, tokens: 75, category: "Crypto Bot Activities", tooltip: "Link your Bybit account" },
+      { name: "APLN Trading Signals", icon: Activity, color: "#9333EA", xp: 100, tokens: 50, category: "Crypto Bot Activities", tooltip: "Subscribe to the APLN Bot" },
+      { name: "HRMS Trading Insights", icon: Activity, color: "#06B6D4", xp: 100, tokens: 50, category: "Crypto Bot Activities", tooltip: "Subscribe to the HRMS Bot" },
+      { name: "ATHN Trading Edge", icon: Activity, color: "#8B5CF6", xp: 100, tokens: 50, category: "Crypto Bot Activities", tooltip: "Subscribe to the ATHN Bot" },
+      { name: "Master Trading Cycles", icon: Repeat, color: "#10B981", xp: 200, tokens: 100, category: "Crypto Bot Activities", tooltip: "Finish at least 3 trading cycles with platform bots" },
 
-      // User Upgrades Category - Updated with new names and XP values
-      { name: "Mint Royal NFT Status", icon: Crown, color: "#8B5CF6", xp: 300, category: "User Upgrades", tooltip: "Mint a Royal NFT to achieve elite status" },
+      // User Upgrades Category - Updated with new names, XP values, and pAION token rewards
+      { name: "Mint Royal NFT Status", icon: Crown, color: "#8B5CF6", xp: 300, tokens: 200, category: "User Upgrades", tooltip: "Mint a Royal NFT to achieve elite status" },
 
-      // Referral Tiers Category - Updated with new names and XP values
-      { name: "Recruit PRO NFT Holders", icon: Users, color: "#3B82F6", xp: 250, category: "Referral Tiers", tooltip: "Refer 5 users to become PRO NFT holders" },
-      { name: "Royal NFT Ambassadors", icon: Users, color: "#8B5CF6", xp: 300, category: "Referral Tiers", tooltip: "Refer 3 users to become ROYAL NFT holders" },
-      { name: "Build a NOMAD Network", icon: Users, color: "#F59E0B", xp: 500, category: "Referral Tiers", tooltip: "Add 50 NOMAD users to your network" },
-      { name: "Expand Your PRO Network", icon: Users, color: "#3B82F6", xp: 600, category: "Referral Tiers", tooltip: "Add 30 PRO users to your network" },
-      { name: "Elite ROYAL Network", icon: Users, color: "#8B5CF6", xp: 700, category: "Referral Tiers", tooltip: "Add 30 ROYAL users to your network" },
-      { name: "Mentor Level 5 Users", icon: Users, color: "#10B981", xp: 400, category: "Referral Tiers", tooltip: "Help 10 network users achieve profile level 5" },
-      { name: "Scale Level 5 Mentorship", icon: Users, color: "#10B981", xp: 700, category: "Referral Tiers", tooltip: "Help 50 network users achieve profile level 5" },
-      { name: "Guide to Level 7", icon: Users, color: "#F59E0B", xp: 600, category: "Referral Tiers", tooltip: "Help 20 network users achieve profile level 7" },
-      { name: "Lead to Level 9", icon: Users, color: "#FFD700", xp: 800, category: "Referral Tiers", tooltip: "Help 5 network users achieve profile level 9" }
+      // Referral Tiers Category - Updated with new names, XP values, and pAION token rewards
+      { name: "Recruit PRO NFT Holders", icon: Users, color: "#3B82F6", xp: 250, tokens: 150, category: "Referral Tiers", tooltip: "Refer 5 users to become PRO NFT holders" },
+      { name: "Royal NFT Ambassadors", icon: Users, color: "#8B5CF6", xp: 300, tokens: 200, category: "Referral Tiers", tooltip: "Refer 3 users to become ROYAL NFT holders" },
+      { name: "Build a NOMAD Network", icon: Users, color: "#F59E0B", xp: 500, tokens: 300, category: "Referral Tiers", tooltip: "Add 50 NOMAD users to your network" },
+      { name: "Expand Your PRO Network", icon: Users, color: "#3B82F6", xp: 600, tokens: 400, category: "Referral Tiers", tooltip: "Add 30 PRO users to your network" },
+      { name: "Elite ROYAL Network", icon: Users, color: "#8B5CF6", xp: 700, tokens: 500, category: "Referral Tiers", tooltip: "Add 30 ROYAL users to your network" },
+      { name: "Mentor Level 5 Users", icon: Users, color: "#10B981", xp: 400, tokens: 250, category: "Referral Tiers", tooltip: "Help 10 network users achieve profile level 5" },
+      { name: "Scale Level 5 Mentorship", icon: Users, color: "#10B981", xp: 700, tokens: 500, category: "Referral Tiers", tooltip: "Help 50 network users achieve profile level 5" },
+      { name: "Guide to Level 7", icon: Users, color: "#F59E0B", xp: 600, tokens: 400, category: "Referral Tiers", tooltip: "Help 20 network users achieve profile level 7" },
+      { name: "Lead to Level 9", icon: Users, color: "#FFD700", xp: 800, tokens: 600, category: "Referral Tiers", tooltip: "Help 5 network users achieve profile level 9" }
     ]
 
     // If we have saved achievements, merge them with base achievements
@@ -359,8 +359,8 @@ export function PersistentProfileSystem() {
         const isExplicitlyClaimed = claimedLevels.some((claimed: any) => claimed.level === reward.level)
         const isAvailable = currentLevel >= reward.level
 
-        // Auto-unlock affiliate levels (levels 1-5 with 0 points) when reached
-        const isAutoUnlocked = isAvailable && reward.points === 0 && reward.level <= currentLevel
+        // Auto-unlock affiliate levels (levels 1-5 with 0 tokens) when reached
+        const isAutoUnlocked = isAvailable && reward.tokens === 0 && reward.level <= currentLevel
 
         return {
           ...reward,
@@ -433,7 +433,7 @@ export function PersistentProfileSystem() {
       return
     }
 
-    setIsClaimingPoints(true)
+    setIsClaimingTokens(true)
 
     try {
       console.log('🎯 Starting achievement claim process for:', claimingAchievement.name)
@@ -482,7 +482,7 @@ export function PersistentProfileSystem() {
         total_xp: profile?.total_xp
       })
 
-      const success = await claimAchievement(claimingAchievement.name, claimingAchievement.xp, claimingAchievement.points || 0)
+      const success = await claimAchievement(claimingAchievement.name, claimingAchievement.xp, claimingAchievement.tokens || 0)
 
       if (success) {
         console.log('🎉 Achievement claimed successfully!')
@@ -498,8 +498,8 @@ export function PersistentProfileSystem() {
           claimed_achievements: profile?.achievements_data?.filter((a: any) => a.claimed).map((a: any) => a.name) || []
         })
 
-        const pointsText = claimingAchievement.points ? `, +${claimingAchievement.points} Points` : ''
-        toast.success(`🎉 Achievement claimed! +${claimingAchievement.xp} XP${pointsText} added to your account`)
+        const tokensText = claimingAchievement.tokens ? `, +${claimingAchievement.tokens} pAION` : ''
+        toast.success(`🎉 Achievement claimed! +${claimingAchievement.xp} XP${tokensText} added to your account`)
         setShowClaimDialog(false)
         setClaimingAchievement(null)
       } else {
@@ -511,7 +511,7 @@ export function PersistentProfileSystem() {
       toast.error(`Failed to claim achievement: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
 
-    setIsClaimingPoints(false)
+    setIsClaimingTokens(false)
   }
 
   const handleLevelClaim = (reward: any) => {
@@ -520,12 +520,12 @@ export function PersistentProfileSystem() {
   }
 
   const confirmClaimLevel = async () => {
-    if (!claimingLevel || !profile) {
-      console.error('Missing claimingLevel or profile:', { claimingLevel, profile })
+    if (!claimingLevel || !profile || !user) {
+      console.error('Missing claimingLevel, profile, or user:', { claimingLevel, profile, user })
       return
     }
 
-    setIsClaimingLevelPoints(true)
+    setIsClaimingLevelTokens(true)
 
     try {
       console.log('🎯 Starting level reward claim process for level:', claimingLevel.level)
@@ -548,20 +548,28 @@ export function PersistentProfileSystem() {
       // Add new level reward claim
       const newLevelReward = {
         level: claimingLevel.level,
-        points: claimingLevel.points,
+        tokens: claimingLevel.tokens,
         claimed_at: new Date().toISOString()
       }
 
       currentLevelRewards = [...currentLevelRewards, newLevelReward]
 
-      // Update level rewards and points in database
-      console.log('💾 Updating level rewards and points in database...')
+      // Update level rewards and tokens in database
+      console.log('💾 Updating level rewards and tokens in database...')
 
-      // Calculate new points total
-      const currentPoints = profile.points || 0
-      const newPointsTotal = currentPoints + claimingLevel.points
+      // Award pAION tokens if this level has token rewards
+      if (claimingLevel.tokens > 0) {
+        const { paionTokenService } = await import('@/lib/paion-token-service')
+        await paionTokenService.addTokens(
+          user.address,
+          claimingLevel.tokens,
+          `Level ${claimingLevel.level} reward`,
+          'level_reward',
+          claimingLevel.level.toString()
+        )
+      }
 
-      // First check if level_rewards_data column exists, if not use referral_data as temporary storage
+      // Update level rewards in database (no need to update points as pAION tokens are handled separately)
       const { data, error } = await encryptedStorage.supabase
         .from('user_profiles')
         .update({
@@ -569,7 +577,6 @@ export function PersistentProfileSystem() {
             ...profile.referral_data,
             level_rewards: currentLevelRewards
           },
-          points: newPointsTotal, // Add points to the database
           updated_at: new Date().toISOString()
         })
         .eq('address', user?.address)
@@ -580,9 +587,7 @@ export function PersistentProfileSystem() {
         throw new Error(`Database update failed: ${error.message}`)
       }
 
-      console.log(`✅ Added ${claimingLevel.points} points. New total: ${newPointsTotal}`)
-
-      console.log('✅ Level reward claimed successfully!')
+      console.log(`✅ Level reward claimed successfully!`)
 
       // Update local state
       setLevelRewards(prev => prev.map((reward: any) =>
@@ -595,7 +600,8 @@ export function PersistentProfileSystem() {
       console.log('🔄 Refreshing profile...')
       await refreshProfile()
 
-      toast.success(`🎉 Level ${claimingLevel.level} reward claimed! +${claimingLevel.points} points`)
+      const tokensText = claimingLevel.tokens > 0 ? ` +${claimingLevel.tokens} pAION` : ''
+      toast.success(`🎉 Level ${claimingLevel.level} reward claimed!${tokensText}`)
       setShowLevelClaimDialog(false)
       setClaimingLevel(null)
 
@@ -604,7 +610,7 @@ export function PersistentProfileSystem() {
       toast.error(`Failed to claim level reward: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
 
-    setIsClaimingLevelPoints(false)
+    setIsClaimingLevelTokens(false)
   }
 
   // Close mobile tooltip when clicking outside
@@ -683,8 +689,8 @@ export function PersistentProfileSystem() {
                   className="w-full h-64 rounded-none"
                 />
 
-                {/* Avatar positioned on left side of banner */}
-                <div className="absolute bottom-4 left-6">
+                {/* Avatar - Left on desktop, centered on mobile */}
+                <div className="absolute bottom-16 left-6 md:bottom-4 md:left-6 max-md:left-1/2 max-md:transform max-md:-translate-x-1/2">
                   <EnhancedAvatar
                     size="2xl"
                     editable={true}
@@ -694,8 +700,8 @@ export function PersistentProfileSystem() {
                   />
                 </div>
 
-                {/* Social Media Icons - Positioned at top right of banner */}
-                <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2">
+                {/* Social Media Icons - Top right on desktop, top center on mobile */}
+                <div className="absolute top-4 right-4 md:right-4 max-md:left-1/2 max-md:transform max-md:-translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2">
                   {profileData.socialMedia.map((social: any, index: number) => (
                     <Tooltip key={index}>
                       <TooltipTrigger asChild>
@@ -731,18 +737,12 @@ export function PersistentProfileSystem() {
                   ))}
                 </div>
 
-                {/* Status, Points, and Level - Positioned at bottom right of banner with dark background */}
-                <div className="absolute bottom-4 right-4 flex flex-wrap items-center gap-2 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2">
+                {/* Status and Level - Bottom right on desktop, bottom center on mobile */}
+                <div className="absolute bottom-4 right-4 md:right-4 max-md:left-1/2 max-md:transform max-md:-translate-x-1/2 flex flex-wrap items-center justify-center gap-2 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2">
                   <Badge className="bg-[#3b82f6] text-white text-xs px-2 py-1 h-8 flex items-center">
                     <div className="flex items-center gap-1">
                       <RoleImage role={(profile?.role_tier || "NOMAD") as "NOMAD" | "PRO" | "ROYAL"} size="md" />
                       {profile?.role_tier || "NOMAD"}
-                    </div>
-                  </Badge>
-                  <Badge className="bg-[#3b82f6] text-white text-xs px-2 py-1 h-8 flex items-center">
-                    <div className="flex items-center gap-1">
-                      <Coins className="w-3 h-3" />
-                      <span className="font-medium">{(profile?.points || 0).toLocaleString()}</span>
                     </div>
                   </Badge>
                   <Badge className="bg-[#3b82f6] text-white text-xs px-2 py-1 h-8 flex items-center">
@@ -752,7 +752,7 @@ export function PersistentProfileSystem() {
               </div>
 
               {/* Username and Referral Link below banner */}
-              <div className="px-4 md:px-8 py-4 bg-[#1a2f51] border border-[#C0E6FF]/20 rounded-b-lg">
+              <div className="px-4 md:px-8 py-4 bg-[#1a2f51] border border-[#C0E6FF]/20">
                 {/* Username with Referral Link */}
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                   <div className="flex flex-col justify-center">
@@ -810,6 +810,72 @@ export function PersistentProfileSystem() {
                   </div>
                 </div>
               </div>
+
+              {/* Control Buttons - Inline on desktop, stacked on mobile */}
+              <div className="px-4 md:px-8 py-4 bg-[#1a2f51] border-t border-[#C0E6FF]/10 rounded-b-lg">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {/* Affiliate Controls Button */}
+                  <Button
+                    onClick={() => router.push('/affiliate-controls')}
+                    className="bg-[#4da2ffcc] hover:bg-[#4da2ffcc]/80 text-white px-3 py-2 text-xs font-semibold"
+                  >
+                    <Users className="w-3 h-3 mr-2" />
+                    <span className="hidden sm:inline">Affiliate Controls</span>
+                    <span className="sm:hidden">Affiliate</span>
+                  </Button>
+
+                  {/* Creator Controls Button - PRO and ROYAL only */}
+                  {(tier === 'PRO' || tier === 'ROYAL') ? (
+                    <Button
+                      onClick={() => router.push('/creator-controls')}
+                      className="bg-[#10b981] hover:bg-[#10b981]/80 text-white px-3 py-2 text-xs font-semibold"
+                    >
+                      <Settings className="w-3 h-3 mr-2" />
+                      <span className="hidden sm:inline">Creator Controls</span>
+                      <span className="sm:hidden">Creator</span>
+                    </Button>
+                  ) : (
+                    <Button
+                      disabled
+                      className="bg-gray-600 text-gray-400 px-3 py-2 text-xs font-semibold cursor-not-allowed"
+                    >
+                      <Settings className="w-3 h-3 mr-2" />
+                      <span className="hidden sm:inline">Creator Controls</span>
+                      <span className="sm:hidden">Creator</span>
+                    </Button>
+                  )}
+
+                  {/* KYC Button */}
+                  <Button
+                    onClick={() => updateKYCStatus(profileData.kycStatus === "verified" ? "not_verified" : "verified")}
+                    className={`px-3 py-2 text-xs font-semibold text-white ${
+                      profileData.kycStatus === "verified"
+                        ? "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+                        : "bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800"
+                    }`}
+                  >
+                    {profileData.kycStatus === "verified" ? (
+                      <CheckCircle2 className="w-3 h-3 mr-2" />
+                    ) : (
+                      <AlertTriangle className="w-3 h-3 mr-2" />
+                    )}
+                    <span className="hidden sm:inline">
+                      {profileData.kycStatus === "verified" ? "KYC Verified" : "Complete KYC"}
+                    </span>
+                    <span className="sm:hidden">KYC</span>
+                  </Button>
+
+                  {/* Transaction History Button */}
+                  <Button
+                    onClick={() => router.push('/transaction-history')}
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-3 py-2 text-xs font-semibold"
+                  >
+                    <History className="w-3 h-3 mr-2" />
+                    <span className="hidden sm:inline">Transaction History</span>
+                    <span className="sm:hidden">History</span>
+                  </Button>
+                </div>
+              </div>
             </div>
 
             {/* Column 2: Channels - Takes 1/3 width */}
@@ -826,60 +892,7 @@ export function PersistentProfileSystem() {
         </div>
       </div>
 
-      {/* Control Buttons Card */}
-      <div className="enhanced-card">
-        <div className="enhanced-card-content px-4 md:px-6">
-          {/* Single Row: 3 Control Buttons - Mobile: 1 column (stacked), Desktop: 3 columns */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-            <div className="flex flex-col items-center">
-              <Button
-                onClick={() => router.push('/affiliate-controls')}
-                className="bg-[#4da2ffcc] hover:bg-[#4da2ffcc]/80 text-white px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold w-full"
-              >
-                <Users className="w-3 md:w-4 h-3 md:h-4 mr-1 md:mr-2" />
-                <span className="hidden sm:inline">Affiliate Controls</span>
-                <span className="sm:hidden">Affiliate</span>
-              </Button>
-              <p className="text-[#C0E6FF] text-xs mt-2 text-center">Manage referrals and metrics</p>
-            </div>
 
-            <div className="flex flex-col items-center">
-              <Button
-                onClick={() => updateKYCStatus(profileData.kycStatus === "verified" ? "not_verified" : "verified")}
-                className={`px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-white w-full ${
-                  profileData.kycStatus === "verified"
-                    ? "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
-                    : "bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800"
-                }`}
-              >
-                {profileData.kycStatus === "verified" ? (
-                  <CheckCircle2 className="w-3 md:w-4 h-3 md:h-4 mr-1 md:mr-2" />
-                ) : (
-                  <AlertTriangle className="w-3 md:w-4 h-3 md:h-4 mr-1 md:mr-2" />
-                )}
-                <span className="hidden sm:inline">
-                  {profileData.kycStatus === "verified" ? "KYC Verified" : "Complete KYC"}
-                </span>
-                <span className="sm:hidden">KYC</span>
-              </Button>
-              <p className="text-[#C0E6FF] text-xs mt-2 text-center">
-                {profileData.kycStatus === "verified" ? "Identity verified" : "Verify your identity"}
-              </p>
-            </div>
-
-            <div className="flex flex-col items-center">
-              <Button
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold w-full"
-              >
-                <History className="w-3 md:w-4 h-3 md:h-4 mr-1 md:mr-2" />
-                <span className="hidden sm:inline">Transaction History</span>
-                <span className="sm:hidden">History</span>
-              </Button>
-              <p className="text-[#C0E6FF] text-xs mt-2 text-center">View payment records</p>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Profile Level Progress and Profile Level Rewards Combined Card */}
       <div className="enhanced-card">
@@ -1065,27 +1078,27 @@ export function PersistentProfileSystem() {
                           <div className="flex items-center justify-center py-1">
                             <CheckCircle className="w-5 h-5 text-green-400" />
                             <span className="text-green-400 text-xs ml-1">
-                              {reward.points > 0 ? 'Claimed' : 'Unlocked'}
+                              {reward.tokens > 0 ? 'Claimed' : 'Unlocked'}
                             </span>
                           </div>
                         )
                       }
 
-                      // If available and has points to claim, show claim button
-                      if (reward.available && reward.points > 0) {
+                      // If available and has tokens to claim, show claim button
+                      if (reward.available && reward.tokens > 0) {
                         return (
                           <Button
                             size="sm"
                             onClick={() => handleLevelClaim(reward)}
                             className="w-full text-white text-xs py-1 px-2 bg-green-600 hover:bg-green-700"
                           >
-                            Claim {reward.points} Points
+                            Claim {reward.tokens} pAION
                           </Button>
                         )
                       }
 
-                      // If available but no points (affiliate levels), show unlocked
-                      if (reward.available && reward.points === 0) {
+                      // If available but no tokens (affiliate levels), show unlocked
+                      if (reward.available && reward.tokens === 0) {
                         return (
                           <div className="flex items-center justify-center py-1">
                             <CheckCircle className="w-5 h-5 text-green-400" />
@@ -1282,7 +1295,7 @@ export function PersistentProfileSystem() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-[#0a1628] border border-[#C0E6FF]/20 rounded-xl p-6 max-w-md w-full mx-4 relative overflow-hidden">
             <div className="relative z-10 text-center">
-              {!isClaimingPoints ? (
+              {!isClaimingTokens ? (
                 <>
                   <div className="mb-4">
                     <div className="w-16 h-16 mx-auto mb-4 p-3 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center">
@@ -1296,11 +1309,11 @@ export function PersistentProfileSystem() {
                       <div className="flex items-center justify-center gap-2 mb-2">
                         <Star className="w-5 h-5 text-yellow-400" />
                         <span className="text-white font-bold text-xl">+{claimingAchievement.xp} XP</span>
-                        {claimingAchievement.points > 0 && (
+                        {claimingAchievement.tokens > 0 && (
                           <>
                             <span className="text-[#C0E6FF]">•</span>
                             <Coins className="w-5 h-5 text-[#4da2ff]" />
-                            <span className="text-white font-bold text-xl">+{claimingAchievement.points} Points</span>
+                            <span className="text-white font-bold text-xl">+{claimingAchievement.tokens} pAION</span>
                           </>
                         )}
                       </div>
@@ -1330,7 +1343,7 @@ export function PersistentProfileSystem() {
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-2">✨ Claiming Rewards...</h3>
                   <p className="text-[#C0E6FF] mb-4">
-                    Adding {claimingAchievement.xp} XP{claimingAchievement.points > 0 ? ` and ${claimingAchievement.points} Points` : ''} to your account!
+                    Adding {claimingAchievement.xp} XP{claimingAchievement.tokens > 0 ? ` and ${claimingAchievement.tokens} pAION` : ''} to your account!
                   </p>
                   <div className="w-full bg-[#1a2f51] rounded-full h-2 mb-4">
                     <div className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full animate-pulse w-full"></div>
@@ -1347,7 +1360,7 @@ export function PersistentProfileSystem() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-[#0a1628] border border-[#C0E6FF]/20 rounded-xl p-6 max-w-md w-full mx-4 relative overflow-hidden">
             <div className="relative z-10 text-center">
-              {!isClaimingLevelPoints ? (
+              {!isClaimingLevelTokens ? (
                 <>
                   <div className="mb-4">
                     <div className="w-16 h-16 mx-auto mb-4 p-3 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center">
@@ -1360,14 +1373,14 @@ export function PersistentProfileSystem() {
                     <div className="bg-[#1a2f51] rounded-lg p-4 mb-6">
                       <div className="flex items-center justify-center gap-2 mb-2">
                         <Star className="w-5 h-5 text-yellow-400" />
-                        {claimingLevel.points > 0 ? (
-                          <span className="text-white font-bold text-xl">+{claimingLevel.points} Points</span>
+                        {claimingLevel.tokens > 0 ? (
+                          <span className="text-white font-bold text-xl">+{claimingLevel.tokens} pAION</span>
                         ) : (
                           <span className="text-white font-bold text-lg">{claimingLevel.description}</span>
                         )}
                       </div>
                       <p className="text-[#C0E6FF] text-sm">
-                        {claimingLevel.points > 0 ? "Will be added to your account" : "Feature unlocked!"}
+                        {claimingLevel.tokens > 0 ? "Will be added to your account" : "Feature unlocked!"}
                       </p>
                     </div>
                   </div>
@@ -1394,8 +1407,8 @@ export function PersistentProfileSystem() {
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-2">✨ Claiming Reward...</h3>
                   <p className="text-[#C0E6FF] mb-4">
-                    {claimingLevel.points > 0
-                      ? `Adding ${claimingLevel.points} points to your account!`
+                    {claimingLevel.tokens > 0
+                      ? `Adding ${claimingLevel.tokens} pAION to your account!`
                       : `Unlocking: ${claimingLevel.description}`
                     }
                   </p>
@@ -1453,29 +1466,29 @@ export function PersistentProfileSystem() {
                       <th className="text-left py-3 px-4 text-[#C0E6FF] font-semibold">
                         <div className="flex items-center gap-2">
                           <Unlock className="w-4 h-4 text-yellow-400" />
-                          Points Unlocked
+                          pAION Unlocked
                         </div>
                       </th>
                       <th className="text-left py-3 px-4 text-[#C0E6FF] font-semibold">
                         <div className="flex items-center gap-2">
                           <Target className="w-4 h-4 text-red-400" />
-                          Total Points
+                          Total pAION
                         </div>
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {[
-                      { level: 1, xpRequired: 0, xpFromPrevious: 0, pointsUnlocked: 0, totalPoints: 0, description: "Starting level - Affiliate Level 1" },
-                      { level: 2, xpRequired: 100, xpFromPrevious: 100, pointsUnlocked: 0, totalPoints: 0, description: "Upgrade to 2nd Affiliate Level" },
-                      { level: 3, xpRequired: 250, xpFromPrevious: 150, pointsUnlocked: 0, totalPoints: 0, description: "Upgrade to 3rd Affiliate Level" },
-                      { level: 4, xpRequired: 500, xpFromPrevious: 250, pointsUnlocked: 0, totalPoints: 0, description: "Upgrade to 4th Affiliate Level" },
-                      { level: 5, xpRequired: 800, xpFromPrevious: 300, pointsUnlocked: 0, totalPoints: 0, description: "Upgrade to 5th Affiliate Level (Max)" },
-                      { level: 6, xpRequired: 1200, xpFromPrevious: 400, pointsUnlocked: 500, totalPoints: 500, description: "Earn 500 Points" },
-                      { level: 7, xpRequired: 1800, xpFromPrevious: 600, pointsUnlocked: 2000, totalPoints: 2500, description: "Earn 2,000 Points" },
-                      { level: 8, xpRequired: 2600, xpFromPrevious: 800, pointsUnlocked: 6000, totalPoints: 8500, description: "Earn 6,000 Points" },
-                      { level: 9, xpRequired: 3600, xpFromPrevious: 1000, pointsUnlocked: 15000, totalPoints: 23500, description: "Earn 15,000 Points" },
-                      { level: 10, xpRequired: 5000, xpFromPrevious: 1400, pointsUnlocked: 35000, totalPoints: 58500, description: "Earn 35,000 Points" }
+                      { level: 1, xpRequired: 0, xpFromPrevious: 0, tokensUnlocked: 0, totalTokens: 0, description: "Starting level - Affiliate Level 1" },
+                      { level: 2, xpRequired: 100, xpFromPrevious: 100, tokensUnlocked: 0, totalTokens: 0, description: "Upgrade to 2nd Affiliate Level" },
+                      { level: 3, xpRequired: 250, xpFromPrevious: 150, tokensUnlocked: 0, totalTokens: 0, description: "Upgrade to 3rd Affiliate Level" },
+                      { level: 4, xpRequired: 500, xpFromPrevious: 250, tokensUnlocked: 0, totalTokens: 0, description: "Upgrade to 4th Affiliate Level" },
+                      { level: 5, xpRequired: 800, xpFromPrevious: 300, tokensUnlocked: 0, totalTokens: 0, description: "Upgrade to 5th Affiliate Level (Max)" },
+                      { level: 6, xpRequired: 1200, xpFromPrevious: 400, tokensUnlocked: 500, totalTokens: 500, description: "Earn 500 pAION" },
+                      { level: 7, xpRequired: 1800, xpFromPrevious: 600, tokensUnlocked: 2000, totalTokens: 2500, description: "Earn 2,000 pAION" },
+                      { level: 8, xpRequired: 2600, xpFromPrevious: 800, tokensUnlocked: 6000, totalTokens: 8500, description: "Earn 6,000 pAION" },
+                      { level: 9, xpRequired: 3600, xpFromPrevious: 1000, tokensUnlocked: 15000, totalTokens: 23500, description: "Earn 15,000 pAION" },
+                      { level: 10, xpRequired: 5000, xpFromPrevious: 1400, tokensUnlocked: 35000, totalTokens: 58500, description: "Earn 35,000 pAION" }
                     ].map((row: any, index: number) => (
                       <tr key={row.level} className="border-b border-[#C0E6FF]/10 hover:bg-[#1a2f51]/30 transition-colors">
                         <td className="py-3 px-4 text-white font-semibold">{row.level}</td>
@@ -1487,8 +1500,8 @@ export function PersistentProfileSystem() {
                             <span className="text-[#C0E6FF]">{row.xpFromPrevious}</span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-yellow-400 font-semibold">{row.pointsUnlocked}</td>
-                        <td className="py-3 px-4 text-white font-semibold">{row.totalPoints}</td>
+                        <td className="py-3 px-4 text-yellow-400 font-semibold">{row.tokensUnlocked}</td>
+                        <td className="py-3 px-4 text-white font-semibold">{row.totalTokens}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1688,7 +1701,7 @@ function ChannelsJoinedSection() {
   return (
     <div className="relative h-full">
       {/* Channels Grid - Takes available space */}
-      <div className="pb-32 sm:pb-20">
+      <div className="pb-4">
         <div className="grid grid-cols-5 gap-3 justify-items-center">
           {displayedChannels.map((channel) => (
             <Tooltip key={channel.id}>
@@ -1751,37 +1764,7 @@ function ChannelsJoinedSection() {
         </div>
       </div>
 
-      {/* Control Buttons - Always at bottom, inside card */}
-      <div className="absolute bottom-10 left-0 right-0 px-6 pb-2">
-        <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-[#C0E6FF]/10">
-          {/* Creator Controls Button - PRO and ROYAL only */}
-          {(tier === 'PRO' || tier === 'ROYAL') ? (
-            <div className="flex-1">
-              <Button
-                onClick={() => router.push('/creator-controls')}
-                className="bg-[#10b981] hover:bg-[#10b981]/80 text-white px-2 py-2 text-xs font-semibold w-full"
-              >
-                <Settings className="w-3 h-3 mr-1" />
-                <span className="hidden sm:inline">Creator Controls</span>
-                <span className="sm:hidden">Creator</span>
-              </Button>
-            </div>
-          ) : (
-            <div className="flex-1">
-              <Button
-                disabled
-                className="bg-gray-600 text-gray-400 px-2 py-2 text-xs font-semibold w-full cursor-not-allowed"
-              >
-                <Settings className="w-3 h-3 mr-1" />
-                <span className="hidden sm:inline">Creator Controls</span>
-                <span className="sm:hidden">Creator</span>
-              </Button>
-            </div>
-          )}
 
-
-        </div>
-      </div>
     </div>
   )
 }
