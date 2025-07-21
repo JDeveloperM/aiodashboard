@@ -152,8 +152,8 @@ export function SubscriptionGuard({
           </div>
           
           <p className="text-[#C0E6FF] text-sm mb-3">
-            {subscriptionStatus?.status === 'trial' 
-              ? `Your 7-day free trial has expired. Upgrade to continue accessing ${feature}.`
+            {subscriptionStatus?.status === 'trial'
+              ? `Your 30-day free trial has expired. Upgrade to continue accessing ${feature}.`
               : `Your affiliate subscription has expired. Renew to continue accessing ${feature}.`
             }
           </p>
@@ -195,11 +195,7 @@ export function SubscriptionGuard({
               }
             />
             
-            <div className="text-center">
-              <p className="text-[#C0E6FF] text-xs">
-                💡 Tip: Buy RaffleCraft tickets to get +7 days bonus automatically!
-              </p>
-            </div>
+
           </div>
         )}
       </CardContent>

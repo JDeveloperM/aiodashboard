@@ -4,80 +4,159 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useSubscription } from "@/contexts/subscription-context"
+import { useBotFollowing } from "@/contexts/bot-following-context"
 import { Users, TrendingUp, ArrowRight, AlertTriangle, Info, DollarSign, Activity, BarChart, LineChart, Bitcoin } from "lucide-react"
-import { PerformanceChart } from "@/components/performance-chart"
+import { TradingBotCard } from "@/components/trading-bot-card"
+import { BybitInfoModal } from "@/components/bybit-info-modal"
+import { BotCycleInfo } from "@/components/bot-cycle-info"
+import { useState } from "react"
 
 export default function CryptoBotsPage() {
-  const { tier, canAccessCryptoBots } = useSubscription()
+  const { tier } = useSubscription()
+  const { followBot, unfollowBot, isFollowing } = useBotFollowing()
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false)
 
-  // Sample bots data
+  // Sample bots data in new format
   const bots = [
     {
-      id: "zeus",
-      name: "5000 Zeus",
-      amount: "5,000 USDT",
-      minInvestment: "Min. Investment",
-      followers: 25,
-      performance: "+30.20%",
-      days: "30 days",
-      strategy: "BYB-T",
-      winRate: "91% Win Rate",
-      mdd: "7.5% MDD",
-      tradesWon: "230 Trades Won",
-      tradesLost: "7 Trades Lost",
-      profit: "$206,665.81 AUM",
-      description: "Higher risk trading strategy",
-      badge: "FREE"
+      id: "zeus-perpetual",
+      name: "Zeus",
+      type: "futures" as const,
+      gridType: "Futures grid",
+      longShort: "long" as const,
+      leverage: "10.00x",
+      performance: 8725.06,
+      performanceColor: "#10b981",
+      pnl: "PnL",
+      roi: {
+        value: 11.5,
+        timeframe: "24h"
+      },
+      volume: {
+        value: "102.30S",
+        timeframe: "24h"
+      },
+      profitSharing: 30,
+      followers: 125,
+      owner: {
+        name: "Bybit"
+      },
+      chartData: [100, 110, 115, 125, 140, 160, 180, 200, 220, 240, 270, 300, 340, 380, 420, 470, 530, 600, 680, 780],
+      badge: "FREE",
+      botImage: "/bot-images/zeus.svg",
+      bybitUrl: "https://www.bybit.com/copy-trading/trade-detail/zeus-perpetual",
+      winRate: 99.94,
+      maxDrawdown: 7.00,
+      sharpeRatio: 1.43,
+      totalTrades: 968,
+      avgHoldingTime: "3.8h",
+      aum: "742,227 USDT",
+      rating: 5
     },
     {
-      id: "apollo",
-      name: "2000 Apollo",
-      amount: "2,000 USDT",
-      minInvestment: "Min. Investment",
-      followers: 50,
-      performance: "+14.73%",
-      days: "30 days",
-      strategy: "BYB-T",
-      winRate: "98% Win Rate",
-      mdd: "8.0% MDD",
-      tradesWon: "278 Trades Won",
-      tradesLost: "4 Trades Lost",
-      profit: "$135,090.3 AUM",
-      description: "Apollo is a sophisticated crypto trading bot that uses a data-driven approach to identify high-probability trading opportunities in the cryptocurrency market. By analyzing market trends, volume patterns, and key indicators, it aims to generate consistent returns while managing risk exposure.",
-      badge: "FREE"
+      id: "hermes-perpetual",
+      name: "Hermes",
+      type: "futures" as const,
+      gridType: "Futures grid",
+      longShort: "short" as const,
+      leverage: "10.00x",
+      performance: 1458.71,
+      performanceColor: "#10b981",
+      pnl: "PnL",
+      roi: {
+        value: 11.53,
+        timeframe: "24h"
+      },
+      volume: {
+        value: "395.79S",
+        timeframe: "24h"
+      },
+      profitSharing: 30,
+      followers: 89,
+      owner: {
+        name: "Bybit"
+      },
+      chartData: [100, 105, 110, 115, 120, 125, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260],
+      badge: "FREE",
+      botImage: "/bot-images/hermes.svg",
+      bybitUrl: "https://www.bybit.com/copy-trading/trade-detail/hermes-perpetual",
+      winRate: 66.98,
+      maxDrawdown: 0.00,
+      sharpeRatio: 1.61,
+      totalTrades: 967,
+      avgHoldingTime: "4.0h",
+      aum: "1,465.41 USDT",
+      rating: 4
     },
     {
-      id: "athena",
-      name: "5000 Athena",
-      amount: "5,000 USDT",
-      minInvestment: "Min. Investment",
-      followers: 20,
-      performance: "+5.65%",
-      days: "30 days",
-      strategy: "BYB-T",
-      winRate: "98% Win Rate",
-      mdd: "7.9% MDD",
-      tradesWon: "278 Trades Won",
-      tradesLost: "2 Trades Lost",
-      profit: "$65,690.21 AUM",
-      description: "Conservative trading strategy with focus on capital preservation",
-      badge: "PREMIUM"
-    },
+      id: "athena-perpetual",
+      name: "Athena",
+      type: "futures" as const,
+      gridType: "Futures grid",
+      longShort: "short" as const,
+      leverage: "10.00x",
+      performance: 1960.04,
+      performanceColor: "#10b981",
+      pnl: "PnL",
+      roi: {
+        value: 21.99,
+        timeframe: "24h"
+      },
+      volume: {
+        value: "79.80S",
+        timeframe: "24h"
+      },
+      profitSharing: 30,
+      followers: 65,
+      owner: {
+        name: "Bybit"
+      },
+      chartData: [100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290],
+      badge: "PREMIUM",
+      botImage: "/bot-images/athena.svg",
+      bybitUrl: "https://www.bybit.com/copy-trading/trade-detail/athena-perpetual",
+      winRate: 73.42,
+      maxDrawdown: 11.42,
+      sharpeRatio: 0.99,
+      totalTrades: 1200,
+      avgHoldingTime: "2.1h",
+      aum: "326.35 USDT",
+      rating: 4
+    }
   ]
 
-  if (!canAccessCryptoBots) {
+  const handleFollowBot = async (botId: string) => {
+    const bot = bots.find(b => b.id === botId)
+    if (bot) {
+      await followBot(botId, bot.name, "crypto")
+    }
+  }
+
+  const handleUnfollowBot = async (botId: string) => {
+    await unfollowBot(botId)
+  }
+
+  // Check if user has access (NOMAD free tier, or PRO/ROYAL NFT holders)
+  const hasAccess = tier === 'NOMAD' || tier === 'PRO' || tier === 'ROYAL'
+
+  if (!hasAccess) {
     return (
       <div className="container mx-auto py-10">
         <div className="text-center max-w-2xl mx-auto">
           <AlertTriangle className="h-12 w-12 text-[#4DA2FF] mx-auto mb-4" />
-          <h1 className="text-3xl font-bold mb-4 text-white">PRO NFT Required</h1>
+          <h1 className="text-3xl font-bold mb-4 text-white">Access Required</h1>
           <p className="text-[#C0E6FF] mb-6">
-            Crypto trading bots are available for PRO and ROYAL NFT holders. Mint your PRO NFT to access these powerful
-            automated trading strategies and eliminate cycle payments.
+            Crypto trading bots are available for all users.
+            NOMADS (free tier) use the cycle system ($10/month per bot), while PRO and ROYAL NFT holders get unlimited access.
           </p>
-          <Button className="bg-gradient-to-r from-[#4DA2FF] to-[#011829] text-white">
-            Mint PRO NFT - €250
-          </Button>
+          <div className="flex gap-4 justify-center">
+            <Button className="bg-gradient-to-r from-[#10b981] to-[#059669] text-white">
+              Join as NOMAD - Free
+            </Button>
+            <Button className="bg-gradient-to-r from-[#4DA2FF] to-[#011829] text-white">
+              Mint PRO NFT - 400 USDC
+            </Button>
+          </div>
         </div>
       </div>
     )
@@ -97,21 +176,7 @@ export default function CryptoBotsPage() {
     worstPerformer: "Athena"
   }
 
-  // Performance data for crypto bots
-  const cryptoPerformanceData = [
-    { date: "Jan", value: 1000 },
-    { date: "Feb", value: 1150 },
-    { date: "Mar", value: 1320 },
-    { date: "Apr", value: 1280 },
-    { date: "May", value: 1420 },
-    { date: "Jun", value: 1650 },
-    { date: "Jul", value: 1800 },
-    { date: "Aug", value: 2100 },
-    { date: "Sep", value: 2400 },
-    { date: "Oct", value: 2750 },
-    { date: "Nov", value: 3200 },
-    { date: "Dec", value: 3650 },
-  ]
+
 
   return (
     <div className="space-y-6 p-6">
@@ -120,11 +185,48 @@ export default function CryptoBotsPage() {
           <h1 className="text-3xl font-bold text-white">Crypto Trading Bots</h1>
           <p className="text-[#C0E6FF] mt-1">Automated trading strategies for cryptocurrency markets</p>
         </div>
-        <Button variant="outline" className="hidden md:flex items-center gap-2 border-[#C0E6FF] text-[#C0E6FF] hover:bg-[#C0E6FF]/10">
+        <Button
+          variant="outline"
+          className="hidden md:flex items-center gap-2 border-[#C0E6FF] text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
+          onClick={() => setIsInfoModalOpen(true)}
+        >
           <Bitcoin className="h-4 w-4" />
           Learn More
         </Button>
       </div>
+
+      {/* Access Level Notice */}
+      {tier === 'NOMAD' && (
+        <div className="mb-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="font-semibold text-blue-400 mb-1">NOMAD (Free Tier) - Cycle System</h3>
+              <p className="text-blue-100 text-sm">
+                As a NOMAD (free user), you can access crypto bots with our cycle system. Each bot costs $10 per month.
+                Mint a PRO or ROYAL NFT for unlimited access without monthly payments.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(tier === 'PRO' || tier === 'ROYAL') && (
+        <div className="mb-6 bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <Info className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="font-semibold text-green-400 mb-1">
+                {tier === 'PRO' ? 'PRO' : 'ROYAL'} NFT Holder - Unlimited Access
+              </h3>
+              <p className="text-green-100 text-sm">
+                As an NFT holder, you have unlimited access to all crypto trading bots without monthly cycle payments.
+                Follow as many bots as you want!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Crypto Analytics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -197,89 +299,34 @@ export default function CryptoBotsPage() {
         </div>
       </div>
 
-      {/* Performance Chart */}
-      <div>
-        <h2 className="text-xl font-bold mb-4 text-white">Crypto Bots Performance</h2>
-        <PerformanceChart
-          data={cryptoPerformanceData}
-          title=""
-          valuePrefix="$"
-        />
-      </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {bots.map((bot) => (
-          <div key={bot.id} className="enhanced-card overflow-hidden">
-            <div className="enhanced-card-content">
-              <div className="bg-gradient-to-r from-purple-600 to-indigo-900 p-3 text-white font-medium flex justify-between items-center mb-4 rounded-lg shadow-lg shadow-purple-500/20">
-                <span>{bot.name}</span>
-                <Badge className="bg-cyan-400/20 text-cyan-300 border border-cyan-400/30">{bot.badge}</Badge>
-              </div>
-              <div className="space-y-4">
-              <div className="p-4 border-b border-[#C0E6FF]/20">
-                <div className="flex justify-between items-center mb-2">
-                  <div>
-                    <p className="font-bold text-lg text-white">{bot.amount}</p>
-                    <p className="text-xs text-[#C0E6FF]">{bot.minInvestment}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 mb-2">
-                  <Users className="h-4 w-4 text-[#C0E6FF]" />
-                  <span className="text-sm text-[#C0E6FF]">{bot.followers} followers</span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-1">
-                    <TrendingUp className="h-4 w-4 text-green-400" />
-                    <span className="text-green-400 font-medium">{bot.performance}</span>
-                  </div>
-                  <span className="text-xs text-[#C0E6FF]">{bot.days}</span>
-                </div>
-              </div>
-
-              <div className="p-4 border-b border-[#C0E6FF]/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-xs font-medium">{bot.strategy}</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-2">
-                  <div className="flex items-center gap-1">
-                    <Info className="h-4 w-4 text-[#C0E6FF]" />
-                    <span className="text-sm text-white">{bot.winRate}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Info className="h-4 w-4 text-[#C0E6FF]" />
-                    <span className="text-sm text-white">{bot.mdd}</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-2">
-                  <div>
-                    <p className="text-sm text-green-400">{bot.tradesWon}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-red-400">{bot.tradesLost}</p>
-                  </div>
-                </div>
-
-                <div className="mb-2">
-                  <p className="text-sm font-medium text-white">{bot.profit}</p>
-                </div>
-
-                <div className="text-xs text-[#C0E6FF] mb-4">
-                  <p>{bot.description}</p>
-                </div>
-
-                <Button className="w-full bg-gradient-to-r from-purple-600 to-indigo-900 text-white hover:opacity-90 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 transition-all duration-300">
-                  Start Following Now <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </div>
-              </div>
-            </div>
+          <div key={bot.id} className="space-y-4">
+            <TradingBotCard
+              {...bot}
+              isFollowed={isFollowing(bot.id)}
+              onFollow={() => handleFollowBot(bot.id)}
+              onUnfollow={() => handleUnfollowBot(bot.id)}
+            />
+            {/* Show cycle info for NOMAD users */}
+            {tier === 'NOMAD' && isFollowing(bot.id) && (
+              <BotCycleInfo
+                botId={bot.id}
+                botName={bot.name}
+                botType="crypto"
+              />
+            )}
           </div>
         ))}
       </div>
+
+      {/* Bybit Info Modal */}
+      <BybitInfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
+      />
     </div>
   )
 }

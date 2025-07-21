@@ -150,16 +150,22 @@ export function AffiliateSubscriptionPayment({
             const txHash = result.digest
 
             try {
+              console.log('🔄 Processing subscription for duration:', selectedDuration, 'days')
+
               // Create subscription record
-              await affiliateSubscriptionService.createSubscription(
+              const subscription = await affiliateSubscriptionService.createSubscription(
                 userAddress,
                 priceQuote,
-                txHash
+                txHash,
+                selectedDuration
               )
+              console.log('✅ Subscription created:', subscription.id)
 
               // Verify and activate subscription
+              console.log('🔍 Starting verification for transaction:', txHash)
               const verified = await affiliateSubscriptionService.verifyAndActivateSubscription(txHash)
-              
+              console.log('🔍 Verification result:', verified)
+
               if (verified) {
                 setTransactionHash(txHash)
                 setPaymentStep('success')
@@ -168,9 +174,10 @@ export function AffiliateSubscriptionPayment({
               } else {
                 throw new Error('Payment verification failed')
               }
-            } catch (error) {
-              console.error('Error processing subscription:', error)
-              setError('Payment sent but subscription activation failed. Please contact support.')
+            } catch (error: any) {
+              console.error('❌ Error processing subscription:', error)
+              console.error('❌ Error details:', error.message, error.stack)
+              setError(`Payment sent but subscription activation failed: ${error.message}. Please contact support.`)
               setPaymentStep('error')
             }
           },

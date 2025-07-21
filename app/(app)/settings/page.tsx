@@ -17,7 +17,7 @@ import { useTokens } from "@/contexts/points-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { DashboardProfiles } from "@/components/dashboard-profiles"
 import { NewUserOnboarding } from "@/components/new-user-onboarding"
-import { KYCVerificationFlow } from "@/components/kyc-verification-flow"
+
 
 import { toast } from "sonner"
 import {
@@ -59,8 +59,7 @@ export default function SettingsPage() {
   const { profile, updateProfile, isLoading } = useProfile()
   const { balance: paionBalance, isLoading: paionLoading } = useTokens()
 
-  // KYC flow state
-  const [showKYCFlow, setShowKYCFlow] = useState(false)
+
 
   // Payment method state - loaded from persistent profile
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
@@ -250,15 +249,7 @@ export default function SettingsPage() {
       {/* New User Onboarding Modal */}
       <NewUserOnboarding />
 
-      {/* KYC Verification Flow */}
-      <KYCVerificationFlow
-        isOpen={showKYCFlow}
-        onClose={() => setShowKYCFlow(false)}
-        onComplete={() => {
-          setShowKYCFlow(false)
-          toast.success('KYC verification completed!')
-        }}
-      />
+
 
       <div className="space-y-6 p-6">
         <div className="flex justify-between items-center">
@@ -271,27 +262,88 @@ export default function SettingsPage() {
               }
             </p>
           </div>
-          {profile?.kyc_status !== 'verified' && (
-            <Button
-              onClick={() => setShowKYCFlow(true)}
-              className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white"
-            >
-              Complete KYC
-            </Button>
-          )}
+
         </div>
 
       <Tabs defaultValue="account" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5 bg-[#011829] border border-[#C0E6FF]/20">
+        <TabsList className="grid w-full grid-cols-4 bg-[#011829] border border-[#C0E6FF]/20">
           <TabsTrigger value="account" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">Account</TabsTrigger>
           <TabsTrigger value="privacy" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">Privacy</TabsTrigger>
           <TabsTrigger value="payment" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">Payment</TabsTrigger>
-          <TabsTrigger value="general" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">General</TabsTrigger>
           <TabsTrigger value="notifications" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">Notifications</TabsTrigger>
         </TabsList>
 
         <TabsContent value="account">
           <DashboardProfiles />
+
+          {/* Danger Zone */}
+          <div className="mt-8">
+            <div className="enhanced-card border-red-500/20">
+              <div className="enhanced-card-content">
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="h-5 w-5 text-red-500" />
+                    <h3 className="text-lg font-semibold text-red-500">Danger Zone</h3>
+                  </div>
+                  <p className="text-[#C0E6FF] text-sm">
+                    Actions in this section can lead to permanent data loss. Please proceed with caution.
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-sm text-[#C0E6FF]">
+                      Deleting your account will permanently remove all your data, including your profile, settings, and trading history.
+                      This action cannot be undone.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-6 pt-6 border-t border-red-500/20">
+                  <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="destructive" className="bg-red-500 hover:bg-red-600">
+                        Delete Account
+                      </Button>
+                    </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-red-500" />
+                        <span>Confirm Account Deletion</span>
+                      </DialogTitle>
+                      <DialogDescription>
+                        This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                      <p className="text-sm text-muted-foreground">
+                        Please type <span className="font-bold">DELETE</span> to confirm.
+                      </p>
+                      <Input
+                        className="mt-2"
+                        placeholder="Type DELETE to confirm"
+                        value={deleteConfirmation}
+                        onChange={(e) => setDeleteConfirmation(e.target.value)}
+                      />
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        className="bg-red-500 hover:bg-red-600"
+                        onClick={handleDeleteAccount}
+                        disabled={!isDeleteConfirmed}
+                      >
+                        Delete Account
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="privacy">
@@ -661,111 +713,7 @@ export default function SettingsPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="general">
-          <div className="enhanced-card">
-            <div className="enhanced-card-content">
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-white mb-2">General Settings</h3>
-                <p className="text-[#C0E6FF] text-sm">Manage your account settings and preferences.</p>
-              </div>
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <Zap className="h-5 w-5 text-[#FFD700]" />
-                        <Label htmlFor="performance" className="text-white">Performance Mode</Label>
-                      </div>
-                      <p className="text-sm text-[#C0E6FF]">Optimize for performance on slower devices.</p>
-                    </div>
-                    <Switch
-                      id="performance"
-                      checked={performanceMode}
-                      onCheckedChange={setPerformanceMode}
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="mt-6 pt-6 border-t border-[#C0E6FF]/20">
-                <Button
-                  onClick={saveGeneralSettings}
-                  disabled={isSaving || isLoading}
-                  className="bg-[#4da2ff] hover:bg-[#3d8ae6] text-white transition-colors duration-200"
-                >
-                  {isSaving ? "Saving to Database & Walrus..." : "Save Changes"}
-                </Button>
-              </div>
-            </div>
-          </div>
 
-          <div className="mt-8">
-            <div className="enhanced-card border-red-500/20">
-              <div className="enhanced-card-content">
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="h-5 w-5 text-red-500" />
-                    <h3 className="text-lg font-semibold text-red-500">Danger Zone</h3>
-                  </div>
-                  <p className="text-[#C0E6FF] text-sm">
-                    Actions in this section can lead to permanent data loss. Please proceed with caution.
-                  </p>
-                </div>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-sm text-[#C0E6FF]">
-                      Deleting your account will permanently remove all your data, including your profile, settings, and trading history.
-                      This action cannot be undone.
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-6 pt-6 border-t border-red-500/20">
-                  <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="destructive" className="bg-red-500 hover:bg-red-600">
-                        Delete Account
-                      </Button>
-                    </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle className="flex items-center gap-2">
-                        <AlertTriangle className="h-5 w-5 text-red-500" />
-                        <span>Confirm Account Deletion</span>
-                      </DialogTitle>
-                      <DialogDescription>
-                        This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                      <p className="text-sm text-muted-foreground">
-                        Please type <span className="font-bold">DELETE</span> to confirm.
-                      </p>
-                      <Input
-                        className="mt-2"
-                        placeholder="Type DELETE to confirm"
-                        value={deleteConfirmation}
-                        onChange={(e) => setDeleteConfirmation(e.target.value)}
-                      />
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        className="bg-red-500 hover:bg-red-600"
-                        onClick={handleDeleteAccount}
-                        disabled={!isDeleteConfirmed}
-                      >
-                        Delete Account
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                  </Dialog>
-                </div>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
 
         <TabsContent value="notifications">
           <div className="enhanced-card">

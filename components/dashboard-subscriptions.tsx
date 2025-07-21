@@ -8,7 +8,8 @@ import {
   CheckCircle,
   ArrowRight,
   Zap,
-  Loader2
+  Loader2,
+  Lock
 } from "lucide-react"
 import { useSubscription } from "@/contexts/subscription-context"
 import { RoleImage } from "@/components/ui/role-image"
@@ -171,16 +172,9 @@ export function DashboardSubscriptions() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-white">AIONET NFT Tiers</h2>
-          <p className="text-[#C0E6FF] mt-1">Mint your NFT on Sui Network to unlock exclusive features. PRO and ROYAL are unlimited NFT-based roles.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Badge className={`bg-gradient-to-r ${currentTierData.gradient} text-white px-4 py-2`}>
-            Current: {currentTierData.name}
-          </Badge>
-        </div>
+      <div>
+        <h2 className="text-2xl font-bold text-white">AIONET NFT Tiers</h2>
+        <p className="text-[#C0E6FF] mt-1">Mint your NFT on Sui Network to unlock exclusive features. PRO and ROYAL are unlimited NFT-based roles.</p>
       </div>
 
       {/* NFT Tiers */}
@@ -194,20 +188,29 @@ export function DashboardSubscriptions() {
               key={tierData.id}
               className={`enhanced-card transition-all duration-300 ${
                 isCurrentTier
-                  ? 'ring-2 ring-[#4DA2FF] ring-opacity-50'
+                  ? 'relative'
                   : 'hover:border-[#4DA2FF]/50'
               }`}
+              style={isCurrentTier ? {
+                border: '2px solid #22c55e',
+                boxShadow: '0 10px 15px -3px rgba(34, 197, 94, 0.3), 0 4px 6px -2px rgba(34, 197, 94, 0.1)'
+              } : {}}
             >
               <div className="enhanced-card-content flex flex-col h-full">
                 <div className="mb-6">
                 <div className="flex items-center justify-between">
                   {tierData.icon}
-                  {isCurrentTier && (
+                  {isCurrentTier ? (
                     <Badge className="bg-green-500 text-white">
                       <CheckCircle className="w-3 h-3 mr-1" />
                       Active
                     </Badge>
-                  )}
+                  ) : tier === 'ROYAL' && tierData.id === 'PRO' ? (
+                    <Badge className="bg-gray-500 text-gray-300">
+                      <Lock className="w-3 h-3 mr-1" />
+                      Locked
+                    </Badge>
+                  ) : null}
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-2">{tierData.name}</h3>
                 <div className="text-2xl font-bold text-[#4DA2FF]">
@@ -239,37 +242,11 @@ export function DashboardSubscriptions() {
                       {/* Current Tier Button */}
                       <Button
                         disabled
-                        className="flex-1 bg-green-500 text-white"
+                        className="w-full bg-green-500 text-white"
                       >
                         <CheckCircle className="w-4 h-4 mr-2" />
                         Current Tier
                       </Button>
-
-                      {/* Mint Additional NFT Button for Current Tier */}
-                      {tierData.id !== 'NOMAD' && (
-                        <Button
-                          onClick={() => handleMintNFT(tierData)}
-                          disabled={isMinting || isUpdatingTier}
-                          variant="outline"
-                          className={`flex-1 border-2 transition-colors duration-200 ${
-                            tierData.id === 'PRO'
-                              ? 'border-[#4da2ff] text-[#4da2ff] hover:bg-[#4da2ff] hover:text-white hover:border-[#3d8bff]'
-                              : 'border-yellow-500 text-yellow-400 hover:bg-yellow-500 hover:text-white hover:border-yellow-400'
-                          }`}
-                        >
-                          {(isMinting && selectedTier?.id === tierData.id) || isUpdatingTier ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Minting...
-                            </>
-                          ) : (
-                            <>
-                              <Zap className="w-4 h-4 mr-2" />
-                              Mint {tierData.name} NFT
-                            </>
-                          )}
-                        </Button>
-                      )}
                     </div>
                   ) : tierData.id === 'NOMAD' ? (
                     <Button
@@ -278,6 +255,16 @@ export function DashboardSubscriptions() {
                       className="w-full border-[#C0E6FF]/30 text-[#C0E6FF]"
                     >
                       Default Tier
+                    </Button>
+                  ) : tier === 'ROYAL' && tierData.id === 'PRO' ? (
+                    // Disable PRO button if user is ROYAL (no downgrading)
+                    <Button
+                      disabled
+                      variant="outline"
+                      className="w-full border-[#C0E6FF]/30 text-[#C0E6FF]/50 cursor-not-allowed"
+                    >
+                      <Lock className="w-4 h-4 mr-2" />
+                      Cannot Downgrade
                     </Button>
                   ) : (
                     <Button

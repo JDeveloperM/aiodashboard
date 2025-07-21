@@ -13,18 +13,13 @@ export interface UserProfileMetadata {
   profileImageBlobId?: string
   bannerImageBlobId?: string
   bio?: string
-  socialLinks: SocialLink[]
+
   createdAt: string
   updatedAt: string
   version: number
 }
 
-export interface SocialLink {
-  platform: 'discord' | 'telegram' | 'x' | 'youtube' | 'github'
-  username: string
-  verified: boolean
-  verifiedAt?: string
-}
+
 
 export interface ProfileStorageResult {
   profileBlobId: string
@@ -186,7 +181,6 @@ class WalrusProfileStorage {
         address,
         username,
         profileImageBlobId: imageResult.blobId,
-        socialLinks: [],
         createdAt: new Date().toISOString()
       }, signer)
 

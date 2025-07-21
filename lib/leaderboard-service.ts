@@ -125,22 +125,24 @@ export const LEADERBOARD_CATEGORIES: LeaderboardCategory[] = [
     scoreField: 'total_xp',
     additionalMetrics: ['current_xp', 'profile_level', 'achievements_count']
   },
-  {
-    id: 'quiz',
-    name: 'Quiz Champions',
-    description: 'Based on RaffleQuiz participation and success',
-    icon: 'Brain',
-    scoreField: 'quiz_score',
-    additionalMetrics: ['correct_answers', 'quiz_participation', 'tickets_minted']
-  },
-  {
-    id: 'creators',
-    name: 'Top Channel Creators',
-    description: 'Based on posts created and engagement',
-    icon: 'Video',
-    scoreField: 'creator_score',
-    additionalMetrics: ['total_posts', 'subscribers', 'engagement_rate']
-  },
+  // TEMPORARILY HIDDEN - Quiz Champions
+  // {
+  //   id: 'quiz',
+  //   name: 'Quiz Champions',
+  //   description: 'Based on RaffleQuiz participation and success',
+  //   icon: 'Brain',
+  //   scoreField: 'quiz_score',
+  //   additionalMetrics: ['correct_answers', 'quiz_participation', 'tickets_minted']
+  // },
+  // TEMPORARILY HIDDEN - Top Channel Creators
+  // {
+  //   id: 'creators',
+  //   name: 'Top Channel Creators',
+  //   description: 'Based on posts created and engagement',
+  //   icon: 'Video',
+  //   scoreField: 'creator_score',
+  //   additionalMetrics: ['total_posts', 'subscribers', 'engagement_rate']
+  // },
 
 ]
 

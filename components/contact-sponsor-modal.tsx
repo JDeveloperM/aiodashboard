@@ -1,11 +1,13 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { RoleImage } from "@/components/ui/role-image"
-import { Mail, MessageCircle, X } from "lucide-react"
+import { Mail, MessageCircle, X, Wrench } from "lucide-react"
+import { affiliateService } from "@/lib/affiliate-service"
+import { toast } from "sonner"
 
 interface SponsorInfo {
   username: string
@@ -23,9 +25,13 @@ interface ContactSponsorModalProps {
   onClose: () => void
   sponsor: SponsorInfo | null
   loading: boolean
+  userAddress?: string
 }
 
-export function ContactSponsorModal({ isOpen, onClose, sponsor, loading }: ContactSponsorModalProps) {
+export function ContactSponsorModal({ isOpen, onClose, sponsor, loading, userAddress }: ContactSponsorModalProps) {
+  const [isFixing, setIsFixing] = useState(false)
+  const [fixResult, setFixResult] = useState<{ success: boolean; message: string } | null>(null)
+
   const handleEmailContact = () => {
     if (sponsor?.email) {
       window.open(`mailto:${sponsor.email}?subject=Need Help - AIONET Platform`, '_blank')
@@ -35,6 +41,34 @@ export function ContactSponsorModal({ isOpen, onClose, sponsor, loading }: Conta
   const handleMessageContact = () => {
     // Placeholder for messaging functionality
     console.log('Message sponsor:', sponsor?.username)
+  }
+
+  const handleFixRelationship = async () => {
+    try {
+      setIsFixing(true)
+      setFixResult(null)
+
+      if (!userAddress) {
+        toast.error('User address not found')
+        return
+      }
+
+      console.log('🔧 Fixing affiliate relationship for:', userAddress)
+      const result = await affiliateService.fixMissingAffiliateRelationship(userAddress)
+
+      setFixResult(result)
+      if (result.success) {
+        toast.success('✅ Affiliate relationship fixed! Please reload the page.')
+      } else {
+        toast.error(`❌ ${result.message}`)
+      }
+    } catch (error) {
+      console.error('Failed to fix relationship:', error)
+      setFixResult({ success: false, message: error instanceof Error ? error.message : 'Unknown error' })
+      toast.error('Failed to fix relationship')
+    } finally {
+      setIsFixing(false)
+    }
   }
 
   const getKycStatusColor = (status: string) => {
@@ -144,13 +178,45 @@ export function ContactSponsorModal({ isOpen, onClose, sponsor, loading }: Conta
             <p className="text-sm text-gray-400 mb-4">
               You don't have a sponsor or account manager assigned yet.
             </p>
-            <Button
-              onClick={onClose}
-              variant="outline"
-              className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
-            >
-              Close
-            </Button>
+
+            {/* Fix Result Display */}
+            {fixResult && (
+              <div className={`mb-4 p-3 rounded-lg text-sm ${
+                fixResult.success
+                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                  : 'bg-red-500/20 text-red-400 border border-red-500/30'
+              }`}>
+                {fixResult.message}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <Button
+                onClick={handleFixRelationship}
+                disabled={isFixing}
+                className="bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white w-full"
+              >
+                {isFixing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Fixing...
+                  </>
+                ) : (
+                  <>
+                    <Wrench className="w-4 h-4 mr-2" />
+                    Fix Affiliate Relationship
+                  </>
+                )}
+              </Button>
+
+              <Button
+                onClick={onClose}
+                variant="outline"
+                className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 w-full"
+              >
+                Close
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>

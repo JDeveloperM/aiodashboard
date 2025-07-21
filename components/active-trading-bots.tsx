@@ -18,6 +18,7 @@ import {
   Clock
 } from "lucide-react"
 import Image from "next/image"
+import { TradingBotCard } from "@/components/trading-bot-card"
 
 interface ActiveBot {
   id: string
@@ -102,6 +103,61 @@ export function ActiveTradingBots() {
     setActiveBots(prev => prev.filter(bot => bot.id !== botId))
   }
 
+  // Convert bot data to TradingBotCard format
+  const convertBotToCardData = (bot: ActiveBot) => {
+    // Generate sample chart data based on bot performance
+    const generateChartData = (performance: number) => {
+      const baseValue = 100
+      const trend = performance > 0 ? 1 : -1
+      const volatility = Math.abs(performance) / 10
+
+      return Array.from({ length: 20 }, (_, i) => {
+        const progress = i / 19
+        const trendValue = baseValue + (performance * progress)
+        const noise = (Math.random() - 0.5) * volatility * 2
+        return Math.max(0, trendValue + noise)
+      })
+    }
+
+    return {
+      id: bot.id,
+      name: bot.name,
+      type: "futures" as const,
+      gridType: bot.type === "crypto" ? "Spot grid" : bot.type === "forex" ? "Futures grid" : "Stock grid",
+      longShort: bot.profit >= 0 ? "long" as const : "short" as const,
+      leverage: bot.type === "forex" ? "10x" : "5x",
+      performance: bot.profit,
+      performanceColor: bot.profit >= 0 ? "#10b981" : "#ef4444",
+      pnl: `${bot.profit >= 0 ? '+' : ''}${bot.profit.toFixed(2)}%`,
+      roi: {
+        value: bot.profit,
+        timeframe: "30d"
+      },
+      volume: {
+        value: bot.investment.replace('$', '').replace(',', '') + 'K',
+        timeframe: "24h"
+      },
+      profitSharing: 30,
+      followers: Math.floor(Math.random() * 100) + 10,
+      owner: {
+        name: "AIONET",
+        avatar: undefined
+      },
+      chartData: generateChartData(bot.profit),
+      isFollowed: true,
+      showControls: true,
+      // Add missing Bybit-style properties
+      winRate: Math.min(95, Math.max(45, 70 + (bot.profit / 10))), // Dynamic win rate based on profit
+      maxDrawdown: Math.max(0.5, Math.min(25, Math.abs(bot.profit / 5))), // Dynamic drawdown
+      sharpeRatio: Math.max(0.1, Math.min(3.0, 1.0 + (bot.profit / 100))), // Dynamic Sharpe ratio
+      totalTrades: Math.floor(Math.random() * 800) + 200, // Random trades between 200-1000
+      avgHoldingTime: bot.type === "forex" ? "4.2h" : bot.type === "crypto" ? "6.8h" : "12.5h",
+      aum: `${(Math.random() * 900 + 100).toFixed(0)},${Math.floor(Math.random() * 999).toString().padStart(3, '0')} USDT`,
+      rating: Math.min(5, Math.max(3, Math.floor(4 + (bot.profit / 50)))), // Rating based on performance
+      badge: bot.type === "crypto" ? (bot.profit > 50 ? "PREMIUM" : "FREE") : "VIP"
+    }
+  }
+
   const getTypeColor = (type: string) => {
     switch (type) {
       case "crypto":
@@ -159,134 +215,18 @@ export function ActiveTradingBots() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {activeBots.map((bot) => (
-        <div key={bot.id} className="enhanced-card overflow-hidden">
-          <div className="enhanced-card-content">
-            {/* Header */}
-            <div className={`bg-gradient-to-r ${getTypeColor(bot.type)} p-3 text-white font-medium flex justify-between items-center mb-4 rounded-lg`}>
-              <div className="flex items-center gap-2">
-                {getTypeIcon(bot.type)}
-                <span>{bot.name}</span>
-              </div>
-              {getStatusBadge(bot.status)}
-            </div>
-
-            {/* Bot Performance */}
-            <div className="space-y-4">
-              {/* Investment & Profit */}
-              <div className="p-4 border-b border-[#C0E6FF]/20">
-                <div className="flex justify-between items-center mb-2">
-                  <div>
-                    <p className="font-bold text-lg text-white">{bot.investment}</p>
-                    <p className="text-xs text-[#C0E6FF]">Investment Amount</p>
-                  </div>
-                  <div className="text-right">
-                    <p className={`font-bold text-lg ${bot.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {bot.profit >= 0 ? '+' : ''}{bot.profit}%
-                    </p>
-                    <p className="text-xs text-[#C0E6FF]">Total Profit</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Cycle Information */}
-              <div className="p-4 border-b border-[#C0E6FF]/20">
-                {/* Completed Cycles */}
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <RotateCcw className="w-4 h-4 text-[#4DA2FF]" />
-                    <p className="text-sm text-[#C0E6FF]">Completed Cycles</p>
-                  </div>
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-lg font-bold text-white">{bot.completedCycles}</p>
-                    <p className="text-xs text-[#C0E6FF]">10% profit cycles</p>
-                  </div>
-                  <div className="w-full bg-[#030F1C] rounded-full h-1.5">
-                    <div
-                      className="h-1.5 rounded-full bg-[#4DA2FF]"
-                      style={{ width: `${Math.min(100, (bot.completedCycles / 5) * 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Current Cycle Progress */}
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Clock className="w-4 h-4 text-[#4DA2FF]" />
-                    <p className="text-sm text-[#C0E6FF]">Current Cycle</p>
-                  </div>
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-lg font-bold text-white">{bot.currentCycleProgress.toFixed(1)}%</p>
-                    <p className="text-xs text-[#C0E6FF]">to next 10%</p>
-                  </div>
-                  <div className="w-full bg-[#030F1C] rounded-full h-1.5">
-                    <div
-                      className="h-1.5 rounded-full bg-[#4DA2FF]"
-                      style={{ width: `${bot.currentCycleProgress * 10}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Today's Profit */}
-                <div className="mb-2">
-                  <div className="flex items-center gap-2 mb-2">
-                    <DollarSign className="w-4 h-4 text-[#4DA2FF]" />
-                    <p className="text-sm text-[#C0E6FF]">Today's Profit</p>
-                  </div>
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1">
-                      {bot.todaysProfit >= 0 ? (
-                        <TrendingUp className="w-4 h-4 text-green-400" />
-                      ) : (
-                        <TrendingDown className="w-4 h-4 text-red-400" />
-                      )}
-                      <p className={`text-lg font-bold ${bot.todaysProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {bot.todaysProfit >= 0 ? '+' : ''}{bot.todaysProfit.toFixed(1)}%
-                      </p>
-                    </div>
-                    <p className="text-xs text-[#C0E6FF]">daily performance</p>
-                  </div>
-                  <div className="w-full bg-[#030F1C] rounded-full h-1.5">
-                    <div
-                      className={`h-1.5 rounded-full ${bot.todaysProfit >= 0 ? 'bg-green-400' : 'bg-red-400'}`}
-                      style={{ width: `${Math.min(100, Math.abs(bot.todaysProfit) * 20)}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                <div className="text-xs text-[#C0E6FF] mt-3">
-                  <p>Last update: {bot.lastUpdate}</p>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="p-4 flex gap-2">
-                <Button
-                  onClick={() => handleStopBot(bot.id)}
-                  variant="outline"
-                  size="sm"
-                  className={`flex-1 ${
-                    bot.status === "active"
-                      ? "border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
-                      : "border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
-                  }`}
-                >
-                  <StopCircle className="w-4 h-4 mr-1" />
-                  {bot.status === "active" ? "Stop" : "Start"}
-                </Button>
-                <Button
-                  onClick={() => handleDeleteBot(bot.id)}
-                  variant="outline"
-                  size="sm"
-                  className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
+      {activeBots.map((bot) => {
+        const cardData = convertBotToCardData(bot)
+        return (
+          <TradingBotCard
+            key={bot.id}
+            {...cardData}
+            onStop={() => handleStopBot(bot.id)}
+            onRestart={() => handleStopBot(bot.id)}
+            onUnfollow={() => handleDeleteBot(bot.id)}
+          />
+        )
+      })}
     </div>
   )
 }

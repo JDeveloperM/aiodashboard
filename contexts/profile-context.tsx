@@ -15,8 +15,8 @@ interface ProfileContextType {
   loadProfile: () => Promise<void>
   updateProfile: (data: Partial<DecryptedProfile>) => Promise<boolean>
   updateUsername: (username: string) => Promise<boolean>
-  updateSocialLinks: (links: any[]) => Promise<boolean>
-  updateKYCStatus: (status: 'verified' | 'pending' | 'not_verified') => Promise<boolean>
+
+
   updateTier: (tier: 'NOMAD' | 'PRO' | 'ROYAL') => Promise<boolean>
   updateXP: (currentXP: number, totalXP: number, level: number) => Promise<boolean>
   claimAchievement: (achievementName: string, xpReward: number, tokenReward?: number) => Promise<boolean>
@@ -105,13 +105,9 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     return updateProfile({ username })
   }, [updateProfile])
 
-  const updateSocialLinks = useCallback(async (links: any[]): Promise<boolean> => {
-    return updateProfile({ social_links: links })
-  }, [updateProfile])
 
-  const updateKYCStatus = useCallback(async (status: 'verified' | 'pending' | 'not_verified'): Promise<boolean> => {
-    return updateProfile({ kyc_status: status })
-  }, [updateProfile])
+
+
 
   const updateTier = useCallback(async (tier: 'NOMAD' | 'PRO' | 'ROYAL'): Promise<boolean> => {
     return updateProfile({ role_tier: tier })
@@ -266,8 +262,8 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     loadProfile,
     updateProfile,
     updateUsername,
-    updateSocialLinks,
-    updateKYCStatus,
+
+
     updateTier,
     updateXP,
     claimAchievement,

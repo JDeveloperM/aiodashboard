@@ -17,12 +17,7 @@ import { useRouter } from "next/navigation"
 import ReactCountryFlag from 'react-country-flag'
 import { getCountryCodeByName } from '@/lib/locations'
 
-// Social media image paths
-const socialImages = {
-  Discord: "/images/social/discord.png",
-  Telegram: "/images/social/telegram.png",
-  X: "/images/social/x.png"
-}
+
 
 // Achievement image mapping function - Updated with new hexagonal achievement icons
 const getAchievementImage = (achievementName: string): string | null => {
@@ -65,21 +60,7 @@ const getAchievementImage = (achievementName: string): string | null => {
 
 // Helper functions
 
-const getKycStatusColor = (status: string) => {
-  switch (status) {
-    case 'verified': return 'text-green-400'
-    case 'pending': return 'text-yellow-400'
-    default: return 'text-red-400'
-  }
-}
 
-const getKycStatusIcon = (status: string) => {
-  switch (status) {
-    case 'verified': return <div className="w-2 h-2 bg-green-400 rounded-full" />
-    case 'pending': return <div className="w-2 h-2 bg-yellow-400 rounded-full" />
-    default: return <div className="w-2 h-2 bg-red-400 rounded-full" />
-  }
-}
 
 interface UserAvatarGridProps {
   users: User[]
@@ -89,10 +70,9 @@ interface UserAvatarProps {
   user: User
   onCardToggle: (user: User | null) => void
   isCardOpen: boolean
-  onSocialSelect?: (social: { platform: string; username: string; url: string }) => void
 }
 
-function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect }: UserAvatarProps) {
+function UserAvatar({ user, onCardToggle, isCardOpen }: UserAvatarProps) {
   const isMobile = useIsMobile()
   const [showCard, setShowCard] = useState(false)
   const router = useRouter()
@@ -210,45 +190,14 @@ function UserAvatar({ user, onCardToggle, isCardOpen, onSocialSelect }: UserAvat
                       </Button>
                     </div>
                     <p className="text-[#C0E6FF] text-xs mb-1">{user.username}</p>
-
-                    {/* Social Media Icons */}
-                    {user.socialMedia && user.socialMedia.length > 0 && (
-                      <div className="flex gap-1">
-                        {user.socialMedia
-                          .filter(social => social.connected)
-                          .map((social, index) => (
-                            <Tooltip key={index}>
-                              <TooltipTrigger asChild>
-                                <div className="flex items-center justify-center hover:scale-110 transition-transform cursor-pointer">
-                                  <Image
-                                    src={social.image}
-                                    alt={social.platform}
-                                    width={16}
-                                    height={16}
-                                    className="w-4 h-4 object-contain opacity-80 hover:opacity-100 transition-opacity"
-                                  />
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent className="text-xs">
-                                <div className="font-medium">{social.platform}</div>
-                                <div className="text-[#C0E6FF]/70">{social.username}</div>
-                              </TooltipContent>
-                            </Tooltip>
-                          ))}
-                      </div>
-                    )}
                   </div>
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="grid grid-cols-1 gap-2 mb-2">
                   <div className="text-center p-1 bg-[#1a2f51]/50 rounded">
                     <div className="text-[#4DA2FF] text-xs">Level</div>
                     <div className="text-white font-bold text-sm">{user.level}</div>
-                  </div>
-                  <div className="text-center p-1 bg-[#1a2f51]/50 rounded">
-                    <div className={cn("text-xs", getKycStatusColor(user.kycStatus))}>KYC</div>
-                    <div className="text-white font-bold text-xs">{user.kycStatus === 'verified' ? '✓' : '✗'}</div>
                   </div>
                 </div>
 
@@ -320,11 +269,6 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [hoveredUser, setHoveredUser] = useState<User | null>(null)
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
-  const [selectedSocial, setSelectedSocial] = useState<{
-    platform: string
-    username: string
-    url: string
-  } | null>(null)
 
   const isMobile = useIsMobile()
   const router = useRouter()
@@ -433,8 +377,6 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
                   user={user}
                   onCardToggle={handleCardToggle}
                   isCardOpen={displayedUser?.id === user.id}
-                  onSocialSelect={setSelectedSocial}
-
                 />
               </div>
             ))}
@@ -529,55 +471,14 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
                     </Button>
                   </div>
                   <p className="text-[#C0E6FF] text-xs mb-1">{selectedUser.username}</p>
-
-                  {/* Social Media Icons */}
-                  {selectedUser.socialMedia && selectedUser.socialMedia.length > 0 && (
-                    <div className="flex gap-1">
-                      {selectedUser.socialMedia
-                        .filter(social => social.connected)
-                        .map((social, index) => (
-                          <Tooltip key={index}>
-                            <TooltipTrigger asChild>
-                              <div
-                                className="flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setSelectedSocial({
-                                    platform: social.platform,
-                                    username: social.username || 'Connected',
-                                    url: social.url
-                                  })
-                                }}
-                              >
-                                <Image
-                                  src={social.image}
-                                  alt={social.platform}
-                                  width={16}
-                                  height={16}
-                                  className="w-4 h-4 object-contain opacity-80 hover:opacity-100 transition-opacity"
-                                />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent className="text-xs">
-                              <div className="font-medium">{social.platform}</div>
-                              <div className="text-[#C0E6FF]/70">{social.username}</div>
-                            </TooltipContent>
-                          </Tooltip>
-                        ))}
-                    </div>
-                  )}
                 </div>
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-2 gap-2 mb-3">
+              <div className="grid grid-cols-1 gap-2 mb-3">
                 <div className="text-center p-1 bg-[#1a2f51]/50 rounded">
                   <div className="text-[#4DA2FF] text-xs">Level</div>
                   <div className="text-white font-bold text-sm">{selectedUser.level}</div>
-                </div>
-                <div className="text-center p-1 bg-[#1a2f51]/50 rounded">
-                  <div className={cn("text-xs", getKycStatusColor(selectedUser.kycStatus))}>KYC</div>
-                  <div className="text-white font-bold text-xs">{selectedUser.kycStatus === 'verified' ? '✓' : '✗'}</div>
                 </div>
               </div>
 
@@ -636,68 +537,7 @@ export function UserAvatarGrid({ users }: UserAvatarGridProps) {
         </div>
       )}
 
-      {/* Mobile Social Media Popup - Rendered AFTER user card to ensure higher z-index */}
-      {isMobile && selectedSocial && (
-        <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex items-center justify-center p-4 animate-in fade-in-0 duration-300"
-          onClick={() => setSelectedSocial(null)}
-        >
-          <div
-            className="relative w-72 animate-in slide-in-from-bottom-4 zoom-in-95 duration-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close Button */}
-            <button
-              onClick={() => setSelectedSocial(null)}
-              className="absolute top-2 right-2 z-10 bg-[#1a2f51] hover:bg-[#4DA2FF] text-white rounded-full p-2 transition-colors duration-200 shadow-lg"
-            >
-              <X className="w-4 h-4" />
-            </button>
 
-            {/* Card Shadow/Glow Effect */}
-            <div className="absolute inset-0 bg-[#4DA2FF]/20 rounded-lg blur-xl scale-110 pointer-events-none" />
-            <div className="relative bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg p-6">
-              {/* Content */}
-              <div className="text-center">
-                <div className="mb-4">
-                  <div className="w-16 h-16 mx-auto mb-3 bg-[#1a2f51]/50 rounded-full flex items-center justify-center">
-                    {selectedSocial.platform === 'discord' && <MessageSquare className="w-8 h-8 text-[#5865F2]" />}
-                    {selectedSocial.platform === 'telegram' && <Send className="w-8 h-8 text-[#0088cc]" />}
-                    {selectedSocial.platform === 'x' && (
-                      <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                        <span className="text-black font-bold text-lg">𝕏</span>
-                      </div>
-                    )}
-                  </div>
-                  <h3 className="text-white font-semibold text-lg mb-1 capitalize">{selectedSocial.platform}</h3>
-                  <p className="text-[#C0E6FF] text-sm">@{selectedSocial.username}</p>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3">
-                  <Button
-                    onClick={() => {
-                      window.open(selectedSocial.url, '_blank')
-                      setSelectedSocial(null)
-                    }}
-                    className="flex-1 bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Visit Profile
-                  </Button>
-                  <Button
-                    onClick={() => setSelectedSocial(null)}
-                    variant="outline"
-                    className="border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#4DA2FF]/10"
-                  >
-                    Close
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
 
 

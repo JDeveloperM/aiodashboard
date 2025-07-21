@@ -29,7 +29,17 @@ export function ContactSponsorButton() {
 
     try {
       console.log('🔍 Fetching sponsor info for:', userAddress)
+
+      // Debug: Check if admin default code exists
+      const adminCodeCheck = await affiliateService.checkAdminDefaultCode()
+      console.log('🔍 Admin code check result:', adminCodeCheck)
+
+      // Debug: Check user's affiliate status
+      const debugInfo = await affiliateService.debugUserAffiliateStatus(userAddress)
+      console.log('🔍 User debug info:', debugInfo)
+
       const sponsor = await affiliateService.getSponsorInfo(userAddress)
+      console.log('🔍 Sponsor result:', sponsor)
       setSponsorInfo(sponsor)
     } catch (error) {
       console.error('Failed to fetch sponsor info:', error)
@@ -65,6 +75,7 @@ export function ContactSponsorButton() {
         onClose={handleCloseModal}
         sponsor={sponsorInfo}
         loading={loading}
+        userAddress={userAddress}
       />
     </>
   )

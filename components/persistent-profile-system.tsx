@@ -12,9 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RoleImage } from "@/components/ui/role-image"
 import { EnhancedAvatar } from "@/components/enhanced-avatar"
 import { EnhancedBanner } from "@/components/enhanced-banner"
+import { ReferralCodeManagement } from "@/components/referral-code-management"
 
 import { useProfile } from '@/contexts/profile-context'
-import { useChannelSubscriptions, getChannelTypeBadgeColor, formatSubscriptionStatus } from '@/hooks/use-channel-subscriptions'
+
 import { useReferralCodes } from '@/hooks/use-referral-codes'
 import { encryptedStorage } from '@/lib/encrypted-database-storage'
 import { getCountryCodeByName } from '@/lib/locations'
@@ -25,8 +26,7 @@ import { useTierRefresh } from '@/hooks/use-tier-sync'
 import { toast } from 'sonner'
 import Image from "next/image"
 import {
-  CheckCircle2,
-  AlertTriangle,
+
   History,
   Copy,
   ExternalLink,
@@ -56,12 +56,7 @@ import {
   Activity
 } from 'lucide-react'
 
-// Social media image paths
-const socialImages = {
-  Discord: "/images/social/discord.png",
-  Telegram: "/images/social/telegram.png",
-  X: "/images/social/x.png"
-}
+
 
 // Achievement image mapping function - Updated with new hexagonal achievement icons
 const getAchievementImage = (achievementName: string): string | null => {
@@ -71,10 +66,7 @@ const getAchievementImage = (achievementName: string): string | null => {
     "Unlock Full Access": "/images/achievements/Unlock Full Access.png",
     "Advanced User Status": "/images/achievements/Advanced User Status.png",
 
-    // Social Connections Category
-    "Join the Community": "/images/achievements/Join the Community.png",
-    "Stay Informed": "/images/achievements/Stay Informed.png",
-    "Follow the Conversation": "/images/achievements/Follow the Conversation.png",
+
 
     // Crypto Bot Activities Category
     "Automate Your Trades": "/images/achievements/Automate Your Trades.png",
@@ -114,7 +106,6 @@ export function PersistentProfileSystem() {
     error,
     isInitialized,
     updateProfile,
-    updateKYCStatus,
     updateTier,
     claimAchievement,
     updateAchievements,
@@ -178,9 +169,7 @@ export function PersistentProfileSystem() {
         // Unlocked if user has uploaded a profile image
         return !!profile?.profile_image_blob_id
 
-      case "Unlock Full Access":
-        // Unlocked if user has completed KYC
-        return profile?.kyc_status === 'verified'
+
 
       case "Advanced User Status":
         // Unlocked if user has reached level 5
@@ -217,15 +206,12 @@ export function PersistentProfileSystem() {
   // Create achievements with proper unlock status
   const createAchievements = () => {
     const baseAchievements = [
-      // Profile & KYC Category - Updated with new names, XP values, and pAION token rewards
-      { name: "Personalize Your Profile", icon: User, color: "#4DA2FF", xp: 50, tokens: 25, category: "Profile/KYC", tooltip: "Upload a profile picture to your account" },
-      { name: "Unlock Full Access", icon: CheckCircle2, color: "#10B981", xp: 100, tokens: 50, category: "Profile/KYC", tooltip: "Finish the KYC verification process" },
-      { name: "Advanced User Status", icon: Star, color: "#FFD700", xp: 200, tokens: 100, category: "Profile/KYC", tooltip: "Achieve profile level 5" },
+      // Profile Category - Updated with new names, XP values, and pAION token rewards
+      { name: "Personalize Your Profile", icon: User, color: "#4DA2FF", xp: 50, tokens: 25, category: "Profile", tooltip: "Upload a profile picture to your account" },
 
-      // Social Connections Category - Updated with new names, XP values, and pAION token rewards
-      { name: "Join the Community", image: socialImages.Discord, color: "#5865F2", xp: 50, tokens: 25, category: "Social Connections", tooltip: "Link your Discord account" },
-      { name: "Stay Informed", image: socialImages.Telegram, color: "#0088CC", xp: 50, tokens: 25, category: "Social Connections", tooltip: "Link your Telegram account" },
-      { name: "Follow the Conversation", image: socialImages.X, color: "#000000", xp: 50, tokens: 25, category: "Social Connections", tooltip: "Link your X (Twitter) account" },
+      { name: "Advanced User Status", icon: Star, color: "#FFD700", xp: 200, tokens: 100, category: "Profile", tooltip: "Achieve profile level 5" },
+
+
 
       // Crypto Bot Activities Category - Updated with new names, XP values, and pAION token rewards
       { name: "Automate Your Trades", icon: Link, color: "#F7931A", xp: 150, tokens: 75, category: "Crypto Bot Activities", tooltip: "Link your Bybit account" },
@@ -270,58 +256,14 @@ export function PersistentProfileSystem() {
     }))
   }
 
-  // Convert database social links to UI format
-  const convertSocialLinksToUI = (socialLinks: any[]) => {
-    const defaultSocials = [
-      {
-        platform: "Discord",
-        image: socialImages.Discord,
-        url: "",
-        connected: false,
-        username: "",
-        color: "#5865F2"
-      },
-      {
-        platform: "Telegram",
-        image: socialImages.Telegram,
-        url: "",
-        connected: false,
-        username: "",
-        color: "#0088CC"
-      },
-      {
-        platform: "X",
-        image: socialImages.X,
-        url: "",
-        connected: false,
-        username: "",
-        color: "#000000"
-      }
-    ]
 
-    if (socialLinks && Array.isArray(socialLinks)) {
-      socialLinks.forEach(link => {
-        const social = defaultSocials.find(s =>
-          s.platform.toLowerCase() === link.platform?.toLowerCase() ||
-          (link.platform === 'x' && s.platform === 'X')
-        )
-        if (social && link.username) {
-          social.connected = true
-          social.username = link.username
-          social.url = link.url || social.url
-        }
-      })
-    }
-
-    return defaultSocials
-  }
 
   // Memoized profile data to prevent recreation on every render
   const profileData = useMemo(() => ({
     name: profile?.username || user?.username || "Affiliate User",
     username: profile?.username || user?.username || "@affiliate_user",
-    kycStatus: profile?.kyc_status || "not_verified",
-    socialMedia: convertSocialLinksToUI(profile?.social_links || []),
+
+
     levelInfo: {
       currentLevel: profile?.profile_level || 1,
       nextLevel: (profile?.profile_level || 1) >= 10 ? 10 : (profile?.profile_level || 1) + 1,
@@ -340,8 +282,6 @@ export function PersistentProfileSystem() {
     achievements: createAchievements()
   }), [
     profile?.username,
-    profile?.kyc_status,
-    profile?.social_links,
     profile?.profile_level,
     profile?.current_xp,
     profile?.total_xp,
@@ -393,13 +333,7 @@ export function PersistentProfileSystem() {
     }
   }
 
-  const handleSocialConnect = (platform: string, url: string) => {
-    if (url && url.trim() !== '') {
-      window.open(url, '_blank')
-    } else {
-      toast.error(`No ${platform} profile linked. Please add your ${platform} handle in Settings.`)
-    }
-  }
+
 
   // Check if device is mobile
   const isMobile = () => {
@@ -689,6 +623,41 @@ export function PersistentProfileSystem() {
                   className="w-full h-64 rounded-none"
                 />
 
+                {/* Control Buttons - Top right corner */}
+                <div className="absolute top-4 right-4 flex items-center gap-2">
+                  {/* Affiliate Controls Button - Minimal */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => router.push('/affiliate-controls')}
+                        size="sm"
+                        className="bg-black/60 hover:bg-black/80 backdrop-blur-sm text-white border-0 px-2 py-1 h-8 text-xs"
+                      >
+                        <Users className="w-3 h-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="bg-black/90 text-white border border-[#C0E6FF]/20">
+                      <p className="text-sm">Affiliate Controls</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  {/* Transaction History Button - Minimal */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => router.push('/transaction-history')}
+                        size="sm"
+                        className="bg-black/60 hover:bg-black/80 backdrop-blur-sm text-white border-0 px-2 py-1 h-8 text-xs"
+                      >
+                        <History className="w-3 h-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="bg-black/90 text-white border border-[#C0E6FF]/20">
+                      <p className="text-sm">Transaction History</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+
                 {/* Avatar - Left on desktop, centered on mobile */}
                 <div className="absolute bottom-16 left-6 md:bottom-4 md:left-6 max-md:left-1/2 max-md:transform max-md:-translate-x-1/2">
                   <EnhancedAvatar
@@ -700,42 +669,7 @@ export function PersistentProfileSystem() {
                   />
                 </div>
 
-                {/* Social Media Icons - Top right on desktop, top center on mobile */}
-                <div className="absolute top-4 right-4 md:right-4 max-md:left-1/2 max-md:transform max-md:-translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2">
-                  {profileData.socialMedia.map((social: any, index: number) => (
-                    <Tooltip key={index}>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant={social.connected ? "default" : "outline"}
-                          className={`w-12 h-12 p-0 transition-all duration-200 ${social.connected
-                            ? "text-white border-[#7dffae63] backdrop-blur-sm"
-                            : "border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 hover:border-[#C0E6FF] bg-transparent"
-                          }`}
-                          style={social.connected ? { backgroundColor: '#7dffae63' } : {}}
 
-                          onClick={() => handleSocialConnect(social.platform, social.url)}
-                        >
-                          <Image
-                            src={social.image}
-                            alt={social.platform}
-                            width={32}
-                            height={32}
-                            className="w-8 h-8 object-contain"
-                          />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="bg-black/90 text-white border border-[#C0E6FF]/20">
-                        <p className="text-sm">
-                          {social.connected
-                            ? `Connected: ${social.username}`
-                            : `Click to connect ${social.platform}`
-                          }
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  ))}
-                </div>
 
                 {/* Status and Level - Bottom right on desktop, bottom center on mobile */}
                 <div className="absolute bottom-4 right-4 md:right-4 max-md:left-1/2 max-md:transform max-md:-translate-x-1/2 flex flex-wrap items-center justify-center gap-2 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2">
@@ -811,201 +745,28 @@ export function PersistentProfileSystem() {
                 </div>
               </div>
 
-              {/* Control Buttons - Inline on desktop, stacked on mobile */}
-              <div className="px-4 md:px-8 py-4 bg-[#1a2f51] border-t border-[#C0E6FF]/10 rounded-b-lg">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {/* Affiliate Controls Button */}
-                  <Button
-                    onClick={() => router.push('/affiliate-controls')}
-                    className="bg-[#4da2ffcc] hover:bg-[#4da2ffcc]/80 text-white px-3 py-2 text-xs font-semibold"
-                  >
-                    <Users className="w-3 h-3 mr-2" />
-                    <span className="hidden sm:inline">Affiliate Controls</span>
-                    <span className="sm:hidden">Affiliate</span>
-                  </Button>
 
-                  {/* Creator Controls Button - PRO and ROYAL only */}
-                  {(tier === 'PRO' || tier === 'ROYAL') ? (
-                    <Button
-                      onClick={() => router.push('/creator-controls')}
-                      className="bg-[#10b981] hover:bg-[#10b981]/80 text-white px-3 py-2 text-xs font-semibold"
-                    >
-                      <Settings className="w-3 h-3 mr-2" />
-                      <span className="hidden sm:inline">Creator Controls</span>
-                      <span className="sm:hidden">Creator</span>
-                    </Button>
-                  ) : (
-                    <Button
-                      disabled
-                      className="bg-gray-600 text-gray-400 px-3 py-2 text-xs font-semibold cursor-not-allowed"
-                    >
-                      <Settings className="w-3 h-3 mr-2" />
-                      <span className="hidden sm:inline">Creator Controls</span>
-                      <span className="sm:hidden">Creator</span>
-                    </Button>
-                  )}
 
-                  {/* KYC Button */}
-                  <Button
-                    onClick={() => updateKYCStatus(profileData.kycStatus === "verified" ? "not_verified" : "verified")}
-                    className={`px-3 py-2 text-xs font-semibold text-white ${
-                      profileData.kycStatus === "verified"
-                        ? "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
-                        : "bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800"
-                    }`}
-                  >
-                    {profileData.kycStatus === "verified" ? (
-                      <CheckCircle2 className="w-3 h-3 mr-2" />
-                    ) : (
-                      <AlertTriangle className="w-3 h-3 mr-2" />
-                    )}
-                    <span className="hidden sm:inline">
-                      {profileData.kycStatus === "verified" ? "KYC Verified" : "Complete KYC"}
-                    </span>
-                    <span className="sm:hidden">KYC</span>
-                  </Button>
 
-                  {/* Transaction History Button */}
-                  <Button
-                    onClick={() => router.push('/transaction-history')}
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-3 py-2 text-xs font-semibold"
-                  >
-                    <History className="w-3 h-3 mr-2" />
-                    <span className="hidden sm:inline">Transaction History</span>
-                    <span className="sm:hidden">History</span>
-                  </Button>
-                </div>
-              </div>
+
+
+
+
+
             </div>
 
-            {/* Column 2: Channels - Takes 1/3 width */}
+            {/* Column 3: Profile Level Progress - Takes 1/3 width */}
             <div className="lg:col-span-1 enhanced-card bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg m-2">
               <div className="flex flex-col h-full">
-                {/* Channels Joined Section - Clean layout without inner border */}
-                <div className="w-full flex-1 p-6 pb-4">
-                  <h4 className="text-white font-semibold mb-6">Channels Joined</h4>
-                  <ChannelsJoinedSection />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+                {/* Profile Level Progress Section */}
+                <div className="w-full flex-1 p-6">
+                  <h4 className="text-white font-semibold mb-6 text-center">Profile Level Progress</h4>
 
-
-
-      {/* Profile Level Progress and Profile Level Rewards Combined Card */}
-      <div className="enhanced-card">
-        <div className="enhanced-card-content">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Column 1: Profile Level Progress */}
-            <div>
-              <h3 className="text-white font-semibold mb-4 text-center">Profile Level Progress</h3>
-
-              {/* Current Level with XP Needed */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[#C0E6FF] text-sm">Current Level</span>
-                  <span className="text-white font-bold">Level {profileData.levelInfo.currentLevel}</span>
-                </div>
-
-                {/* Circular Level Progress Gauge */}
-                <div className="flex flex-col items-center">
-                  <div className="relative w-56 h-56 mb-4">
-                    {/* Calculate progress once */}
-                    {(() => {
-                      // Use the same values from profileData.levelInfo for consistency
-                      const currentXP = profileData.levelInfo.currentXP;
-                      const nextLevelXP = profileData.levelInfo.nextLevelXP;
-                      const currentLevel = profileData.levelInfo.currentLevel;
-
-                      // Calculate what XP the current level started at
-                      const levelThresholds = [0, 100, 250, 500, 800, 1200, 1800, 2600, 3600, 5000];
-                      const currentLevelStartXP = levelThresholds[currentLevel - 1] || 0;
-
-                      // Calculate progress within current level (0-100%)
-                      const xpInCurrentLevel = currentXP - currentLevelStartXP;
-                      const xpNeededForLevel = nextLevelXP - currentLevelStartXP;
-                      const progressPercent = Math.min(100, Math.max(0, (xpInCurrentLevel / xpNeededForLevel) * 100));
-
-                      // Progress calculation complete
-
-                      // Calculate the angle for the progress arc
-                      const startAngle = -90; // Start at top
-                      const endAngle = startAngle + (180 * progressPercent / 100); // End based on progress
-
-                      // Convert angles to radians and calculate coordinates
-                      const startAngleRad = (startAngle * Math.PI) / 180;
-                      const endAngleRad = (endAngle * Math.PI) / 180;
-
-                      const centerX = 120;
-                      const centerY = 120;
-                      const radius = 90;
-
-                      const startX = centerX + radius * Math.cos(startAngleRad);
-                      const startY = centerY + radius * Math.sin(startAngleRad);
-                      const endX = centerX + radius * Math.cos(endAngleRad);
-                      const endY = centerY + radius * Math.sin(endAngleRad);
-
-                      const largeArcFlag = progressPercent > 50 ? 1 : 0;
-
-                      return (
-                        <svg className="w-full h-full" viewBox="0 0 240 240">
-                          {/* Gradient Definition */}
-                          <defs>
-                            <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                              <stop offset="0%" stopColor="#60A5FA" />
-                              <stop offset="50%" stopColor="#3B82F6" />
-                              <stop offset="100%" stopColor="#1D4ED8" />
-                            </linearGradient>
-                            <filter id="glow">
-                              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                              <feMerge>
-                                <feMergeNode in="coloredBlur"/>
-                                <feMergeNode in="SourceGraphic"/>
-                              </feMerge>
-                            </filter>
-                          </defs>
-
-                          {/* Background Arc - Full semicircle */}
-                          <path
-                            d="M 30 120 A 90 90 0 0 1 210 120"
-                            fill="none"
-                            stroke="#1a2f51"
-                            strokeWidth="14"
-                            strokeLinecap="round"
-                          />
-
-                          {/* Progress Arc - Only the filled portion with gradient and glow */}
-                          {progressPercent > 0 && (
-                            <path
-                              d={`M 30 120 A 90 90 0 ${largeArcFlag} 1 ${endX} ${endY}`}
-                              fill="none"
-                              stroke="url(#progressGradient)"
-                              strokeWidth="14"
-                              strokeLinecap="round"
-                              filter="url(#glow)"
-                              className="transition-all duration-1000 ease-out"
-                            />
-                          )}
-                        </svg>
-                      );
-                    })()}
-
-                    {/* Center Content */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <div className="text-center bg-[#0a1628]/80 backdrop-blur-sm rounded-full w-28 h-28 flex flex-col items-center justify-center border border-[#C0E6FF]/20 shadow-lg">
-                        <div className="text-3xl font-bold text-white mb-1">
-                          {profileData.levelInfo.currentLevel}
-                        </div>
-                        <div className="text-sm text-[#C0E6FF]">Level</div>
-                      </div>
-                    </div>
-
-                    {/* Progress Percentage Badge */}
-                    <div className="absolute -top-1 right-2 bg-[#1a2f51] border border-[#C0E6FF]/30 text-[#C0E6FF] text-xs font-semibold px-2 py-1 rounded-full shadow-lg">
+                  {/* Compact Circular Level Progress Gauge */}
+                  <div className="flex flex-col items-center mb-6">
+                    <div className="relative w-32 h-32 mb-4">
+                      {/* Calculate progress once */}
                       {(() => {
-                        // Use the same values from profileData.levelInfo for consistency
                         const currentXP = profileData.levelInfo.currentXP;
                         const nextLevelXP = profileData.levelInfo.nextLevelXP;
                         const currentLevel = profileData.levelInfo.currentLevel;
@@ -1015,110 +776,183 @@ export function PersistentProfileSystem() {
 
                         const xpInCurrentLevel = currentXP - currentLevelStartXP;
                         const xpNeededForLevel = nextLevelXP - currentLevelStartXP;
-                        const progress = Math.min(100, Math.max(0, (xpInCurrentLevel / xpNeededForLevel) * 100));
+                        const progressPercent = Math.min(100, Math.max(0, (xpInCurrentLevel / xpNeededForLevel) * 100));
 
-                        return `${progress.toFixed(0)}%`;
+                        const circumference = 2 * Math.PI * 45; // radius = 45
+                        const strokeDashoffset = circumference - (progressPercent / 100) * circumference;
+
+                        return (
+                          <>
+                            {/* Background Circle */}
+                            <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                              <circle
+                                cx="50"
+                                cy="50"
+                                r="45"
+                                stroke="#1a2f51"
+                                strokeWidth="8"
+                                fill="transparent"
+                              />
+                              {/* Progress Circle */}
+                              <circle
+                                cx="50"
+                                cy="50"
+                                r="45"
+                                stroke="url(#levelGradient)"
+                                strokeWidth="8"
+                                fill="transparent"
+                                strokeDasharray={circumference}
+                                strokeDashoffset={strokeDashoffset}
+                                strokeLinecap="round"
+                                className="transition-all duration-1000 ease-out"
+                              />
+                              {/* Gradient Definition */}
+                              <defs>
+                                <linearGradient id="levelGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                  <stop offset="0%" stopColor="#4DA2FF" />
+                                  <stop offset="100%" stopColor="#00D4AA" />
+                                </linearGradient>
+                              </defs>
+                            </svg>
+
+                            {/* Center Content */}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                              <div className="text-center bg-[#0a1628]/80 backdrop-blur-sm rounded-full w-20 h-20 flex flex-col items-center justify-center border border-[#C0E6FF]/20 shadow-lg">
+                                <div className="text-xl font-bold text-white mb-1">
+                                  {profileData.levelInfo.currentLevel}
+                                </div>
+                                <div className="text-xs text-[#C0E6FF]">Level</div>
+                              </div>
+                            </div>
+
+                            {/* Progress Percentage Badge */}
+                            <div className="absolute -top-1 right-1 bg-[#1a2f51] border border-[#C0E6FF]/30 text-[#C0E6FF] text-xs font-semibold px-2 py-1 rounded-full shadow-lg">
+                              {progressPercent.toFixed(0)}%
+                            </div>
+                          </>
+                        );
                       })()}
+                    </div>
+
+                    {/* Level Info Below Gauge - Compact */}
+                    <div className="flex justify-between items-center w-full text-center">
+                      <div>
+                        <div className="text-sm font-bold text-white">
+                          {profileData.levelInfo.currentLevel >= 10 ? "Status" : "Next"}
+                        </div>
+                        <div className="text-lg font-bold text-[#4DA2FF]">
+                          {profileData.levelInfo.currentLevel >= 10 ? "MAX" : profileData.levelInfo.nextLevel}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-white">
+                          {profileData.levelInfo.currentLevel >= 10 ? "Total XP" : "XP Needed"}
+                        </div>
+                        <div className="text-lg font-bold text-[#00D4AA]">
+                          {profileData.levelInfo.currentLevel >= 10
+                            ? profileData.levelInfo.totalXP.toLocaleString()
+                            : (profileData.levelInfo.nextLevelXP - profileData.levelInfo.currentXP).toLocaleString()
+                          }
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Level Info Below Gauge */}
-                  <div className="flex justify-between items-center w-full">
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-white">
-                        {profileData.levelInfo.currentLevel >= 10 ? "Status" : "Next Level"}
+                  {/* XP Level Progression & Rewards Button - Compact */}
+                  <div>
+                    <Button
+                      onClick={() => setShowProgressionModal(true)}
+                      className="w-full bg-gradient-to-r from-[#4DA2FF] to-[#00D4AA] hover:from-[#4DA2FF]/80 hover:to-[#00D4AA]/80 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-300 text-sm"
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <Trophy className="w-4 h-4" />
+                        <span>View Progression</span>
                       </div>
-                      <div className="text-2xl font-bold text-[#4DA2FF]">
-                        {profileData.levelInfo.currentLevel >= 10 ? "MAX LEVEL" : profileData.levelInfo.nextLevel}
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-white">
-                        {profileData.levelInfo.currentLevel >= 10 ? "Total XP" : "XP Needed"}
-                      </div>
-                      <div className="text-2xl font-bold text-[#00D4AA]">
-                        {profileData.levelInfo.currentLevel >= 10
-                          ? profileData.levelInfo.totalXP.toLocaleString()
-                          : (profileData.levelInfo.nextLevelXP - profileData.levelInfo.currentXP).toLocaleString()
-                        }
-                      </div>
-                    </div>
+                    </Button>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* XP Level Progression & Rewards Button */}
-              <div>
-                <Button
-                  onClick={() => setShowProgressionModal(true)}
-                  className="w-full bg-gradient-to-r from-[#4DA2FF] to-[#00D4AA] hover:from-[#4DA2FF]/80 hover:to-[#00D4AA]/80 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300"
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <Trophy className="w-4 h-4" />
-                    <span>XP Level Progression & Rewards</span>
-                  </div>
-                </Button>
+          </div>
+        </div>
+      </div>
+
+
+
+      {/* Referral & Rewards Section - Two Column Layout */}
+      <div className="enhanced-card">
+        <div className="enhanced-card-content">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            {/* Left Column: Referral Code Management */}
+            <div className="enhanced-card bg-[#030f1c] border border-[#C0E6FF]/20">
+              <div className="enhanced-card-content">
+                <ReferralCodeManagement />
               </div>
             </div>
 
-            {/* Column 2: Profile Level Rewards */}
-            <div>
-              <h3 className="text-white font-semibold mb-4 text-center">Profile Level Rewards</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {levelRewards.map((reward: any) => (
-                  <div key={reward.level} className="bg-[#1a2f51] rounded-lg p-3 border border-[#C0E6FF]/20 text-center">
-                    <div className="text-white font-bold text-sm mb-2">Level {reward.level}</div>
-                    <div className="text-[#C0E6FF] text-xs mb-2 min-h-[2rem] flex items-center justify-center">
-                      {reward.description}
+            {/* Right Column: Profile Level Rewards */}
+            <div className="enhanced-card bg-[#030f1c] border border-[#C0E6FF]/20">
+              <div className="enhanced-card-content">
+                <h3 className="text-white font-semibold mb-4 text-center">Profile Level Rewards</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {levelRewards.map((reward: any) => (
+                    <div key={reward.level} className="bg-[#1a2f51] rounded-lg p-2 border border-[#C0E6FF]/20 text-center">
+                      <div className="text-white font-bold text-xs mb-1">Level {reward.level}</div>
+                      <div className="text-[#C0E6FF] text-xs mb-2 min-h-[1.5rem] flex items-center justify-center leading-tight">
+                        {reward.level <= 5 ? `Level ${reward.level}` : `${reward.tokens} pAION`}
+                      </div>
+                      {(() => {
+                        // If already claimed, show checkmark
+                        if (reward.claimed) {
+                          return (
+                            <div className="flex items-center justify-center py-1">
+                              <CheckCircle className="w-3 h-3 text-green-400" />
+                              <span className="text-green-400 text-xs ml-1">
+                                {reward.tokens > 0 ? 'Claimed' : 'Unlocked'}
+                              </span>
+                            </div>
+                          )
+                        }
+
+                        // If available and has tokens to claim, show claim button
+                        if (reward.available && reward.tokens > 0) {
+                          return (
+                            <Button
+                              size="sm"
+                              onClick={() => handleLevelClaim(reward)}
+                              className="w-full text-white text-xs py-1 px-1 bg-green-600 hover:bg-green-700 h-6"
+                            >
+                              Claim
+                            </Button>
+                          )
+                        }
+
+                        // If available but no tokens (affiliate levels), show unlocked
+                        if (reward.available && reward.tokens === 0) {
+                          return (
+                            <div className="flex items-center justify-center py-1">
+                              <CheckCircle className="w-3 h-3 text-green-400" />
+                              <span className="text-green-400 text-xs ml-1">Unlocked</span>
+                            </div>
+                          )
+                        }
+
+                        // If not available, show locked
+                        return (
+                          <div className="text-[#6B7280] text-xs py-1 flex items-center justify-center">
+                            <Lock className="w-3 h-3 mr-1" />
+                            Locked
+                          </div>
+                        )
+                      })()}
                     </div>
-                    {(() => {
-                      // If already claimed, show checkmark
-                      if (reward.claimed) {
-                        return (
-                          <div className="flex items-center justify-center py-1">
-                            <CheckCircle className="w-5 h-5 text-green-400" />
-                            <span className="text-green-400 text-xs ml-1">
-                              {reward.tokens > 0 ? 'Claimed' : 'Unlocked'}
-                            </span>
-                          </div>
-                        )
-                      }
-
-                      // If available and has tokens to claim, show claim button
-                      if (reward.available && reward.tokens > 0) {
-                        return (
-                          <Button
-                            size="sm"
-                            onClick={() => handleLevelClaim(reward)}
-                            className="w-full text-white text-xs py-1 px-2 bg-green-600 hover:bg-green-700"
-                          >
-                            Claim {reward.tokens} pAION
-                          </Button>
-                        )
-                      }
-
-                      // If available but no tokens (affiliate levels), show unlocked
-                      if (reward.available && reward.tokens === 0) {
-                        return (
-                          <div className="flex items-center justify-center py-1">
-                            <CheckCircle className="w-5 h-5 text-green-400" />
-                            <span className="text-green-400 text-xs ml-1">Unlocked</span>
-                          </div>
-                        )
-                      }
-
-                      // If not available, show locked
-                      return (
-                        <div className="text-[#6B7280] text-xs py-1 flex items-center justify-center">
-                          <Lock className="w-4 h-4 mr-1" />
-                          Locked
-                        </div>
-                      )
-                    })()}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>
@@ -1523,248 +1357,7 @@ export function PersistentProfileSystem() {
   )
 }
 
-// Channels Refresh Button Component
-function ChannelsRefreshButton() {
-  const { refreshChannels, isLoading, channels } = useChannelSubscriptions()
-
-  const debugChannelAvatars = () => {
-    console.log('🔍 DEBUG: Channel avatars info:')
-    channels.forEach((channel, index) => {
-      console.log(`Channel ${index + 1}:`, {
-        name: channel.name,
-        avatarUrl: channel.avatarUrl,
-        avatarBlobId: channel.avatarBlobId,
-        creatorAddress: channel.creatorAddress
-      })
-    })
-  }
-
-  return (
-    <div className="flex gap-1">
-      <Button
-        onClick={refreshChannels}
-        size="sm"
-        variant="ghost"
-        className="text-[#C0E6FF] hover:text-white hover:bg-[#4DA2FF]/20 p-1"
-        disabled={isLoading}
-        title="Refresh channels"
-      >
-        <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-      </Button>
-      <Button
-        onClick={debugChannelAvatars}
-        size="sm"
-        variant="ghost"
-        className="text-[#C0E6FF] hover:text-white hover:bg-[#4DA2FF]/20 p-1"
-        title="Debug avatars"
-      >
-        🔍
-      </Button>
-    </div>
-  )
-}
-
-// Channels Joined Section Component
-function ChannelsJoinedSection() {
-  const { channels, isLoading, error, refreshChannels, addSampleChannels } = useChannelSubscriptions()
-  const router = useRouter()
-  const { profile } = useProfile()
-
-  // Get user tier from profile
-  const tier = profile?.role_tier || 'NOMAD'
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center py-8">
-        <RefreshCw className="w-6 h-6 text-[#C0E6FF] animate-spin" />
-        <span className="ml-2 text-[#C0E6FF]">Loading channels...</span>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="relative h-full">
-        {/* Error state content - Takes available space */}
-        <div className="pb-32 sm:pb-20 text-center py-8">
-          <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
-          <p className="text-red-400 text-sm mb-4">Failed to load channels</p>
-          <Button
-            onClick={refreshChannels}
-            size="sm"
-            className="bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Retry
-          </Button>
-        </div>
-
-        {/* Control Buttons - Always at bottom, inside card */}
-        <div className="absolute bottom-10 left-0 right-0 px-6 pb-2">
-          <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-[#C0E6FF]/10">
-            {/* Creator Controls Button - PRO and ROYAL only */}
-            {(tier === 'PRO' || tier === 'ROYAL') ? (
-              <div className="flex-1">
-                <Button
-                  onClick={() => router.push('/creator-controls')}
-                  className="bg-[#10b981] hover:bg-[#10b981]/80 text-white px-2 py-2 text-xs font-semibold w-full"
-                >
-                  <Settings className="w-3 h-3 mr-1" />
-                  <span className="hidden sm:inline">Creator Controls</span>
-                  <span className="sm:hidden">Creator</span>
-                </Button>
-              </div>
-            ) : (
-              <div className="flex-1">
-                <Button
-                  disabled
-                  className="bg-gray-600 text-gray-400 px-2 py-2 text-xs font-semibold w-full cursor-not-allowed"
-                >
-                  <Settings className="w-3 h-3 mr-1" />
-                  <span className="hidden sm:inline">Creator Controls</span>
-                  <span className="sm:hidden">Creator</span>
-                </Button>
-              </div>
-            )}
 
 
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (channels.length === 0) {
-    return (
-      <div className="relative h-full">
-        {/* Empty state content - Takes available space */}
-        <div className="pb-32 sm:pb-20 text-center py-8">
-          <Hash className="w-8 h-8 text-[#C0E6FF]/50 mx-auto mb-2" />
-          <p className="text-[#C0E6FF]/70 text-sm mb-4">No channels joined yet</p>
-          <p className="text-[#C0E6FF]/50 text-xs mb-4">
-            Visit AIO Creators to join channels, or use the button below to add test data
-          </p>
-          <Button
-            onClick={addSampleChannels}
-            size="sm"
-            className="bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Hash className="w-4 h-4 mr-2" />
-            )}
-            Add Demo Channels (Testing)
-          </Button>
-        </div>
-
-        {/* Control Buttons - Always at bottom, inside card */}
-        <div className="absolute bottom-10 left-0 right-0 px-6 pb-2">
-          <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-[#C0E6FF]/10">
-            {/* Creator Controls Button - PRO and ROYAL only */}
-            {(tier === 'PRO' || tier === 'ROYAL') ? (
-              <div className="flex-1">
-                <Button
-                  onClick={() => router.push('/creator-controls')}
-                  className="bg-[#10b981] hover:bg-[#10b981]/80 text-white px-2 py-2 text-xs font-semibold w-full"
-                >
-                  <Settings className="w-3 h-3 mr-1" />
-                  <span className="hidden sm:inline">Creator Controls</span>
-                  <span className="sm:hidden">Creator</span>
-                </Button>
-              </div>
-            ) : (
-              <div className="flex-1">
-                <Button
-                  disabled
-                  className="bg-gray-600 text-gray-400 px-2 py-2 text-xs font-semibold w-full cursor-not-allowed"
-                >
-                  <Settings className="w-3 h-3 mr-1" />
-                  <span className="hidden sm:inline">Creator Controls</span>
-                  <span className="sm:hidden">Creator</span>
-                </Button>
-              </div>
-            )}
 
 
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Limit channels display: 9 for desktop, 25 for mobile (5x5)
-  const maxChannels = 25 // Maximum for mobile 5x5 grid
-  const displayedChannels = channels.slice(0, maxChannels)
-
-  return (
-    <div className="relative h-full">
-      {/* Channels Grid - Takes available space */}
-      <div className="pb-4">
-        <div className="grid grid-cols-5 gap-3 justify-items-center">
-          {displayedChannels.map((channel) => (
-            <Tooltip key={channel.id}>
-              <TooltipTrigger asChild>
-                <div className="w-16 h-16 rounded-full cursor-pointer transition-all hover:scale-110 border-2 border-[#C0E6FF]/20 hover:border-[#C0E6FF]/40 overflow-hidden">
-                  {channel.avatarUrl ? (
-                    <Image
-                      src={channel.avatarUrl}
-                      alt={channel.name}
-                      width={64}
-                      height={64}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div
-                      className="w-full h-full flex items-center justify-center"
-                      style={{ backgroundColor: channel.color }}
-                    >
-                      <Hash className="w-8 h-8 text-white" />
-                    </div>
-                  )}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent className="bg-[#1a2f51] border border-[#C0E6FF]/20 text-white p-3 max-w-xs">
-                <div className="space-y-2">
-                  <div className="font-semibold text-sm">{channel.name}</div>
-                  {channel.description && (
-                    <div className="text-xs text-[#C0E6FF]/80">{channel.description}</div>
-                  )}
-                  <div className="flex items-center gap-2 text-xs">
-                    <Badge className={`${getChannelTypeBadgeColor(channel.type)} text-xs`}>
-                      {channel.type.toUpperCase()}
-                    </Badge>
-                    <span className="text-[#C0E6FF]">
-                      {formatSubscriptionStatus(channel)}
-                    </span>
-                  </div>
-                  <div className="text-xs text-[#C0E6FF]">
-                    {channel.subscribers.toLocaleString()} subscribers
-                  </div>
-                  <div className="text-xs text-[#C0E6FF]/60">
-                    Joined: {new Date(channel.joinedDate).toLocaleDateString()}
-                  </div>
-                  {channel.expiryDate && (
-                    <div className="text-xs text-[#C0E6FF]/60">
-                      Expires: {new Date(channel.expiryDate).toLocaleDateString()}
-                    </div>
-                  )}
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          ))}
-          {channels.length > maxChannels && (
-            <div className="col-span-1 flex items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-[#1a2f51] border-2 border-[#C0E6FF]/20 flex items-center justify-center cursor-pointer hover:border-[#C0E6FF]/40 transition-all">
-                <span className="text-[#C0E6FF] text-xs font-medium">+{channels.length - maxChannels}</span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-
-    </div>
-  )
-}

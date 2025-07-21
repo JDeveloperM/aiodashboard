@@ -86,7 +86,7 @@ export function CTASection() {
           </div>
 
           <p className="text-sm text-white/50">
-            No credit card required. Free plan available. <span className="text-white/70">Premium plans start at €250.</span>
+            No credit card required. Free plan available. <span className="text-white/70">Premium plans start at 400 USDC.</span>
           </p>
         </div>
       </div>

@@ -153,6 +153,19 @@ class AffiliateSubscriptionService {
         expiresAt = subscriptionExpires?.toISOString() || trialExpires?.toISOString() || ''
       }
 
+      // If no trial or subscription data exists, initialize 30-day trial
+      if (!trialExpires && !subscriptionExpires && status === 'trial') {
+        console.log('🆕 No trial found, initializing 30-day trial for:', userAddress)
+        await this.initializeTrial(userAddress)
+
+        // Recalculate after initialization
+        const newTrialExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        status = 'trial'
+        isActive = true
+        daysRemaining = 30
+        expiresAt = newTrialExpires.toISOString()
+      }
+
       return {
         status,
         isActive,
@@ -212,15 +225,34 @@ class AffiliateSubscriptionService {
    * Create a new subscription (payment pending)
    */
   async createSubscription(
-    userAddress: string, 
+    userAddress: string,
     priceQuote: PriceQuote,
-    transactionHash: string
+    transactionHash: string,
+    durationDays: number = 30
   ): Promise<AffiliateSubscription> {
     try {
       console.log('💳 Creating subscription for:', userAddress)
+      console.log('💳 Price quote:', priceQuote)
+      console.log('💳 Transaction hash:', transactionHash)
 
+      // Get current subscription status to determine start date
+      const currentStatus = await this.getSubscriptionStatus(userAddress)
       const now = new Date()
-      const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+
+      // If user has an active subscription, extend from current expiry date
+      // Otherwise, start from now
+      let startsAt: Date
+      let expiresAt: Date
+
+      if (currentStatus.isActive && currentStatus.expiresAt) {
+        startsAt = new Date(currentStatus.expiresAt)
+        expiresAt = new Date(startsAt.getTime() + durationDays * 24 * 60 * 60 * 1000) // Duration days from current expiry
+        console.log(`🔄 Extending existing subscription from: ${startsAt.toISOString()} for ${durationDays} days`)
+      } else {
+        startsAt = now
+        expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000) // Duration days from now
+        console.log(`🆕 Creating new subscription from: ${startsAt.toISOString()} for ${durationDays} days`)
+      }
 
       const subscriptionData = {
         user_address: userAddress,
@@ -229,8 +261,8 @@ class AffiliateSubscriptionService {
         price_usdc: priceQuote.usdcPrice,
         price_sui: priceQuote.suiPrice,
         sui_usd_rate: priceQuote.suiUsdRate,
-        duration_days: 30,
-        starts_at: now.toISOString(),
+        duration_days: durationDays,
+        starts_at: startsAt.toISOString(),
         expires_at: expiresAt.toISOString(),
         transaction_hash: transactionHash,
         payment_verified: false
@@ -247,9 +279,6 @@ class AffiliateSubscriptionService {
         throw error
       }
 
-      // Create payment record
-      await this.createPaymentRecord(userAddress, data.id, priceQuote, transactionHash)
-
       console.log('✅ Subscription created:', data.id)
       return data
     } catch (error) {
@@ -258,39 +287,7 @@ class AffiliateSubscriptionService {
     }
   }
 
-  /**
-   * Create payment record
-   */
-  private async createPaymentRecord(
-    userAddress: string,
-    subscriptionId: string,
-    priceQuote: PriceQuote,
-    transactionHash: string
-  ): Promise<AffiliatePayment> {
-    const paymentData = {
-      user_address: userAddress,
-      subscription_id: subscriptionId,
-      amount_sui: priceQuote.suiPrice,
-      amount_usdc_equivalent: priceQuote.usdcPrice,
-      sui_usd_rate: priceQuote.suiUsdRate,
-      transaction_hash: transactionHash,
-      status: 'pending' as const,
-      verification_attempts: 0
-    }
 
-    const { data, error } = await supabase
-      .from('affiliate_payments')
-      .insert(paymentData)
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error creating payment record:', error)
-      throw error
-    }
-
-    return data
-  }
 
   /**
    * Verify payment and activate subscription
@@ -298,6 +295,7 @@ class AffiliateSubscriptionService {
   async verifyAndActivateSubscription(transactionHash: string): Promise<boolean> {
     try {
       console.log('🔍 Verifying payment:', transactionHash)
+      console.log('🔍 Starting verification process...')
 
       // In a real implementation, you would verify the transaction on the SUI blockchain
       // For now, we'll simulate verification
@@ -308,36 +306,44 @@ class AffiliateSubscriptionService {
         return false
       }
 
-      // Update payment status
-      const { data: payment, error: paymentError } = await supabase
-        .from('affiliate_payments')
-        .update({ 
-          status: 'confirmed',
-          last_verification_at: new Date().toISOString(),
-          verification_attempts: 1
+      // Find and activate the subscription by transaction hash
+      const { data: subscription, error: subError } = await supabase
+        .from('affiliate_subscriptions')
+        .update({
+          status: 'active',
+          payment_verified: true,
+          updated_at: new Date().toISOString()
         })
         .eq('transaction_hash', transactionHash)
         .select()
         .single()
 
-      if (paymentError) {
-        console.error('Error updating payment:', paymentError)
-        return false
-      }
-
-      // Activate subscription
-      const { error: subError } = await supabase
-        .from('affiliate_subscriptions')
-        .update({ 
-          status: 'active',
-          payment_verified: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', payment.subscription_id)
-
       if (subError) {
         console.error('Error activating subscription:', subError)
         return false
+      }
+
+      if (!subscription) {
+        console.error('No subscription found with transaction hash:', transactionHash)
+        return false
+      }
+
+      // Update user profile subscription status
+      const now = new Date()
+      const expiresAt = new Date(subscription.expires_at)
+
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update({
+          affiliate_subscription_status: 'active',
+          affiliate_subscription_expires_at: expiresAt.toISOString(),
+          updated_at: now.toISOString()
+        })
+        .eq('address', subscription.user_address)
+
+      if (profileError) {
+        console.error('Error updating user profile:', profileError)
+        // Don't fail the whole process for this
       }
 
       console.log('✅ Subscription activated successfully')
@@ -541,26 +547,65 @@ class AffiliateSubscriptionService {
     return status.isActive
   }
 
+
+
   /**
    * Get subscription history for a user
    */
   async getSubscriptionHistory(userAddress: string): Promise<AffiliateSubscription[]> {
     try {
-      const { data, error } = await supabase
+      console.log('📋 Getting subscription history for:', userAddress)
+
+      const { data: subscriptions, error } = await supabase
         .from('affiliate_subscriptions')
         .select('*')
         .eq('user_address', userAddress)
         .order('created_at', { ascending: false })
 
+      console.log('📋 Supabase response - data:', subscriptions)
+      console.log('📋 Supabase response - error:', error)
+
       if (error) {
-        console.error('Error fetching subscription history:', error)
+        console.error('❌ Error fetching subscription history:', error)
+        console.error('❌ Error details:', error.message, error.details, error.hint)
         throw error
       }
 
-      return data || []
+      console.log('✅ Successfully fetched', subscriptions?.length || 0, 'subscription records')
+      return subscriptions || []
     } catch (error) {
-      console.error('Failed to get subscription history:', error)
+      console.error('❌ Failed to get subscription history:', error)
       return []
+    }
+  }
+
+  /**
+   * Initialize 30-day trial for new users
+   */
+  private async initializeTrial(userAddress: string): Promise<void> {
+    try {
+      const now = new Date()
+      const trialExpires = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          affiliate_subscription_status: 'trial',
+          affiliate_trial_started_at: now.toISOString(),
+          affiliate_trial_expires_at: trialExpires.toISOString(),
+          updated_at: now.toISOString()
+        })
+        .eq('address', userAddress)
+
+      if (error) {
+        console.error('Error initializing trial:', error)
+        throw error
+      }
+
+      console.log('✅ 30-day trial initialized for:', userAddress)
+    } catch (error) {
+      console.error('Failed to initialize trial:', error)
+      throw error
     }
   }
 

@@ -17,6 +17,7 @@ interface SubscriptionContextType {
   reloadTier: () => Promise<void>
   canAccessCryptoBots: boolean
   canAccessForexBots: boolean
+  canAccessStockBots: boolean
   upgradeToPremium: () => Promise<void>
   upgradeToVIP: () => Promise<void>
   isUpdatingTier: boolean
@@ -43,9 +44,12 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   )
 
   // Determine access based on AIONET tier system
-  // According to guidelines: PRO and ROYAL have no cycle payments, ROYAL has VIP features
-  const canAccessCryptoBots = tier === "PRO" || tier === "ROYAL"
-  const canAccessForexBots = tier === "ROYAL"  // VIP-only (ROYAL tier)
+  // NOMAD (free tier) can access crypto bots with cycle system
+  // PRO can access crypto bots for free
+  // ROYAL can access all bots for free (crypto, stock, forex)
+  const canAccessCryptoBots = tier === "NOMAD" || tier === "PRO" || tier === "ROYAL"
+  const canAccessForexBots = tier === "ROYAL"  // ROYAL-only
+  const canAccessStockBots = tier === "ROYAL"  // ROYAL-only
 
   // Read-only tier management - subscription context only reads from profile, doesn't write
   const setTier = async (newTier: SubscriptionTier) => {
@@ -94,10 +98,11 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     reloadTier,
     canAccessCryptoBots,
     canAccessForexBots,
+    canAccessStockBots,
     upgradeToPremium,
     upgradeToVIP,
     isUpdatingTier,
-  }), [tier, reloadTier, canAccessCryptoBots, canAccessForexBots, isUpdatingTier])
+  }), [tier, reloadTier, canAccessCryptoBots, canAccessForexBots, canAccessStockBots, isUpdatingTier])
 
   return (
     <SubscriptionContext.Provider value={contextValue}>

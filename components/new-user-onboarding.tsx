@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   User,
   Mail,
-  Shield,
   CheckCircle,
   ArrowRight,
   Wallet,
@@ -42,12 +41,12 @@ interface OnboardingStep {
 }
 
 export function NewUserOnboarding() {
-  const { user, isNewUser, completeOnboarding, completeProfileSetup, completeKYC, refreshUserState } = useSuiAuth()
+  const { user, isNewUser, completeOnboarding, completeProfileSetup, refreshUserState } = useSuiAuth()
   const { referralCode: trackedReferralCode, processReferralOnSignup } = useReferralTracking()
   const { createDefaultCode } = useReferralCodes()
 
   // Use profile context instead of direct database calls to prevent infinite loops
-  const { profile, isLoading: isLoadingProfile, updateProfile, updateKYCStatus } = useProfile()
+  const { profile, isLoading: isLoadingProfile, updateProfile } = useProfile()
 
   const [currentStep, setCurrentStep] = useState(0)
   const [isCompleting, setIsCompleting] = useState(false)
@@ -187,20 +186,13 @@ export function NewUserOnboarding() {
       completed: currentStep > 1,
       required: true
     },
-    {
-      id: 'kyc',
-      title: 'Verify Your Identity',
-      description: 'Complete KYC verification for enhanced security and features',
-      icon: Shield,
-      completed: currentStep > 2,
-      required: false
-    },
+
     {
       id: 'complete',
       title: 'You\'re All Set!',
       description: 'Welcome to the AIONET community',
       icon: Trophy,
-      completed: currentStep >= 3,
+      completed: currentStep >= 2,
       required: true
     }
   ]
@@ -269,7 +261,7 @@ export function NewUserOnboarding() {
         current_xp: profile?.current_xp || 0,
         total_xp: profile?.total_xp || 0,
         points: profile?.points || 0,
-        kyc_status: profile?.kyc_status || 'not_verified'
+
       }
 
       // Add referral code to referral_data
@@ -379,42 +371,7 @@ export function NewUserOnboarding() {
     setIsCompleting(false)
   }
 
-  const handleKYCStart = async () => {
-    setIsCompleting(true)
-    try {
-      console.log('🔄 Starting KYC verification...')
 
-      // In a real implementation, this would redirect to KYC provider
-      // For demo, we'll simulate the process
-      await updateKYCStatus('pending')
-      toast.info('KYC verification started...')
-
-      // Simulate KYC completion after a delay
-      setTimeout(async () => {
-        try {
-          await updateKYCStatus('verified')
-          await completeKYC()
-          console.log('✅ KYC verification completed')
-          toast.success('KYC verification completed!')
-          setCurrentStep(currentStep + 1)
-        } catch (error) {
-          console.error('❌ KYC completion error:', error)
-          toast.error('KYC verification failed')
-        }
-      }, 2000)
-
-    } catch (error) {
-      console.error('❌ KYC start error:', error)
-      toast.error('Failed to start KYC verification')
-    }
-    setIsCompleting(false)
-  }
-
-  const handleSkipKYC = () => {
-    console.log('⏭️ Skipping KYC verification')
-    toast.info('KYC verification skipped - you can complete it later in settings')
-    setCurrentStep(currentStep + 1)
-  }
 
   const handleCompleteOnboarding = async () => {
     setIsCompleting(true)
@@ -728,58 +685,7 @@ export function NewUserOnboarding() {
           </div>
         )
 
-      case 'kyc':
-        return (
-          <div className="space-y-4 sm:space-y-6">
-            <div className="text-center">
-              <Shield className="w-10 h-10 sm:w-12 sm:h-12 text-[#4DA2FF] mx-auto mb-3" />
-              <h2 className="text-lg sm:text-xl font-bold text-white mb-2">Verify Your Identity</h2>
-              <p className="text-sm sm:text-base text-[#C0E6FF]">
-                Complete KYC verification to unlock premium features and enhanced security
-              </p>
-            </div>
 
-            <div className="bg-[#1a2f51] rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3">
-              <h3 className="font-semibold text-white text-sm sm:text-base">Benefits of KYC Verification:</h3>
-              <ul className="space-y-1 sm:space-y-2 text-[#C0E6FF] text-xs sm:text-sm">
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
-                  Higher transaction limits
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
-                  Access to premium features
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
-                  Enhanced account security
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
-                  Priority customer support
-                </li>
-              </ul>
-            </div>
-
-            <div className="flex gap-2 sm:gap-3">
-              <Button
-                variant="outline"
-                onClick={handleSkipKYC}
-                className="flex-1 text-sm sm:text-base"
-              >
-                Skip for Now
-              </Button>
-              <Button
-                onClick={handleKYCStart}
-                disabled={isCompleting}
-                className="flex-1 bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white text-sm sm:text-base"
-              >
-                {isCompleting ? 'Starting...' : 'Start KYC'}
-                <Shield className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
-              </Button>
-            </div>
-          </div>
-        )
 
       case 'complete':
         return (
@@ -797,12 +703,7 @@ export function NewUserOnboarding() {
                   <CheckCircle className="w-3 h-3 mr-1" />
                   Profile Complete
                 </Badge>
-                {profile?.kyc_status === 'verified' && (
-                  <Badge className="bg-blue-500 text-white">
-                    <Shield className="w-3 h-3 mr-1" />
-                    KYC Verified
-                  </Badge>
-                )}
+
               </div>
             </div>
             <Button

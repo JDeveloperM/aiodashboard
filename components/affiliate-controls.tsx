@@ -19,6 +19,7 @@ import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { useRaffleCraftIntegration } from "@/hooks/use-rafflecraft-integration"
 import { CommissionTracking } from "@/components/commission-tracking"
 import { ContactSponsorModal } from "@/components/contact-sponsor-modal"
+import { useAffiliateQueryRateLimit, useCommissionQueryRateLimit } from "@/hooks/use-rate-limit"
 import { UsernameDisplay } from "@/components/profile-link"
 import Image from "next/image"
 import {
@@ -145,9 +146,16 @@ export function AffiliateControls() {
   // Get the current user address from either traditional wallet or zkLogin
   const userAddress = user?.address || account?.address
 
+  // Rate limiting hooks
+  const affiliateRateLimit = useAffiliateQueryRateLimit()
+  const commissionRateLimit = useCommissionQueryRateLimit()
+
   // Load affiliate data from database
   const loadAffiliateData = useCallback(async () => {
-    if (!userAddress) return
+    if (!userAddress) {
+      setError('No wallet address found. Please connect your wallet.')
+      return
+    }
 
     try {
       setLoading(true)
@@ -156,53 +164,89 @@ export function AffiliateControls() {
 
       console.log('🔄 Loading affiliate data for address:', userAddress)
 
-      // Load subscription status
+      // Load subscription status with error handling
       setSubscriptionLoading(true)
-      const subStatus = await affiliateSubscriptionService.getSubscriptionStatus(userAddress)
-      setSubscriptionStatus(subStatus)
-      setSubscriptionLoading(false)
+      try {
+        const subStatus = await affiliateSubscriptionService.getSubscriptionStatus(userAddress)
+        setSubscriptionStatus(subStatus)
+      } catch (subError) {
+        console.error('Failed to load subscription status:', subError)
+        setError('Failed to load subscription status. Some features may be limited.')
+      } finally {
+        setSubscriptionLoading(false)
+      }
 
-      // Load user's own profile level
-      const profileLevel = await affiliateService.getUserProfileLevel(userAddress)
-      setUserProfileLevel(profileLevel)
+      // Load user's own profile level with error handling
+      let profileLevel = null
+      try {
+        profileLevel = await affiliateService.getUserProfileLevel(userAddress)
+        setUserProfileLevel(profileLevel)
+      } catch (profileError) {
+        console.error('Failed to load profile level:', profileError)
+        // Don't set error for this as it's not critical
+      }
 
       // Calculate user's affiliate level based on profile level
       const affiliateLevel = profileLevel ? calculateAffiliateLevel(profileLevel.profileLevel) : 1
       setUserAffiliateLevel(affiliateLevel)
 
-      // Load network metrics
-      const networkData = await affiliateService.getNetworkMetrics(userAddress)
-      setNetworkMetrics(networkData)
+      // Load network metrics with error handling
+      try {
+        const networkData = await affiliateService.getNetworkMetrics(userAddress)
+        setNetworkMetrics(networkData)
 
-      // Calculate total users from network metrics
-      const totalUsers = networkData.personalNomadUsers + networkData.personalProUsers + networkData.personalRoyalUsers +
-                        networkData.networkNomadUsers + networkData.networkProUsers + networkData.networkRoyalUsers
-      setTotalAllUsers(totalUsers)
+        // Calculate total users from network metrics
+        const totalUsers = networkData.personalNomadUsers + networkData.personalProUsers + networkData.personalRoyalUsers +
+                          networkData.networkNomadUsers + networkData.networkProUsers + networkData.networkRoyalUsers
+        setTotalAllUsers(totalUsers)
+      } catch (networkError) {
+        console.error('Failed to load network metrics:', networkError)
+        setError('Failed to load network metrics. Please try refreshing the page.')
+        return
+      }
 
-      // Load affiliate users with current filters (including network)
-      const { users, totalCount: count } = await affiliateService.getAffiliateUsers(userAddress, {
-        roleFilter: selectedRoleFilter,
-        levelFilter: selectedLevelFilter,
-        limit: 50, // Load more initially for filtering
-        includeNetwork: true // Include multi-level referrals
-      })
+      // Load affiliate users with rate limiting and error handling
+      const affiliateUsersResult = await affiliateRateLimit.executeWithRateLimit(
+        userAddress,
+        () => affiliateService.getAffiliateUsers(userAddress, {
+          roleFilter: selectedRoleFilter,
+          levelFilter: selectedLevelFilter,
+          limit: 50, // Load more initially for filtering
+          includeNetwork: true // Include multi-level referrals
+        })
+      )
 
-      setAffiliateUsers(users)
-      setTotalCount(count)
+      if (!affiliateUsersResult.success) {
+        console.error('Failed to load affiliate users:', affiliateUsersResult.error)
+        setError(affiliateUsersResult.error || 'Failed to load affiliate users. Please try again.')
+        return
+      }
 
-      // Load commission data
-      const commissionInfo = await affiliateService.getCommissionData(userAddress)
-      setCommissionData(commissionInfo)
+      if (affiliateUsersResult.data) {
+        setAffiliateUsers(affiliateUsersResult.data.users)
+        setTotalCount(affiliateUsersResult.data.totalCount)
+      }
+
+      // Load commission data with rate limiting and error handling
+      const commissionResult = await commissionRateLimit.executeWithRateLimit(
+        userAddress,
+        () => affiliateService.getCommissionData(userAddress)
+      )
+
+      if (!commissionResult.success) {
+        console.error('Failed to load commission data:', commissionResult.error)
+        setError(commissionResult.error || 'Failed to load commission data. Financial information may be incomplete.')
+      } else if (commissionResult.data) {
+        setCommissionData(commissionResult.data)
+      }
+
       setCommissionLoading(false)
 
       console.log('✅ Affiliate data loaded successfully')
-      console.log('👤 User profile level:', profileLevel)
-      console.log('📊 Network metrics:', networkData)
-      console.log('💰 Commission data:', commissionInfo)
 
     } catch (error) {
       console.error('❌ Failed to load affiliate data:', error)
-      setError(error instanceof Error ? error.message : 'Failed to load affiliate data')
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred while loading affiliate data')
       setCommissionLoading(false)
     } finally {
       setLoading(false)
@@ -306,6 +350,25 @@ export function AffiliateControls() {
 
   return (
     <div className="space-y-6">
+      {/* Rate Limit Warning */}
+      {(!affiliateRateLimit.state.isAllowed || !commissionRateLimit.state.isAllowed) && (
+        <div className="enhanced-card border-yellow-500/20 bg-yellow-500/5">
+          <div className="enhanced-card-content">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+              <div>
+                <p className="text-yellow-400 font-medium">Rate Limit Warning</p>
+                <p className="text-sm text-gray-300">
+                  {!affiliateRateLimit.state.isAllowed && 'Affiliate queries limited. '}
+                  {!commissionRateLimit.state.isAllowed && 'Commission queries limited. '}
+                  Please wait before making more requests.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top Section - Summary Cards (4 cards in a row) */}
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         {/* Total Users Card */}
@@ -314,7 +377,11 @@ export function AffiliateControls() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-[#C0E6FF]">TOTAL USERS</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">{totalAllUsers}</p>
+                {loading ? (
+                  <div className="h-8 w-16 bg-gray-600 animate-pulse rounded"></div>
+                ) : (
+                  <p className="text-2xl font-bold text-[#FFFFFF]">{totalAllUsers}</p>
+                )}
               </div>
               <div className="bg-[#4DA2FF]/20 p-3 rounded-full">
                 <Users className="w-6 h-6 text-white" />
@@ -344,7 +411,11 @@ export function AffiliateControls() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-[#C0E6FF]">TOTAL COMMISSIONS</p>
-                <p className="text-2xl font-bold text-[#FFFFFF]">{formatSuiAmount(commissionData.totalCommissions).sui}</p>
+                {commissionLoading ? (
+                  <div className="h-8 w-24 bg-gray-600 animate-pulse rounded"></div>
+                ) : (
+                  <p className="text-2xl font-bold text-[#FFFFFF]">{formatSuiAmount(commissionData.totalCommissions).sui}</p>
+                )}
               </div>
               <img src="/images/logo-sui.png" alt="SUI" className="w-12 h-12 object-contain" />
             </div>

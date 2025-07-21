@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const ipAddress = forwarded ? forwarded.split(',')[0] : request.headers.get('x-real-ip') || 'unknown'
 
     // Track the referral click
-    const success = await affiliateService.trackReferralClick(
+    const result = await affiliateService.trackReferralClick(
       referralCode,
       finalSessionId,
       ipAddress,
@@ -31,9 +31,9 @@ export async function POST(request: NextRequest) {
       referrerUrl
     )
 
-    if (!success) {
+    if (!result.success) {
       return NextResponse.json(
-        { error: 'Invalid referral code or tracking failed' },
+        { error: result.error || 'Invalid referral code or tracking failed' },
         { status: 400 }
       )
     }

@@ -1,53 +1,25 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import {
   User,
-  Shield,
-  CheckCircle,
-  AlertCircle,
   Calendar,
-  Activity,
   Trophy,
   Star,
-  Copy,
-  ExternalLink,
-  Share2,
-  Link,
   Lock,
-  Coins,
-  Hash
+  Users,
+  Link,
+  Activity,
+  Shield
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
 import { RoleImage } from '@/components/ui/role-image'
-import { EnhancedAvatar } from '@/components/enhanced-avatar'
-import { EnhancedBanner } from '@/components/enhanced-banner'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { getCountryCodeByName } from '@/lib/locations'
 import ReactCountryFlag from 'react-country-flag'
-import { toast } from 'sonner'
 
-// Helper functions for channel display (same as main profile)
-export function getChannelTypeBadgeColor(type: string) {
-  switch (type) {
-    case 'free': return 'bg-green-500/20 text-green-400 border-green-500/30'
-    case 'premium': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-    case 'vip': return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
-    default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
-  }
-}
 
-export function formatSubscriptionStatus(channel: any) {
-  if (!channel.isActive) return 'Expired'
-  if (channel.type === 'free') return 'Active'
-  if (channel.daysRemaining !== undefined) {
-    return channel.daysRemaining > 0 ? `${channel.daysRemaining} days left` : 'Expires today'
-  }
-  return 'Active'
-}
 
 // Achievement image mapping function - Same as your profile
 const getAchievementImage = (achievementName: string): string | null => {
@@ -57,10 +29,7 @@ const getAchievementImage = (achievementName: string): string | null => {
     "Unlock Full Access": "/images/achievements/Unlock Full Access.png",
     "Advanced User Status": "/images/achievements/Advanced User Status.png",
 
-    // Social Connections Category
-    "Join the Community": "/images/achievements/Join the Community.png",
-    "Stay Informed": "/images/achievements/Stay Informed.png",
-    "Follow the Conversation": "/images/achievements/Follow the Conversation.png",
+
 
     // Crypto Bot Activities Category
     "Automate Your Trades": "/images/achievements/Automate Your Trades.png",
@@ -103,10 +72,7 @@ interface PublicProfileData {
   joinDate: string
   lastActive: string
   achievementsData: any[]
-  isVerified: boolean
   memberSince: string
-  socialLinks: any[]
-  channelsJoined: any[]
   xpProgress: {
     current: number
     required: number
@@ -119,90 +85,74 @@ interface PublicProfileViewProps {
 }
 
 export function PublicProfileView({ profileData }: PublicProfileViewProps) {
-  const [imageError, setImageError] = useState(false)
+  const [imageError, setImageError] = useState(false);
 
-  // Convert user's social links to display format
-  const convertSocialLinksToUI = (socialLinks: any[]) => {
-    const defaultSocials = [
-      {
-        platform: "Discord",
-        image: "/images/social/discord.png",
-        url: "",
-        connected: false,
-        username: "",
-        color: "#5865F2"
-      },
-      {
-        platform: "Telegram",
-        image: "/images/social/telegram.png",
-        url: "",
-        connected: false,
-        username: "",
-        color: "#0088CC"
-      },
-      {
-        platform: "X",
-        image: "/images/social/x.png",
-        url: "",
-        connected: false,
-        username: "",
-        color: "#000000"
-      }
-    ]
-
-    if (socialLinks && Array.isArray(socialLinks)) {
-      socialLinks.forEach(link => {
-        const social = defaultSocials.find(s =>
-          s.platform.toLowerCase() === link.platform?.toLowerCase() ||
-          (link.platform === 'x' && s.platform === 'X')
-        )
-        if (social && link.username) {
-          social.connected = true
-          social.username = link.username
-          social.url = link.url || social.url
-        }
-      })
-    }
-
-    return defaultSocials
+  // Helper function for XP requirements
+  function getXpRequiredForLevel(level: number): number {
+    const xpRequirements = [0, 100, 250, 500, 800, 1200, 1800, 2600, 3600, 5000];
+    return xpRequirements[level] || 5000;
   }
 
-  // Profile display data with actual user social links
-  const profileDisplayData = {
+  // Profile display data - memoized for performance
+  const profileDisplayData = useMemo(() => ({
     name: profileData.username,
-    socialMedia: convertSocialLinksToUI(profileData.socialLinks || []),
     levelInfo: {
       currentLevel: profileData.profileLevel || 1,
       nextLevel: (profileData.profileLevel || 1) + 1,
       currentXP: profileData.currentXp || 0,
       nextLevelXP: getXpRequiredForLevel((profileData.profileLevel || 1) + 1),
       totalXP: profileData.totalXp || 0
-    },
-    kycStatus: profileData.isVerified ? "verified" : "not_verified"
-  }
+    }
+  }), [profileData.username, profileData.profileLevel, profileData.currentXp, profileData.totalXp]);
 
-  // Level rewards data (same as your profile)
-  const levelRewards = [
-    { level: 1, tokens: 0, available: true, claimed: true, description: "Starting level - Affiliate Level 1" },
-    { level: 2, tokens: 0, available: profileDisplayData.levelInfo.currentLevel >= 2, claimed: profileDisplayData.levelInfo.currentLevel >= 2, description: "Upgrade to 2nd Affiliate Level" },
-    { level: 3, tokens: 0, available: profileDisplayData.levelInfo.currentLevel >= 3, claimed: profileDisplayData.levelInfo.currentLevel >= 3, description: "Upgrade to 3rd Affiliate Level" },
-    { level: 4, tokens: 0, available: profileDisplayData.levelInfo.currentLevel >= 4, claimed: profileDisplayData.levelInfo.currentLevel >= 4, description: "Upgrade to 4th Affiliate Level" },
-    { level: 5, tokens: 0, available: profileDisplayData.levelInfo.currentLevel >= 5, claimed: profileDisplayData.levelInfo.currentLevel >= 5, description: "Upgrade to 5th Affiliate Level (Max)" },
-    { level: 6, tokens: 500, available: profileDisplayData.levelInfo.currentLevel >= 6, claimed: profileDisplayData.levelInfo.currentLevel >= 6, description: "Earn 500 pAION" },
-    { level: 7, tokens: 2000, available: profileDisplayData.levelInfo.currentLevel >= 7, claimed: profileDisplayData.levelInfo.currentLevel >= 7, description: "Earn 2,000 pAION" },
-    { level: 8, tokens: 6000, available: profileDisplayData.levelInfo.currentLevel >= 8, claimed: profileDisplayData.levelInfo.currentLevel >= 8, description: "Earn 6,000 pAION" },
-    { level: 9, tokens: 15000, available: profileDisplayData.levelInfo.currentLevel >= 9, claimed: profileDisplayData.levelInfo.currentLevel >= 9, description: "Earn 15,000 pAION" },
-    { level: 10, tokens: 35000, available: profileDisplayData.levelInfo.currentLevel >= 10, claimed: profileDisplayData.levelInfo.currentLevel >= 10, description: "Earn 35,000 pAION" }
-  ]
+  // Base achievements definition (same as in persistent profile)
+  const baseAchievements = useMemo(() => [
+    // Profile Category
+    { name: "Personalize Your Profile", icon: User, color: "#4DA2FF", xp: 50, tokens: 25, category: "Profile", tooltip: "Upload a profile picture to your account" },
+    { name: "Advanced User Status", icon: Star, color: "#FFD700", xp: 200, tokens: 100, category: "Profile", tooltip: "Achieve profile level 5" },
 
-  // Mock achievements data (same structure as your profile)
-  const achievements = profileData.achievementsData || []
+    // Crypto Bot Activities Category
+    { name: "Automate Your Trades", icon: Link, color: "#F7931A", xp: 150, tokens: 75, category: "Crypto Bot Activities", tooltip: "Link your Bybit account" },
+    { name: "APLN Trading Signals", icon: Activity, color: "#9333EA", xp: 100, tokens: 50, category: "Crypto Bot Activities", tooltip: "Subscribe to the APLN Bot" },
+    { name: "HRMS Trading Insights", icon: Activity, color: "#06B6D4", xp: 100, tokens: 50, category: "Crypto Bot Activities", tooltip: "Subscribe to the HRMS Bot" },
+    { name: "ATHN Trading Edge", icon: Activity, color: "#8B5CF6", xp: 100, tokens: 50, category: "Crypto Bot Activities", tooltip: "Subscribe to the ATHN Bot" },
+    { name: "Master Trading Cycles", icon: Activity, color: "#10B981", xp: 200, tokens: 100, category: "Crypto Bot Activities", tooltip: "Finish at least 3 trading cycles with platform bots" },
 
-  // Helper function for XP requirements
-  function getXpRequiredForLevel(level: number): number {
-    const xpRequirements = [0, 100, 250, 500, 800, 1200, 1800, 2600, 3600, 5000]
-    return xpRequirements[level] || 5000
-  }
+    // User Upgrades Category
+    { name: "Mint Royal NFT Status", icon: Shield, color: "#8B5CF6", xp: 300, tokens: 200, category: "User Upgrades", tooltip: "Mint a Royal NFT to achieve elite status" },
+
+    // Referral Tiers Category
+    { name: "Recruit PRO NFT Holders", icon: Users, color: "#3B82F6", xp: 250, tokens: 150, category: "Referral Tiers", tooltip: "Refer 5 users to become PRO NFT holders" },
+    { name: "Royal NFT Ambassadors", icon: Users, color: "#8B5CF6", xp: 300, tokens: 200, category: "Referral Tiers", tooltip: "Refer 3 users to become ROYAL NFT holders" },
+    { name: "Build a NOMAD Network", icon: Users, color: "#F59E0B", xp: 500, tokens: 300, category: "Referral Tiers", tooltip: "Add 50 NOMAD users to your network" },
+    { name: "Expand Your PRO Network", icon: Users, color: "#3B82F6", xp: 750, tokens: 400, category: "Referral Tiers", tooltip: "Add 25 PRO users to your network" },
+    { name: "Elite ROYAL Network", icon: Users, color: "#8B5CF6", xp: 1000, tokens: 500, category: "Referral Tiers", tooltip: "Add 10 ROYAL users to your network" },
+    { name: "Mentor Level 5 Users", icon: Users, color: "#10B981", xp: 600, tokens: 400, category: "Referral Tiers", tooltip: "Help 10 network users achieve profile level 5" },
+    { name: "Scale Level 5 Mentorship", icon: Users, color: "#F59E0B", xp: 700, tokens: 500, category: "Referral Tiers", tooltip: "Help 25 network users achieve profile level 5" },
+    { name: "Guide to Level 7", icon: Users, color: "#8B5CF6", xp: 750, tokens: 550, category: "Referral Tiers", tooltip: "Help 10 network users achieve profile level 7" },
+    { name: "Lead to Level 9", icon: Users, color: "#FFD700", xp: 800, tokens: 600, category: "Referral Tiers", tooltip: "Help 5 network users achieve profile level 9" }
+  ], []);
+
+  // Merge database achievements with base achievements - memoized
+  const achievements = useMemo(() => {
+    const dbAchievements = profileData.achievementsData || [];
+
+    // Create merged achievements with full display properties
+    const mergedAchievements = baseAchievements.map(baseAchievement => {
+      const dbAchievement = dbAchievements.find((db: any) => db.name === baseAchievement.name);
+      return {
+        ...baseAchievement,
+        unlocked: dbAchievement?.unlocked || false,
+        claimed: dbAchievement?.claimed || false,
+        claimed_at: dbAchievement?.claimed_at
+      };
+    });
+
+    // Only return achievements that are unlocked or claimed, limited to 18
+    return mergedAchievements
+      .filter(achievement => achievement.unlocked || achievement.claimed)
+      .slice(0, 18);
+  }, [profileData.achievementsData, baseAchievements]);
 
   return (
     <div className="space-y-6">
@@ -214,75 +164,44 @@ export function PublicProfileView({ profileData }: PublicProfileViewProps) {
             <div className="lg:col-span-2 enhanced-card bg-[#030f1c] border border-[#C0E6FF]/20 m-2 overflow-hidden">
               {/* Banner Image Section */}
               <div className="relative rounded-t-lg overflow-hidden">
-                <div className="w-full h-64 bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
+                <div className="w-full h-48 bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
                   {profileData.bannerImageUrl ? (
-                    <img
+                    <Image
                       src={profileData.bannerImageUrl}
                       alt="Profile banner"
+                      width={800}
+                      height={192}
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      priority={false}
                     />
                   ) : (
-                    <div className="text-gray-400">No banner image</div>
+                    <div className="text-gray-400 text-sm">No banner image</div>
                   )}
                 </div>
 
-                {/* Avatar positioned on left side of banner - Twice the size */}
+                {/* Avatar positioned on left side of banner - Optimized size */}
                 <div className="absolute bottom-4 left-6">
-                  <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-[#C0E6FF]/20 bg-gradient-to-br from-blue-500/20 to-purple-500/20">
+                  <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-[#C0E6FF]/20 bg-gradient-to-br from-blue-500/20 to-purple-500/20">
                     {profileData.profileImageUrl && !imageError ? (
-                      <img
+                      <Image
                         src={profileData.profileImageUrl}
                         alt={`${profileData.username}'s profile`}
+                        width={128}
+                        height={128}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                         onError={() => setImageError(true)}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <User className="w-24 h-24 text-gray-400" />
+                        <User className="w-16 h-16 text-gray-400" />
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Social Media Icons - Positioned at top right of banner */}
-                <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2">
-                  {profileDisplayData.socialMedia.map((social: any, index: number) => (
-                    <Button
-                      key={index}
-                      size="sm"
-                      variant={social.connected ? "default" : "outline"}
-                      className={`w-12 h-12 p-0 transition-all duration-200 ${social.connected
-                        ? "text-white border-[#7dffae63] backdrop-blur-sm"
-                        : "border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 hover:border-[#C0E6FF] bg-transparent opacity-50 cursor-not-allowed"
-                      }`}
-                      style={social.connected ? { backgroundColor: '#7dffae63' } : {}}
-                      onMouseEnter={(e) => {
-                        if (social.connected) {
-                          e.currentTarget.style.backgroundColor = '#7dffae88'
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (social.connected) {
-                          e.currentTarget.style.backgroundColor = '#7dffae63'
-                        }
-                      }}
-                      onClick={() => {
-                        if (social.connected && social.url) {
-                          window.open(social.url, '_blank')
-                        }
-                      }}
-                      disabled={!social.connected}
-                    >
-                      <Image
-                        src={social.image}
-                        alt={social.platform}
-                        width={32}
-                        height={32}
-                        className="w-8 h-8 object-contain"
-                      />
-                    </Button>
-                  ))}
-                </div>
+
 
                 {/* Status - Positioned at bottom right of banner (removed level) */}
                 <div className="absolute bottom-4 right-4 flex flex-wrap items-center gap-2 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2">
@@ -326,20 +245,7 @@ export function PublicProfileView({ profileData }: PublicProfileViewProps) {
 
                       {/* Profile Details - Same Line */}
                       <div className="flex flex-wrap items-center gap-4 text-sm">
-                        {/* Verification Status */}
-                        <div className="flex items-center gap-2">
-                          {profileData.isVerified ? (
-                            <>
-                              <CheckCircle className="w-4 h-4 text-green-400" />
-                              <span className="text-green-400">Verified</span>
-                            </>
-                          ) : (
-                            <>
-                              <AlertCircle className="w-4 h-4 text-gray-400" />
-                              <span className="text-gray-400">Unverified</span>
-                            </>
-                          )}
-                        </div>
+
 
                         {/* Join Date */}
                         {profileData.memberSince && (
@@ -373,87 +279,101 @@ export function PublicProfileView({ profileData }: PublicProfileViewProps) {
               </div>
             </div>
 
-            {/* Column 2: Channels Joined */}
+            {/* Column 2: Achievements */}
             <div className="lg:col-span-1 enhanced-card bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg m-2">
               <div className="flex flex-col h-full">
-                {/* Channels Joined Section - Clean layout without inner border */}
-                <div className="w-full flex-1 p-6 pb-4">
-                  <h4 className="text-white font-semibold mb-6">Channels Joined</h4>
+                {/* Achievements Section */}
+                <div className="w-full flex-1 p-6">
+                  <h4 className="text-white font-semibold mb-6 text-center">Achievements</h4>
 
-                  {/* Channels Display */}
-                  <div className="space-y-3">
-                    {profileData.channelsJoined && profileData.channelsJoined.length > 0 ? (
-                      <div className="grid grid-cols-5 gap-3 justify-items-center">
-                        {profileData.channelsJoined.slice(0, 25).map((channel: any) => (
-                          <Tooltip key={channel.id}>
-                            <TooltipTrigger asChild>
-                              <div className="w-16 h-16 rounded-full cursor-pointer transition-all hover:scale-110 border-2 border-[#C0E6FF]/20 hover:border-[#C0E6FF]/40 overflow-hidden">
-                                {channel.avatarUrl ? (
-                                  <Image
-                                    src={channel.avatarUrl}
-                                    alt={channel.name}
-                                    width={64}
-                                    height={64}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div
-                                    className="w-full h-full flex items-center justify-center"
-                                    style={{ backgroundColor: channel.color }}
-                                  >
-                                    <Hash className="w-8 h-8 text-white" />
+                  {/* Achievements Grid - 6x3 grid */}
+                  {achievements.length > 0 ? (
+                    <>
+                      <div className="grid grid-cols-6 gap-0">
+                        {achievements.map((achievement: any, index: number) => {
+                          const isLocked = !achievement.unlocked && !achievement.claimed;
+                          const canClaim = achievement.unlocked && !achievement.claimed;
+                          const isClaimed = achievement.claimed;
+
+                          return (
+                            <Tooltip key={index}>
+                              <TooltipTrigger asChild>
+                                <div className={`
+                                  relative p-1 cursor-pointer w-16 h-16
+                                  ${isClaimed
+                                    ? 'bg-yellow-500/20'
+                                    : canClaim
+                                      ? 'bg-green-500/20'
+                                      : 'bg-[#1a2f51]/30'
+                                  }
+                                `}
+                                style={{
+                                  clipPath: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)'
+                                }}>
+                                  {/* Achievement Icon/Image - Doubled size for public profile */}
+                                  <div className="flex items-center justify-center h-full">
+                                    {isLocked ? (
+                                      <Lock className="w-8 h-8 text-gray-500" />
+                                    ) : achievement.image ? (
+                                      <Image
+                                        src={achievement.image}
+                                        alt={achievement.name}
+                                        width={48}
+                                        height={48}
+                                        className="w-12 h-12 object-contain"
+                                        loading="lazy"
+                                      />
+                                    ) : (() => {
+                                      const customImage = getAchievementImage(achievement.name);
+                                      if (customImage) {
+                                        return (
+                                          <Image
+                                            src={customImage}
+                                            alt={achievement.name}
+                                            width={48}
+                                            height={48}
+                                            className="w-12 h-12 object-contain"
+                                            loading="lazy"
+                                          />
+                                        );
+                                      }
+                                      const Icon = achievement.icon;
+                                      return Icon ? (
+                                        <Icon className="w-8 h-8" style={{ color: achievement.color }} />
+                                      ) : (
+                                        <Star className="w-8 h-8 text-gray-400" />
+                                      );
+                                    })()}
                                   </div>
-                                )}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-[#1a2f51] border border-[#C0E6FF]/20 text-white p-3 max-w-xs">
-                              <div className="space-y-2">
-                                <div className="font-semibold text-sm">{channel.name}</div>
-                                {channel.description && (
-                                  <div className="text-xs text-[#C0E6FF]/80">{channel.description}</div>
-                                )}
-                                <div className="flex items-center gap-2 text-xs">
-                                  <Badge className={`${getChannelTypeBadgeColor(channel.type)} text-xs`}>
-                                    {channel.type.toUpperCase()}
-                                  </Badge>
-                                  <span className="text-[#C0E6FF]">
-                                    {formatSubscriptionStatus(channel)}
-                                  </span>
+
+
                                 </div>
-                                <div className="text-xs text-[#C0E6FF]">
-                                  {channel.subscribers.toLocaleString()} subscribers
-                                </div>
-                                <div className="text-xs text-[#C0E6FF]/60">
-                                  Joined: {new Date(channel.joinedDate).toLocaleDateString()}
-                                </div>
-                                {channel.expiryDate && (
-                                  <div className="text-xs text-[#C0E6FF]/60">
-                                    Expires: {new Date(channel.expiryDate).toLocaleDateString()}
-                                  </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-[#1a2f51] border border-[#C0E6FF]/20 text-white p-2 max-w-xs">
+                                <div className="text-sm font-medium">{achievement.name}</div>
+                                {achievement.tooltip && (
+                                  <div className="text-xs text-[#C0E6FF]/80 mt-1">{achievement.tooltip}</div>
                                 )}
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        ))}
-                        {profileData.channelsJoined.length > 25 && (
-                          <div className="col-span-1 flex items-center justify-center">
-                            <div className="w-16 h-16 rounded-full bg-[#1a2f51] border-2 border-[#C0E6FF]/20 flex items-center justify-center cursor-pointer hover:border-[#C0E6FF]/40 transition-all">
-                              <span className="text-[#C0E6FF] text-xs font-medium">+{profileData.channelsJoined.length - 25}</span>
-                            </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        })}
+                      </div>
+
+                      {/* Show more indicator if there are more achievements */}
+                      {achievements.length > 18 && (
+                        <div className="text-center mt-3">
+                          <div className="text-[#C0E6FF]/70 text-xs">
+                            +{achievements.length - 18} more achievements
                           </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <Hash className="w-8 h-8 text-[#C0E6FF]/50 mx-auto mb-2" />
-                        <div className="text-[#C0E6FF]/70 text-sm mb-2">No channels joined</div>
-                        <div className="text-[#C0E6FF]/50 text-xs">
-                          This user hasn't joined any channels yet
                         </div>
-                      </div>
-                    )}
-                  </div>
-
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center text-[#C0E6FF]/70 text-sm">
+                      No achievements to display
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -461,125 +381,7 @@ export function PublicProfileView({ profileData }: PublicProfileViewProps) {
         </div>
       </div>
 
-      {/* Achievements Section - Exact same as your profile */}
-      {profileData.achievementsData && (
-        <div className="enhanced-card">
-          <div className="enhanced-card-content">
-            <h3 className="text-white font-semibold mb-4 text-center">Achievements</h3>
-            <div className="grid grid-cols-3 md:grid-cols-7 gap-2 md:gap-3">
-              {achievements.map((achievement: any, index: number) => {
-                const isLocked = !achievement.unlocked && !achievement.claimed
-                const canClaim = achievement.unlocked && !achievement.claimed
 
-                const achievementCard = (
-                  <div
-                    key={index}
-                    className={`flex flex-col items-center ${achievement.claimed ? 'justify-center' : 'justify-between'} gap-3 p-4 rounded-lg border transition-all duration-200 cursor-pointer group relative min-h-[120px] ${
-                      isLocked
-                        ? 'bg-[#030f1c] border-[#C0E6FF]/10 opacity-60'
-                        : achievement.claimed
-                        ? 'bg-[#1a2f51] border-green-500/30 opacity-80'
-                        : 'bg-[#1a2f51] border-[#C0E6FF]/20 hover:border-[#C0E6FF]/40'
-                    }`}
-                  >
-                    {/* Claimed badge */}
-                    {achievement.claimed && (
-                      <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                        ✓
-                      </div>
-                    )}
-
-                    {/* Icon - centered for claimed, at top for others */}
-                    <div className={`flex items-center justify-center transition-transform duration-200 ${
-                      !isLocked ? 'group-hover:scale-110' : ''
-                    } ${achievement.claimed ? 'flex-1' : ''}`}>
-                      {isLocked ? (
-                        <div
-                          className="p-4 rounded-full flex items-center justify-center"
-                          style={{ backgroundColor: `${achievement.color || '#6B7280'}20` }}
-                        >
-                          <Lock
-                            className="w-8 h-8"
-                            style={{ color: '#6B7280' }}
-                          />
-                        </div>
-                      ) : (() => {
-                        // Check if achievement has a custom image path (for social media achievements)
-                        if (achievement.image) {
-                          return (
-                            <Image
-                              src={achievement.image}
-                              alt={achievement.name}
-                              width={64}
-                              height={64}
-                              className="w-16 h-16 object-contain"
-                            />
-                          )
-                        }
-
-                        // Check for custom achievement images using the same function as your profile
-                        const customImage = getAchievementImage(achievement.name)
-                        if (customImage) {
-                          return (
-                            <Image
-                              src={customImage}
-                              alt={achievement.name}
-                              width={64}
-                              height={64}
-                              className="w-16 h-16 object-contain"
-                            />
-                          )
-                        } else if (achievement.icon && typeof achievement.icon === 'function') {
-                          const Icon = achievement.icon as React.ComponentType<{ className?: string; style?: React.CSSProperties }>
-                          return (
-                            <div
-                              className="p-4 rounded-full flex items-center justify-center"
-                              style={{ backgroundColor: `${achievement.color}20` }}
-                            >
-                              <Icon
-                                className="w-8 h-8"
-                                style={{ color: achievement.color }}
-                              />
-                            </div>
-                          )
-                        } else {
-                          // Fallback for achievements without icons
-                          return (
-                            <div
-                              className="p-4 rounded-full flex items-center justify-center"
-                              style={{ backgroundColor: `${achievement.color}20` }}
-                            >
-                              <div
-                                className="w-8 h-8 rounded-full"
-                                style={{ backgroundColor: achievement.color }}
-                              />
-                            </div>
-                          )
-                        }
-                      })()}
-                    </div>
-
-                    {/* Text below icon - only show if not claimed */}
-                    {!achievement.claimed && (
-                      <div className="text-center flex-1 flex items-center justify-center">
-                        <span className={`text-xs font-medium leading-tight ${
-                          isLocked ? 'text-[#6B7280]' : 'text-[#C0E6FF]'
-                        }`}>
-                          {achievement.name}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* No claim button for public view */}
-                  </div>
-                )
-
-                return achievementCard
-              })}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

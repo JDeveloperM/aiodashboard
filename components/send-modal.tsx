@@ -28,7 +28,7 @@ interface SendModalProps {
   walletAddress: string | null
   suiBalance: number
   usdcBalance: number
-  walBalance: number
+  walBalance: number // Keep for backward compatibility but not used
   paionBalance: number
   isZkLogin?: boolean
 }
@@ -39,13 +39,13 @@ export function SendModal({
   walletAddress,
   suiBalance,
   usdcBalance,
-  walBalance,
+  walBalance, // Keep for backward compatibility but not used
   paionBalance,
   isZkLogin = false
 }: SendModalProps) {
   const [recipientAddress, setRecipientAddress] = useState('')
   const [amount, setAmount] = useState('')
-  const [selectedToken, setSelectedToken] = useState<'SUI' | 'USDC' | 'WAL' | 'pAION'>('SUI')
+  const [selectedToken, setSelectedToken] = useState<'SUI' | 'USDC' | 'pAION'>('SUI')
   const [isProcessing, setIsProcessing] = useState(false)
   const [step, setStep] = useState<'form' | 'confirm' | 'processing' | 'success'>('form')
   const [transactionDigest, setTransactionDigest] = useState('')
@@ -64,7 +64,6 @@ export function SendModal({
 
   // Token contract addresses on Sui testnet
   const USDC_COIN_TYPE = '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC'
-  const WAL_COIN_TYPE = '0x2::sui::SUI' // Replace with actual WAL token contract when available
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -101,9 +100,6 @@ export function SendModal({
         break
       case 'USDC':
         maxBalance = usdcBalance
-        break
-      case 'WAL':
-        maxBalance = walBalance
         break
       case 'pAION':
         maxBalance = paionBalance
@@ -170,7 +166,7 @@ export function SendModal({
 
           digest = 'paion-transfer-' + Date.now() // Mock digest for pAION transfers
         } else {
-          // USDC/WAL transfers for zkLogin - simplified implementation
+          // USDC transfers for zkLogin - simplified implementation
           toast.error(`${selectedToken} transfers for zkLogin wallets are not yet fully implemented`)
           throw new Error(`${selectedToken} transfers for zkLogin wallets are not yet fully implemented`)
         }
@@ -231,24 +227,6 @@ export function SendModal({
             // Use the first available USDC coin
             const [coin] = transaction.splitCoins(coins.data[0].coinObjectId, [amountInSmallestUnit])
             transaction.transferObjects([coin], recipientAddress)
-          } else if (selectedToken === 'WAL') {
-            // WAL transfer (using SUI for now until actual WAL contract is available)
-            // Convert WAL to smallest unit (9 decimals like SUI)
-            const amountInSmallestUnit = Math.floor(amountNum * 1_000_000_000)
-
-            // Get WAL coins
-            const coins = await suiClient.getCoins({
-              owner: account.address,
-              coinType: WAL_COIN_TYPE,
-            })
-
-            if (coins.data.length === 0) {
-              throw new Error('No WAL coins found')
-            }
-
-            // Use the first available WAL coin
-            const [coin] = transaction.splitCoins(coins.data[0].coinObjectId, [amountInSmallestUnit])
-            transaction.transferObjects([coin], recipientAddress)
           }
 
           // Execute transaction with traditional wallet
@@ -297,8 +275,6 @@ export function SendModal({
         return suiBalance
       case 'USDC':
         return usdcBalance
-      case 'WAL':
-        return walBalance
       case 'pAION':
         return paionBalance
       default:
@@ -340,17 +316,7 @@ export function SendModal({
                   >
                     SUI
                   </Button>
-                  <Button
-                    variant={selectedToken === 'WAL' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSelectedToken('WAL')}
-                    className={selectedToken === 'WAL'
-                      ? 'bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white'
-                      : 'border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10'
-                    }
-                  >
-                    WAL
-                  </Button>
+
                   <Button
                     variant={selectedToken === 'USDC' ? 'default' : 'outline'}
                     size="sm"

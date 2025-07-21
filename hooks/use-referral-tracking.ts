@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
+import { useReferralTrackingRateLimit } from './use-rate-limit'
 
 interface ReferralTrackingState {
   referralCode: string | null
@@ -25,6 +26,9 @@ export function useReferralTracking(): ReferralTrackingState & ReferralTrackingA
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [isTracked, setIsTracked] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+
+  // Rate limiting for referral tracking
+  const rateLimitHook = useReferralTrackingRateLimit()
 
   // Initialize referral tracking from URL, cookies, or localStorage
   useEffect(() => {
@@ -94,6 +98,13 @@ export function useReferralTracking(): ReferralTrackingState & ReferralTrackingA
     setIsLoading(true)
 
     try {
+      // Check rate limit before proceeding
+      const rateLimitResult = rateLimitHook.checkRateLimit('track_click')
+      if (!rateLimitResult.isAllowed) {
+        console.warn('⚠️ Rate limit exceeded for referral tracking:', rateLimitResult.error)
+        return false
+      }
+
       // Generate or get existing session ID
       let currentSessionId = sessionId || localStorage.getItem(SESSION_STORAGE_KEY)
       if (!currentSessionId) {
@@ -103,29 +114,40 @@ export function useReferralTracking(): ReferralTrackingState & ReferralTrackingA
 
       console.log('📊 Tracking referral click:', code, currentSessionId)
 
-      // Call API to track the referral
-      const response = await fetch('/api/referral/track', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          referralCode: code,
-          sessionId: currentSessionId,
-          userAgent: navigator.userAgent,
-          referrerUrl: document.referrer
-        })
-      })
+      // Execute with rate limit
+      const trackingResult = await rateLimitHook.executeWithRateLimit(
+        'track_click',
+        async () => {
+          const response = await fetch('/api/referral/track', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              referralCode: code,
+              sessionId: currentSessionId,
+              userAgent: navigator.userAgent,
+              referrerUrl: document.referrer
+            })
+          })
+          return response.json()
+        }
+      )
 
-      const result = await response.json()
+      if (!trackingResult.success) {
+        console.error('❌ Failed to track referral click:', trackingResult.error)
+        return false
+      }
 
-      if (result.success) {
+      const result = trackingResult.data
+
+      if (result?.success) {
         // Store referral data
         const referralData = {
           referralCode: code,
           trackedAt: new Date().toISOString()
         }
-        
+
         localStorage.setItem(REFERRAL_STORAGE_KEY, JSON.stringify(referralData))
         localStorage.setItem(SESSION_STORAGE_KEY, result.sessionId)
 
@@ -136,7 +158,7 @@ export function useReferralTracking(): ReferralTrackingState & ReferralTrackingA
         console.log('✅ Referral click tracked successfully')
         return true
       } else {
-        console.error('❌ Failed to track referral click:', result.error)
+        console.error('❌ Failed to track referral click:', result?.error || 'Unknown error')
         return false
       }
     } catch (error) {
@@ -145,7 +167,7 @@ export function useReferralTracking(): ReferralTrackingState & ReferralTrackingA
     } finally {
       setIsLoading(false)
     }
-  }, [sessionId])
+  }, [sessionId, rateLimitHook])
 
   // Clear referral data
   const clearReferralData = useCallback(() => {

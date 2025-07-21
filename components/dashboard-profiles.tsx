@@ -14,8 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 import { useProfile } from "@/contexts/profile-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
-import { EnhancedAvatar } from "@/components/enhanced-avatar"
-import { ReferralCodeManagement } from "@/components/referral-code-management"
 import { LOCATIONS } from "@/lib/locations"
 import ReactCountryFlag from 'react-country-flag'
 import { toast } from "sonner"
@@ -23,16 +21,13 @@ import { affiliateService } from "@/lib/affiliate-service"
 import {
   User,
   Wallet,
-  Shield,
-  Camera,
-  CheckCircle,
-  AlertCircle,
   MapPin,
   Users,
   MessageSquare,
   Edit3,
   Save,
-  X
+  X,
+  CheckCircle
 } from "lucide-react"
 
 interface ProfileData {
@@ -42,7 +37,7 @@ interface ProfileData {
   email: string
   location: string
   walletAddress: string
-  kycStatus: 'pending' | 'verified' | 'rejected' | 'not-started'
+
   referralCode: string
 }
 
@@ -50,7 +45,7 @@ interface ProfileData {
 
 export function DashboardProfiles() {
   const { user } = useSuiAuth()
-  const { profile, isLoading, updateProfile, updateKYCStatus } = useProfile()
+  const { profile, isLoading, updateProfile } = useProfile()
 
   const [profileData, setProfileData] = useState<ProfileData>({
     firstName: "",
@@ -59,7 +54,7 @@ export function DashboardProfiles() {
     email: "",
     location: "unspecified",
     walletAddress: "",
-    kycStatus: 'not-started',
+
     referralCode: ""
   })
 
@@ -162,8 +157,7 @@ export function DashboardProfiles() {
         email: isSocialAuthUser ? socialAuthEmail : (profile.email || ""),
         location: profile.location || "unspecified",
         walletAddress: user?.address || "",
-        kycStatus: profile.kyc_status === 'verified' ? 'verified' :
-                  profile.kyc_status === 'pending' ? 'pending' : 'not-started',
+
         referralCode: ""
       })
     } else if (user?.address) {
@@ -300,7 +294,7 @@ export function DashboardProfiles() {
         current_xp: profile?.current_xp || 0,
         total_xp: profile?.total_xp || 0,
         points: profile?.points || 0,
-        kyc_status: profile?.kyc_status || 'not_verified',
+
         onboarding_completed: profile?.onboarding_completed ?? false,
         onboarding_completed_at: profile?.onboarding_completed_at,
         // Preserve important data structures
@@ -342,12 +336,7 @@ export function DashboardProfiles() {
       const success = await updateProfile(profileUpdateData)
 
       if (success) {
-        // Update KYC status if it changed
-        if (profile?.kyc_status !== profileData.kycStatus) {
-          const kycStatus = profileData.kycStatus === 'verified' ? 'verified' :
-                           profileData.kycStatus === 'pending' ? 'pending' : 'not_verified'
-          await updateKYCStatus(kycStatus)
-        }
+
 
         toast.success('✅ Profile saved successfully to database and Walrus!')
         setIsEditing(false)
@@ -364,31 +353,7 @@ export function DashboardProfiles() {
 
   // Avatar is now handled by the EnhancedAvatar component
 
-  const getKycStatusColor = (status: string) => {
-    switch (status) {
-      case 'verified':
-        return 'bg-green-500 text-white'
-      case 'pending':
-        return 'bg-yellow-500 text-white'
-      case 'rejected':
-        return 'bg-red-500 text-white'
-      default:
-        return 'bg-gray-500 text-white'
-    }
-  }
 
-  const getKycStatusIcon = (status: string) => {
-    switch (status) {
-      case 'verified':
-        return <CheckCircle className="w-4 h-4" />
-      case 'pending':
-        return <AlertCircle className="w-4 h-4" />
-      case 'rejected':
-        return <AlertCircle className="w-4 h-4" />
-      default:
-        return <Shield className="w-4 h-4" />
-    }
-  }
 
 
 
@@ -397,7 +362,7 @@ export function DashboardProfiles() {
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-semibold text-white mb-2">Account Information</h3>
-          <p className="text-[#C0E6FF] text-sm">🇬🇷 Manage your Greek community profile and Sui wallet integration</p>
+          <p className="text-[#C0E6FF] text-sm">Manage your AIONET account</p>
         </div>
         <div className="flex gap-2">
           {isEditing ? (
@@ -427,72 +392,9 @@ export function DashboardProfiles() {
         </div>
       </div>
 
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-        {/* Profile Picture, KYC & Wallet */}
-        <div className="enhanced-card">
-          <div className="enhanced-card-content space-y-6">
-            {/* Profile Picture Section */}
-            <div className="text-center">
-              <div className="flex items-center gap-2 text-white mb-4 justify-center">
-                <Camera className="w-5 h-5 text-[#4DA2FF]" />
-                <h3 className="font-semibold">Profile Picture</h3>
-              </div>
-              <div className="relative flex items-center justify-center">
-                <EnhancedAvatar
-                  size="xl"
-                  editable={isEditing}
-                  showStorageInfo={false}
-                  className="!w-56 !h-56 rounded-full"
-                />
-              </div>
-              {isEditing && (
-                <div className="mt-3 text-center">
-                  <p className="text-xs text-[#C0E6FF]/70">
-                    Click avatar to upload new image
-                  </p>
-                  <p className="text-xs text-[#C0E6FF]/50">
-                    Images stored on Walrus
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* KYC Section */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-white justify-center">
-                <Shield className="w-4 h-4 text-[#4DA2FF]" />
-                <h4 className="font-semibold text-sm">KYC Verification</h4>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-center">
-                  <Badge className={getKycStatusColor(profileData.kycStatus)}>
-                    {getKycStatusIcon(profileData.kycStatus)}
-                    <span className="ml-2 capitalize text-xs">{profileData.kycStatus.replace('-', ' ')}</span>
-                  </Badge>
-                </div>
-                <p className="text-[#C0E6FF] text-xs text-center">
-                  {profileData.kycStatus === 'verified'
-                    ? 'Identity verified for AIONET security'
-                    : 'Complete KYC for enhanced security'
-                  }
-                </p>
-                {profileData.kycStatus !== 'verified' && (
-                  <Button
-                    size="sm"
-                    className="w-full bg-gradient-to-r from-[#4DA2FF] to-[#011829] text-white text-xs"
-                  >
-                    {profileData.kycStatus === 'not-started' ? 'Start KYC' : 'Continue KYC'}
-                  </Button>
-                )}
-              </div>
-            </div>
-
-
-          </div>
-        </div>
-
+      <div className="grid gap-6 grid-cols-1">
         {/* Personal Information */}
-        <div className="enhanced-card lg:col-span-2">
+        <div className="enhanced-card">
           <div className="enhanced-card-content">
             <div className="flex items-center gap-2 text-white mb-4">
               <User className="w-5 h-5 text-[#4DA2FF]" />
@@ -702,185 +604,8 @@ export function DashboardProfiles() {
         </div>
       </div>
 
-      {/* Referral Code Management Section */}
-      <ReferralCodeManagement />
-
-      {/* Social Media Management Section */}
-      <SocialMediaSection />
-
     </div>
   )
 }
 
-// Simple Social Media Management Component
-function SocialMediaSection() {
-  const { profile, updateSocialLinks } = useProfile()
-  const { user } = useSuiAuth()
-  const [isEditing, setIsEditing] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
 
-  // Simple state for each platform
-  const [discord, setDiscord] = useState('')
-  const [twitter, setTwitter] = useState('')
-
-  // Load existing data when profile changes
-  useEffect(() => {
-    if (profile?.social_links && Array.isArray(profile.social_links)) {
-      setDiscord('')
-      setTwitter('')
-
-      profile.social_links.forEach((link: any) => {
-        if (link.platform === 'discord') setDiscord(link.username || '')
-        if (link.platform === 'x') setTwitter(link.username || '')
-      })
-    }
-  }, [profile?.social_links])
-
-  const handleSave = async () => {
-    if (!user?.address) {
-      toast.error('User not authenticated')
-      return
-    }
-
-    setIsSaving(true)
-
-    try {
-      const socialLinks = []
-
-      if (discord.trim()) {
-        socialLinks.push({
-          platform: 'discord',
-          username: discord.trim(),
-          url: `https://discord.com/users/${discord.trim()}`
-        })
-      }
-
-
-
-      if (twitter.trim()) {
-        const twitterUsername = twitter.trim().startsWith('@') ? twitter.trim() : `@${twitter.trim()}`
-        socialLinks.push({
-          platform: 'x',
-          username: twitterUsername,
-          url: `https://x.com/${twitterUsername.slice(1)}`
-        })
-      }
-
-      const success = await updateSocialLinks(socialLinks)
-
-      if (success) {
-        toast.success('Social media links saved!')
-        setIsEditing(false)
-      } else {
-        toast.error('Failed to save social media links')
-      }
-    } catch (error) {
-      console.error('Error saving social links:', error)
-      toast.error('Failed to save social media links')
-    }
-
-    setIsSaving(false)
-  }
-
-  return (
-    <div className="enhanced-card">
-      <div className="enhanced-card-content">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <div className="flex items-center gap-2 text-white mb-1">
-              <MessageSquare className="w-5 h-5 text-[#4DA2FF]" />
-              <h3 className="font-semibold">Social Media Links</h3>
-            </div>
-            <p className="text-[#C0E6FF] text-sm">
-              Add your social media handles to display on your profile
-            </p>
-          </div>
-          <div className="flex gap-2">
-            {isEditing ? (
-              <>
-                <Button
-                  onClick={() => setIsEditing(false)}
-                  variant="outline"
-                  size="sm"
-                  className="border-[#C0E6FF]/50 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
-                >
-                  <X className="w-4 h-4 mr-1" />
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  size="sm"
-                  className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white"
-                >
-                  {isSaving ? 'Saving...' : (
-                    <>
-                      <Save className="w-4 h-4 mr-1" />
-                      Save
-                    </>
-                  )}
-                </Button>
-              </>
-            ) : (
-              <Button
-                onClick={() => setIsEditing(true)}
-                size="sm"
-                className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white"
-              >
-                <Edit3 className="w-4 h-4 mr-1" />
-                Edit
-              </Button>
-            )}
-          </div>
-        </div>
-        <div className="space-y-4">
-        {/* Discord */}
-        <div className="p-4 bg-[#1a2f51]/30 rounded-lg border border-[#C0E6FF]/10">
-          <label className="text-white font-medium block mb-2">Discord</label>
-          {isEditing ? (
-            <input
-              type="text"
-              value={discord}
-              onChange={(e) => setDiscord(e.target.value)}
-              placeholder="YourUsername#1234"
-              className="w-full px-3 py-2 bg-[#030F1C] border border-[#C0E6FF]/30 text-white rounded-md focus:ring-2 focus:ring-[#4DA2FF] focus:border-[#4DA2FF] focus:outline-none"
-            />
-          ) : (
-            <div>
-              {discord ? (
-                <span className="text-[#C0E6FF]">{discord}</span>
-              ) : (
-                <span className="text-[#C0E6FF]/50 text-sm">Not connected</span>
-              )}
-            </div>
-          )}
-        </div>
-
-
-
-        {/* X (Twitter) */}
-        <div className="p-4 bg-[#1a2f51]/30 rounded-lg border border-[#C0E6FF]/10">
-          <label className="text-white font-medium block mb-2">X (Twitter)</label>
-          {isEditing ? (
-            <input
-              type="text"
-              value={twitter}
-              onChange={(e) => setTwitter(e.target.value)}
-              placeholder="@yourusername"
-              className="w-full px-3 py-2 bg-[#030F1C] border border-[#C0E6FF]/30 text-white rounded-md focus:ring-2 focus:ring-[#4DA2FF] focus:border-[#4DA2FF] focus:outline-none"
-            />
-          ) : (
-            <div>
-              {twitter ? (
-                <span className="text-[#C0E6FF]">{twitter}</span>
-              ) : (
-                <span className="text-[#C0E6FF]/50 text-sm">Not connected</span>
-              )}
-            </div>
-          )}
-        </div>
-        </div>
-      </div>
-    </div>
-  )
-}

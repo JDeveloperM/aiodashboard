@@ -40,7 +40,7 @@ const nftTiers: NFTTier[] = [
   {
     id: 'PRO',
     name: 'PRO NFT',
-    price: '400 EUR',
+    price: '400 USDC',
     priceEur: 400,
     description: 'Access to crypto trading bots and premium features',
     features: [
@@ -65,7 +65,7 @@ const nftTiers: NFTTier[] = [
   {
     id: 'ROYAL',
     name: 'ROYAL NFT',
-    price: '1500 EUR',
+    price: '1500 USDC',
     priceEur: 1500,
     description: 'VIP access to all features including forex and stock bots',
     features: [

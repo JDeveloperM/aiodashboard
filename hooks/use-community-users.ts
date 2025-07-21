@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { encryptedStorage, type DecryptedProfile } from '@/lib/encrypted-database-storage'
-import { User, Achievement, SocialMedia } from '@/components/user-search-interface'
+import { User, Achievement } from '@/components/user-search-interface'
 
 interface CommunityUsersState {
   users: User[]
@@ -16,12 +16,7 @@ interface CommunityUsersActions {
   clearError: () => void
 }
 
-// Social media image paths
-const socialImages = {
-  Discord: "/images/social/discord.png",
-  Telegram: "/images/social/telegram.png",
-  X: "/images/social/x.png"
-}
+
 
 // Helper function to get avatar URL (handles both default avatars and Walrus blobs)
 const getAvatarUrl = async (blobId: string | null): Promise<string | undefined> => {
@@ -80,7 +75,7 @@ const convertAchievements = (achievementsData: any[], profile: DecryptedProfile)
   const baseAchievements = [
     // Profile & KYC Category - Updated to match profile page
     { name: "Personalize Your Profile", color: "#4DA2FF", xp: 50, tooltip: "Upload a profile picture to your account" },
-    { name: "Unlock Full Access", color: "#10B981", xp: 100, tooltip: "Finish the KYC verification process" },
+    { name: "Unlock Full Access", color: "#10B981", xp: 100, tooltip: "Feature currently disabled" },
     { name: "Advanced User Status", color: "#FFD700", xp: 200, tooltip: "Achieve profile level 5" },
 
     // Social Connections Category - Updated to match profile page
@@ -116,7 +111,7 @@ const convertAchievements = (achievementsData: any[], profile: DecryptedProfile)
       case "Personalize Your Profile":
         return !!profile?.profile_image_blob_id
       case "Unlock Full Access":
-        return profile?.kyc_status === 'verified'
+        return false // KYC disabled
       case "Advanced User Status":
         return (profile?.profile_level || 1) >= 5
       case "Join the Community":
@@ -145,49 +140,7 @@ const convertAchievements = (achievementsData: any[], profile: DecryptedProfile)
   })
 }
 
-// Helper function to convert database social links to UI format
-const convertSocialMedia = (socialLinks: any[]): SocialMedia[] => {
-  if (!Array.isArray(socialLinks)) return []
-  
-  const defaultSocials: SocialMedia[] = [
-    {
-      platform: "Discord",
-      image: socialImages.Discord,
-      url: "https://discord.gg/aionet",
-      connected: false,
-      username: "",
-      color: "#5865F2"
-    },
-    {
-      platform: "Telegram", 
-      image: socialImages.Telegram,
-      url: "https://t.me/aionet",
-      connected: false,
-      username: "",
-      color: "#0088CC"
-    },
-    {
-      platform: "X",
-      image: socialImages.X,
-      url: "https://x.com/aionet", 
-      connected: false,
-      username: "",
-      color: "#000000"
-    }
-  ]
 
-  // Update default socials with actual data
-  socialLinks.forEach(link => {
-    const social = defaultSocials.find(s => s.platform.toLowerCase() === link.platform?.toLowerCase())
-    if (social && link.username) {
-      social.connected = true
-      social.username = link.username
-      if (link.url) social.url = link.url
-    }
-  })
-
-  return defaultSocials
-}
 
 // Helper function to convert database profile to User format
 const convertProfileToUser = async (profile: DecryptedProfile): Promise<User> => {
@@ -205,14 +158,13 @@ const convertProfileToUser = async (profile: DecryptedProfile): Promise<User> =>
     status: getUserStatus(),
     joinDate: profile.join_date ? new Date(profile.join_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
     lastActive: profile.last_active ? getLastActiveTime(profile.last_active) : 'Unknown',
-    kycStatus: profile.kyc_status || 'not_verified',
     totalPoints: profile.points || 0,
     level: profile.profile_level || 1,
     activity: 'AIONET member',
     location: profile.location || 'Unknown',
     bio: 'AIONET community member',
     achievements: convertAchievements(profile.achievements_data || [], profile),
-    socialMedia: convertSocialMedia(profile.social_links || [])
+
   }
 }
 

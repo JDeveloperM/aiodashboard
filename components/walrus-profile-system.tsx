@@ -27,15 +27,7 @@ interface WalrusProfileData {
   username: string
   profileImage: string
   profileImageBlobId?: string
-  kycStatus: 'verified' | 'pending' | 'not_verified'
-  socialMedia: Array<{
-    platform: string
-    image: string
-    url: string
-    connected: boolean
-    username: string
-    color: string
-  }>
+
   levelInfo: {
     currentLevel: number
     nextLevel: number
@@ -88,33 +80,6 @@ export function WalrusProfileSystem({
     name: user?.username || "Affiliate User",
     username: user?.username || "@affiliate_user",
     profileImage: "",
-    kycStatus: "verified",
-    socialMedia: [
-      {
-        platform: "Discord",
-        image: "/images/social/discord.png",
-        url: "https://discord.gg/aionet",
-        connected: true,
-        username: "Affiliate#1234",
-        color: "#5865F2"
-      },
-      {
-        platform: "Telegram",
-        image: "/images/social/telegram.png",
-        url: "https://t.me/aionet",
-        connected: true,
-        username: "@affiliate_tg",
-        color: "#0088CC"
-      },
-      {
-        platform: "X",
-        image: "/images/social/x.png",
-        url: "https://x.com/aionet",
-        connected: false,
-        username: "",
-        color: "#000000"
-      }
-    ],
     levelInfo: {
       currentLevel: 5,
       nextLevel: 6,
@@ -406,18 +371,7 @@ export function WalrusProfileSystem({
               <h2 className="text-2xl font-bold text-[#C0E6FF]">{profileData.name}</h2>
               <p className="text-[#C0E6FF]/70">{profileData.username}</p>
               
-              <Badge 
-                variant="outline" 
-                className={`${
-                  profileData.kycStatus === 'verified' 
-                    ? 'border-green-500/50 text-green-400' 
-                    : profileData.kycStatus === 'pending'
-                    ? 'border-yellow-500/50 text-yellow-400'
-                    : 'border-red-500/50 text-red-400'
-                }`}
-              >
-                KYC: {profileData.kycStatus.replace('_', ' ').toUpperCase()}
-              </Badge>
+
             </div>
 
             {/* Level Info */}

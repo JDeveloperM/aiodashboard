@@ -4,66 +4,134 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useSubscription } from "@/contexts/subscription-context"
+import { useBotFollowing } from "@/contexts/bot-following-context"
 import { Users, TrendingUp, ArrowRight, AlertTriangle, Info, DollarSign, Activity, BarChart, LineChart } from "lucide-react"
-import { PerformanceChart } from "@/components/performance-chart"
+import { TradingBotCard } from "@/components/trading-bot-card"
+import { useState } from "react"
 
 export default function ForexBotsPage() {
   const { tier, canAccessForexBots } = useSubscription()
+  const { followBot, unfollowBot, isFollowing } = useBotFollowing()
 
-  // Sample bots data
+  // Sample bots data in new format
   const bots = [
     {
-      id: "hades",
-      name: "5000 Hades",
-      amount: "5,000 USDT",
-      minInvestment: "Min. Investment",
+      id: "hades-grid",
+      name: "Hades Grid Bot",
+      type: "futures" as const,
+      gridType: "Futures grid",
+      longShort: "long" as const,
+      leverage: "20.00x",
+      performance: 1875.0,
+      performanceColor: "#10b981",
+      pnl: "PnL",
+      roi: {
+        value: 18.75,
+        timeframe: "30d"
+      },
+      volume: {
+        value: "168.45K",
+        timeframe: "24h"
+      },
+      profitSharing: 30,
       followers: 32,
-      performance: "+18.75%",
-      days: "30 days",
-      strategy: "BYB-T",
-      winRate: "93% Win Rate",
-      mdd: "6.2% MDD",
-      tradesWon: "215 Trades Won",
-      tradesLost: "6 Trades Lost",
-      profit: "$168,450.25 AUM",
-      description: "Aggressive forex trading strategy focusing on major currency pairs",
-      badge: "VIP"
+      owner: {
+        name: "Bybit"
+      },
+      chartData: [100, 105, 110, 115, 125, 135, 145, 155, 165, 175, 185, 195, 205, 215, 225, 235, 245, 255, 265, 275],
+      badge: "VIP",
+      botImage: "/bot-images/hades.svg",
+      bybitUrl: "https://www.bybit.com/copy-trading/trade-detail/hades-grid",
+      winRate: 85.2,
+      maxDrawdown: 12.5,
+      sharpeRatio: 1.8,
+      totalTrades: 456,
+      avgHoldingTime: "6.2h",
+      aum: "892,150 USDT",
+      rating: 5
     },
     {
-      id: "dionysus",
-      name: "2000 Dionysus",
-      amount: "2,000 USDT",
-      minInvestment: "Min. Investment",
+      id: "hermes-scalper",
+      name: "Hermes Scalper",
+      type: "futures" as const,
+      gridType: "Futures grid",
+      longShort: "short" as const,
+      leverage: "15.00x",
+      performance: 1235.0,
+      performanceColor: "#10b981",
+      pnl: "PnL",
+      roi: {
+        value: 12.35,
+        timeframe: "30d"
+      },
+      volume: {
+        value: "124.68K",
+        timeframe: "24h"
+      },
+      profitSharing: 30,
       followers: 45,
-      performance: "+12.35%",
-      days: "30 days",
-      strategy: "BYB-T",
-      winRate: "96% Win Rate",
-      mdd: "5.8% MDD",
-      tradesWon: "240 Trades Won",
-      tradesLost: "5 Trades Lost",
-      profit: "$124,680.90 AUM",
-      description: "Dionysus is a sophisticated forex trading bot that uses a data-driven approach to identify high-probability trading opportunities in the forex market. By analyzing market trends, volume patterns, and key indicators, it aims to generate consistent returns while managing risk exposure.",
-      badge: "VIP"
+      owner: {
+        name: "Bybit"
+      },
+      chartData: [100, 102, 105, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 148, 152, 156, 160, 164, 168, 172],
+      badge: "VIP",
+      botImage: "/bot-images/hermes.svg",
+      bybitUrl: "https://www.bybit.com/copy-trading/trade-detail/hermes-scalper",
+      winRate: 72.8,
+      maxDrawdown: 8.3,
+      sharpeRatio: 1.4,
+      totalTrades: 623,
+      avgHoldingTime: "4.1h",
+      aum: "567,890 USDT",
+      rating: 4
     },
     {
-      id: "artemis",
-      name: "5000 Artemis",
-      amount: "5,000 USDT",
-      minInvestment: "Min. Investment",
+      id: "apollo-conservative",
+      name: "Apollo Conservative",
+      type: "futures" as const,
+      gridType: "Futures grid",
+      longShort: "long" as const,
+      leverage: "10.00x",
+      performance: 945.0,
+      performanceColor: "#10b981",
+      pnl: "PnL",
+      roi: {
+        value: 9.45,
+        timeframe: "30d"
+      },
+      volume: {
+        value: "82.34K",
+        timeframe: "24h"
+      },
+      profitSharing: 30,
       followers: 38,
-      performance: "+9.45%",
-      days: "30 days",
-      strategy: "BYB-T",
-      winRate: "97% Win Rate",
-      mdd: "4.2% MDD",
-      tradesWon: "195 Trades Won",
-      tradesLost: "3 Trades Lost",
-      profit: "$82,340.15 AUM",
-      description: "Conservative forex trading strategy with focus on stable currency pairs",
-      badge: "VIP"
-    },
+      owner: {
+        name: "Bybit"
+      },
+      chartData: [100, 101, 103, 105, 107, 109, 111, 113, 115, 117, 119, 121, 123, 125, 127, 129, 131, 133, 135, 137],
+      badge: "VIP",
+      botImage: "/bot-images/apollo.svg",
+      bybitUrl: "https://www.bybit.com/copy-trading/trade-detail/apollo-conservative",
+      winRate: 68.5,
+      maxDrawdown: 5.2,
+      sharpeRatio: 1.1,
+      totalTrades: 389,
+      avgHoldingTime: "8.7h",
+      aum: "234,567 USDT",
+      rating: 4
+    }
   ]
+
+  const handleFollowBot = async (botId: string) => {
+    const bot = bots.find(b => b.id === botId)
+    if (bot) {
+      await followBot(botId, bot.name, "forex")
+    }
+  }
+
+  const handleUnfollowBot = async (botId: string) => {
+    await unfollowBot(botId)
+  }
 
   if (!canAccessForexBots) {
     return (
@@ -76,7 +144,7 @@ export default function ForexBotsPage() {
             automated trading strategies for foreign exchange markets.
           </p>
           <Button className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-semibold">
-            Mint ROYAL NFT - €600
+            Mint ROYAL NFT - 1500 USDC
           </Button>
         </div>
       </div>
@@ -97,21 +165,7 @@ export default function ForexBotsPage() {
     worstPerformer: "Artemis"
   }
 
-  // Performance data for forex bots
-  const forexPerformanceData = [
-    { date: "Jan", value: 1000 },
-    { date: "Feb", value: 1080 },
-    { date: "Mar", value: 1250 },
-    { date: "Apr", value: 1380 },
-    { date: "May", value: 1520 },
-    { date: "Jun", value: 1700 },
-    { date: "Jul", value: 1850 },
-    { date: "Aug", value: 2050 },
-    { date: "Sep", value: 2300 },
-    { date: "Oct", value: 2600 },
-    { date: "Nov", value: 2950 },
-    { date: "Dec", value: 3350 },
-  ]
+
 
   return (
     <div className="space-y-6 p-6">
@@ -197,76 +251,17 @@ export default function ForexBotsPage() {
         </div>
       </div>
 
-      {/* Performance Chart */}
-      <div>
-        <h2 className="text-xl font-bold mb-4 text-white">Forex Bots Performance</h2>
-        <PerformanceChart
-          data={forexPerformanceData}
-          title=""
-          valuePrefix="$"
-        />
-      </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {bots.map((bot) => (
-          <div key={bot.id} className="enhanced-card overflow-hidden">
-            <div className="enhanced-card-content">
-              <div className="bg-gradient-to-r from-blue-500 to-teal-600 p-3 text-white font-medium flex justify-between items-center mb-4 rounded-lg shadow-lg shadow-blue-500/20">
-                <span>{bot.name}</span>
-                <Badge className="bg-teal-400/20 text-teal-200 border border-teal-400/30">{bot.badge}</Badge>
-              </div>
-              <div className="space-y-4">
-              <div className="p-4 border-b border-[#C0E6FF]/20">
-                <div className="flex justify-between items-center mb-2">
-                  <div>
-                    <p className="font-bold text-lg text-white">{bot.amount}</p>
-                    <p className="text-xs text-[#C0E6FF]">{bot.minInvestment}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 mb-2">
-                  <Users className="h-4 w-4 text-[#C0E6FF]" />
-                  <span className="text-sm text-[#C0E6FF]">{bot.followers} followers</span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-1">
-                    <TrendingUp className="h-4 w-4 text-green-400" />
-                    <span className="text-green-400 font-medium">{bot.performance}</span>
-                  </div>
-                  <span className="text-xs text-[#C0E6FF]">{bot.days}</span>
-                </div>
-              </div>
-
-              <div className="p-4 border-b border-[#C0E6FF]/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="bg-blue-500/20 text-blue-300 px-2 py-1 rounded text-xs font-medium">{bot.strategy}</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-2">
-                  <div>
-                    <p className="text-sm text-green-400">{bot.tradesWon}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-red-400">{bot.tradesLost}</p>
-                  </div>
-                </div>
-
-                <div className="mb-2">
-                  <p className="text-sm font-medium text-white">{bot.profit}</p>
-                </div>
-
-                <div className="text-xs text-[#C0E6FF] mb-4">
-                  <p>{bot.description}</p>
-                </div>
-
-                <Button className="w-full bg-gradient-to-r from-blue-500 to-teal-600 text-white font-semibold hover:opacity-90 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all duration-300">
-                  Start Following Now <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </div>
-              </div>
-            </div>
-          </div>
+          <TradingBotCard
+            key={bot.id}
+            {...bot}
+            isFollowed={isFollowing(bot.id)}
+            onFollow={() => handleFollowBot(bot.id)}
+            onUnfollow={() => handleUnfollowBot(bot.id)}
+          />
         ))}
       </div>
     </div>

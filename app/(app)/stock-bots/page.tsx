@@ -4,67 +4,134 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useSubscription } from "@/contexts/subscription-context"
+import { useBotFollowing } from "@/contexts/bot-following-context"
 import { Users, TrendingUp, ArrowRight, AlertTriangle, Info, DollarSign, Activity, BarChart, LineChart } from "lucide-react"
-import { PerformanceChart } from "@/components/performance-chart"
+import { TradingBotCard } from "@/components/trading-bot-card"
+import { useState } from "react"
 
 export default function StockBotsPage() {
-  const { tier, canAccessForexBots } = useSubscription()
-  const canAccessStockBots = canAccessForexBots  // Stock bots are VIP-only (ROYAL tier)
+  const { tier, canAccessStockBots } = useSubscription()
+  const { followBot, unfollowBot, isFollowing } = useBotFollowing()
 
-  // Sample bots data
+  // Sample bots data in new format
   const bots = [
     {
-      id: "hermes",
-      name: "5000 Hermes",
-      amount: "5,000 USDT",
-      minInvestment: "Min. Investment",
+      id: "zeus-stocks",
+      name: "Zeus Stock Grid",
+      type: "futures" as const,
+      gridType: "Spot grid",
+      longShort: "long" as const,
+      leverage: "5.00x",
+      performance: 2215.0,
+      performanceColor: "#10b981",
+      pnl: "PnL",
+      roi: {
+        value: 22.15,
+        timeframe: "30d"
+      },
+      volume: {
+        value: "187.32K",
+        timeframe: "24h"
+      },
+      profitSharing: 30,
       followers: 35,
-      performance: "+22.15%",
-      days: "30 days",
-      strategy: "BYB-T",
-      winRate: "94% Win Rate",
-      mdd: "6.8% MDD",
-      tradesWon: "245 Trades Won",
-      tradesLost: "5 Trades Lost",
-      profit: "$187,320.45 AUM",
-      description: "Balanced stock trading strategy with focus on blue-chip stocks",
-      badge: "VIP"
+      owner: {
+        name: "Bybit"
+      },
+      chartData: [100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290],
+      badge: "VIP",
+      botImage: "/bot-images/zeus.svg",
+      bybitUrl: "https://www.bybit.com/copy-trading/trade-detail/zeus-stocks",
+      winRate: 91.3,
+      maxDrawdown: 15.8,
+      sharpeRatio: 2.1,
+      totalTrades: 234,
+      avgHoldingTime: "12.4h",
+      aum: "1,234,567 USDT",
+      rating: 5
     },
     {
-      id: "poseidon",
-      name: "2000 Poseidon",
-      amount: "2,000 USDT",
-      minInvestment: "Min. Investment",
+      id: "athena-swing",
+      name: "Athena Swing Trader",
+      type: "futures" as const,
+      gridType: "Spot grid",
+      longShort: "long" as const,
+      leverage: "5.00x",
+      performance: 1689.0,
+      performanceColor: "#10b981",
+      pnl: "PnL",
+      roi: {
+        value: 16.89,
+        timeframe: "30d"
+      },
+      volume: {
+        value: "142.78K",
+        timeframe: "24h"
+      },
+      profitSharing: 30,
       followers: 42,
-      performance: "+16.89%",
-      days: "30 days",
-      strategy: "BYB-T",
-      winRate: "97% Win Rate",
-      mdd: "7.2% MDD",
-      tradesWon: "265 Trades Won",
-      tradesLost: "3 Trades Lost",
-      profit: "$142,780.65 AUM",
-      description: "Poseidon is a sophisticated stock trading bot that uses a data-driven approach to identify high-probability trading opportunities in the stock market. By analyzing market trends, volume patterns, and key indicators, it aims to generate consistent returns while managing risk exposure.",
-      badge: "VIP"
+      owner: {
+        name: "Bybit"
+      },
+      chartData: [100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 185, 190, 195],
+      badge: "VIP",
+      botImage: "/bot-images/athena.svg",
+      bybitUrl: "https://www.bybit.com/copy-trading/trade-detail/athena-swing",
+      winRate: 76.4,
+      maxDrawdown: 9.7,
+      sharpeRatio: 1.6,
+      totalTrades: 345,
+      avgHoldingTime: "18.2h",
+      aum: "678,901 USDT",
+      rating: 4
     },
     {
-      id: "ares",
-      name: "5000 Ares",
-      amount: "5,000 USDT",
-      minInvestment: "Min. Investment",
+      id: "hermes-aggressive",
+      name: "Hermes Aggressive",
+      type: "futures" as const,
+      gridType: "Spot grid",
+      longShort: "short" as const,
+      leverage: "10.00x",
+      performance: 875.0,
+      performanceColor: "#10b981",
+      pnl: "PnL",
+      roi: {
+        value: 8.75,
+        timeframe: "30d"
+      },
+      volume: {
+        value: "78.45K",
+        timeframe: "24h"
+      },
+      profitSharing: 30,
       followers: 28,
-      performance: "+8.75%",
-      days: "30 days",
-      strategy: "BYB-T",
-      winRate: "96% Win Rate",
-      mdd: "5.4% MDD",
-      tradesWon: "210 Trades Won",
-      tradesLost: "4 Trades Lost",
-      profit: "$78,450.30 AUM",
-      description: "Conservative stock trading strategy with focus on dividend stocks and ETFs",
-      badge: "VIP"
-    },
+      owner: {
+        name: "Bybit"
+      },
+      chartData: [100, 102, 105, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 148, 152, 156, 160, 164, 168, 172],
+      badge: "VIP",
+      botImage: "/bot-images/hermes.svg",
+      bybitUrl: "https://www.bybit.com/copy-trading/trade-detail/hermes-aggressive",
+      winRate: 82.1,
+      maxDrawdown: 6.4,
+      sharpeRatio: 1.3,
+      totalTrades: 567,
+      avgHoldingTime: "5.8h",
+      aum: "445,123 USDT",
+      rating: 4
+    }
   ]
+
+  const handleFollowBot = async (botId: string) => {
+    const bot = bots.find(b => b.id === botId)
+    if (bot) {
+      await followBot(botId, bot.name, "stock")
+    }
+  }
+
+  const handleUnfollowBot = async (botId: string) => {
+    await unfollowBot(botId)
+  }
 
   if (!canAccessStockBots) {
     return (
@@ -77,7 +144,7 @@ export default function StockBotsPage() {
             automated trading strategies for the stock market and unlock VIP features.
           </p>
           <Button className="bg-gradient-to-r from-purple-400 to-purple-600 text-white font-semibold">
-            Mint ROYAL NFT - €600
+            Mint ROYAL NFT - 1500 USDC
           </Button>
         </div>
       </div>
@@ -98,21 +165,7 @@ export default function StockBotsPage() {
     worstPerformer: "Ares"
   }
 
-  // Performance data for stock bots
-  const stockPerformanceData = [
-    { date: "Jan", value: 1000 },
-    { date: "Feb", value: 1120 },
-    { date: "Mar", value: 1280 },
-    { date: "Apr", value: 1450 },
-    { date: "May", value: 1600 },
-    { date: "Jun", value: 1750 },
-    { date: "Jul", value: 1920 },
-    { date: "Aug", value: 2150 },
-    { date: "Sep", value: 2400 },
-    { date: "Oct", value: 2700 },
-    { date: "Nov", value: 3050 },
-    { date: "Dec", value: 3450 },
-  ]
+
 
   return (
     <div className="space-y-6 p-6">
@@ -198,76 +251,17 @@ export default function StockBotsPage() {
         </div>
       </div>
 
-      {/* Performance Chart */}
-      <div>
-        <h2 className="text-xl font-bold mb-4 text-white">Stock Bots Performance</h2>
-        <PerformanceChart
-          data={stockPerformanceData}
-          title=""
-          valuePrefix="$"
-        />
-      </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {bots.map((bot) => (
-          <div key={bot.id} className="enhanced-card overflow-hidden">
-            <div className="enhanced-card-content">
-              <div className="bg-gradient-to-r from-green-600 to-green-900 p-3 text-white font-medium flex justify-between items-center mb-4 rounded-lg shadow-lg shadow-green-500/20">
-                <span>{bot.name}</span>
-                <Badge className="bg-yellow-400/20 text-yellow-300 border border-yellow-400/30">{bot.badge}</Badge>
-              </div>
-              <div className="space-y-4">
-              <div className="p-4 border-b border-[#C0E6FF]/20">
-                <div className="flex justify-between items-center mb-2">
-                  <div>
-                    <p className="font-bold text-lg text-white">{bot.amount}</p>
-                    <p className="text-xs text-[#C0E6FF]">{bot.minInvestment}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 mb-2">
-                  <Users className="h-4 w-4 text-[#C0E6FF]" />
-                  <span className="text-sm text-[#C0E6FF]">{bot.followers} followers</span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-1">
-                    <TrendingUp className="h-4 w-4 text-green-400" />
-                    <span className="text-green-400 font-medium">{bot.performance}</span>
-                  </div>
-                  <span className="text-xs text-[#C0E6FF]">{bot.days}</span>
-                </div>
-              </div>
-
-              <div className="p-4 border-b border-[#C0E6FF]/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs font-medium">{bot.strategy}</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-2">
-                  <div>
-                    <p className="text-sm text-green-400">{bot.tradesWon}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-red-400">{bot.tradesLost}</p>
-                  </div>
-                </div>
-
-                <div className="mb-2">
-                  <p className="text-sm font-medium text-white">{bot.profit}</p>
-                </div>
-
-                <div className="text-xs text-[#C0E6FF] mb-4">
-                  <p>{bot.description}</p>
-                </div>
-
-                <Button className="w-full bg-gradient-to-r from-green-600 to-green-900 text-white font-semibold hover:opacity-90 shadow-lg shadow-green-500/20 hover:shadow-green-500/30 transition-all duration-300">
-                  Start Following Now <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </div>
-              </div>
-            </div>
-          </div>
+          <TradingBotCard
+            key={bot.id}
+            {...bot}
+            isFollowed={isFollowing(bot.id)}
+            onFollow={() => handleFollowBot(bot.id)}
+            onUnfollow={() => handleUnfollowBot(bot.id)}
+          />
         ))}
       </div>
     </div>

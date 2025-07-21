@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useCreatorsDatabase } from "@/contexts/creators-database-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
-import { CreateChannelPostModal } from "./create-channel-post-modal"
+
 import { forumService } from "@/lib/forum-service"
 import {
   Plus,
@@ -39,7 +39,6 @@ export function CreatorContentDashboard({ className, tier = 'PRO', currentChanne
   const { getUserCreators } = useCreatorsDatabase()
   const { user } = useSuiAuth()
   const [selectedChannel, setSelectedChannel] = useState<any>(null)
-  const [showCreateModal, setShowCreateModal] = useState(false)
   const [overallStats, setOverallStats] = useState<OverallStats>({ total_channels: 0, total_posts: 0 })
   const [isLoading, setIsLoading] = useState(true)
   const [channelPostCounts, setChannelPostCounts] = useState<Record<string, number>>({})
@@ -157,19 +156,7 @@ export function CreatorContentDashboard({ className, tier = 'PRO', currentChanne
   }
 
   const handleCreatePost = () => {
-    if (!selectedChannel) {
-      toast.error('Please select a channel first')
-      return
-    }
-    console.log('🎯 Opening create post modal for channel:', selectedChannel.name)
-    setShowCreateModal(true)
-  }
-
-  const handlePostCreated = () => {
-    console.log('✅ Post created successfully, closing modal and refreshing stats')
-    setShowCreateModal(false)
-    loadOverallStats() // Refresh stats and channel post counts
-    toast.success('Post created successfully!')
+    toast.info('Post creation feature is currently disabled')
   }
 
   if (!user?.address) {
@@ -295,13 +282,7 @@ export function CreatorContentDashboard({ className, tier = 'PRO', currentChanne
 
 
 
-      {/* Create Post Modal */}
-      <CreateChannelPostModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        channel={selectedChannel}
-        onPostCreated={handlePostCreated}
-      />
+
     </div>
   )
 }

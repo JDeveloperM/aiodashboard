@@ -172,6 +172,7 @@ export async function GET(
       profileImageUrl: getImageUrl(profileData.profile_image_blob_id),
       bannerImageUrl: getImageUrl(profileData.banner_image_blob_id),
       roleTier: profileData.role_tier,
+      kycStatus: profileData.kyc_status || 'unverified',
       isVerified: profileData.kyc_status === 'verified'
     }
 

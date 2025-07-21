@@ -19,8 +19,6 @@ import {
   ArrowDownToLine,
   LogOut,
   Wallet,
-  Users,
-  Plus,
   RefreshCw,
   ArrowUpDown
 } from 'lucide-react'
@@ -28,7 +26,7 @@ import { useCurrentAccount, useDisconnectWallet, useSuiClientQuery } from '@myst
 import { useSuiAuth } from '@/contexts/sui-auth-context'
 import { useAvatar } from '@/contexts/avatar-context'
 import { useProfile } from '@/contexts/profile-context'
-import { useChannelCounts } from '@/hooks/use-channel-counts'
+
 import { useSubscription } from '@/contexts/subscription-context'
 import { useTokens } from '@/contexts/points-context'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -46,7 +44,7 @@ export function TraditionalWalletDisplay() {
   const { getAvatarUrl, getFallbackText } = useAvatar()
   const { tier } = useSubscription()
   const { balance: paionBalance, isLoading: paionLoading } = useTokens()
-  const { joinedChannels, maxJoinedChannels, createdChannels, maxCreatedChannels, isLoading: channelCountsLoading } = useChannelCounts()
+
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [showDepositModal, setShowDepositModal] = useState(false)
@@ -54,12 +52,12 @@ export function TraditionalWalletDisplay() {
   const [userNFTs, setUserNFTs] = useState<any[]>([])
   const [isLoadingNFTs, setIsLoadingNFTs] = useState(false)
   const [nftImages, setNftImages] = useState<{[key: string]: string}>({})
+  const [activeTab, setActiveTab] = useState<'wallet' | 'nfts'>('wallet')
 
   // USDC contract address on Sui testnet
   const USDC_COIN_TYPE = '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC'
 
-  // WAL (Walrus) token contract address - using SUI for now until actual WAL contract is available
-  const WAL_COIN_TYPE = '0x2::sui::SUI' // Replace with actual WAL token contract when available
+
 
   // Query for SUI balance
   const { data: suiBalance } = useSuiClientQuery(
@@ -85,21 +83,8 @@ export function TraditionalWalletDisplay() {
     }
   )
 
-  // Query for WAL balance
-  const { data: walBalance } = useSuiClientQuery(
-    'getBalance',
-    {
-      owner: account?.address || '',
-      coinType: WAL_COIN_TYPE,
-    },
-    {
-      enabled: !!account?.address,
-    }
-  )
-
   const suiAmount = suiBalance ? parseInt(suiBalance.totalBalance) / 1000000000 : 0
   const usdcAmount = usdcBalance ? parseInt(usdcBalance.totalBalance) / 1000000 : 0 // USDC has 6 decimals
-  const walAmount = walBalance ? parseInt(walBalance.totalBalance) / 1000000000 : 0 // WAL has 9 decimals like SUI
 
   const copyAddress = async () => {
     if (account?.address) {
@@ -131,6 +116,7 @@ export function TraditionalWalletDisplay() {
   // Helper function to decode NFT type
   const decodeNFTType = (nftData: any): string => {
     console.log('🔧 decodeNFTType called with:', nftData)
+    console.log('🔧 Available fields:', Object.keys(nftData || {}))
 
     const decodeBytes = (bytes: any): string => {
       console.log('🔧 decodeBytes called with:', bytes, 'type:', typeof bytes)
@@ -151,19 +137,29 @@ export function TraditionalWalletDisplay() {
 
     let nftType = 'Unknown'
 
-    console.log('🔧 Checking collection_type:', nftData?.collection_type)
-    if (nftData?.collection_type) {
-      nftType = decodeBytes(nftData.collection_type)
-      console.log('🔧 Got type from collection_type:', nftType)
-    } else if (nftData?.tier) {
-      nftType = decodeBytes(nftData.tier)
-      console.log('🔧 Got type from tier:', nftType)
-    } else if (nftData?.type) {
-      nftType = decodeBytes(nftData.type)
-      console.log('🔧 Got type from type:', nftType)
-    } else if (nftData?.name) {
-      nftType = decodeBytes(nftData.name)
-      console.log('🔧 Got type from name:', nftType)
+    // Check all possible field names where the tier might be stored
+    const possibleFields = [
+      'collection_type',
+      'tier',
+      'type',
+      'name',
+      'collection',
+      'nft_type',
+      'category'
+    ]
+
+    for (const field of possibleFields) {
+      console.log(`🔧 Checking ${field}:`, nftData?.[field])
+      if (nftData?.[field]) {
+        nftType = decodeBytes(nftData[field])
+        console.log(`🔧 Got type from ${field}:`, nftType)
+
+        // If we found a valid type, break early
+        const cleanType = nftType.trim().toUpperCase()
+        if (['PRO', 'ROYAL'].includes(cleanType)) {
+          break
+        }
+      }
     }
 
     const cleanType = nftType.trim().toUpperCase()
@@ -172,7 +168,8 @@ export function TraditionalWalletDisplay() {
     console.log('🔧 Final type detection:', {
       original: nftType,
       cleaned: cleanType,
-      final: finalType
+      final: finalType,
+      allFields: nftData
     })
 
     return finalType
@@ -196,9 +193,11 @@ export function TraditionalWalletDisplay() {
         const nftId = nft.data?.objectId
         let nftType = decodeNFTType(nftData)
 
-        // Fallback if type detection fails
+        // Log if type detection fails - don't use fallback for now
         if (nftType === 'Unknown') {
-          nftType = index === 0 ? 'PRO' : 'ROYAL'
+          console.log(`⚠️ Could not detect type for NFT ${nftId} at index ${index}`)
+          console.log('⚠️ NFT data structure:', nftData)
+          // Keep as Unknown so we can debug the actual data structure
         }
 
         // Simple assignment: PRO = pro-nft.png, ROYAL = royal-nft.png
@@ -300,175 +299,213 @@ export function TraditionalWalletDisplay() {
             </div>
           </div>
 
-          {/* Balance */}
-          <div className="bg-[#1a2f51]/50 rounded-lg p-3">
-            <div className="text-sm text-[#C0E6FF] mb-2 font-medium">Balance</div>
-            <div className="space-y-2">
-              {/* SUI Balance */}
-              <div className="flex items-center justify-between p-2 bg-[#0c1b36]/30 border border-[#C0E6FF]/10 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <img
-                    src="/images/logo-sui.png"
-                    alt="SUI"
-                    className="w-6 h-6 object-contain"
-                  />
-                  <span className="text-white font-medium">{suiAmount.toFixed(4)}</span>
-                </div>
-                <span className="text-[#C0E6FF] text-sm font-medium">SUI</span>
-              </div>
-              {/* WAL Balance */}
-              <div className="flex items-center justify-between p-2 bg-[#0c1b36]/30 border border-[#C0E6FF]/10 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <img
-                    src="/images/wal-logo.png"
-                    alt="WAL"
-                    className="w-6 h-6 object-contain"
-                  />
-                  <span className="text-white font-medium">{walAmount.toFixed(4)}</span>
-                </div>
-                <span className="text-[#C0E6FF] text-sm font-medium">WAL</span>
-              </div>
-              {/* USDC Balance */}
-              <div className="flex items-center justify-between p-2 bg-[#0c1b36]/30 border border-[#C0E6FF]/10 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <img
-                    src="/images/usdc-logo.png"
-                    alt="USDC"
-                    className="w-6 h-6 object-contain"
-                  />
-                  <span className="text-white font-medium">{usdcAmount.toFixed(2)}</span>
-                </div>
-                <span className="text-[#C0E6FF] text-sm font-medium">USDC</span>
-              </div>
-              {/* pAION Balance */}
-              <div className="flex items-center justify-between p-2 bg-[#0c1b36]/30 border border-[#C0E6FF]/10 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <PaionIcon size={24} />
-                  <span className="text-white font-medium">
-                    {paionLoading ? '...' : paionBalance.toLocaleString()}
-                  </span>
-                </div>
-                <span className="text-[#C0E6FF] text-sm font-medium">pAION</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2">
+          {/* Tab Navigation */}
+          <div className="flex bg-[#1a2f51]/30 rounded-lg p-1">
             <Button
-              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
-              onClick={() => setShowSendModal(true)}
+              variant={activeTab === 'wallet' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('wallet')}
+              className={`flex-1 ${
+                activeTab === 'wallet'
+                  ? 'bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white'
+                  : 'text-[#C0E6FF] hover:bg-[#C0E6FF]/10'
+              }`}
             >
-              <Send className="w-4 h-4 mr-2" />
-              Send
+              Wallet
             </Button>
             <Button
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => setShowDepositModal(true)}
+              variant={activeTab === 'nfts' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('nfts')}
+              className={`flex-1 ${
+                activeTab === 'nfts'
+                  ? 'bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white'
+                  : 'text-[#C0E6FF] hover:bg-[#C0E6FF]/10'
+              }`}
             >
-              <ArrowDownToLine className="w-4 h-4 mr-2" />
-              Deposit
-            </Button>
-            <Button
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => {/* TODO: Implement swap functionality */}}
-            >
-              <ArrowUpDown className="w-4 h-4 mr-2" />
-              Swap
+              NFTs
             </Button>
           </div>
 
-          {/* NFTs Section */}
-          <div className="bg-[#1a2f51]/50 rounded-lg p-3">
-            <div className="text-sm text-[#C0E6FF] mb-2">AIONET NFTs</div>
+          {/* Tab Content */}
+          {activeTab === 'wallet' && (
+            <>
+              {/* Balance */}
+              <div className="bg-[#1a2f51]/50 rounded-lg p-3">
+                <div className="text-sm text-[#C0E6FF] mb-2 font-medium">Balance</div>
+                <div className="space-y-2">
+                  {/* SUI Balance */}
+                  <div className="flex items-center justify-between p-2 bg-[#0c1b36]/30 border border-[#C0E6FF]/10 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <img
+                        src="/images/logo-sui.png"
+                        alt="SUI"
+                        className="w-6 h-6 object-contain"
+                      />
+                      <span className="text-white font-medium">{suiAmount.toFixed(4)}</span>
+                    </div>
+                    <span className="text-[#C0E6FF] text-sm font-medium">SUI</span>
+                  </div>
+                  {/* USDC Balance */}
+                  <div className="flex items-center justify-between p-2 bg-[#0c1b36]/30 border border-[#C0E6FF]/10 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <img
+                        src="/images/usdc-logo.png"
+                        alt="USDC"
+                        className="w-6 h-6 object-contain"
+                      />
+                      <span className="text-white font-medium">{usdcAmount.toFixed(2)}</span>
+                    </div>
+                    <span className="text-[#C0E6FF] text-sm font-medium">USDC</span>
+                  </div>
+                  {/* pAION Balance */}
+                  <div className="flex items-center justify-between p-2 bg-[#0c1b36]/30 border border-[#C0E6FF]/10 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <PaionIcon size={24} />
+                      <span className="text-white font-medium">
+                        {paionLoading ? '...' : paionBalance.toLocaleString()}
+                      </span>
+                    </div>
+                    <span className="text-[#C0E6FF] text-sm font-medium">pAION</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                  onClick={() => setShowSendModal(true)}
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Send
+                </Button>
+                <Button
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => setShowDepositModal(true)}
+                >
+                  <ArrowDownToLine className="w-4 h-4 mr-2" />
+                  Deposit
+                </Button>
+                <Button
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => {/* TODO: Implement swap functionality */}}
+                >
+                  <ArrowUpDown className="w-4 h-4 mr-2" />
+                  Swap
+                </Button>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'nfts' && (
+            <>
+              {/* AIONET NFTs */}
+              <div className="bg-[#1a2f51]/50 rounded-lg p-3">
+                <div className="text-sm text-[#C0E6FF] mb-2">AIONET NFTs</div>
 
             {userNFTs.length > 0 ? (() => {
-              // Filter NFTs first to determine final count
-              const filteredNFTs = userNFTs
-                .map((nft, index) => {
-                  const nftData = nft.data?.content?.fields
-                  const nftId = nft.data?.objectId
-                  let nftType = decodeNFTType(nftData)
+              // Map and group NFTs by collection
+              const nftsByCollection = userNFTs.reduce((acc, nft, index) => {
+                const nftData = nft.data?.content?.fields
+                const nftId = nft.data?.objectId
+                let nftType = decodeNFTType(nftData)
 
-                  if (nftType === 'Unknown') {
-                    nftType = index === 0 ? 'PRO' : 'ROYAL'
-                  }
+                if (nftType === 'Unknown') {
+                  console.log(`⚠️ Display: Could not detect type for NFT ${nftId} at index ${index}`)
+                  nftType = 'Unknown'
+                }
 
-                  return { nft, nftData, nftId, nftType, index }
-                })
-                .filter(({ nftType }) => {
-                  // Simple logic: if user has ROYAL, hide PRO
-                  const hasRoyal = userNFTs.some((nft, index) => {
-                    const nftData = nft.data?.content?.fields
-                    let type = decodeNFTType(nftData)
-                    if (type === 'Unknown') {
-                      type = index === 0 ? 'PRO' : 'ROYAL'
-                    }
-                    return type === 'ROYAL'
-                  })
+                if (!acc[nftType]) {
+                  acc[nftType] = []
+                }
+                acc[nftType].push({ nft, nftData, nftId, nftType, index })
+                return acc
+              }, {} as Record<string, any[]>)
 
-                  if (hasRoyal && nftType === 'PRO') {
-                    console.log('🚫 Hiding PRO NFT because user has ROYAL')
-                    return false
-                  }
-
-                  return true
-                })
-
-              // Use flex with justify-center for single NFT, grid for multiple
-              const containerClass = filteredNFTs.length === 1
-                ? "flex justify-center"
-                : "grid grid-cols-2 gap-3"
+              // Sort collections: PRO first, then ROYAL, then others
+              const sortedCollections = Object.entries(nftsByCollection).sort(([a], [b]) => {
+                const order = { 'PRO': 0, 'ROYAL': 1, 'Unknown': 2 }
+                return (order[a as keyof typeof order] ?? 3) - (order[b as keyof typeof order] ?? 3)
+              })
 
               return (
-                <div className={containerClass}>
-                  {filteredNFTs.map(({ nft, nftData, nftId, nftType, index }) => {
-
-                  return (
-                    <div
-                      key={nftId || index}
-                      className="flex flex-col items-center gap-2"
-                    >
-                      {/* NFT Image */}
-                      {nftImages[nftId] ? (
-                        <img
-                          src={nftImages[nftId]}
-                          alt={`${nftType} NFT`}
-                          className="w-40 h-40 rounded-lg object-cover border-2 border-[#4DA2FF]"
-                          onLoad={() => {
-                            console.log(`✅ Successfully loaded image: ${nftImages[nftId]}`)
-                          }}
-                          onError={(e) => {
-                            console.error(`❌ Failed to load image: ${nftImages[nftId]} for ${nftType} NFT`)
-                          }}
-                        />
-                      ) : (
-                        <div className={`w-40 h-40 rounded-lg flex items-center justify-center ${
-                          nftType === 'PRO' ? 'bg-blue-500' :
-                          nftType === 'ROYAL' ? 'bg-yellow-500' :
-                          'bg-purple-500'
-                        }`}>
-                          <span className="text-2xl font-bold text-white">
-                            {nftType === 'PRO' ? 'P' : nftType === 'ROYAL' ? 'R' : 'N'}
+                <div className="space-y-4">
+                  {sortedCollections.map(([collectionType, nfts]) => {
+                    const typedNfts = nfts as any[]
+                    return (
+                    <div key={collectionType} className="space-y-3">
+                      {/* Collection Header */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full ${
+                            collectionType === 'PRO' ? 'bg-blue-500' :
+                            collectionType === 'ROYAL' ? 'bg-yellow-500' :
+                            'bg-purple-500'
+                          }`} />
+                          <span className="text-white font-medium">
+                            {collectionType === 'Unknown' ? 'Other NFTs' : `${collectionType} Collection`}
                           </span>
                         </div>
-                      )}
+                        <div className="bg-[#4DA2FF]/20 text-[#4DA2FF] px-2 py-1 rounded-full text-xs font-medium">
+                          {typedNfts.length} owned
+                        </div>
+                      </div>
 
-                      {/* Explorer Button */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-6 px-2 text-xs bg-[#1a2f51] border-[#4DA2FF] text-[#4DA2FF] hover:bg-[#4DA2FF] hover:text-white"
-                        onClick={() => {
-                          const explorerUrl = `https://suiscan.xyz/testnet/object/${nftId}`
-                          window.open(explorerUrl, '_blank')
-                        }}
-                      >
-                        View
-                      </Button>
+                      {/* Collection NFTs */}
+                      <div className={`grid gap-3 ${
+                        typedNfts.length === 1 ? 'grid-cols-1 justify-items-center' :
+                        typedNfts.length === 2 ? 'grid-cols-2' :
+                        'grid-cols-2 md:grid-cols-3'
+                      }`}>
+                        {typedNfts.map(({ nft, nftData, nftId, nftType, index }) => (
+                          <div
+                            key={nftId || index}
+                            className="flex flex-col items-center gap-2"
+                          >
+                            {/* NFT Image */}
+                            {nftImages[nftId] ? (
+                              <img
+                                src={nftImages[nftId]}
+                                alt={`${nftType} NFT`}
+                                className="w-24 h-24 rounded-lg object-cover border-2 border-[#4DA2FF]"
+                                onLoad={() => {
+                                  console.log(`✅ Successfully loaded image: ${nftImages[nftId]}`)
+                                }}
+                                onError={(e) => {
+                                  console.error(`❌ Failed to load image: ${nftImages[nftId]} for ${nftType} NFT`)
+                                }}
+                              />
+                            ) : (
+                              <div className={`w-24 h-24 rounded-lg flex items-center justify-center ${
+                                nftType === 'PRO' ? 'bg-blue-500' :
+                                nftType === 'ROYAL' ? 'bg-yellow-500' :
+                                'bg-purple-500'
+                              }`}>
+                                <span className="text-lg font-bold text-white">
+                                  {nftType === 'PRO' ? 'P' : nftType === 'ROYAL' ? 'R' : 'N'}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Explorer Button */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 px-2 text-xs bg-[#1a2f51] border-[#4DA2FF] text-[#4DA2FF] hover:bg-[#4DA2FF] hover:text-white"
+                              onClick={() => {
+                                const explorerUrl = `https://suiscan.xyz/testnet/object/${nftId}`
+                                window.open(explorerUrl, '_blank')
+                              }}
+                            >
+                              View
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  )
-                })}
+                    )
+                  })}
                 </div>
               )
             })() : (
@@ -479,48 +516,13 @@ export function TraditionalWalletDisplay() {
                 </div>
               </div>
             )}
-          </div>
+              </div>
+            </>
+          )}
 
           <Separator className="bg-[#1e3a8a]" />
 
-          {/* Channel Counters */}
-          <TooltipProvider>
-            <div className="space-y-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center justify-between p-3 bg-[#1a2f51]/50 rounded-lg hover:bg-[#1a2f51]/70 transition-colors cursor-help">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-[#4DA2FF]" />
-                      <span className="text-[#C0E6FF] text-sm">Free Premium Channels</span>
-                    </div>
-                    <span className="text-white font-medium">
-                      {channelCountsLoading ? '...' : `${joinedChannels}/${maxJoinedChannels}`}
-                    </span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Premium channels you've joined (limit: {maxJoinedChannels} for {tier} tier)</p>
-                </TooltipContent>
-              </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center justify-between p-3 bg-[#1a2f51]/50 rounded-lg hover:bg-[#1a2f51]/70 transition-colors cursor-help">
-                    <div className="flex items-center gap-2">
-                      <Plus className="w-4 h-4 text-[#4DA2FF]" />
-                      <span className="text-[#C0E6FF] text-sm">My Channels Created</span>
-                    </div>
-                    <span className={`font-medium ${createdChannels >= maxCreatedChannels ? 'text-yellow-400' : 'text-white'}`}>
-                      {channelCountsLoading ? '...' : `${createdChannels}/${maxCreatedChannels}`}
-                    </span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Channels you've created (limit based on your {tier} tier)</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          </TooltipProvider>
 
           <Separator className="bg-[#1e3a8a]" />
 
@@ -555,7 +557,7 @@ export function TraditionalWalletDisplay() {
       walletAddress={account?.address || null}
       suiBalance={suiAmount}
       usdcBalance={usdcAmount}
-      walBalance={walAmount}
+      walBalance={0}
       paionBalance={paionBalance}
       isZkLogin={false}
     />

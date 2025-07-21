@@ -16,7 +16,7 @@ CREATE TABLE user_profiles (
   email_encrypted TEXT,         -- Encrypted
   profile_image_blob_id TEXT,   -- Public (Walrus blob ID)
   banner_image_blob_id TEXT,    -- Public (Walrus blob ID)
-  social_links_encrypted TEXT,  -- Encrypted JSON
+
   public_data JSONB DEFAULT '{}', -- Non-sensitive public data
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -34,7 +34,7 @@ interface EncryptedProfile {
   email_encrypted?: string
   real_name_encrypted?: string
   location_encrypted?: string
-  social_links_encrypted?: string
+
 
   // Public fields (Walrus blob IDs and non-sensitive data)
   profile_image_blob_id?: string
@@ -46,7 +46,7 @@ interface EncryptedProfile {
   current_xp: number
   total_xp: number
   points: number
-  kyc_status: 'verified' | 'pending' | 'not_verified'
+
   join_date: string
   last_active: string
 
@@ -75,7 +75,7 @@ interface DecryptedProfile {
   email?: string
   real_name?: string
   location?: string
-  social_links: SocialLink[]
+
 
   // Public fields
   profile_image_blob_id?: string
@@ -85,9 +85,15 @@ interface DecryptedProfile {
   current_xp: number
   total_xp: number
   points: number
-  kyc_status: 'verified' | 'pending' | 'not_verified'
+
   join_date: string
   last_active: string
+
+  // Social links
+  social_links?: any[]
+
+  // KYC status
+  kyc_status?: string
 
   // Onboarding tracking
   onboarding_completed?: boolean
@@ -146,11 +152,7 @@ interface Achievement {
   claimed_at?: string
 }
 
-interface SocialLink {
-  platform: string
-  username: string
-  verified: boolean
-}
+
 
 class EncryptedDatabaseStorage {
   public supabase = createClient(
@@ -266,7 +268,7 @@ class EncryptedDatabaseStorage {
         current_xp: profileData.current_xp ?? (existingProfile?.current_xp || 0),
         total_xp: profileData.total_xp ?? (existingProfile?.total_xp || 0),
         points: profileData.points ?? (existingProfile?.points || 0),
-        kyc_status: profileData.kyc_status ?? (existingProfile?.kyc_status || 'not_verified'),
+
 
         // Onboarding tracking - preserve existing values for updates, set defaults for new profiles
         onboarding_completed: profileData.onboarding_completed !== undefined
@@ -316,14 +318,7 @@ class EncryptedDatabaseStorage {
         encryptedData.location_encrypted = this.encrypt(locationToEncrypt, encryptionKey)
       }
 
-      // Enable social links encryption
-      const socialLinksToEncrypt = profileData.social_links ?? existingProfile?.social_links
-      if (socialLinksToEncrypt) {
-        encryptedData.social_links_encrypted = this.encrypt(
-          JSON.stringify(socialLinksToEncrypt),
-          encryptionKey
-        )
-      }
+
 
       // Set public fields (non-encrypted, searchable)
       if (profileData.role_tier) {
@@ -338,9 +333,7 @@ class EncryptedDatabaseStorage {
       if (profileData.total_xp !== undefined) {
         encryptedData.total_xp = profileData.total_xp
       }
-      if (profileData.kyc_status) {
-        encryptedData.kyc_status = profileData.kyc_status
-      }
+
       if (profileData.join_date) {
         encryptedData.join_date = profileData.join_date
       }
@@ -453,7 +446,7 @@ class EncryptedDatabaseStorage {
       current_xp: encryptedProfile.current_xp || 0,
       total_xp: encryptedProfile.total_xp || 0,
       points: encryptedProfile.points || 0,
-      kyc_status: encryptedProfile.kyc_status || 'not_verified',
+
       join_date: encryptedProfile.join_date || encryptedProfile.created_at,
       last_active: encryptedProfile.last_active || encryptedProfile.updated_at,
 
@@ -468,8 +461,7 @@ class EncryptedDatabaseStorage {
       // payment_preferences: encryptedProfile.payment_preferences || {}, // Column doesn't exist
       walrus_metadata: encryptedProfile.walrus_metadata || {},
 
-      // Initialize encrypted fields
-      social_links: [], // Will be populated from encrypted data if available
+
 
       // Timestamps
       created_at: encryptedProfile.created_at,
@@ -494,11 +486,7 @@ class EncryptedDatabaseStorage {
         decrypted.location = this.decrypt(encryptedProfile.location_encrypted, key)
       }
 
-      // Enable social links decryption
-      if (encryptedProfile.social_links_encrypted) {
-        const socialLinksJson = this.decrypt(encryptedProfile.social_links_encrypted, key)
-        decrypted.social_links = JSON.parse(socialLinksJson)
-      }
+
     } catch (error) {
       console.error('Failed to decrypt some profile fields:', error)
       // Continue with partial data
@@ -670,7 +658,7 @@ class EncryptedDatabaseStorage {
             profile_level: 1,
             points: 0,
             role_tier: 'NOMAD',
-            kyc_status: 'not_verified',
+
             achievements_data: [],
             referral_data: {},
             display_preferences: {},
@@ -769,58 +757,9 @@ class EncryptedDatabaseStorage {
     }
   }
 
-  /**
-   * Update only social links (encrypted) without affecting other fields
-   */
-  async updateSocialLinks(address: string, socialLinks: any[]): Promise<void> {
-    try {
-      console.log(`🔗 Updating social links for ${address}:`, socialLinks)
 
-      const encryptionKey = this.generateEncryptionKey(address)
-      const encryptedSocialLinks = this.encrypt(JSON.stringify(socialLinks), encryptionKey)
 
-      const { error } = await this.supabase
-        .from('user_profiles')
-        .update({
-          social_links_encrypted: encryptedSocialLinks,
-          updated_at: new Date().toISOString(),
-          last_active: new Date().toISOString()
-        })
-        .eq('address', address)
 
-      if (error) {
-        console.error('❌ Failed to update social links:', error)
-        throw error
-      }
-
-      console.log(`✅ Social links updated for ${address}`)
-    } catch (error) {
-      console.error('Failed to update social links:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Update KYC status
-   */
-  async updateKYCStatus(address: string, status: 'verified' | 'pending' | 'not_verified'): Promise<void> {
-    try {
-      const { error } = await this.supabase
-        .from('user_profiles')
-        .update({
-          kyc_status: status,
-          updated_at: new Date().toISOString(),
-          last_active: new Date().toISOString()
-        })
-        .eq('address', address)
-
-      if (error) throw error
-      console.log(`🔒 KYC status updated for ${address}: ${status}`)
-    } catch (error) {
-      console.error('Failed to update KYC status:', error)
-      throw error
-    }
-  }
 
   /**
    * Ensure profile exists for user (create if doesn't exist)
@@ -851,7 +790,7 @@ class EncryptedDatabaseStorage {
               profile_level: 1,
               points: 0, // New users start with 0 points
               role_tier: 'NOMAD',
-              kyc_status: 'not_verified',
+
               onboarding_completed: false, // New users haven't completed onboarding
               onboarding_completed_at: null,
               achievements_data: [],
@@ -997,7 +936,7 @@ class EncryptedDatabaseStorage {
 
       const { data, error } = await this.supabase
         .from('user_profiles')
-        .select('current_xp, total_xp, profile_level, role_tier, kyc_status, points, address')
+        .select('current_xp, total_xp, profile_level, role_tier, points, address')
         .eq('address', address)
         .single()
 
@@ -1016,7 +955,7 @@ class EncryptedDatabaseStorage {
               profile_level: 1,
               points: 0,
               role_tier: 'NOMAD',
-              kyc_status: 'not_verified',
+
               achievements_data: [],
               referral_data: {},
               display_preferences: {},
@@ -1058,10 +997,7 @@ class EncryptedDatabaseStorage {
         updates.role_tier = 'NOMAD'
         needsUpdate = true
       }
-      if (!data.kyc_status) {
-        updates.kyc_status = 'not_verified'
-        needsUpdate = true
-      }
+
 
       if (needsUpdate) {
         updates.updated_at = new Date().toISOString()
@@ -1097,7 +1033,7 @@ class EncryptedDatabaseStorage {
           banner_image_blob_id,
           role_tier,
           profile_level,
-          kyc_status,
+
           join_date,
           last_active,
           achievements_data,
@@ -1118,13 +1054,13 @@ class EncryptedDatabaseStorage {
         banner_image_blob_id: data.banner_image_blob_id,
         role_tier: data.role_tier,
         profile_level: data.profile_level,
-        kyc_status: data.kyc_status,
+
         join_date: data.join_date,
         last_active: data.last_active,
         achievements_data: data.achievements_data || [],
         created_at: data.created_at,
         updated_at: data.updated_at,
-        social_links: [], // Not included in public profile
+
         referral_data: {},
         display_preferences: {},
         walrus_metadata: {},
@@ -1187,14 +1123,14 @@ class EncryptedDatabaseStorage {
             current_xp: profile.current_xp || 0,
             total_xp: profile.total_xp || 0,
             points: profile.points || 0,
-            kyc_status: profile.kyc_status || 'not_verified',
+
             join_date: profile.join_date,
             last_active: profile.last_active,
             achievements_data: profile.achievements_data || [],
             referral_data: profile.referral_data || {},
             display_preferences: profile.display_preferences || {},
             walrus_metadata: profile.walrus_metadata || {},
-            social_links: [],
+
             created_at: profile.created_at,
             updated_at: profile.updated_at
           }
@@ -1224,7 +1160,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Export types
-export type { DecryptedProfile, Achievement, SocialLink }
+export type { DecryptedProfile, Achievement }
 
 // Helper functions for React components
 export async function updateEncryptedUserProfile(

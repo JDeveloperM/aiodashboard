@@ -36,31 +36,7 @@ interface UserCardProps {
 }
 
 export function UserCard({ user }: UserCardProps) {
-  const getKycStatusIcon = (status: string) => {
-    switch (status) {
-      case 'verified':
-        return <CheckCircle className="w-3 h-3 text-green-400" />
-      case 'pending':
-        return <AlertCircle className="w-3 h-3 text-yellow-400" />
-      case 'not_verified':
-        return <XCircle className="w-3 h-3 text-red-400" />
-      default:
-        return <XCircle className="w-3 h-3 text-red-400" />
-    }
-  }
 
-  const getKycStatusColor = (status: string) => {
-    switch (status) {
-      case 'verified':
-        return 'text-green-400'
-      case 'pending':
-        return 'text-yellow-400'
-      case 'not_verified':
-        return 'text-red-400'
-      default:
-        return 'text-red-400'
-    }
-  }
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -87,23 +63,10 @@ export function UserCard({ user }: UserCardProps) {
     <div className="enhanced-card group hover:border-[#4DA2FF]/50 transition-all duration-300 hover:shadow-lg hover:shadow-[#4DA2FF]/10">
         <div className="enhanced-card-content">
           {/* Header with Role Badge */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-center mb-4">
             <div className="w-6 h-6 flex items-center justify-center">
               <RoleImage role={user.role} size="md" />
             </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-1">
-                  {getKycStatusIcon(user.kycStatus)}
-                  <span className={cn("text-xs font-medium", getKycStatusColor(user.kycStatus))}>
-                    KYC
-                  </span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
-                <p>KYC Status: {user.kycStatus.replace('_', ' ').toUpperCase()}</p>
-              </TooltipContent>
-            </Tooltip>
           </div>
 
           {/* Avatar */}
@@ -229,17 +192,7 @@ export function UserCard({ user }: UserCardProps) {
             </div>
           )}
 
-          {/* KYC Info */}
-          <div className="mb-4 p-3 bg-[#1a2f51]/30 rounded-lg border border-[#C0E6FF]/10">
-            <div className="flex items-center justify-center text-xs">
-              <div className="flex items-center gap-1">
-                {getKycStatusIcon(user.kycStatus)}
-                <span className={cn("font-medium", getKycStatusColor(user.kycStatus))}>
-                  KYC {user.kycStatus.replace('_', ' ').toUpperCase()}
-                </span>
-              </div>
-            </div>
-          </div>
+
 
           {/* Achievement Badges */}
           {user.achievements && user.achievements.length > 0 && (
@@ -292,50 +245,7 @@ export function UserCard({ user }: UserCardProps) {
             </div>
           )}
 
-          {/* Social Media */}
-          {user.socialMedia && user.socialMedia.length > 0 && (
-            <div className="mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <ExternalLink className="w-3 h-3 text-[#4DA2FF]" />
-                <span className="text-[#C0E6FF] text-xs font-medium">Social Media</span>
-              </div>
-              <div className="flex gap-2">
-                {user.socialMedia.map((social, index) => (
-                  <Tooltip key={index}>
-                    <TooltipTrigger asChild>
-                      <div className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center border transition-all duration-200",
-                        social.connected
-                          ? "bg-[#4DA2FF]/20 border-[#4DA2FF]/50 hover:bg-[#4DA2FF]/30"
-                          : "bg-gray-600/20 border-gray-600/50 hover:bg-gray-600/30"
-                      )}>
-                        <Image
-                          src={social.image}
-                          alt={social.platform}
-                          width={20}
-                          height={20}
-                          className="w-5 h-5 object-contain"
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-[#1a2f51] border-[#C0E6FF]/30 text-white">
-                      <div className="text-center">
-                        <p className="font-medium">{social.platform}</p>
-                        {social.connected ? (
-                          <>
-                            <p className="text-xs text-green-400">✓ Connected</p>
-                            <p className="text-xs text-[#C0E6FF]/70">{social.username}</p>
-                          </>
-                        ) : (
-                          <p className="text-xs text-gray-400">Not connected</p>
-                        )}
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
-              </div>
-            </div>
-          )}
+
 
 
         </div>

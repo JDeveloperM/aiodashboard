@@ -64,31 +64,7 @@ const getAchievementImage = (achievementName: string): string | null => {
 }
 
 export function UserListItem({ user }: UserListItemProps) {
-  const getKycStatusIcon = (status: string) => {
-    switch (status) {
-      case 'verified':
-        return <CheckCircle className="w-3 h-3 text-green-400" />
-      case 'pending':
-        return <AlertCircle className="w-3 h-3 text-yellow-400" />
-      case 'not_verified':
-        return <XCircle className="w-3 h-3 text-red-400" />
-      default:
-        return <XCircle className="w-3 h-3 text-red-400" />
-    }
-  }
 
-  const getKycStatusColor = (status: string) => {
-    switch (status) {
-      case 'verified':
-        return 'text-green-400'
-      case 'pending':
-        return 'text-yellow-400'
-      case 'not_verified':
-        return 'text-red-400'
-      default:
-        return 'text-red-400'
-    }
-  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -129,19 +105,7 @@ export function UserListItem({ user }: UserListItemProps) {
             <div className="w-6 h-6 flex items-center justify-center">
               <RoleImage role={user.role} size="md" />
             </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-1">
-                  {getKycStatusIcon(user.kycStatus)}
-                  <span className={cn("text-xs font-medium", getKycStatusColor(user.kycStatus))}>
-                    KYC
-                  </span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>KYC Status: {user.kycStatus.replace('_', ' ').toUpperCase()}</p>
-              </TooltipContent>
-            </Tooltip>
+
           </div>
           
           <div className="flex items-center gap-4 text-sm text-[#C0E6FF]/70">

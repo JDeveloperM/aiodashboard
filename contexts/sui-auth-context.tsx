@@ -30,7 +30,7 @@ interface SuiUser {
   isNewUser?: boolean
   onboardingCompleted?: boolean
   profileSetupCompleted?: boolean
-  kycCompleted?: boolean
+
 }
 
 interface SuiAuthContextType {
@@ -49,7 +49,7 @@ interface SuiAuthContextType {
   // New user onboarding methods
   completeOnboarding: () => Promise<void>
   completeProfileSetup: () => Promise<void>
-  completeKYC: () => Promise<void>
+
   refreshUserState: () => Promise<void>
 
   // Utility methods
@@ -164,7 +164,7 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
             isNewUser: userIsNew,
             onboardingCompleted: existingProfile?.onboarding_completed || !userIsNew,
             profileSetupCompleted: !!existingProfile,
-            kycCompleted: existingProfile?.kyc_status === 'verified'
+
           }
         } else if (currentZkLoginAddress) {
           // Check if this is a new user by looking for existing profile
@@ -196,7 +196,7 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
             isNewUser: userIsNew,
             onboardingCompleted: existingProfile?.onboarding_completed || !userIsNew,
             profileSetupCompleted: !!existingProfile,
-            kycCompleted: existingProfile?.kyc_status === 'verified'
+
           }
         } else {
           // No active connection, try to restore from cookie session
@@ -227,7 +227,7 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
               isNewUser: latestProfile ? !latestProfile.onboarding_completed : false,
               onboardingCompleted: latestProfile?.onboarding_completed || true,
               profileSetupCompleted: !!latestProfile,
-              kycCompleted: latestProfile?.kyc_status === 'verified'
+
             }
 
           }
@@ -381,19 +381,7 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const completeKYC = async () => {
-    if (!user) return
 
-    try {
-      const updatedUser = { ...user, kycCompleted: true }
-      setUser(updatedUser)
-
-      // Save to localStorage and cookies
-      localStorage.setItem(`sui_user_${user.address}`, JSON.stringify(updatedUser))
-    } catch (error) {
-      console.error('Failed to complete KYC:', error)
-    }
-  }
 
   // Refresh user state (useful after profile updates)
   const refreshUserState = useCallback(async () => {
@@ -439,7 +427,7 @@ export function SuiAuthProvider({ children }: { children: React.ReactNode }) {
     updateProfile,
     completeOnboarding,
     completeProfileSetup,
-    completeKYC,
+
     refreshUserState,
     formatAddress
   }

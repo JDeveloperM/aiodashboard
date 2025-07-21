@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/sidebar"
 import { TopNav } from "@/components/top-nav"
 import { SessionRestorationIndicator } from "@/components/session-restoration-indicator"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { BotFollowingProvider } from "@/contexts/bot-following-context"
 
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { useTierSync } from "@/hooks/use-tier-sync"
@@ -66,8 +67,9 @@ export default function AppLayout({
     <TooltipProvider>
       {/* Auto-sync tier when wallet is connected - inside ProfileProvider */}
       <TierSyncWrapper />
-      <div className="min-h-screen flex flex-col lg:flex-row relative" style={{ backgroundColor: '#0f172a' }}>
-        {/* Background - Dark blue gradient matching the image */}
+      <BotFollowingProvider>
+        <div className="min-h-screen flex flex-col lg:flex-row relative" style={{ backgroundColor: '#0f172a' }}>
+          {/* Background - Dark blue gradient matching the image */}
         <div className="fixed inset-0 z-0 pointer-events-none">
           <div className="absolute inset-0 bg-gradient-to-br from-[#1e3a8a] via-[#0f172a] to-[#1e40af] opacity-50"></div>
           {isDashboardPage ? (
@@ -103,7 +105,8 @@ export default function AppLayout({
             <main className="w-full">{children}</main>
           </div>
         </div>
-      </div>
+        </div>
+      </BotFollowingProvider>
     </TooltipProvider>
   )
 }

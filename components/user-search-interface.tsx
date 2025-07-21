@@ -21,14 +21,7 @@ export interface Achievement {
   tooltip: string
 }
 
-export interface SocialMedia {
-  platform: string
-  image: string
-  url: string
-  connected: boolean
-  username: string
-  color: string
-}
+
 
 export interface User {
   id: string
@@ -40,14 +33,14 @@ export interface User {
   status: 'online' | 'idle' | 'dnd' | 'offline'
   joinDate: string
   lastActive: string
-  kycStatus: 'verified' | 'pending' | 'not_verified'
+
   totalPoints: number
   level: number
   activity?: string
   location?: string
   bio?: string
   achievements: Achievement[]
-  socialMedia: SocialMedia[]
+
 }
 
 // Social media image paths
@@ -234,11 +227,7 @@ export function UserSearchInterface() {
                 {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''} found
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="border-[#4DA2FF] text-[#4DA2FF]">
-                {filteredUsers.filter(u => u.kycStatus === 'verified').length} Verified
-              </Badge>
-            </div>
+
           </div>
         </div>
       </div>

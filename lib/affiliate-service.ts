@@ -5,6 +5,16 @@
 
 import { createClient } from '@supabase/supabase-js'
 import CryptoJS from 'crypto-js'
+import {
+  validateWalletAddress,
+  validateReferralCode,
+  validateCommissionAmount,
+  validateSessionId,
+  sanitizeUserInput,
+  referralTrackingLimiter,
+  affiliateQueryLimiter,
+  commissionQueryLimiter
+} from './validation-utils'
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -598,13 +608,38 @@ class AffiliateService {
     referrerAddress: string,
     refereeAddress: string,
     referralCode?: string
-  ): Promise<boolean> {
+  ): Promise<{ success: boolean; error?: string }> {
     try {
+      // Validate inputs
+      const referrerValidation = validateWalletAddress(referrerAddress)
+      if (!referrerValidation.isValid) {
+        return { success: false, error: `Invalid referrer address: ${referrerValidation.error}` }
+      }
+
+      const refereeValidation = validateWalletAddress(refereeAddress)
+      if (!refereeValidation.isValid) {
+        return { success: false, error: `Invalid referee address: ${refereeValidation.error}` }
+      }
+
+      // Prevent self-referral
+      if (referrerValidation.sanitized === refereeValidation.sanitized) {
+        return { success: false, error: 'Cannot refer yourself' }
+      }
+
+      // Validate referral code if provided
+      if (referralCode) {
+        const codeValidation = validateReferralCode(referralCode)
+        if (!codeValidation.isValid) {
+          return { success: false, error: `Invalid referral code: ${codeValidation.error}` }
+        }
+        referralCode = codeValidation.sanitized
+      }
+
       const { error } = await supabase
         .from('affiliate_relationships')
         .insert({
-          referrer_address: referrerAddress,
-          referee_address: refereeAddress,
+          referrer_address: referrerValidation.sanitized,
+          referee_address: refereeValidation.sanitized,
           referral_code: referralCode,
           relationship_status: 'active',
           referral_source: 'referral_link'
@@ -612,17 +647,17 @@ class AffiliateService {
 
       if (error) {
         console.error('Error creating affiliate relationship:', error)
-        return false
+        return { success: false, error: 'Failed to create affiliate relationship' }
       }
 
       // Update referrer's referral_data with the new referral count
-      await this.updateReferrerReferralData(referrerAddress)
+      await this.updateReferrerReferralData(referrerValidation.sanitized!)
 
-      return true
+      return { success: true }
 
     } catch (error) {
       console.error('Failed to create affiliate relationship:', error)
-      return false
+      return { success: false, error: 'Internal error creating affiliate relationship' }
     }
   }
 
@@ -692,44 +727,67 @@ class AffiliateService {
     amount: number,
     type: string = 'subscription',
     transactionId?: string
-  ): Promise<boolean> {
+  ): Promise<{ success: boolean; error?: string }> {
     try {
+      // Validate inputs
+      const referrerValidation = validateWalletAddress(referrerAddress)
+      if (!referrerValidation.isValid) {
+        return { success: false, error: `Invalid referrer address: ${referrerValidation.error}` }
+      }
+
+      const refereeValidation = validateWalletAddress(refereeAddress)
+      if (!refereeValidation.isValid) {
+        return { success: false, error: `Invalid referee address: ${refereeValidation.error}` }
+      }
+
+      const amountValidation = validateCommissionAmount(amount)
+      if (!amountValidation.isValid) {
+        return { success: false, error: `Invalid commission amount: ${amountValidation.error}` }
+      }
+
+      // Sanitize commission type
+      const sanitizedType = sanitizeUserInput(type).toLowerCase()
+      const validTypes = ['signup', 'subscription', 'purchase', 'trading_fee', 'other']
+      if (!validTypes.includes(sanitizedType)) {
+        return { success: false, error: 'Invalid commission type' }
+      }
+
       // First get the relationship ID
       const { data: relationship, error: relationshipError } = await supabase
         .from('affiliate_relationships')
         .select('id')
-        .eq('referrer_address', referrerAddress)
-        .eq('referee_address', refereeAddress)
+        .eq('referrer_address', referrerValidation.sanitized)
+        .eq('referee_address', refereeValidation.sanitized)
         .single()
 
       if (relationshipError || !relationship) {
         console.error('Affiliate relationship not found:', relationshipError)
-        return false
+        return { success: false, error: 'Affiliate relationship not found' }
       }
 
       const { error } = await supabase
         .from('affiliate_commissions')
         .insert({
           affiliate_relationship_id: relationship.id,
-          referrer_address: referrerAddress,
-          referee_address: refereeAddress,
+          referrer_address: referrerValidation.sanitized,
+          referee_address: refereeValidation.sanitized,
           commission_amount: amount,
-          commission_type: type,
+          commission_type: sanitizedType,
           commission_rate: 0.25, // 25%
-          transaction_id: transactionId,
+          transaction_id: transactionId ? sanitizeUserInput(transactionId) : null,
           status: 'confirmed'
         })
 
       if (error) {
         console.error('Error recording commission:', error)
-        return false
+        return { success: false, error: 'Failed to record commission' }
       }
 
-      return true
+      return { success: true }
 
     } catch (error) {
       console.error('Failed to record commission:', error)
-      return false
+      return { success: false, error: 'Internal error recording commission' }
     }
   }
 
@@ -1371,44 +1429,66 @@ class AffiliateService {
   /**
    * Track a referral link click
    */
-  async trackReferralClick(referralCode: string, sessionId: string, ipAddress?: string, userAgent?: string, referrerUrl?: string): Promise<boolean> {
+  async trackReferralClick(referralCode: string, sessionId: string, ipAddress?: string, userAgent?: string, referrerUrl?: string): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log('📊 Tracking referral click for code:', referralCode)
+      // Rate limiting check
+      const rateLimitKey = ipAddress || 'unknown'
+      if (!referralTrackingLimiter.isAllowed(rateLimitKey)) {
+        return { success: false, error: 'Rate limit exceeded. Please try again later.' }
+      }
+
+      // Validate inputs
+      const codeValidation = validateReferralCode(referralCode)
+      if (!codeValidation.isValid) {
+        return { success: false, error: `Invalid referral code: ${codeValidation.error}` }
+      }
+
+      const sessionValidation = validateSessionId(sessionId)
+      if (!sessionValidation.isValid) {
+        return { success: false, error: `Invalid session ID: ${sessionValidation.error}` }
+      }
+
+      console.log('📊 Tracking referral click for code:', codeValidation.sanitized)
 
       // First, get the referrer address from the referral code
       const { data: codeData, error: codeError } = await supabase
         .from('referral_codes')
         .select('owner_address')
-        .eq('code', referralCode)
+        .eq('code', codeValidation.sanitized)
         .eq('is_active', true)
         .single()
 
       if (codeError || !codeData) {
-        console.log('❌ Invalid referral code for tracking:', referralCode)
-        return false
+        console.log('❌ Invalid referral code for tracking:', codeValidation.sanitized)
+        return { success: false, error: 'Invalid or inactive referral code' }
       }
+
+      // Sanitize optional inputs
+      const sanitizedIpAddress = ipAddress ? sanitizeUserInput(ipAddress) : undefined
+      const sanitizedUserAgent = userAgent ? sanitizeUserInput(userAgent).substring(0, 500) : undefined
+      const sanitizedReferrerUrl = referrerUrl ? sanitizeUserInput(referrerUrl).substring(0, 500) : undefined
 
       // Create referral session
       const { error: sessionError } = await supabase
         .from('referral_sessions')
         .insert({
-          session_id: sessionId,
-          referral_code: referralCode,
+          session_id: sessionValidation.sanitized,
+          referral_code: codeValidation.sanitized,
           referrer_address: codeData.owner_address,
-          ip_address: ipAddress,
-          user_agent: userAgent,
-          referrer_url: referrerUrl
+          ip_address: sanitizedIpAddress,
+          user_agent: sanitizedUserAgent,
+          referrer_url: sanitizedReferrerUrl
         })
 
       if (sessionError) {
         console.error('Error creating referral session:', sessionError)
-        return false
+        return { success: false, error: 'Failed to create referral session' }
       }
 
       // Update click count
       const { error: updateError } = await supabase
         .rpc('increment_referral_clicks', {
-          referral_code: referralCode
+          referral_code: codeValidation.sanitized
         })
 
       if (updateError) {
@@ -1417,10 +1497,10 @@ class AffiliateService {
       }
 
       console.log('✅ Referral click tracked successfully')
-      return true
+      return { success: true }
     } catch (error) {
       console.error('Failed to track referral click:', error)
-      return false
+      return { success: false, error: 'Internal error tracking referral click' }
     }
   }
 
@@ -1434,22 +1514,98 @@ class AffiliateService {
       // Step 1: Find the relationship where this user is the referee
       const { data: relationship, error: relError } = await supabase
         .from('affiliate_relationships')
-        .select('referrer_address, created_at')
+        .select('referrer_address, created_at, referral_code')
         .eq('referee_address', userAddress)
         .eq('relationship_status', 'active')
         .single()
 
-      if (relError || !relationship) {
-        console.log('No sponsor relationship found for user')
+      if (relError) {
+        console.log('❌ Error fetching sponsor relationship:', relError)
+
+        // If no relationship found, check if user has referral_data in profile
+        console.log('🔍 Checking user profile for referral_data...')
+        const { data: userProfile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('referral_data')
+          .eq('address', userAddress)
+          .single()
+
+        if (profileError || !userProfile?.referral_data?.referred_by) {
+          console.log('❌ No referral data found in profile either')
+          return null
+        }
+
+        console.log('📋 Found referral_data in profile:', userProfile.referral_data)
+
+        // Try to find the referrer by referral code
+        const referralCode = userProfile.referral_data.referred_by
+        const { data: codeOwner, error: codeError } = await supabase
+          .from('referral_codes')
+          .select('owner_address')
+          .eq('code', referralCode)
+          .eq('is_active', true)
+          .single()
+
+        if (!codeOwner) {
+          // Try extra_codes (admin codes)
+          const { data: adminCodeOwner, error: adminCodeError } = await supabase
+            .from('extra_codes')
+            .select('owner_address')
+            .eq('code', referralCode)
+            .eq('is_active', true)
+            .single()
+
+          if (!adminCodeOwner) {
+            console.log('❌ Could not find owner of referral code:', referralCode)
+            return null
+          }
+
+          // Create a mock relationship object for admin codes
+          const mockRelationship = {
+            referrer_address: adminCodeOwner.owner_address,
+            created_at: userProfile.referral_data.referral_date || new Date().toISOString(),
+            referral_code: referralCode
+          }
+
+          console.log('✅ Found admin code owner, using mock relationship:', mockRelationship)
+          return this.buildSponsorInfo(mockRelationship, userAddress)
+        }
+
+        // Create a mock relationship object for personal codes
+        const mockRelationship = {
+          referrer_address: codeOwner.owner_address,
+          created_at: userProfile.referral_data.referral_date || new Date().toISOString(),
+          referral_code: referralCode
+        }
+
+        console.log('✅ Found personal code owner, using mock relationship:', mockRelationship)
+        return this.buildSponsorInfo(mockRelationship, userAddress)
+      }
+
+      if (!relationship) {
+        console.log('❌ No sponsor relationship found for user')
         return null
       }
 
-      console.log('Found sponsor relationship:', relationship.referrer_address)
+      console.log('✅ Found sponsor relationship:', relationship)
+      return this.buildSponsorInfo(relationship, userAddress)
+
+    } catch (error) {
+      console.error('❌ Failed to get sponsor info:', error)
+      return null
+    }
+  }
+
+  /**
+   * Helper method to build sponsor info from relationship data
+   */
+  private async buildSponsorInfo(relationship: any, userAddress: string): Promise<AffiliateUser | null> {
+    try {
 
       // Step 2: Get the sponsor's profile
       const { data: sponsorProfile, error: profileError } = await supabase
         .from('user_profiles')
-        .select('address, username_encrypted, email_encrypted, role_tier, profile_level, kyc_status, join_date, total_xp')
+        .select('address, username_encrypted, email_encrypted, role_tier, profile_level, kyc_status, join_date, total_xp, profile_image_blob_id')
         .eq('address', relationship.referrer_address)
         .single()
 
@@ -1477,7 +1633,7 @@ class AffiliateService {
         address: sponsorProfile.address,
         username,
         email,
-        joinDate: sponsorProfile.join_date,
+        joinDate: sponsorProfile.join_date || relationship.created_at,
         status: sponsorProfile.role_tier as 'NOMAD' | 'PRO' | 'ROYAL',
         commission: 0, // Not relevant for sponsor info
         kycStatus: sponsorProfile.kyc_status as 'verified' | 'pending' | 'not_verified',
@@ -1485,20 +1641,158 @@ class AffiliateService {
         affiliateLevel,
         sponsorAddress: undefined, // Sponsor doesn't have a sponsor in this context
         sponsorUsername: undefined,
-        referralCode: undefined,
-        isDirect: false // This is not a direct referral context
+        referralCode: relationship.referral_code,
+        isDirect: true, // This is a direct sponsor
+        avatarBlobId: sponsorProfile.profile_image_blob_id
       }
 
       console.log('✅ Sponsor info retrieved successfully:', sponsorInfo)
       return sponsorInfo
 
     } catch (error) {
-      console.error('Failed to get sponsor info:', error)
+      console.error('❌ Failed to build sponsor info:', error)
       return null
     }
   }
 
 
+
+  /**
+   * Debug method to check if admin default referral code exists
+   */
+  async checkAdminDefaultCode(adminCode: string = 'U2FSDGVKX1VF'): Promise<{ exists: boolean; owner?: string; table?: string }> {
+    try {
+      console.log('🔍 Checking admin default code:', adminCode)
+
+      // Check extra_codes table first
+      const { data: extraCode, error: extraError } = await supabase
+        .from('extra_codes')
+        .select('owner_address, is_active')
+        .eq('code', adminCode)
+        .single()
+
+      if (extraCode) {
+        console.log('✅ Found admin code in extra_codes:', extraCode)
+        return { exists: true, owner: extraCode.owner_address, table: 'extra_codes' }
+      }
+
+      // Check referral_codes table
+      const { data: referralCode, error: referralError } = await supabase
+        .from('referral_codes')
+        .select('owner_address, is_active')
+        .eq('code', adminCode)
+        .single()
+
+      if (referralCode) {
+        console.log('✅ Found admin code in referral_codes:', referralCode)
+        return { exists: true, owner: referralCode.owner_address, table: 'referral_codes' }
+      }
+
+      console.log('❌ Admin default code not found in any table')
+      return { exists: false }
+
+    } catch (error) {
+      console.error('❌ Error checking admin default code:', error)
+      return { exists: false }
+    }
+  }
+
+  /**
+   * Debug method to check user's affiliate relationships and profile data
+   */
+  async debugUserAffiliateStatus(userAddress: string): Promise<any> {
+    try {
+      console.log('🔍 Debug: Checking affiliate status for:', userAddress)
+
+      // Check affiliate relationships
+      const { data: relationships, error: relError } = await supabase
+        .from('affiliate_relationships')
+        .select('*')
+        .eq('referee_address', userAddress)
+
+      // Check user profile
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('referral_data, username_encrypted')
+        .eq('address', userAddress)
+        .single()
+
+      const debugInfo = {
+        userAddress,
+        relationships: relationships || [],
+        relationshipError: relError,
+        profile: profile || null,
+        profileError: profileError,
+        hasReferralData: !!profile?.referral_data,
+        referralData: profile?.referral_data || null
+      }
+
+      console.log('🔍 Debug info:', debugInfo)
+      return debugInfo
+
+    } catch (error) {
+      console.error('❌ Error in debug check:', error)
+      return { error: error instanceof Error ? error.message : 'Unknown error occurred' }
+    }
+  }
+
+  /**
+   * Fix missing affiliate relationship for users who went through onboarding
+   * without proper affiliate setup
+   */
+  async fixMissingAffiliateRelationship(userAddress: string, adminCode: string = 'U2FSDGVKX1VF'): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log('🔧 Fixing missing affiliate relationship for:', userAddress)
+
+      // Step 1: Check if user already has a relationship
+      const hasExisting = await this.checkExistingReferralRelationship(userAddress)
+      if (hasExisting) {
+        return { success: false, message: 'User already has an affiliate relationship' }
+      }
+
+      // Step 2: Get admin code owner
+      const adminCodeCheck = await this.checkAdminDefaultCode(adminCode)
+      if (!adminCodeCheck.exists || !adminCodeCheck.owner) {
+        return { success: false, message: 'Admin default code not found or has no owner' }
+      }
+
+      // Step 3: Create the affiliate relationship
+      const relationshipResult = await this.createAffiliateRelationship(
+        adminCodeCheck.owner,
+        userAddress,
+        adminCode
+      )
+
+      if (!relationshipResult.success) {
+        return { success: false, message: relationshipResult.error || 'Failed to create relationship' }
+      }
+
+      // Step 4: Update user profile with referral_data
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update({
+          referral_data: {
+            referral_code: adminCode,
+            referred_by: adminCode,
+            referral_date: new Date().toISOString(),
+            source: 'admin_default_fix'
+          }
+        })
+        .eq('address', userAddress)
+
+      if (profileError) {
+        console.warn('⚠️ Failed to update profile referral_data:', profileError)
+        // Don't fail the whole process for this
+      }
+
+      console.log('✅ Successfully fixed missing affiliate relationship')
+      return { success: true, message: 'Affiliate relationship created successfully' }
+
+    } catch (error) {
+      console.error('❌ Error fixing affiliate relationship:', error)
+      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  }
 
   /**
    * Get user's own profile level and tier information

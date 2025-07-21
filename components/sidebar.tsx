@@ -18,7 +18,7 @@ export const Sidebar = memo(function Sidebar() {
   const [aioConnectExpanded, setAioConnectExpanded] = useState(false)
 
   // RESTORED: Using stable subscription context
-  const { canAccessCryptoBots, canAccessForexBots, tier } = useSubscription()
+  const { canAccessCryptoBots, canAccessForexBots, canAccessStockBots, tier } = useSubscription()
 
   // Admin authentication
   const { user } = useSuiAuth()
@@ -70,31 +70,21 @@ export const Sidebar = memo(function Sidebar() {
       subItems: [
         { name: "Overview", href: "/copy-trading", icon: Bot },
         { name: "Crypto Bots", href: "/crypto-bots", icon: TrendingUp, restricted: !canAccessCryptoBots },
-        { name: "Stock Bots", href: "/stock-bots", icon: LineChart, restricted: !canAccessForexBots },
+        { name: "Stock Bots", href: "/stock-bots", icon: LineChart, restricted: !canAccessStockBots },
         { name: "Forex Bots", href: "/forex-bots", icon: BarChart, restricted: !canAccessForexBots },
       ]
     },
-    {
-      name: "AIO Connect",
-      href: "/forum",
-      icon: Globe,
-      restricted: false,
-      hasDropdown: true,
-      subItems: [
-        { name: "Members", href: "/community", icon: UserCheck },
-        { name: "Creators", href: "/aio-creators", icon: Users },
-        { name: "Forum", href: "/forum", icon: MessageSquare },
-      ]
-    },
+    { name: "Members", href: "/community", icon: UserCheck, restricted: false },
     { name: "Royalties", href: "/royalties", icon: Crown, restricted: false },
-    { name: "RaffleQuiz", href: "/dapps/rafflecraft", icon: Dice6, restricted: false },
-    { name: "Dewhale", href: "/dapps/dewhale-launchpad", icon: Rocket, restricted: false },
-    { name: "E-Learning", href: "/metago-academy", icon: BookOpen, restricted: false },
+    { name: "AIO Connect", href: "/forum", icon: Globe, restricted: true, comingSoon: true },
+    { name: "RaffleQuiz", href: "/dapps/rafflecraft", icon: Dice6, restricted: true, comingSoon: true },
+    { name: "Dewhale", href: "/dapps/dewhale-launchpad", icon: Rocket, restricted: true, comingSoon: true },
+    { name: "E-Learning", href: "/metago-academy", icon: BookOpen, restricted: true, comingSoon: true },
     { name: "Leaderboard", href: "/leaderboard", icon: Trophy, restricted: false },
   ]
 
   const bottomNavigation = [
-    { name: "Governance", href: "/governance", icon: Vote, restricted: !canAccessGovernance },
+    { name: "Governance", href: "/governance", icon: Vote, restricted: !canAccessGovernance, comingSoon: true },
     { name: "FAQs", href: "/faqs", icon: HelpCircle, restricted: false },
   ]
 
@@ -105,6 +95,7 @@ export const Sidebar = memo(function Sidebar() {
     restricted?: boolean
     adminOnly?: boolean
     hasDropdown?: boolean
+    comingSoon?: boolean
     subItems?: Array<{
       name: string
       href: string
@@ -141,12 +132,17 @@ export const Sidebar = memo(function Sidebar() {
           >
             <item.icon className="h-5 w-5 mr-3" />
             <span className="flex-1 text-left">{item.name}</span>
+            {item.comingSoon && (
+              <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full border border-orange-500/30 mr-2">
+                Coming Soon
+              </span>
+            )}
             {isExpanded ? (
               <ChevronDown className="h-4 w-4" />
             ) : (
               <ChevronRight className="h-4 w-4" />
             )}
-            {item.restricted && <Lock className="w-4 h-4 text-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]" />}
+            {item.restricted && !item.comingSoon && <Lock className="w-4 h-4 text-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]" />}
           </button>
 
           {isExpanded && (
@@ -195,11 +191,16 @@ export const Sidebar = memo(function Sidebar() {
             e.preventDefault()
           }
         }}
-        title={isCollapsed && !isMobileOpen ? `${item.name}${item.restricted ? " (Upgrade required)" : ""}` : undefined}
+        title={isCollapsed && !isMobileOpen ? `${item.name}${item.comingSoon ? " (Coming Soon)" : item.restricted ? " (Upgrade required)" : ""}` : undefined}
       >
         <item.icon className={cn("h-5 w-5", (!isCollapsed || isMobileOpen) && "mr-3")} />
         {(!isCollapsed || isMobileOpen) && <span>{item.name}</span>}
-        {(!isCollapsed || isMobileOpen) && item.restricted && <Lock className="w-4 h-4 text-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]" />}
+        {(!isCollapsed || isMobileOpen) && item.comingSoon && (
+          <span className="ml-auto text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full border border-orange-500/30">
+            Coming Soon
+          </span>
+        )}
+        {(!isCollapsed || isMobileOpen) && item.restricted && !item.comingSoon && <Lock className="w-4 h-4 text-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]" />}
       </Link>
     )
   }
@@ -294,18 +295,33 @@ export const Sidebar = memo(function Sidebar() {
             {bottomNavigation.map((item) => (
               <Link
                 key={item.name}
-                href={item.href}
+                href={item.comingSoon ? "#" : item.href}
                 className={cn(
                   "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-[#00D4FF] mb-1",
                   pathname === item.href
                     ? "nav-item-active"
                     : "text-white",
-                  isCollapsed && !isMobileOpen && "justify-center px-2"
+                  isCollapsed && !isMobileOpen && "justify-center px-2",
+                  item.comingSoon && "opacity-50 cursor-not-allowed"
                 )}
                 title={isCollapsed && !isMobileOpen ? item.name : undefined}
+                onClick={(e) => {
+                  if (item.comingSoon) {
+                    e.preventDefault()
+                  }
+                }}
               >
                 <item.icon className={cn("h-5 w-5", (!isCollapsed || isMobileOpen) && "mr-3")} />
-                {(!isCollapsed || isMobileOpen) && <span>{item.name}</span>}
+                {(!isCollapsed || isMobileOpen) && (
+                  <div className="flex items-center justify-between w-full">
+                    <span>{item.name}</span>
+                    {item.comingSoon && (
+                      <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full border border-orange-500/30 whitespace-nowrap">
+                        Coming Soon
+                      </span>
+                    )}
+                  </div>
+                )}
               </Link>
             ))}
           </div>
