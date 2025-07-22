@@ -236,7 +236,7 @@ export function CopyTradingInterface() {
           <h2 className="text-2xl font-bold text-[#FFFFFF]">AIONET Copy Trading</h2>
           <p className="text-[#C0E6FF] mt-1">Automated Bybit trading bots for AIONET NFT holders</p>
         </div>
-        {tier === "NOMAD" && storedBots.length > 0 && (
+        {storedBots.length > 0 && (
           <Button
             variant="outline"
             className="hidden md:flex items-center gap-2 border-[#C0E6FF] text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
@@ -428,10 +428,13 @@ export function CopyTradingInterface() {
         </div>
       </div>
 
-      {/* Cycle Information for NOMAD users */}
-      {tier === "NOMAD" && storedBots.length > 0 && (
+      {/* Cycle Information for all users */}
+      {storedBots.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-white">Bot Cycles & Payments</h3>
+          <h3 className="text-lg font-semibold text-white">
+            Bot Cycles & Performance
+            {tier === "NOMAD" && <span className="text-sm text-[#C0E6FF] ml-2">(Payment required after each 10% profit cycle)</span>}
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {storedBots.map((bot) => (
               <BotCycleInfo key={bot.id} botId={bot.id} botName={bot.name} />

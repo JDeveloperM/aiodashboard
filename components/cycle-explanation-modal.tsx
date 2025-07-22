@@ -17,7 +17,7 @@ export function CycleExplanationModal({ isOpen, onClose }: CycleExplanationModal
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
             <Info className="w-6 h-6 text-[#4DA2FF]" />
-            How Bot Cycles Work
+            How Profit-Based Bot Cycles Work
           </DialogTitle>
         </DialogHeader>
         
@@ -32,19 +32,19 @@ export function CycleExplanationModal({ isOpen, onClose }: CycleExplanationModal
             <div className="space-y-3 text-sm text-blue-100">
               <div className="flex items-start gap-2">
                 <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                <span>First cycle (30 days) is <strong>FREE</strong> when you follow a bot</span>
+                <span>First cycle is <strong>FREE</strong> when you follow a bot</span>
               </div>
               <div className="flex items-start gap-2">
                 <DollarSign className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
-                <span>After 30 days, pay <strong>$10</strong> to continue for another 30 days</span>
+                <span>Each cycle completes when the bot achieves <strong>10% profit</strong></span>
               </div>
               <div className="flex items-start gap-2">
                 <CreditCard className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
-                <span>You can pay anytime during the last 7 days of a cycle</span>
+                <span>Pay <strong>10 USDC</strong> after each completed cycle to continue</span>
               </div>
               <div className="flex items-start gap-2">
-                <Info className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
-                <span>Bots stop working if payment is not made within 3 days of expiration</span>
+                <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                <span>Bot continues working until the 10% profit target is reached</span>
               </div>
             </div>
           </div>
@@ -67,11 +67,15 @@ export function CycleExplanationModal({ isOpen, onClose }: CycleExplanationModal
               </div>
               <div className="flex items-start gap-2">
                 <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                <span>Premium support and features</span>
+                <span>View cycle progress and profit information</span>
               </div>
               <div className="flex items-start gap-2">
                 <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                <span>Follow as many bots as you want</span>
+                <span>Automatic cycle continuation after 10% profit</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                <span>Premium support and features</span>
               </div>
             </div>
           </div>
@@ -86,15 +90,15 @@ export function CycleExplanationModal({ isOpen, onClose }: CycleExplanationModal
             <div className="space-y-2 text-sm text-gray-300">
               <div className="flex items-start gap-2">
                 <span className="w-5 h-5 rounded-full bg-[#4DA2FF] flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mt-0.5">1</span>
-                <span>You'll receive notifications when your cycle is expiring</span>
+                <span>Watch your bot's profit progress in real-time</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="w-5 h-5 rounded-full bg-[#4DA2FF] flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mt-0.5">2</span>
-                <span>Click "Pay $10 for Next Cycle" on the bot card</span>
+                <span>When 10% profit is achieved, you'll see "Cycle Complete"</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="w-5 h-5 rounded-full bg-[#4DA2FF] flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mt-0.5">3</span>
-                <span>Complete payment to extend your bot access for 30 more days</span>
+                <span>Click "Pay 10 USDC for Next Cycle" to continue (NOMAD only)</span>
               </div>
             </div>
           </div>
