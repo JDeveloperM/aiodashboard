@@ -10,10 +10,10 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Bell, Globe, Zap, AlertTriangle, User, CreditCard, Coins, Plus, Trash2, Shield, Eye, EyeOff, Settings, Flag } from "lucide-react"
+import { Bell, Globe, Zap, AlertTriangle, User, Shield, Eye, EyeOff, Settings, Flag } from "lucide-react"
 import { useNotifications } from "@/hooks/use-notifications"
 import { useProfile } from "@/contexts/profile-context"
-import { useTokens } from "@/contexts/points-context"
+
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { DashboardProfiles } from "@/components/dashboard-profiles"
 import { NewUserOnboarding } from "@/components/new-user-onboarding"
@@ -30,16 +30,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 
-interface PaymentMethod {
-  id: string
-  type: string
-  name: string
-  last4: string
-  expiryMonth: string
-  expiryYear: string
-  isDefault: boolean
-  autoRenewal: boolean
-}
+
 export default function SettingsPage() {
   // Use persistent profile system
   const { user, isNewUser } = useSuiAuth()
@@ -57,21 +48,11 @@ export default function SettingsPage() {
     sendTestNotification
   } = useNotifications(user?.address)
   const { profile, updateProfile, isLoading } = useProfile()
-  const { balance: paionBalance, isLoading: paionLoading } = useTokens()
 
 
 
-  // Payment method state - loaded from persistent profile
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
-  const [paionAutoRenewal, setPaionAutoRenewal] = useState(false)
-  const [showAddCardDialog, setShowAddCardDialog] = useState(false)
-  const [newCardData, setNewCardData] = useState({
-    number: '',
-    expiryMonth: '',
-    expiryYear: '',
-    cvc: '',
-    name: ''
-  })
+
+
 
   // General settings state - loaded from persistent profile
   const [performanceMode, setPerformanceMode] = useState(false)
@@ -92,17 +73,6 @@ export default function SettingsPage() {
   // Load settings from persistent profile
   useEffect(() => {
     if (profile) {
-      // Load payment preferences (using localStorage fallback since column doesn't exist)
-      const savedPaymentMethods = localStorage.getItem(`payment_methods_${user?.address}`)
-      const savedAutoRenewal = localStorage.getItem(`paion_auto_renewal_${user?.address}`)
-
-      if (savedPaymentMethods) {
-        setPaymentMethods(JSON.parse(savedPaymentMethods))
-      }
-      if (savedAutoRenewal) {
-        setPaionAutoRenewal(savedAutoRenewal === 'true')
-      }
-
       // Load display preferences
       const displayPrefs = profile.display_preferences || {}
       setPerformanceMode(displayPrefs.performance_mode || false)
@@ -118,78 +88,7 @@ export default function SettingsPage() {
     }
   }, [profile])
 
-  // Save payment preferences to localStorage (since column doesn't exist in database)
-  const savePaymentPreferences = async (updatedMethods: PaymentMethod[], autoRenewal: boolean) => {
-    if (!user?.address) return
 
-    try {
-      // Save to localStorage as fallback
-      localStorage.setItem(`payment_methods_${user.address}`, JSON.stringify(updatedMethods))
-      localStorage.setItem(`paion_auto_renewal_${user.address}`, autoRenewal.toString())
-
-      console.log('✅ Payment preferences saved to localStorage')
-      toast.success('Payment preferences saved')
-    } catch (error) {
-      console.error('❌ Failed to save payment preferences:', error)
-      toast.error('Failed to save payment preferences')
-    }
-  }
-
-  // Payment method functions
-  const handleAddCard = async () => {
-    const newCard: PaymentMethod = {
-      id: Date.now().toString(),
-      type: 'card',
-      name: `${newCardData.name} ending in ${newCardData.number.slice(-4)}`,
-      last4: newCardData.number.slice(-4),
-      expiryMonth: newCardData.expiryMonth,
-      expiryYear: newCardData.expiryYear,
-      isDefault: paymentMethods.length === 0,
-      autoRenewal: false
-    }
-
-    const updatedMethods = [...paymentMethods, newCard]
-    setPaymentMethods(updatedMethods)
-    await savePaymentPreferences(updatedMethods, paionAutoRenewal)
-
-    setNewCardData({ number: '', expiryMonth: '', expiryYear: '', cvc: '', name: '' })
-    setShowAddCardDialog(false)
-    toast.success('Payment method added successfully!')
-  }
-
-  const handleRemoveCard = async (cardId: string) => {
-    const updatedMethods = paymentMethods.filter(method => method.id !== cardId)
-    setPaymentMethods(updatedMethods)
-    await savePaymentPreferences(updatedMethods, paionAutoRenewal)
-    toast.success('Payment method removed successfully!')
-  }
-
-  const handleSetDefault = async (cardId: string) => {
-    const updatedMethods = paymentMethods.map(method => ({
-      ...method,
-      isDefault: method.id === cardId
-    }))
-    setPaymentMethods(updatedMethods)
-    await savePaymentPreferences(updatedMethods, paionAutoRenewal)
-    toast.success('Default payment method updated!')
-  }
-
-  const handleToggleAutoRenewal = async (cardId: string) => {
-    const updatedMethods = paymentMethods.map(method =>
-      method.id === cardId
-        ? { ...method, autoRenewal: !method.autoRenewal }
-        : method
-    )
-    setPaymentMethods(updatedMethods)
-    await savePaymentPreferences(updatedMethods, paionAutoRenewal)
-    toast.success('Auto-renewal setting updated!')
-  }
-
-  const handlePaionAutoRenewalChange = async (checked: boolean) => {
-    setPaionAutoRenewal(checked)
-    await savePaymentPreferences(paymentMethods, checked)
-    toast.success('pAION auto-renewal setting updated!')
-  }
 
   // Save general settings to database
   const saveGeneralSettings = async () => {
@@ -266,10 +165,9 @@ export default function SettingsPage() {
         </div>
 
       <Tabs defaultValue="account" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 bg-[#011829] border border-[#C0E6FF]/20">
+        <TabsList className="grid w-full grid-cols-3 bg-[#011829] border border-[#C0E6FF]/20">
           <TabsTrigger value="account" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">Account</TabsTrigger>
           <TabsTrigger value="privacy" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">Privacy</TabsTrigger>
-          <TabsTrigger value="payment" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">Payment</TabsTrigger>
           <TabsTrigger value="notifications" className="text-[#C0E6FF] data-[state=active]:bg-[#4DA2FF] data-[state=active]:text-white">Notifications</TabsTrigger>
         </TabsList>
 
@@ -494,226 +392,6 @@ export default function SettingsPage() {
             </div>
           </div>
         </TabsContent>
-
-        <TabsContent value="payment">
-          <div className="space-y-6">
-            {/* Points Payment Method */}
-            <div className="enhanced-card">
-              <div className="enhanced-card-content">
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Coins className="h-5 w-5 text-[#4DA2FF]" />
-                    <h3 className="text-lg font-semibold text-white">pAION Payment</h3>
-                  </div>
-                  <p className="text-[#C0E6FF] text-sm">Use your earned pAION tokens to pay for subscriptions and services.</p>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="bg-[#1a2f51] rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-[#4DA2FF]/20 rounded-lg">
-                          <Coins className="w-5 h-5 text-[#4DA2FF]" />
-                        </div>
-                        <div>
-                          <h4 className="text-white font-medium">Available pAION</h4>
-                          <p className="text-[#C0E6FF] text-sm">Current balance</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-white">
-                          {paionLoading ? '...' : paionBalance.toLocaleString()}
-                        </p>
-                        <p className="text-[#C0E6FF] text-sm">pAION</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-3 border-t border-[#C0E6FF]/20">
-                      <div>
-                        <Label htmlFor="paion-auto-renewal" className="text-white">Auto-renewal with pAION</Label>
-                        <p className="text-sm text-[#C0E6FF]">Automatically renew subscriptions using pAION tokens when available.</p>
-                      </div>
-                      <Switch
-                        id="paion-auto-renewal"
-                        checked={paionAutoRenewal}
-                        onCheckedChange={handlePaionAutoRenewalChange}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Credit/Debit Cards */}
-            <div className="enhanced-card">
-              <div className="enhanced-card-content">
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="h-5 w-5 text-[#4DA2FF]" />
-                      <h3 className="text-lg font-semibold text-white">Credit & Debit Cards</h3>
-                    </div>
-                    <Dialog open={showAddCardDialog} onOpenChange={setShowAddCardDialog}>
-                      <DialogTrigger asChild>
-                        <Button size="sm" className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white">
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add Card
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="bg-[#0c1b36] border border-[#C0E6FF]/20">
-                        <DialogHeader>
-                          <DialogTitle className="text-white">Add New Card</DialogTitle>
-                          <DialogDescription className="text-[#C0E6FF]">
-                            Add a new credit or debit card for payments.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <Label htmlFor="card-name" className="text-white">Cardholder Name</Label>
-                            <Input
-                              id="card-name"
-                              placeholder="John Doe"
-                              value={newCardData.name}
-                              onChange={(e) => setNewCardData({...newCardData, name: e.target.value})}
-                              className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="card-number" className="text-white">Card Number</Label>
-                            <Input
-                              id="card-number"
-                              placeholder="1234 5678 9012 3456"
-                              value={newCardData.number}
-                              onChange={(e) => setNewCardData({...newCardData, number: e.target.value})}
-                              className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white"
-                            />
-                          </div>
-                          <div className="grid grid-cols-3 gap-4">
-                            <div>
-                              <Label htmlFor="expiry-month" className="text-white">Month</Label>
-                              <Select value={newCardData.expiryMonth} onValueChange={(value) => setNewCardData({...newCardData, expiryMonth: value})}>
-                                <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white">
-                                  <SelectValue placeholder="MM" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Array.from({length: 12}, (_, i) => (
-                                    <SelectItem key={i+1} value={String(i+1).padStart(2, '0')}>
-                                      {String(i+1).padStart(2, '0')}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
-                              <Label htmlFor="expiry-year" className="text-white">Year</Label>
-                              <Select value={newCardData.expiryYear} onValueChange={(value) => setNewCardData({...newCardData, expiryYear: value})}>
-                                <SelectTrigger className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white">
-                                  <SelectValue placeholder="YYYY" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Array.from({length: 10}, (_, i) => (
-                                    <SelectItem key={2024+i} value={String(2024+i)}>
-                                      {2024+i}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
-                              <Label htmlFor="cvc" className="text-white">CVC</Label>
-                              <Input
-                                id="cvc"
-                                placeholder="123"
-                                value={newCardData.cvc}
-                                onChange={(e) => setNewCardData({...newCardData, cvc: e.target.value})}
-                                className="bg-[#1a2f51] border-[#C0E6FF]/20 text-white"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setShowAddCardDialog(false)}>
-                            Cancel
-                          </Button>
-                          <Button onClick={handleAddCard} className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white">
-                            Add Card
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                  <p className="text-[#C0E6FF] text-sm">Manage your payment methods and auto-renewal settings.</p>
-                </div>
-
-                <div className="space-y-4">
-                  {paymentMethods.length === 0 ? (
-                    <div className="text-center py-8">
-                      <CreditCard className="w-12 h-12 text-[#C0E6FF]/50 mx-auto mb-4" />
-                      <p className="text-[#C0E6FF] mb-2">No payment methods added</p>
-                      <p className="text-[#C0E6FF]/70 text-sm">Add a card to enable automatic payments</p>
-                    </div>
-                  ) : (
-                    paymentMethods.map((method) => (
-                      <div key={method.id} className="bg-[#1a2f51] rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-[#4DA2FF]/20 rounded-lg">
-                              <CreditCard className="w-5 h-5 text-[#4DA2FF]" />
-                            </div>
-                            <div>
-                              <h4 className="text-white font-medium">{method.name}</h4>
-                              <p className="text-[#C0E6FF] text-sm">Expires {method.expiryMonth}/{method.expiryYear}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {method.isDefault && (
-                              <Badge className="bg-[#4DA2FF] text-white">Default</Badge>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRemoveCard(method.id)}
-                              className="text-red-400 border-red-400/20 hover:bg-red-400/10"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div className="space-y-3 pt-3 border-t border-[#C0E6FF]/20">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <Label htmlFor={`auto-renewal-${method.id}`} className="text-white">Auto-renewal</Label>
-                              <p className="text-sm text-[#C0E6FF]">Automatically renew subscriptions with this card.</p>
-                            </div>
-                            <Switch
-                              id={`auto-renewal-${method.id}`}
-                              checked={method.autoRenewal}
-                              onCheckedChange={() => handleToggleAutoRenewal(method.id)}
-                            />
-                          </div>
-
-                          {!method.isDefault && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleSetDefault(method.id)}
-                              className="text-[#4DA2FF] border-[#4DA2FF]/20 hover:bg-[#4DA2FF]/10"
-                            >
-                              Set as Default
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-
 
         <TabsContent value="notifications">
           <div className="enhanced-card">

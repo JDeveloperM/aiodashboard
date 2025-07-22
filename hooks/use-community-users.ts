@@ -114,12 +114,8 @@ const convertAchievements = (achievementsData: any[], profile: DecryptedProfile)
         return false // KYC disabled
       case "Advanced User Status":
         return (profile?.profile_level || 1) >= 5
-      case "Join the Community":
-        return profile?.social_links?.some((link: any) => link.platform === 'discord' && link.username) || false
-      case "Stay Informed":
-        return profile?.social_links?.some((link: any) => link.platform === 'telegram' && link.username) || false
-      case "Follow the Conversation":
-        return profile?.social_links?.some((link: any) => link.platform === 'x' && link.username) || false
+      case "Follow AIONET on X":
+        return profile?.social_links?.some((link: any) => link.platform === 'X' && link.following_aionet) || false
       case "Mint Royal NFT Status":
         return profile?.role_tier === 'ROYAL'
       // For other achievements, assume unlocked if they exist in database

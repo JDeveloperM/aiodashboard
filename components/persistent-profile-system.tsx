@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RoleImage } from "@/components/ui/role-image"
 import { EnhancedAvatar } from "@/components/enhanced-avatar"
 import { EnhancedBanner } from "@/components/enhanced-banner"
-import { ReferralCodeManagement } from "@/components/referral-code-management"
+import { XFollowPopup } from "@/components/x-follow-popup"
 
 import { useProfile } from '@/contexts/profile-context'
 
@@ -66,7 +66,8 @@ const getAchievementImage = (achievementName: string): string | null => {
     "Unlock Full Access": "/images/achievements/Unlock Full Access.png",
     "Advanced User Status": "/images/achievements/Advanced User Status.png",
 
-
+    // Social Connections Category
+    "Follow AIONET on X": "/images/achievements/Follow the Conversation.png", // Using Follow the Conversation icon
 
     // Crypto Bot Activities Category
     "Automate Your Trades": "/images/achievements/Automate Your Trades.png",
@@ -134,6 +135,7 @@ export function PersistentProfileSystem() {
   const [claimingLevel, setClaimingLevel] = useState<any>(null)
   const [isClaimingLevelTokens, setIsClaimingLevelTokens] = useState(false)
   const [showProgressionModal, setShowProgressionModal] = useState(false)
+  const [showXFollowPopup, setShowXFollowPopup] = useState(false)
 
   // Level rewards state - Updated according to new progression system
   const [levelRewards, setLevelRewards] = useState([
@@ -154,13 +156,22 @@ export function PersistentProfileSystem() {
     ? getReferralLink(defaultCode.code)
     : `https://aionet.com/ref/${user?.address?.slice(0, 8) || 'user'}`
 
+  // Check if X follow achievement is unlocked
+  const isXFollowAchievementUnlocked = (): boolean => {
+    return profileData?.social_links?.some((link: any) =>
+      link.platform === 'X' && link.following_aionet
+    ) || false
+  }
+
   // Function to determine if achievement should be unlocked based on user activity
   const checkAchievementUnlocked = (achievementName: string): boolean => {
     // Debug social links for achievement unlocking
-    if (achievementName.includes("Community") || achievementName.includes("Informed") || achievementName.includes("Conversation")) {
+    if (achievementName.includes("AIONET on X")) {
       console.log(`🔍 Checking achievement "${achievementName}":`, {
         social_links: profile?.social_links,
-        platforms: profile?.social_links?.map((link: any) => link.platform)
+        platforms: profile?.social_links?.map((link: any) => link.platform),
+        xLink: profile?.social_links?.find((link: any) => link.platform === 'X'),
+        following_aionet: profile?.social_links?.find((link: any) => link.platform === 'X')?.following_aionet
       })
     }
 
@@ -175,22 +186,10 @@ export function PersistentProfileSystem() {
         // Unlocked if user has reached level 5
         return (profile?.profile_level || 1) >= 5
 
-      case "Join the Community":
-        // Unlocked if user has connected Discord
+      case "Follow AIONET on X":
+        // Honor system: Unlocked when user claims they followed AIONET
         return profile?.social_links?.some((link: any) =>
-          link.platform === 'Discord' || link.platform === 'discord'
-        ) || false
-
-      case "Stay Informed":
-        // Unlocked if user has connected Telegram
-        return profile?.social_links?.some((link: any) =>
-          link.platform === 'Telegram' || link.platform === 'telegram'
-        ) || false
-
-      case "Follow the Conversation":
-        // Unlocked if user has connected X
-        return profile?.social_links?.some((link: any) =>
-          link.platform === 'X' || link.platform === 'x'
+          link.platform === 'X' && link.following_aionet
         ) || false
 
       case "Mint Royal NFT Status":
@@ -211,7 +210,8 @@ export function PersistentProfileSystem() {
 
       { name: "Advanced User Status", icon: Star, color: "#FFD700", xp: 200, tokens: 100, category: "Profile", tooltip: "Achieve profile level 5" },
 
-
+      // Social Connections Category
+      { name: "Follow AIONET on X", icon: X, color: "#1DA1F2", xp: 100, tokens: 75, category: "Social Connections", tooltip: "Follow @AIONET_Official on X (Twitter) to stay updated with the latest news" },
 
       // Crypto Bot Activities Category - Updated with new names, XP values, and pAION token rewards
       { name: "Automate Your Trades", icon: Link, color: "#F7931A", xp: 150, tokens: 75, category: "Crypto Bot Activities", tooltip: "Link your Bybit account" },
@@ -262,7 +262,7 @@ export function PersistentProfileSystem() {
   const profileData = useMemo(() => ({
     name: profile?.username || user?.username || "Affiliate User",
     username: profile?.username || user?.username || "@affiliate_user",
-
+    social_links: profile?.social_links || [],
 
     levelInfo: {
       currentLevel: profile?.profile_level || 1,
@@ -285,7 +285,8 @@ export function PersistentProfileSystem() {
     profile?.profile_level,
     profile?.current_xp,
     profile?.total_xp,
-    profile?.achievements_data
+    profile?.achievements_data,
+    profile?.social_links
   ])
 
   // Update level rewards availability based on current level (optimized dependencies)
@@ -623,40 +624,7 @@ export function PersistentProfileSystem() {
                   className="w-full h-64 rounded-none"
                 />
 
-                {/* Control Buttons - Top right corner */}
-                <div className="absolute top-4 right-4 flex items-center gap-2">
-                  {/* Affiliate Controls Button - Minimal */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={() => router.push('/affiliate-controls')}
-                        size="sm"
-                        className="bg-black/60 hover:bg-black/80 backdrop-blur-sm text-white border-0 px-2 py-1 h-8 text-xs"
-                      >
-                        <Users className="w-3 h-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="bg-black/90 text-white border border-[#C0E6FF]/20">
-                      <p className="text-sm">Affiliate Controls</p>
-                    </TooltipContent>
-                  </Tooltip>
 
-                  {/* Transaction History Button - Minimal */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={() => router.push('/transaction-history')}
-                        size="sm"
-                        className="bg-black/60 hover:bg-black/80 backdrop-blur-sm text-white border-0 px-2 py-1 h-8 text-xs"
-                      >
-                        <History className="w-3 h-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="bg-black/90 text-white border border-[#C0E6FF]/20">
-                      <p className="text-sm">Transaction History</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
 
                 {/* Avatar - Left on desktop, centered on mobile */}
                 <div className="absolute bottom-16 left-6 md:bottom-4 md:left-6 max-md:left-1/2 max-md:transform max-md:-translate-x-1/2">
@@ -755,122 +723,76 @@ export function PersistentProfileSystem() {
 
             </div>
 
-            {/* Column 3: Profile Level Progress - Takes 1/3 width */}
+            {/* Column 3: Action Buttons - Takes 1/3 width */}
             <div className="lg:col-span-1 enhanced-card bg-[#030f1c] border border-[#C0E6FF]/20 rounded-lg m-2">
-              <div className="flex flex-col h-full">
-                {/* Profile Level Progress Section */}
-                <div className="w-full flex-1 p-6">
-                  <h4 className="text-white font-semibold mb-6 text-center">Profile Level Progress</h4>
+              <div className="flex flex-col h-full p-6 gap-4">
+                <h4 className="text-white font-semibold text-center">Quick Actions</h4>
 
-                  {/* Compact Circular Level Progress Gauge */}
-                  <div className="flex flex-col items-center mb-6">
-                    <div className="relative w-32 h-32 mb-4">
-                      {/* Calculate progress once */}
-                      {(() => {
-                        const currentXP = profileData.levelInfo.currentXP;
-                        const nextLevelXP = profileData.levelInfo.nextLevelXP;
-                        const currentLevel = profileData.levelInfo.currentLevel;
-
-                        const levelThresholds = [0, 100, 250, 500, 800, 1200, 1800, 2600, 3600, 5000];
-                        const currentLevelStartXP = levelThresholds[currentLevel - 1] || 0;
-
-                        const xpInCurrentLevel = currentXP - currentLevelStartXP;
-                        const xpNeededForLevel = nextLevelXP - currentLevelStartXP;
-                        const progressPercent = Math.min(100, Math.max(0, (xpInCurrentLevel / xpNeededForLevel) * 100));
-
-                        const circumference = 2 * Math.PI * 45; // radius = 45
-                        const strokeDashoffset = circumference - (progressPercent / 100) * circumference;
-
-                        return (
-                          <>
-                            {/* Background Circle */}
-                            <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                              <circle
-                                cx="50"
-                                cy="50"
-                                r="45"
-                                stroke="#1a2f51"
-                                strokeWidth="8"
-                                fill="transparent"
-                              />
-                              {/* Progress Circle */}
-                              <circle
-                                cx="50"
-                                cy="50"
-                                r="45"
-                                stroke="url(#levelGradient)"
-                                strokeWidth="8"
-                                fill="transparent"
-                                strokeDasharray={circumference}
-                                strokeDashoffset={strokeDashoffset}
-                                strokeLinecap="round"
-                                className="transition-all duration-1000 ease-out"
-                              />
-                              {/* Gradient Definition */}
-                              <defs>
-                                <linearGradient id="levelGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                  <stop offset="0%" stopColor="#4DA2FF" />
-                                  <stop offset="100%" stopColor="#00D4AA" />
-                                </linearGradient>
-                              </defs>
-                            </svg>
-
-                            {/* Center Content */}
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                              <div className="text-center bg-[#0a1628]/80 backdrop-blur-sm rounded-full w-20 h-20 flex flex-col items-center justify-center border border-[#C0E6FF]/20 shadow-lg">
-                                <div className="text-xl font-bold text-white mb-1">
-                                  {profileData.levelInfo.currentLevel}
-                                </div>
-                                <div className="text-xs text-[#C0E6FF]">Level</div>
-                              </div>
-                            </div>
-
-                            {/* Progress Percentage Badge */}
-                            <div className="absolute -top-1 right-1 bg-[#1a2f51] border border-[#C0E6FF]/30 text-[#C0E6FF] text-xs font-semibold px-2 py-1 rounded-full shadow-lg">
-                              {progressPercent.toFixed(0)}%
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-
-                    {/* Level Info Below Gauge - Compact */}
-                    <div className="flex justify-between items-center w-full text-center">
-                      <div>
-                        <div className="text-sm font-bold text-white">
-                          {profileData.levelInfo.currentLevel >= 10 ? "Status" : "Next"}
-                        </div>
-                        <div className="text-lg font-bold text-[#4DA2FF]">
-                          {profileData.levelInfo.currentLevel >= 10 ? "MAX" : profileData.levelInfo.nextLevel}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-white">
-                          {profileData.levelInfo.currentLevel >= 10 ? "Total XP" : "XP Needed"}
-                        </div>
-                        <div className="text-lg font-bold text-[#00D4AA]">
-                          {profileData.levelInfo.currentLevel >= 10
-                            ? profileData.levelInfo.totalXP.toLocaleString()
-                            : (profileData.levelInfo.nextLevelXP - profileData.levelInfo.currentXP).toLocaleString()
-                          }
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* XP Level Progression & Rewards Button - Compact */}
-                  <div>
+                {/* Affiliate Controls Button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <Button
-                      onClick={() => setShowProgressionModal(true)}
-                      className="w-full bg-gradient-to-r from-[#4DA2FF] to-[#00D4AA] hover:from-[#4DA2FF]/80 hover:to-[#00D4AA]/80 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-300 text-sm"
+                      onClick={() => router.push('/affiliate-controls')}
+                      className="w-full bg-[#4DA2FF] hover:bg-[#4DA2FF]/80 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300"
                     >
                       <div className="flex items-center justify-center gap-2">
-                        <Trophy className="w-4 h-4" />
-                        <span>View Progression</span>
+                        <Users className="w-5 h-5" />
+                        <span>Affiliate Controls</span>
                       </div>
                     </Button>
-                  </div>
-                </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="bg-black/90 text-white border border-[#C0E6FF]/20">
+                    <p className="text-sm">Manage your affiliates and view metrics</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Transaction History Button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => router.push('/transaction-history')}
+                      className="w-full bg-[#00D4AA] hover:bg-[#00D4AA]/80 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300"
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <History className="w-5 h-5" />
+                        <span>Transaction History</span>
+                      </div>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="bg-black/90 text-white border border-[#C0E6FF]/20">
+                    <p className="text-sm">View your transaction history</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* X Achievement Section - Only show if not unlocked */}
+                {!isXFollowAchievementUnlocked() && (
+                  <>
+                    {/* Separator */}
+                    <div className="flex items-center gap-3 my-2">
+                      <div className="flex-1 h-px bg-[#C0E6FF]/20"></div>
+                      <span className="text-[#C0E6FF] text-xs font-medium">X Achievement Unlock</span>
+                      <div className="flex-1 h-px bg-[#C0E6FF]/20"></div>
+                    </div>
+
+                    {/* X Follow Achievement Button - Official X Style */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={() => setShowXFollowPopup(true)}
+                          className="w-full bg-black hover:bg-gray-900 text-white font-bold py-3 px-4 rounded-full border border-gray-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                        >
+                          <div className="flex items-center justify-center gap-3">
+                            <X className="w-5 h-5 fill-white" />
+                            <span className="text-sm font-bold tracking-wide">Follow AIONET on X</span>
+                          </div>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="bg-black/90 text-white border border-[#C0E6FF]/20">
+                        <p className="text-sm">Follow @AIONET_Official and earn 100 XP + 75 pAION</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </>
+                )}
               </div>
             </div>
 
@@ -880,15 +802,124 @@ export function PersistentProfileSystem() {
 
 
 
-      {/* Referral & Rewards Section - Two Column Layout */}
+      {/* Profile Progress & Rewards Section - Two Column Layout */}
       <div className="enhanced-card">
         <div className="enhanced-card-content">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-            {/* Left Column: Referral Code Management */}
+            {/* Left Column: Profile Level Progress */}
             <div className="enhanced-card bg-[#030f1c] border border-[#C0E6FF]/20">
               <div className="enhanced-card-content">
-                <ReferralCodeManagement />
+                <h3 className="text-white font-semibold mb-6 text-center">Profile Level Progress</h3>
+
+                {/* Circular Level Progress Gauge */}
+                <div className="flex flex-col items-center mb-6">
+                  <div className="relative w-40 h-40 mb-4">
+                    {/* Calculate progress once */}
+                    {(() => {
+                      const currentXP = profileData.levelInfo.currentXP;
+                      const nextLevelXP = profileData.levelInfo.nextLevelXP;
+                      const currentLevel = profileData.levelInfo.currentLevel;
+
+                      const levelThresholds = [0, 100, 250, 500, 800, 1200, 1800, 2600, 3600, 5000];
+                      const currentLevelStartXP = levelThresholds[currentLevel - 1] || 0;
+
+                      const xpInCurrentLevel = currentXP - currentLevelStartXP;
+                      const xpNeededForLevel = nextLevelXP - currentLevelStartXP;
+                      const progressPercent = Math.min(100, Math.max(0, (xpInCurrentLevel / xpNeededForLevel) * 100));
+
+                      const circumference = 2 * Math.PI * 45; // radius = 45
+                      const strokeDashoffset = circumference - (progressPercent / 100) * circumference;
+
+                      return (
+                        <>
+                          {/* Background Circle */}
+                          <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                            <circle
+                              cx="50"
+                              cy="50"
+                              r="45"
+                              stroke="#1a2f51"
+                              strokeWidth="8"
+                              fill="transparent"
+                            />
+                            {/* Progress Circle */}
+                            <circle
+                              cx="50"
+                              cy="50"
+                              r="45"
+                              stroke="url(#levelGradient)"
+                              strokeWidth="8"
+                              fill="transparent"
+                              strokeDasharray={circumference}
+                              strokeDashoffset={strokeDashoffset}
+                              strokeLinecap="round"
+                              className="transition-all duration-1000 ease-out"
+                            />
+                            {/* Gradient Definition */}
+                            <defs>
+                              <linearGradient id="levelGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#4DA2FF" />
+                                <stop offset="100%" stopColor="#00D4AA" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+
+                          {/* Center Content */}
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <div className="text-center bg-[#0a1628]/80 backdrop-blur-sm rounded-full w-24 h-24 flex flex-col items-center justify-center border border-[#C0E6FF]/20 shadow-lg">
+                              <div className="text-2xl font-bold text-white mb-1">
+                                {profileData.levelInfo.currentLevel}
+                              </div>
+                              <div className="text-sm text-[#C0E6FF]">Level</div>
+                            </div>
+                          </div>
+
+                          {/* Progress Percentage Badge */}
+                          <div className="absolute -top-1 right-1 bg-[#1a2f51] border border-[#C0E6FF]/30 text-[#C0E6FF] text-xs font-semibold px-2 py-1 rounded-full shadow-lg">
+                            {progressPercent.toFixed(0)}%
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Level Info Below Gauge - Compact */}
+                  <div className="flex justify-between items-center w-full text-center">
+                    <div>
+                      <div className="text-sm font-bold text-white">
+                        {profileData.levelInfo.currentLevel >= 10 ? "Status" : "Next"}
+                      </div>
+                      <div className="text-lg font-bold text-[#4DA2FF]">
+                        {profileData.levelInfo.currentLevel >= 10 ? "MAX" : profileData.levelInfo.nextLevel}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-white">
+                        {profileData.levelInfo.currentLevel >= 10 ? "Total XP" : "XP Needed"}
+                      </div>
+                      <div className="text-lg font-bold text-[#00D4AA]">
+                        {profileData.levelInfo.currentLevel >= 10
+                          ? profileData.levelInfo.totalXP.toLocaleString()
+                          : (profileData.levelInfo.nextLevelXP - profileData.levelInfo.currentXP).toLocaleString()
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* XP Level Progression & Rewards Button - Compact */}
+                <div>
+                  <Button
+                    onClick={() => setShowProgressionModal(true)}
+                    className="w-full bg-gradient-to-r from-[#4DA2FF] to-[#00D4AA] hover:from-[#4DA2FF]/80 hover:to-[#00D4AA]/80 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-300 text-sm"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <Trophy className="w-4 h-4" />
+                      <span>View Progression</span>
+                    </div>
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -1353,6 +1384,12 @@ export function PersistentProfileSystem() {
           </div>
         </div>
       )}
+
+      {/* X Follow Popup */}
+      <XFollowPopup
+        isOpen={showXFollowPopup}
+        onClose={() => setShowXFollowPopup(false)}
+      />
     </div>
   )
 }

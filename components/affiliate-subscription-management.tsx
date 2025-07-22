@@ -7,6 +7,30 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { affiliateSubscriptionService, SubscriptionStatus, AffiliateSubscription } from "@/lib/affiliate-subscription-service"
+
+// Function to get user-friendly subscription type names
+const getSubscriptionTypeDisplayName = (subscriptionType: string, durationDays?: number) => {
+  switch (subscriptionType) {
+    case 'one_time_30_days':
+      return '30 Days Extend (one time payment)'
+    case 'one_time_60_days':
+      return '60 Days Extend (one time payment)'
+    case 'one_time_90_days':
+      return '90 Days Extend (one time payment)'
+    case 'recurring_monthly':
+      return 'Monthly Recurring Payment (30 days)'
+    case 'recurring_quarterly':
+      return 'Quarterly Recurring Payment (90 days)'
+    case 'recurring_yearly':
+      return 'Yearly Recurring Payment (365 days)'
+    default:
+      // Fallback for any other types
+      if (durationDays) {
+        return `${durationDays} Days Extend (one time payment)`
+      }
+      return subscriptionType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  }
+}
 import { AffiliateSubscriptionPayment } from "@/components/affiliate-subscription-payment"
 import { 
   CreditCard, 
@@ -259,8 +283,8 @@ export function AffiliateSubscriptionManagement({ userAddress }: AffiliateSubscr
                           ) : (
                             <CreditCard className="w-4 h-4 text-[#4DA2FF]" />
                           )}
-                          <span className="text-white capitalize">
-                            {subscription.subscription_type}
+                          <span className="text-white text-sm">
+                            {getSubscriptionTypeDisplayName(subscription.subscription_type, subscription.duration_days)}
                           </span>
                         </div>
                       </TableCell>

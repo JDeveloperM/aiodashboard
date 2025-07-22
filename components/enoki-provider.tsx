@@ -8,21 +8,31 @@ export function EnokiWalletRegistration() {
   const { client, network } = useSuiClientContext()
 
   useEffect(() => {
+    console.log('🔧 Enoki Wallet Registration - Network:', network)
+
     // Only register on supported networks
     if (!isEnokiNetwork(network)) {
+      console.warn('⚠️ Enoki does not support network:', network)
       return
     }
 
     const apiKey = process.env.NEXT_PUBLIC_ENOKI_API_KEY
     if (!apiKey) {
-      console.error('NEXT_PUBLIC_ENOKI_API_KEY is not configured')
+      console.error('❌ NEXT_PUBLIC_ENOKI_API_KEY is not configured')
       return
     }
 
-    // Use the same Google Client ID as legacy zkLogin for consistency
-    const enokiGoogleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
+    // Use the correct Google Client ID for Enoki
+    const enokiGoogleClientId = '978685229139-bo2ngskq8l0qbh695upr82vanec6lcek.apps.googleusercontent.com'
+
+    console.log('🔧 Enoki Configuration:', {
+      apiKey: apiKey.slice(0, 20) + '...',
+      googleClientId: enokiGoogleClientId.slice(0, 20) + '...',
+      network
+    })
 
     try {
+      console.log('🔄 Registering Enoki wallets...')
       const { unregister } = registerEnokiWallets({
         apiKey,
         providers: {
@@ -41,6 +51,7 @@ export function EnokiWalletRegistration() {
         network,
       })
 
+      console.log('✅ Enoki wallets registered successfully')
       return unregister
     } catch (error) {
       console.error('❌ Failed to register Enoki wallets:', error)

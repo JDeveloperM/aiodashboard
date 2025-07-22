@@ -10,7 +10,7 @@ const faqCategories = [
     faqs: [
       {
         question: "What is AIONET and how does it work?",
-        answer: "AIONET is an NFT-gated community on Sui Network that combines social features, achievement systems, and creator monetization. Members can build profiles, earn XP through achievements, grow referral networks, and access premium creator content."
+        answer: "AIONET is an NFT-gated community on Sui Network that combines social features and achievement systems. Members can build profiles, earn XP through achievements, and grow referral networks."
       },
       {
         question: "How do I join the community?",
@@ -18,7 +18,7 @@ const faqCategories = [
       },
       {
         question: "What are the different membership tiers?",
-        answer: "There are three tiers: NOMAD (free), PRO (400 USDC NFT), and ROYAL (1500 USDC NFT). PRO members get 3 free premium channel accesses and can create 2 channels. ROYAL members get 9 free accesses and can create 3 channels."
+        answer: "There are three tiers: NOMAD (free), PRO (400 USDC NFT), and ROYAL (1500 USDC NFT). PRO and ROYAL members get access to premium features and enhanced community benefits."
       }
     ]
   },
@@ -48,7 +48,7 @@ const faqCategories = [
     faqs: [
       {
         question: "What are PRO and ROYAL NFTs?",
-        answer: "PRO and ROYAL NFTs are utility tokens that upgrade your account tier. They provide access to premium features, forum access, free premium channel accesses, and unlock advanced creator tools and community benefits."
+        answer: "PRO and ROYAL NFTs are utility tokens that upgrade your account tier. They provide access to premium features, forum access, and unlock advanced community benefits."
       },
       {
         question: "How do I mint PRO or ROYAL NFTs?",
@@ -56,48 +56,48 @@ const faqCategories = [
       },
       {
         question: "Can I sell my NFTs?",
-        answer: "Yes, NFTs can be traded on compatible marketplaces. However, selling your NFT will downgrade your account tier and remove associated benefits like forum access and premium channel features."
+        answer: "Yes, NFTs can be traded on compatible marketplaces. However, selling your NFT will downgrade your account tier and remove associated benefits like forum access and premium features."
       }
     ]
   },
-  {
-    category: "Creator Channels & Community",
-    faqs: [
-      {
-        question: "How do creator channels work?",
-        answer: "Verified creators can monetize their Telegram channels through AIONET. Users pay in SUI tokens for 30, 60, or 90-day access. PRO and ROYAL members get free premium channel accesses based on their tier."
-      },
-      {
-        question: "How does forum access work?",
-        answer: "Our forum has role-based access with different categories. All users can access General discussions, while PRO and ROYAL members get access to exclusive categories and creator channels. Access is automatically granted based on your NFT tier."
-      },
-      {
-        question: "How do I become a creator?",
-        answer: "Creators can apply through the platform to monetize their content. Once verified, you can create premium channels with subscription-based access. PRO users can create up to 2 channels, ROYAL users can create up to 3 channels."
-      },
-      {
-        question: "What is the referral system?",
-        answer: "The referral system has 5 levels with commission tracking. Generate your unique referral code, share it with others, and earn from their activities. Your affiliate level matches your profile level (1-5) based on XP earned through achievements."
-      }
-    ]
-  },
-  {
-    category: "RaffleCraft & DApps",
-    faqs: [
-      {
-        question: "What is RaffleCraft and how do I participate?",
-        answer: "RaffleCraft is a weekly quiz-based raffle system. Answer blockchain-related questions to earn ticket minting rights, then use SUI tokens to mint numbered tickets and participate in weekly prize drawings."
-      },
-      {
-        question: "How do RaffleCraft tickets work?",
-        answer: "Complete weekly quizzes to earn minting rights, then mint numbered tickets using SUI tokens. Each ticket gives you a chance to win weekly prizes. Tickets are NFTs stored on the Sui Network."
-      },
-      {
-        question: "What other DApps are available?",
-        answer: "RaffleCraft is our primary DApp, offering weekly quiz-based raffles with SUI token prizes. We're continuously developing new DApps to enhance the community experience and provide additional engagement opportunities."
-      }
-    ]
-  },
+  // {
+  //   category: "Creator Channels & Community",
+  //   faqs: [
+  //     {
+  //       question: "How do creator channels work?",
+  //       answer: "Verified creators can monetize their Telegram channels through AIONET. Users pay in SUI tokens for 30, 60, or 90-day access. PRO and ROYAL members get free premium channel accesses based on their tier."
+  //     },
+  //     {
+  //       question: "How does forum access work?",
+  //       answer: "Our forum has role-based access with different categories. All users can access General discussions, while PRO and ROYAL members get access to exclusive categories and creator channels. Access is automatically granted based on your NFT tier."
+  //     },
+  //     {
+  //       question: "How do I become a creator?",
+  //       answer: "Creators can apply through the platform to monetize their content. Once verified, you can create premium channels with subscription-based access. PRO users can create up to 2 channels, ROYAL users can create up to 3 channels."
+  //     },
+  //     {
+  //       question: "What is the referral system?",
+  //       answer: "The referral system has 5 levels with commission tracking. Generate your unique referral code, share it with others, and earn from their activities. Your affiliate level matches your profile level (1-5) based on XP earned through achievements."
+  //     }
+  //   ]
+  // },
+  // {
+  //   category: "RaffleCraft & DApps",
+  //   faqs: [
+  //     {
+  //       question: "What is RaffleCraft and how do I participate?",
+  //       answer: "RaffleCraft is a weekly quiz-based raffle system. Answer blockchain-related questions to earn ticket minting rights, then use SUI tokens to mint numbered tickets and participate in weekly prize drawings."
+  //     },
+  //     {
+  //       question: "How do RaffleCraft tickets work?",
+  //       answer: "Complete weekly quizzes to earn minting rights, then mint numbered tickets using SUI tokens. Each ticket gives you a chance to win weekly prizes. Tickets are NFTs stored on the Sui Network."
+  //     },
+  //     {
+  //       question: "What other DApps are available?",
+  //       answer: "RaffleCraft is our primary DApp, offering weekly quiz-based raffles with SUI token prizes. We're continuously developing new DApps to enhance the community experience and provide additional engagement opportunities."
+  //     }
+  //   ]
+  // },
   {
     category: "Technical & Support",
     faqs: [
@@ -115,16 +115,16 @@ const faqCategories = [
       },
       {
         question: "How do I get SUI tokens?",
-        answer: "You can purchase SUI tokens from exchanges or receive them through community activities. SUI tokens are used for NFT minting, channel subscriptions, and RaffleCraft ticket purchases."
+        answer: "You can purchase SUI tokens from exchanges or receive them through community activities. SUI tokens are used for NFT minting and various platform features."
       },
       {
         question: "What if I need help or support?",
         answer: "You can get help through our community forum, where members and moderators provide assistance. PRO and ROYAL users receive priority support with faster response times."
-      },
-      {
-        question: "How do I complete KYC verification?",
-        answer: "KYC verification is optional and available in your Profile settings during onboarding. This may be required for certain advanced features and helps ensure platform security and compliance."
       }
+      // {
+      //   question: "How do I complete KYC verification?",
+      //   answer: "KYC verification is optional and available in your Profile settings during onboarding. This may be required for certain advanced features and helps ensure platform security and compliance."
+      // }
     ]
   }
 ]

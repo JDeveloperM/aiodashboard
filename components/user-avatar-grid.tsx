@@ -28,9 +28,7 @@ const getAchievementImage = (achievementName: string): string | null => {
     "Advanced User Status": "/images/achievements/Advanced User Status.png",
 
     // Social Connections Category
-    "Join the Community": "/images/achievements/Join the Community.png",
-    "Stay Informed": "/images/achievements/Stay Informed.png",
-    "Follow the Conversation": "/images/achievements/Follow the Conversation.png",
+    "Follow AIONET on X": "/images/achievements/Follow the Conversation.png", // Using Follow the Conversation icon
 
     // Crypto Bot Activities Category
     "Automate Your Trades": "/images/achievements/Automate Your Trades.png",

@@ -34,6 +34,7 @@ interface EncryptedProfile {
   email_encrypted?: string
   real_name_encrypted?: string
   location_encrypted?: string
+  social_links_encrypted?: string
 
 
   // Public fields (Walrus blob IDs and non-sensitive data)
@@ -318,7 +319,11 @@ class EncryptedDatabaseStorage {
         encryptedData.location_encrypted = this.encrypt(locationToEncrypt, encryptionKey)
       }
 
-
+      // Encrypt social_links field
+      const socialLinksToEncrypt = profileData.social_links ?? existingProfile?.social_links
+      if (socialLinksToEncrypt) {
+        encryptedData.social_links_encrypted = this.encrypt(JSON.stringify(socialLinksToEncrypt), encryptionKey)
+      }
 
       // Set public fields (non-encrypted, searchable)
       if (profileData.role_tier) {
@@ -486,6 +491,11 @@ class EncryptedDatabaseStorage {
         decrypted.location = this.decrypt(encryptedProfile.location_encrypted, key)
       }
 
+      // Decrypt social_links field
+      if (encryptedProfile.social_links_encrypted) {
+        const decryptedSocialLinks = this.decrypt(encryptedProfile.social_links_encrypted, key)
+        decrypted.social_links = JSON.parse(decryptedSocialLinks)
+      }
 
     } catch (error) {
       console.error('Failed to decrypt some profile fields:', error)

@@ -5,8 +5,37 @@ import { toast } from 'sonner'
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseKey)
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+// Regular client for operations
+const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+  },
+})
+
+// Function to get admin client (only works server-side)
+const getSupabaseAdmin = () => {
+  // Check if we're in a server environment
+  if (typeof window !== 'undefined') {
+    console.warn('Admin client requested on client-side, using regular client')
+    return supabase
+  }
+
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!serviceKey) {
+    console.warn('Service role key not available, using regular client')
+    return supabase
+  }
+
+  return createClient(supabaseUrl, serviceKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  })
+}
 
 // Types and interfaces
 export interface AffiliateSubscription {
@@ -268,7 +297,9 @@ class AffiliateSubscriptionService {
         payment_verified: false
       }
 
-      const { data, error } = await supabase
+      // Use admin client to bypass RLS for server-side operations
+      const supabaseAdmin = getSupabaseAdmin()
+      const { data, error } = await supabaseAdmin
         .from('affiliate_subscriptions')
         .insert(subscriptionData)
         .select()
@@ -306,8 +337,21 @@ class AffiliateSubscriptionService {
         return false
       }
 
-      // Find and activate the subscription by transaction hash
-      const { data: subscription, error: subError } = await supabase
+      // First, find the subscription to get the user address
+      const { data: existingSubscription, error: findError } = await supabase
+        .from('affiliate_subscriptions')
+        .select('user_address, expires_at')
+        .eq('transaction_hash', transactionHash)
+        .single()
+
+      if (findError || !existingSubscription) {
+        console.error('No subscription found with transaction hash:', transactionHash, findError)
+        return false
+      }
+
+      // Use admin client to bypass RLS for server-side operations
+      const supabaseAdmin = getSupabaseAdmin()
+      const { data: subscription, error: subError } = await supabaseAdmin
         .from('affiliate_subscriptions')
         .update({
           status: 'active',
@@ -332,7 +376,7 @@ class AffiliateSubscriptionService {
       const now = new Date()
       const expiresAt = new Date(subscription.expires_at)
 
-      const { error: profileError } = await supabase
+      const { error: profileError } = await supabaseAdmin
         .from('user_profiles')
         .update({
           affiliate_subscription_status: 'active',
@@ -408,7 +452,9 @@ class AffiliateSubscriptionService {
         event_detected_at: new Date().toISOString()
       }
 
-      const { data: bonusEvent, error: bonusError } = await supabase
+      // Use admin client to bypass RLS for server-side operations
+      const supabaseAdmin = getSupabaseAdmin()
+      const { data: bonusEvent, error: bonusError } = await supabaseAdmin
         .from('rafflecraft_bonus_events')
         .insert(bonusEventData)
         .select()
@@ -424,7 +470,7 @@ class AffiliateSubscriptionService {
 
       if (bonusApplied) {
         // Update bonus event as applied
-        await supabase
+        await supabaseAdmin
           .from('rafflecraft_bonus_events')
           .update({
             bonus_applied: true,
@@ -461,6 +507,9 @@ class AffiliateSubscriptionService {
       const currentStatus = await this.getSubscriptionStatus(userAddress)
       const now = new Date()
 
+      // Use admin client for server-side operations
+      const supabaseAdmin = getSupabaseAdmin()
+
       let newExpiresAt: Date
 
       if (currentStatus.isActive) {
@@ -470,7 +519,7 @@ class AffiliateSubscriptionService {
 
         // Update current subscription expiry
         if (currentStatus.status === 'trial') {
-          await supabase
+          await supabaseAdmin
             .from('user_profiles')
             .update({
               affiliate_trial_expires_at: newExpiresAt.toISOString(),
@@ -478,7 +527,7 @@ class AffiliateSubscriptionService {
             })
             .eq('address', userAddress)
         } else {
-          await supabase
+          await supabaseAdmin
             .from('user_profiles')
             .update({
               affiliate_subscription_expires_at: newExpiresAt.toISOString(),
@@ -503,7 +552,7 @@ class AffiliateSubscriptionService {
           bonus_reference_id: bonusReferenceId
         }
 
-        const { data: bonusSub, error: bonusSubError } = await supabase
+        const { data: bonusSub, error: bonusSubError } = await supabaseAdmin
           .from('affiliate_subscriptions')
           .insert(bonusSubscriptionData)
           .select()
@@ -515,7 +564,7 @@ class AffiliateSubscriptionService {
         }
 
         // Update user profile status
-        await supabase
+        await supabaseAdmin
           .from('user_profiles')
           .update({
             affiliate_subscription_status: 'active',
@@ -525,7 +574,7 @@ class AffiliateSubscriptionService {
           .eq('address', userAddress)
 
         // Link bonus event to subscription
-        await supabase
+        await supabaseAdmin
           .from('rafflecraft_bonus_events')
           .update({ affiliate_subscription_id: bonusSub.id })
           .eq('id', bonusEventId)
@@ -587,7 +636,9 @@ class AffiliateSubscriptionService {
       const now = new Date()
       const trialExpires = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
 
-      const { error } = await supabase
+      // Use admin client for server-side operations
+      const supabaseAdmin = getSupabaseAdmin()
+      const { error } = await supabaseAdmin
         .from('user_profiles')
         .update({
           affiliate_subscription_status: 'trial',
@@ -616,7 +667,9 @@ class AffiliateSubscriptionService {
     userAddress: string,
     status: 'trial' | 'active' | 'expired' | 'cancelled'
   ): Promise<void> {
-    const { error } = await supabase
+    // Use admin client for server-side operations
+    const supabaseAdmin = getSupabaseAdmin()
+    const { error } = await supabaseAdmin
       .from('user_profiles')
       .update({
         affiliate_subscription_status: status,

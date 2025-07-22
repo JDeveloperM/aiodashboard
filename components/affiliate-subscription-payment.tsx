@@ -10,7 +10,38 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from "@mysten/dapp-kit"
 import { Transaction } from "@mysten/sui/transactions"
 import { MIST_PER_SUI } from "@mysten/sui/utils"
-import { affiliateSubscriptionService, PriceQuote } from "@/lib/affiliate-subscription-service"
+// Remove direct service import - use API routes instead
+export interface PriceQuote {
+  usdcPrice: number
+  suiPrice: number
+  suiUsdRate: number
+  validUntil: string
+  durationDays?: number
+}
+
+// Function to get user-friendly subscription type names
+const getSubscriptionTypeDisplayName = (subscriptionType: string, durationDays?: number) => {
+  switch (subscriptionType) {
+    case 'one_time_30_days':
+      return '30 Days Extend (one time payment)'
+    case 'one_time_60_days':
+      return '60 Days Extend (one time payment)'
+    case 'one_time_90_days':
+      return '90 Days Extend (one time payment)'
+    case 'recurring_monthly':
+      return 'Monthly Recurring Payment (30 days)'
+    case 'recurring_quarterly':
+      return 'Quarterly Recurring Payment (90 days)'
+    case 'recurring_yearly':
+      return 'Yearly Recurring Payment (365 days)'
+    default:
+      // Fallback for any other types
+      if (durationDays) {
+        return `${durationDays} Days Extend (one time payment)`
+      }
+      return subscriptionType
+  }
+}
 import { useSuiAuth } from "@/contexts/sui-auth-context"
 import { 
   CreditCard, 
@@ -42,10 +73,11 @@ export function AffiliateSubscriptionPayment({
   const [error, setError] = useState<string | null>(null)
   const [transactionHash, setTransactionHash] = useState<string | null>(null)
   const [selectedDuration, setSelectedDuration] = useState<number>(30) // Default to 30 days
+  const [isRecurring, setIsRecurring] = useState(false) // Default to one-time payment
 
   const account = useCurrentAccount()
   const suiClient = useSuiClient()
-  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction()
+  const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction()
   const { isSignedIn } = useSuiAuth()
 
   // Get SUI balance
@@ -95,14 +127,33 @@ export function AffiliateSubscriptionPayment({
       setIsProcessing(true)
       setError(null)
 
-      // Create a custom quote based on selected duration
-      const quote = await affiliateSubscriptionService.getPriceQuote()
+      // Get price quote from API
+      console.log('🔄 Fetching price quote for duration:', selectedDuration)
+      const response = await fetch('/api/affiliate-subscription/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ durationDays: selectedDuration })
+      })
+
+      console.log('📡 Quote API response status:', response.status)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('❌ Quote API error:', errorText)
+        throw new Error(`Failed to get price quote: ${errorText}`)
+      }
+
+      const responseData = await response.json()
+      console.log('📊 Quote API response data:', responseData)
+      const { quote } = responseData
 
       // Override the quote with our calculated values
       const customQuote: PriceQuote = {
-        ...quote,
         usdcPrice: calculatedPrice,
-        suiPrice: calculatedPrice / quote.suiUsdRate, // Convert to SUI using current rate
+        suiPrice: calculatedPrice / (quote.suiUsdRate || 2.5), // Convert to SUI using current rate
+        suiUsdRate: quote.suiUsdRate || 2.5,
+        validUntil: quote.validUntil,
+        durationDays: selectedDuration
       }
 
       setPriceQuote(customQuote)
@@ -113,6 +164,64 @@ export function AffiliateSubscriptionPayment({
       setPaymentStep('error')
     } finally {
       setIsProcessing(false)
+    }
+  }
+
+  // Handle transaction success (shared logic for both wallet types)
+  const handleTransactionSuccess = async (txHash: string) => {
+    try {
+      console.log('🔄 Processing subscription for duration:', selectedDuration, 'days')
+
+      // Create subscription record via API
+      const createResponse = await fetch('/api/affiliate-subscription/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userAddress,
+          priceQuote,
+          transactionHash: txHash,
+          durationDays: selectedDuration,
+          isRecurring
+        })
+      })
+
+      if (!createResponse.ok) {
+        const error = await createResponse.json()
+        throw new Error(error.error || 'Failed to create subscription')
+      }
+
+      const { subscription } = await createResponse.json()
+      console.log('✅ Subscription created:', subscription.id)
+
+      // Verify and activate subscription via API
+      console.log('🔍 Starting verification for transaction:', txHash)
+      const verifyResponse = await fetch('/api/affiliate-subscription/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionHash: txHash })
+      })
+
+      if (!verifyResponse.ok) {
+        const error = await verifyResponse.json()
+        throw new Error(error.error || 'Failed to verify subscription')
+      }
+
+      const { verified } = await verifyResponse.json()
+      console.log('🔍 Verification result:', verified)
+
+      if (verified) {
+        setTransactionHash(txHash)
+        setPaymentStep('success')
+        toast.success('🎉 Affiliate subscription activated successfully!')
+        onPaymentSuccess?.()
+      } else {
+        throw new Error('Payment verification failed')
+      }
+    } catch (error: any) {
+      console.error('❌ Error processing subscription:', error)
+      console.error('❌ Error details:', error.message, error.stack)
+      setError(`Payment sent but subscription activation failed: ${error.message}. Please contact support.`)
+      setPaymentStep('error')
     }
   }
 
@@ -141,53 +250,53 @@ export function AffiliateSubscriptionPayment({
         platformWallet
       )
 
-      // Execute transaction
-      signAndExecuteTransaction(
-        { transaction: tx as any },
-        {
-          onSuccess: async (result) => {
-            console.log('✅ Payment transaction successful:', result)
-            const txHash = result.digest
+      // Execute transaction using Enoki-compatible signAndExecuteTransaction
+      console.log('🔄 Executing payment transaction...')
+      console.log('🔧 Transaction details:', {
+        userAddress,
+        amountInSui: priceQuote.suiPrice,
+        amountInMist: amountInMist.toString(),
+        platformWallet
+      })
 
-            try {
-              console.log('🔄 Processing subscription for duration:', selectedDuration, 'days')
+      // Check if user is properly authenticated
+      console.log('🔍 Checking authentication state...')
+      console.log('- Current account:', account)
+      console.log('- User address:', userAddress)
+      console.log('- Account address:', account?.address)
 
-              // Create subscription record
-              const subscription = await affiliateSubscriptionService.createSubscription(
-                userAddress,
-                priceQuote,
-                txHash,
-                selectedDuration
-              )
-              console.log('✅ Subscription created:', subscription.id)
+      try {
+        console.log('🔄 Attempting to sign and execute transaction...')
+        const result = await signAndExecuteTransaction({
+          transaction: tx as any, // Type assertion to handle version mismatch between @mysten/sui packages
+        })
 
-              // Verify and activate subscription
-              console.log('🔍 Starting verification for transaction:', txHash)
-              const verified = await affiliateSubscriptionService.verifyAndActivateSubscription(txHash)
-              console.log('🔍 Verification result:', verified)
+        console.log('✅ Payment transaction successful:', result)
+        await handleTransactionSuccess(result.digest)
 
-              if (verified) {
-                setTransactionHash(txHash)
-                setPaymentStep('success')
-                toast.success('🎉 Affiliate subscription activated successfully!')
-                onPaymentSuccess?.()
-              } else {
-                throw new Error('Payment verification failed')
-              }
-            } catch (error: any) {
-              console.error('❌ Error processing subscription:', error)
-              console.error('❌ Error details:', error.message, error.stack)
-              setError(`Payment sent but subscription activation failed: ${error.message}. Please contact support.`)
-              setPaymentStep('error')
-            }
-          },
-          onError: (error) => {
-            console.error('❌ Payment transaction failed:', error)
-            setError(`Payment failed: ${error.message}`)
-            setPaymentStep('error')
-          },
+      } catch (error: any) {
+        console.error('❌ Payment transaction failed:', error)
+        console.error('❌ Error stack:', error.stack)
+        console.error('❌ Error details:', {
+          name: error.name,
+          message: error.message,
+          cause: error.cause,
+          code: error.code
+        })
+
+        // Check if this is an Enoki authentication issue
+        if (error.message?.includes('Missing required parameters for proof generation')) {
+          console.error('🚨 This appears to be an Enoki zkLogin authentication issue')
+          console.error('🔍 Possible causes:')
+          console.error('  1. Google OAuth redirect URI not configured correctly')
+          console.error('  2. Enoki wallet not properly registered')
+          console.error('  3. User not properly authenticated with Enoki')
+          setError('Authentication error: Please try logging out and logging back in with Google.')
+        } else {
+          setError(`Payment failed: ${error.message}`)
         }
-      )
+        setPaymentStep('error')
+      }
     } catch (error: any) {
       console.error('Payment error:', error)
       setError(error.message || 'Payment failed. Please try again.')
@@ -276,16 +385,68 @@ export function AffiliateSubscriptionPayment({
                 </Select>
               </div>
 
+              {/* Subscription Type Options */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-[#C0E6FF]">Subscription Type</label>
+                <div className="space-y-2">
+                  <div
+                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                      !isRecurring
+                        ? 'bg-[#4DA2FF]/20 border-[#4DA2FF] text-white'
+                        : 'bg-[#1a2f51]/30 border-[#C0E6FF]/30 text-[#C0E6FF] hover:border-[#C0E6FF]/50'
+                    }`}
+                    onClick={() => setIsRecurring(false)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">One-Time Payment</p>
+                        <p className="text-sm opacity-80">Pay once, extends your current subscription</p>
+                      </div>
+                      <div className={`w-4 h-4 rounded-full border-2 ${
+                        !isRecurring ? 'bg-[#4DA2FF] border-[#4DA2FF]' : 'border-[#C0E6FF]/50'
+                      }`} />
+                    </div>
+                  </div>
+
+                  <div
+                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                      isRecurring
+                        ? 'bg-[#4DA2FF]/20 border-[#4DA2FF] text-white'
+                        : 'bg-[#1a2f51]/30 border-[#C0E6FF]/30 text-[#C0E6FF] hover:border-[#C0E6FF]/50'
+                    }`}
+                    onClick={() => setIsRecurring(true)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Recurring Subscription</p>
+                        <p className="text-sm opacity-80">Automatically renews every period (can be cancelled)</p>
+                      </div>
+                      <div className={`w-4 h-4 rounded-full border-2 ${
+                        isRecurring ? 'bg-[#4DA2FF] border-[#4DA2FF]' : 'border-[#C0E6FF]/50'
+                      }`} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Price Preview */}
               <div className="bg-[#1a2f51]/30 rounded-lg p-4 border border-[#C0E6FF]/10">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-[#C0E6FF] text-sm">Selected Duration</p>
-                    <p className="text-white font-semibold">{selectedOption?.label || `${selectedDuration} days`}</p>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-[#C0E6FF] text-sm">Selected Duration</p>
+                      <p className="text-white font-semibold">{selectedOption?.label || `${selectedDuration} days`}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[#C0E6FF] text-sm">Total Price</p>
+                      <p className="text-white font-bold text-lg">${calculatedPrice.toFixed(2)}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[#C0E6FF] text-sm">Total Price</p>
-                    <p className="text-white font-bold text-lg">${calculatedPrice.toFixed(2)}</p>
+                  <div className="flex justify-between items-center pt-2 border-t border-[#C0E6FF]/10">
+                    <p className="text-[#C0E6FF] text-sm">Type</p>
+                    <p className="text-white font-medium">
+                      {isRecurring ? 'Recurring Subscription' : 'One-Time Payment'}
+                    </p>
                   </div>
                 </div>
               </div>
