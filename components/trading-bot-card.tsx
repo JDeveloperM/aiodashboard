@@ -312,13 +312,13 @@ export function TradingBotCard({
               className={cn(
                 "w-full h-9 text-sm font-semibold rounded-md transition-colors",
                 isFollowed
-                  ? "bg-gray-600 text-white hover:bg-gray-500"
+                  ? "bg-red-600 text-white hover:bg-red-500"
                   : "bg-orange-500 text-white hover:bg-orange-600"
               )}
               onClick={isFollowed ? handleUnfollow : handleFollow}
               disabled={isLoading}
             >
-              {isLoading ? "..." : (isFollowed ? "Following" : "Follow in Bybit")}
+              {isLoading ? "..." : (isFollowed ? "Unfollow" : "Follow in Bybit")}
             </Button>
           )}
         </div>
