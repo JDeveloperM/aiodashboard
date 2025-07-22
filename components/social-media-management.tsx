@@ -20,6 +20,7 @@ import {
 import { toast } from 'sonner'
 import { useProfile } from '@/contexts/profile-context'
 import { useSuiAuth } from '@/contexts/sui-auth-context'
+import Image from "next/image"
 
 interface SocialLink {
   platform: string
@@ -141,6 +142,19 @@ export function SocialMediaManagement() {
   }
 
   const getPlatformIcon = (platformId: string) => {
+    if (platformId === 'X') {
+      return ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+        <Image
+          src="/images/social/x.png"
+          alt="X (Twitter) icon"
+          width={20}
+          height={20}
+          className={className}
+          style={style}
+        />
+      )
+    }
+    // Fallback to Lucide icon for other platforms
     const platform = platforms.find(p => p.id === platformId)
     return platform?.icon || X
   }
@@ -154,7 +168,13 @@ export function SocialMediaManagement() {
     <Card className="bg-[#030f1c] border border-[#C0E6FF]/20">
       <CardHeader>
         <CardTitle className="text-white flex items-center gap-2">
-          <X className="w-5 h-5 text-[#1DA1F2]" />
+          <Image
+            src="/images/social/x.png"
+            alt="X (Twitter) icon"
+            width={20}
+            height={20}
+            className="w-5 h-5"
+          />
           Follow AIONET on X
         </CardTitle>
         <p className="text-[#C0E6FF] text-sm">
@@ -292,7 +312,13 @@ export function SocialMediaManagement() {
                   size="sm"
                   className="bg-[#1DA1F2] hover:bg-[#1DA1F2]/80 text-white"
                 >
-                  <X className="w-4 h-4 mr-2" />
+                  <Image
+                    src="/images/social/x.png"
+                    alt="X (Twitter) icon"
+                    width={16}
+                    height={16}
+                    className="w-4 h-4 mr-2"
+                  />
                   Follow @AIONET_Official
                 </Button>
               </div>

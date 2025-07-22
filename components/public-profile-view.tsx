@@ -29,7 +29,8 @@ const getAchievementImage = (achievementName: string): string | null => {
     "Unlock Full Access": "/images/achievements/Unlock Full Access.png",
     "Advanced User Status": "/images/achievements/Advanced User Status.png",
 
-
+    // Social Connections Category
+    "Follow AIONET on X": "/images/achievements/Follow the Conversation.png", // Using Follow the Conversation icon
 
     // Crypto Bot Activities Category
     "Automate Your Trades": "/images/achievements/Automate Your Trades.png",

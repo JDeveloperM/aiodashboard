@@ -71,38 +71,35 @@ const getLastActiveTime = (lastActive: string): string => {
 
 // Helper function to convert database achievements to UI format
 const convertAchievements = (achievementsData: any[], profile: DecryptedProfile): Achievement[] => {
-  // Base achievements that should always be available (updated with new names and XP values)
+  // Base achievements that should always be available (updated to match profile page exactly)
   const baseAchievements = [
-    // Profile & KYC Category - Updated to match profile page
-    { name: "Personalize Your Profile", color: "#4DA2FF", xp: 50, tooltip: "Upload a profile picture to your account" },
-    { name: "Unlock Full Access", color: "#10B981", xp: 100, tooltip: "Feature currently disabled" },
-    { name: "Advanced User Status", color: "#FFD700", xp: 200, tooltip: "Achieve profile level 5" },
+    // Profile Category - Updated to match profile page
+    { name: "Personalize Your Profile", color: "#4DA2FF", xp: 50, tokens: 25, category: "Profile", tooltip: "Upload a profile picture to your account" },
+    { name: "Advanced User Status", color: "#FFD700", xp: 200, tokens: 100, category: "Profile", tooltip: "Achieve profile level 5" },
 
     // Social Connections Category - Updated to match profile page
-    { name: "Join the Community", color: "#5865F2", xp: 50, tooltip: "Link your Discord account" },
-    { name: "Stay Informed", color: "#0088CC", xp: 50, tooltip: "Link your Telegram account" },
-    { name: "Follow the Conversation", color: "#000000", xp: 50, tooltip: "Link your X (Twitter) account" },
+    { name: "Follow AIONET on X", color: "#1DA1F2", xp: 100, tokens: 75, category: "Social Connections", tooltip: "Follow @AIONET_Official on X (Twitter) to stay updated with the latest news" },
 
     // Crypto Bot Activities Category - Updated to match profile page
-    { name: "Automate Your Trades", color: "#F7931A", xp: 150, tooltip: "Link your Bybit account" },
-    { name: "APLN Trading Signals", color: "#9333EA", xp: 100, tooltip: "Subscribe to the APLN Bot" },
-    { name: "HRMS Trading Insights", color: "#06B6D4", xp: 100, tooltip: "Subscribe to the HRMS Bot" },
-    { name: "ATHN Trading Edge", color: "#8B5CF6", xp: 100, tooltip: "Subscribe to the ATHN Bot" },
-    { name: "Master Trading Cycles", color: "#10B981", xp: 200, tooltip: "Finish at least 3 trading cycles with platform bots" },
+    { name: "Automate Your Trades", color: "#F7931A", xp: 150, tokens: 75, category: "Crypto Bot Activities", tooltip: "Link your Bybit account" },
+    { name: "APLN Trading Signals", color: "#9333EA", xp: 100, tokens: 50, category: "Crypto Bot Activities", tooltip: "Subscribe to the APLN Bot" },
+    { name: "HRMS Trading Insights", color: "#06B6D4", xp: 100, tokens: 50, category: "Crypto Bot Activities", tooltip: "Subscribe to the HRMS Bot" },
+    { name: "ATHN Trading Edge", color: "#8B5CF6", xp: 100, tokens: 50, category: "Crypto Bot Activities", tooltip: "Subscribe to the ATHN Bot" },
+    { name: "Master Trading Cycles", color: "#10B981", xp: 200, tokens: 100, category: "Crypto Bot Activities", tooltip: "Finish at least 3 trading cycles with platform bots" },
 
     // User Upgrades Category - Updated to match profile page
-    { name: "Mint Royal NFT Status", color: "#8B5CF6", xp: 300, tooltip: "Mint a Royal NFT to achieve elite status" },
+    { name: "Mint Royal NFT Status", color: "#8B5CF6", xp: 300, tokens: 200, category: "User Upgrades", tooltip: "Mint a Royal NFT to achieve elite status" },
 
     // Referral Tiers Category - Updated to match profile page
-    { name: "Recruit PRO NFT Holders", color: "#3B82F6", xp: 250, tooltip: "Refer 5 users to become PRO NFT holders" },
-    { name: "Royal NFT Ambassadors", color: "#8B5CF6", xp: 300, tooltip: "Refer 3 users to become ROYAL NFT holders" },
-    { name: "Build a NOMAD Network", color: "#F59E0B", xp: 500, tooltip: "Add 50 NOMAD users to your network" },
-    { name: "Expand Your PRO Network", color: "#3B82F6", xp: 600, tooltip: "Add 30 PRO users to your network" },
-    { name: "Elite ROYAL Network", color: "#8B5CF6", xp: 700, tooltip: "Add 30 ROYAL users to your network" },
-    { name: "Mentor Level 5 Users", color: "#10B981", xp: 400, tooltip: "Help 10 network users achieve profile level 5" },
-    { name: "Scale Level 5 Mentorship", color: "#10B981", xp: 700, tooltip: "Help 50 network users achieve profile level 5" },
-    { name: "Guide to Level 7", color: "#F59E0B", xp: 600, tooltip: "Help 20 network users achieve profile level 7" },
-    { name: "Lead to Level 9", color: "#FFD700", xp: 800, tooltip: "Help 5 network users achieve profile level 9" }
+    { name: "Recruit PRO NFT Holders", color: "#3B82F6", xp: 250, tokens: 150, category: "Referral Tiers", tooltip: "Refer 5 users to become PRO NFT holders" },
+    { name: "Royal NFT Ambassadors", color: "#8B5CF6", xp: 300, tokens: 200, category: "Referral Tiers", tooltip: "Refer 3 users to become ROYAL NFT holders" },
+    { name: "Build a NOMAD Network", color: "#F59E0B", xp: 500, tokens: 300, category: "Referral Tiers", tooltip: "Add 50 NOMAD users to your network" },
+    { name: "Expand Your PRO Network", color: "#3B82F6", xp: 600, tokens: 400, category: "Referral Tiers", tooltip: "Add 30 PRO users to your network" },
+    { name: "Elite ROYAL Network", color: "#8B5CF6", xp: 700, tokens: 500, category: "Referral Tiers", tooltip: "Add 30 ROYAL users to your network" },
+    { name: "Mentor Level 5 Users", color: "#10B981", xp: 400, tokens: 250, category: "Referral Tiers", tooltip: "Help 10 network users achieve profile level 5" },
+    { name: "Scale Level 5 Mentorship", color: "#10B981", xp: 700, tokens: 500, category: "Referral Tiers", tooltip: "Help 50 network users achieve profile level 5" },
+    { name: "Guide to Level 7", color: "#F59E0B", xp: 600, tokens: 400, category: "Referral Tiers", tooltip: "Help 20 network users achieve profile level 7" },
+    { name: "Lead to Level 9", color: "#FFD700", xp: 800, tokens: 600, category: "Referral Tiers", tooltip: "Help 5 network users achieve profile level 9" }
   ]
 
   // Function to check if achievement should be unlocked based on profile data
