@@ -7,7 +7,9 @@ import { useCommunityAnalytics } from "@/hooks/use-community-analytics"
 import { RoleImage } from "@/components/ui/role-image"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { MintingDistributionSection } from "@/components/minting-distribution/minting-distribution-section"
 import { Users, Dice6, Rocket, RefreshCw, BookOpen, Wallet, TrendingUp, Shield, Droplets, PieChart, ExternalLink, Vote, X } from "lucide-react"
+import Image from "next/image"
 
 
 
@@ -140,20 +142,11 @@ export default function AIODashboard() {
   return (
     <div className="space-y-8">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">AIO Dashboard</h1>
-            <p className="text-[#C0E6FF] text-sm mt-1">
-              Last updated: {new Date(analytics.lastUpdated).toLocaleString()}
-            </p>
-          </div>
-          <button
-            onClick={refreshAnalytics}
-            className="bg-[#4DA2FF] hover:bg-[#3d8ae6] text-white px-4 py-2 rounded-md flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </button>
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">AIO Dashboard</h1>
+          <p className="text-[#C0E6FF] text-sm mt-1">
+            Last updated: {new Date(analytics.lastUpdated).toLocaleString()}
+          </p>
         </div>
 
       {/* AIONET Community Stats */}
@@ -166,9 +159,13 @@ export default function AIODashboard() {
                 <p className="text-sm font-medium text-white">Total AIONET Users</p>
                 <p className="text-2xl font-bold text-white">{analytics.totalHolders}</p>
               </div>
-              <div className="bg-[#4DA2FF]/20 p-3 rounded-full">
-                <Users className="w-6 h-6 text-white" />
-              </div>
+              <Image
+                src="/images/animepfp/AIONETmin.png"
+                alt="AIONET"
+                width={64}
+                height={64}
+                className="w-16 h-16 object-contain"
+              />
             </div>
           </div>
         </div>
@@ -618,6 +615,9 @@ export default function AIODashboard() {
       </div>
         </div>
 
+      {/* NFT Minting Distribution Section */}
+      <MintingDistributionSection />
+
       {/* Progress Cards */}
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         {/* E-Learning Progress */}
@@ -642,7 +642,6 @@ export default function AIODashboard() {
               </div>
 
               <div className="bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 rounded-lg p-3">
-                <div className="text-[#8B5CF6] text-sm font-medium mb-1">Coming Soon</div>
                 <div className="text-[#C0E6FF] text-sm">
                   E-Learning will launch when we reach 250 PRO/ROYAL holders, providing educational content and courses.
                 </div>
@@ -673,7 +672,6 @@ export default function AIODashboard() {
               </div>
 
               <div className="bg-[#FF6B35]/10 border border-[#FF6B35]/20 rounded-lg p-3">
-                <div className="text-[#FF6B35] text-sm font-medium mb-1">Coming Soon</div>
                 <div className="text-[#C0E6FF] text-sm">
                   RaffleQuiz will launch when we reach 500 PRO/ROYAL holders, featuring interactive quizzes and rewards.
                 </div>
@@ -704,7 +702,6 @@ export default function AIODashboard() {
               </div>
 
               <div className="bg-[#4DA2FF]/10 border border-[#4DA2FF]/20 rounded-lg p-3">
-                <div className="text-[#4DA2FF] text-sm font-medium mb-1">Coming Soon</div>
                 <div className="text-[#C0E6FF] text-sm">
                   DEWhale will launch when we reach 1000 PRO/ROYAL holders, enabling $100 KeyShares for early-stage investments.
                 </div>
@@ -735,7 +732,6 @@ export default function AIODashboard() {
               </div>
 
               <div className="bg-[#10B981]/10 border border-[#10B981]/20 rounded-lg p-3">
-                <div className="text-[#10B981] text-sm font-medium mb-1">Coming Soon</div>
                 <div className="text-[#C0E6FF] text-sm">
                   AIO Connect (Creators & Forum) will launch when we reach 1500 PRO/ROYAL holders, enabling community interaction.
                 </div>

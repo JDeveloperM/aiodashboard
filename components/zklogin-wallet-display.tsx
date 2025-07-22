@@ -55,6 +55,9 @@ export function ZkLoginWalletDisplay() {
   const { tier } = useSubscription()
   const { balance: paionBalance, isLoading: paionLoading } = useTokens()
 
+  // State for collapsible NFT collections
+  const [expandedCollections, setExpandedCollections] = useState<Record<string, boolean>>({})
+
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [jwtPayload, setJwtPayload] = useState<JWTPayload | null>(null)
   const [isOpen, setIsOpen] = useState(false)
@@ -360,6 +363,13 @@ export function ZkLoginWalletDisplay() {
     setIsOpen(false)
   }
 
+  const toggleCollection = (collectionType: string) => {
+    setExpandedCollections(prev => ({
+      ...prev,
+      [collectionType]: !prev[collectionType]
+    }))
+  }
+
   if (!zkLoginUserAddress || !jwtPayload) {
     return null
   }
@@ -551,8 +561,14 @@ export function ZkLoginWalletDisplay() {
                     return (
                     <div key={collectionType} className="space-y-3">
                       {/* Collection Header */}
-                      <div className="flex items-center justify-between">
+                      <div
+                        className="flex items-center justify-between cursor-pointer hover:bg-[#1a2f51]/30 p-2 rounded-lg transition-colors"
+                        onClick={() => toggleCollection(collectionType)}
+                      >
                         <div className="flex items-center gap-2">
+                          <ChevronDown className={`w-4 h-4 text-[#C0E6FF] transition-transform ${
+                            expandedCollections[collectionType] ? 'rotate-180' : ''
+                          }`} />
                           <div className={`w-3 h-3 rounded-full ${
                             collectionType === 'PRO' ? 'bg-blue-500' :
                             collectionType === 'ROYAL' ? 'bg-yellow-500' :
@@ -568,11 +584,12 @@ export function ZkLoginWalletDisplay() {
                       </div>
 
                       {/* Collection NFTs */}
-                      <div className={`grid gap-3 ${
-                        typedNfts.length === 1 ? 'grid-cols-1 justify-items-center' :
-                        typedNfts.length === 2 ? 'grid-cols-2' :
-                        'grid-cols-2 md:grid-cols-3'
-                      }`}>
+                      {expandedCollections[collectionType] && (
+                        <div className={`grid gap-3 ${
+                          typedNfts.length === 1 ? 'grid-cols-1 justify-items-center' :
+                          typedNfts.length === 2 ? 'grid-cols-2' :
+                          'grid-cols-2 md:grid-cols-3'
+                        }`}>
                         {typedNfts.map(({ nft, nftData, nftId, nftType, index }) => (
                           <div
                             key={nftId || index}
@@ -617,7 +634,8 @@ export function ZkLoginWalletDisplay() {
                             </Button>
                           </div>
                         ))}
-                      </div>
+                        </div>
+                      )}
                     </div>
                     )
                   })}

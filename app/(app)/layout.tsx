@@ -87,9 +87,9 @@ export default function AppLayout({
               speed={0.1}
               squareSize={40}
               direction="down"
-              borderColor="rgba(30, 58, 138, 0.1)"
-              hoverFillColor="rgba(30, 58, 138, 0.05)"
-              className="opacity-30"
+              borderColor="rgba(30, 58, 138, 0.3)"
+              hoverFillColor="rgba(30, 58, 138, 0.15)"
+              className="opacity-50"
             />
           )}
         </div>

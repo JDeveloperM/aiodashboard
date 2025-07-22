@@ -5,9 +5,10 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useSubscription } from "@/contexts/subscription-context"
 import { useSuiAuth } from "@/contexts/sui-auth-context"
+import { RoleImage } from "@/components/ui/role-image"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, LineChart, ArrowUpRight, Crown, ArrowRight, Bot, Users, BookOpen, ChevronDown, ChevronRight, Dice6, Rocket, Share2, HelpCircle, Globe, Settings, Trophy, MessageSquare, UserCheck, Shield, Vote, DollarSign } from "lucide-react"
+import { LayoutDashboard, TrendingUp, BarChart, ChevronLeft, Lock, Menu, X, LineChart, ArrowUpRight, Crown, ArrowRight, Bot, Users, BookOpen, ChevronDown, ChevronRight, Dice6, Rocket, Share2, HelpCircle, Globe, Settings, Trophy, MessageSquare, UserCheck, Shield, Vote, DollarSign, CreditCard } from "lucide-react"
 
 export const Sidebar = memo(function Sidebar() {
   const pathname = usePathname()
@@ -15,7 +16,6 @@ export const Sidebar = memo(function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [copyTradingExpanded, setCopyTradingExpanded] = useState(false)
-  const [aioConnectExpanded, setAioConnectExpanded] = useState(false)
 
   // RESTORED: Using stable subscription context
   const { canAccessCryptoBots, canAccessForexBots, canAccessStockBots, tier } = useSubscription()
@@ -76,10 +76,6 @@ export const Sidebar = memo(function Sidebar() {
     },
     { name: "Members", href: "/community", icon: UserCheck, restricted: false },
     { name: "Royalties", href: "/royalties", icon: Crown, restricted: false },
-    { name: "AIO Connect", href: "/forum", icon: Globe, restricted: true, comingSoon: true },
-    { name: "RaffleQuiz", href: "/dapps/rafflecraft", icon: Dice6, restricted: true, comingSoon: true },
-    { name: "Dewhale", href: "/dapps/dewhale-launchpad", icon: Rocket, restricted: true, comingSoon: true },
-    { name: "E-Learning", href: "/metago-academy", icon: BookOpen, restricted: true, comingSoon: true },
     { name: "Leaderboard", href: "/leaderboard", icon: Trophy, restricted: false },
   ]
 
@@ -109,7 +105,7 @@ export const Sidebar = memo(function Sidebar() {
       ? item.subItems?.some(subItem => pathname === subItem.href) || pathname === item.href
       : pathname === item.href
 
-    const isExpanded = (item.name === "Copy Trading" && copyTradingExpanded) || (item.name === "AIO Connect" && aioConnectExpanded)
+    const isExpanded = (item.name === "Copy Trading" && copyTradingExpanded)
 
     if (item.hasDropdown && (!isCollapsed || isMobileOpen)) {
       return (
@@ -118,8 +114,6 @@ export const Sidebar = memo(function Sidebar() {
             onClick={() => {
               if (item.name === "Copy Trading") {
                 setCopyTradingExpanded(!copyTradingExpanded)
-              } else if (item.name === "AIO Connect") {
-                setAioConnectExpanded(!aioConnectExpanded)
               }
             }}
             className={cn(
@@ -326,31 +320,107 @@ export const Sidebar = memo(function Sidebar() {
             ))}
           </div>
 
+          {/* Subscription Button */}
+          {(!isCollapsed || isMobileOpen) && (
+            <div className="px-2 mb-3">
+              <Button
+                className="w-full bg-[#1a2f51] border border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10 transition-all duration-200"
+                variant="outline"
+                onClick={() => router.push('/dashboard/subscriptions')}
+              >
+                <CreditCard className="w-4 h-4 mr-2" />
+                Manage Subscription
+              </Button>
+            </div>
+          )}
 
+          {/* Collapsed Subscription Button */}
+          {isCollapsed && !isMobileOpen && (
+            <div className="p-2 m-2 mb-3 bg-[#0c1b36]/80 backdrop-blur-sm rounded-lg border border-blue-500/20 flex justify-center">
+              <Button
+                className="w-full bg-[#1a2f51] border border-[#C0E6FF]/30 text-[#C0E6FF] hover:bg-[#C0E6FF]/10"
+                size="icon"
+                variant="outline"
+                onClick={() => router.push('/dashboard/subscriptions')}
+                title="Manage Subscription"
+              >
+                <CreditCard className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
 
           {/* Upgrade CTA */}
           {(!isCollapsed || isMobileOpen) && (
             <div className="p-4 mx-2 mb-4 bg-[#0c1b36]/80 backdrop-blur-sm rounded-lg border border-blue-500/20">
-              <h3 className="font-medium text-white mb-1">Upgrade Your Plan</h3>
-              <p className="text-xs text-gray-300 mb-3">Get access to all features and premium bots</p>
+              <h3 className="font-medium text-white mb-1">
+                {tier === "ROYAL" ? "Maximum Level" : tier === "PRO" ? "Upgrade Available" : "Upgrade Your Plan"}
+              </h3>
+              <p className="text-xs text-gray-300 mb-3">
+                {tier === "ROYAL"
+                  ? "You have the highest tier with all features unlocked"
+                  : tier === "PRO"
+                  ? "Upgrade to ROYAL for the ultimate experience"
+                  : "Get access to all features and premium bots"
+                }
+              </p>
               <Button
-    className="w-full bg-[#4da2ff] hover:bg-[#3d8ae6] text-white shadow-lg transition-all duration-200"
-    onClick={() => router.push('/dashboard/subscriptions')}
-  >
-    <TrendingUp className="w-4 h-4 animate-pulse" />
-    Upgrade
-  </Button>
+                className={`w-full shadow-lg transition-all duration-200 ${
+                  tier === "ROYAL"
+                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                    : tier === "PRO"
+                    ? "bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-bold"
+                    : "bg-[#4da2ff] hover:bg-[#3d8ae6] text-white"
+                }`}
+                onClick={() => tier !== "ROYAL" && router.push('/dashboard/subscriptions')}
+                disabled={tier === "ROYAL"}
+              >
+                {tier === "ROYAL" ? (
+                  <>
+                    <RoleImage role="ROYAL" size="md" className="mr-2" />
+                    MAX LEVEL
+                  </>
+                ) : tier === "PRO" ? (
+                  <>
+                    <RoleImage role="ROYAL" size="md" className="mr-2" />
+                    UPGRADE++
+                  </>
+                ) : (
+                  <>
+                    <RoleImage role="PRO" size="md" className="mr-2" />
+                    UPGRADE
+                  </>
+                )}
+              </Button>
             </div>
           )}
           {isCollapsed && !isMobileOpen && (
             <div className="p-2 m-2 mb-4 bg-[#0c1b36]/80 backdrop-blur-sm rounded-lg border border-blue-500/20 flex justify-center">
               <Button
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                className={`w-full ${
+                  tier === "ROYAL"
+                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                    : tier === "PRO"
+                    ? "bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-bold"
+                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                }`}
                 size="icon"
-                onClick={() => router.push('/subscriptions')}
-                title="Upgrade now"
+                onClick={() => tier !== "ROYAL" && router.push('/subscriptions')}
+                disabled={tier === "ROYAL"}
+                title={
+                  tier === "ROYAL"
+                    ? "Maximum level reached"
+                    : tier === "PRO"
+                    ? "Upgrade to ROYAL"
+                    : "Upgrade now"
+                }
               >
-                <TrendingUp className="h-4 w-4" />
+                {tier === "ROYAL" ? (
+                  <RoleImage role="ROYAL" size="md" />
+                ) : tier === "PRO" ? (
+                  <RoleImage role="ROYAL" size="md" />
+                ) : (
+                  <RoleImage role="PRO" size="md" />
+                )}
               </Button>
             </div>
           )}
